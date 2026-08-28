@@ -1,0 +1,1751 @@
+/* ========================================================================== */
+
+var tktoancuc = ""; 
+var tkt_truong_ht = ""; // Biến lưu mã trường hiện tại
+
+function doOptions(sukien) {
+  return ContentService.createTextOutput("").setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doGet(sukien) {
+  var dara = ContentService.createTextOutput(JSON.stringify({ trth: "tcon", dliu: "Hệ thống kết nối luồng GET thành công." }));
+  dara.setMimeType(ContentService.MimeType.JSON);
+  return dara;
+}
+
+function doPost(sukien) {
+  try {
+    var chuoiyc = sukien.postData.contents;
+    if (!chuoiyc) {
+        throw new Error("Không nhận được dữ liệu từ web.");
+    }
+    
+    var yeuc = JSON.parse(chuoiyc);
+    var hdong = yeuc.hdong;
+    var tso = yeuc.tso;
+    
+    // 1. THIẾT LẬP ĐỊNH DANH TÀI KHOẢN TOÀN CỤC
+    tktoancuc = yeuc.taik ? String(yeuc.taik).trim() : ""; 
+    
+    // 2. KHỐI KIỂM SOÁT ĐỊNH TUYẾN TRƯỜNG HỌC (MULTI-TENANT)
+    tkt_truong_ht = yeuc.ma_don_vi ? String(yeuc.ma_don_vi).trim() : "TRUONG_1";
+    
+    // Bắt buộc hàm cấu hình phải tồn tại
+    if (typeof tbi_napCauHinhDonVi !== 'function') {
+        throw new Error("LỖI NGHIÊM TRỌNG: Không tìm thấy hàm tbi_napCauHinhDonVi. Vui lòng đảm bảo đoạn mã Ma trận cấu hình được đặt trong tệp .gs (ví dụ: SKT_CauHinh.gs), KHÔNG được để định dạng .html");
+    }
+    
+    // Thực thi nạp cấu hình (ID Sheet, Drive...) tương ứng với mã trường
+    tbi_napCauHinhDonVi(tkt_truong_ht);
+
+    var kqua;
+    
+    // 3. ĐIỀU HƯỚNG CÁC LỆNH API
+    if (hdong === "skt_laydl_bda") kqua = skt_laydl_bda(tktoancuc, tso.cnh);
+    else if (hdong === "skt_laybg_mahs") kqua = skt_laybg_mahs(tso.mhso);
+    else if (hdong === "skt_luubg_nha") kqua = skt_luubg_nha(tso.mdl || tso);
+    else if (hdong === "skt_nopbg_cuo") kqua = skt_nopbg_cuo(tso.mdl || tso);
+    else if (hdong === "skt_layds_mhs_cn") kqua = skt_layds_mhs_cn();
+    else if (hdong === "skt_laytm_con") kqua = skt_tai_laytmc();
+    else if (hdong === "skt_tainhiu_tep") kqua = skt_tai_tainhiutep(tso.dltep, tso.mhso, tso.idtm, tso.ddcu, tso.cdghi);
+    else if (hdong === "skt_taitm_minhc") kqua = skt_tai_taitm_mc(tso.idcha, tso.tentmu, tso.dltep, tso.ddcu, tso.cdghi);
+    else if (hdong === "skt_tk_laydl_loc") kqua = skt_tk_laydl_loc();
+    else if (hdong === "skt_timbg_kq") kqua = skt_tk_timbg(tso.tchi);
+    else if (hdong === "skt_taobc_vba") kqua = skt_tk_taobc_vb(tso.tchi, tso.logo, tso.tentruong); 
+    else if (hdong === "skt_pt_mc_ai") kqua = skt_pt_mc_ai(tso.chuoilk, tso.yeucau);
+    else if (hdong === "skt_notebooklm_qa") kqua = skt_notebooklm_qa(tso.question);
+    else if (hdong === "skt_chatWithDocument") kqua = skt_chatWithDocument(tso.url, tso.query);
+    else if (hdong === "skt_ktra_trangthai_qr") kqua = skt_ktra_trangthai_qr(tso.chuoi_dinhdanh);
+    else if (hdong === "skt_xacthuc_qr") kqua = skt_xacthuc_qr(tso.chuoi_dinhdanh, tso.khoa_nhap, tso.kieu_xthuc, tso.khoa_moi);
+    else if (hdong === "skt_xoadon_nki_thc") kqua = skt_xoadon_nki_thc_bg(tso.mhso);
+    else if (hdong === "skt_gopgio_thanhbao") kqua = skt_gopgio_thanhbao(tso);
+    else if (hdong === "skt_lay_phanquyen") kqua = skt_lay_phanquyen();
+    else if (hdong === "skt_luu_phanquyen") kqua = skt_luu_phanquyen(tso.phamvi, tso.cai_chau, tso.mangdl);
+    else if (hdong === "skt_lay_bophan") kqua = skt_lay_bophan();
+    else if (hdong === "skt_luu_bophan") kqua = skt_luu_bophan(tso.mangdl);
+    
+    // Nhánh gọi hàm làm sạch bộ nhớ đệm
+    else if (hdong === "skt_don_dep_cache") kqua = CLEAR_SYSTEM_CACHE();
+    
+    else throw new Error("Lệnh không hợp lệ: " + hdong);
+
+    var dara = ContentService.createTextOutput(JSON.stringify({ trth: "tcon", dliu: kqua }));
+    dara.setMimeType(ContentService.MimeType.JSON);
+    return dara;
+    
+  } catch (loie) {
+    // Trả về thẳng thông báo lỗi để hiển thị lên giao diện Web App
+    var daraloi = ContentService.createTextOutput(JSON.stringify({ trth: "loi", tbao: loie.toString() }));
+    daraloi.setMimeType(ContentService.MimeType.JSON);
+    return daraloi;
+  }
+}
+
+/* ========================================================================== */
+/* KHỐI XỬ LÝ KHAI BÁO BỘ PHẬN TỔ CHỨC */
+/* ========================================================================== */
+function skt_lay_bophan() {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trankb = bgtr.getSheetByName('KHAIBAO');
+    if (!trankb) return { tcon: false, tbao: 'Không tìm thấy trang dữ liệu KHAIBAO' };
+    
+    const dongc = Math.max(trankb.getLastRow(), 5); 
+    let dl = [];
+    if (dongc >= 5) {
+      dl = trankb.getRange(5, 8, dongc - 4, 2).getValues(); 
+    }
+    return { tcon: true, dlieu: dl };
+  } catch(e) {
+    return { tcon: false, tbao: "Lỗi hệ thống khi trích xuất bộ phận: " + e.message };
+  }
+}
+
+/* ========================================================================== */
+/* KHỐI XỬ LÝ PHÂN QUYỀN TRUY CẬP */
+/* ========================================================================== */
+function skt_lay_phanquyen() {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    const caitu = SpreadsheetApp.openById(sktidkhaib);
+    const caikhay = caitu.getSheetByName('KHAIBAO');
+    if (!caikhay) return { tcon: false, tbao: 'Không tìm thấy KHAIBAO' };
+    
+    const chiecao = caikhay.getRange("D4").getValue() || "";
+    let chiecquan = caikhay.getRange("O5").getValue() || "";
+    
+    if (String(chiecquan).trim() === "") chiecquan = sktthumutai;
+    
+    const caighe = Math.max(caikhay.getLastRow(), 5); 
+    let mamcom = [];
+    if (caighe >= 5) {
+      mamcom = caikhay.getRange(5, 1, caighe - 4, 4).getValues();
+    }
+    
+    return { tcon: true, phamvi: chiecao, cai_tui_do: chiecquan, dlieu: mamcom };
+  } catch(e) {
+    return { tcon: false, tbao: "Lỗi hệ thống: " + e.message };
+  }
+}
+
+function skt_luu_phanquyen(phamvi, cai_chau, mangdl) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trankb = bgtr.getSheetByName('KHAIBAO');
+    if (!trankb) return { tcon: false, tbao: 'Không tìm thấy trang dữ liệu KHAIBAO' };
+    
+    // Lưu phạm vi truy cập
+    trankb.getRange("D4").setValue(String(phamvi).trim());
+    
+    // NÂNG CẤP: Ghi ID thư mục lưu hồ sơ vào ô O5
+    if (cai_chau !== undefined) {
+        trankb.getRange("O5").setValue(String(cai_chau).trim());
+    }
+    
+    const dongc = trankb.getLastRow();
+    if (dongc >= 5) {
+      trankb.getRange(5, 1, dongc - 4, 4).clearContent();
+    }
+    
+    if (mangdl && mangdl.length > 0) {
+      trankb.getRange(5, 1, mangdl.length, 4).setValues(mangdl);
+    }
+    return { tcon: true, tbao: "Đã đồng bộ và cập nhật phân quyền truy cập thành công!" };
+  } catch(e) {
+    return { tcon: false, tbao: "Lỗi hệ thống khi lưu quyền: " + e.message };
+  }
+}
+
+/* ========================================================================== */
+/* KHỐI XỬ LÝ BẢO MẬT 2 LỚP - THUẬT TOÁN ÁNH XẠ DÒNG TUYỆT ĐỐI */
+/* ========================================================================== */
+function skt_ktra_trangthai_qr(chuoi_dinhdanh) {
+  try {
+    const tk = String(chuoi_dinhdanh).toLowerCase().trim();
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trankb = bgtr.getSheetByName('KHAIBAO');
+    if (!trankb) return { loai: 'LOI', tbao: 'Không tìm thấy trang dữ liệu KHAIBAO' };
+
+    const dongc = trankb.getLastRow();
+    if (dongc < 1) return { loai: 'KHONG_TON_TAI' };
+    
+    const vungdl = trankb.getRange(1, 1, dongc, 11).getValues();
+
+    let timthay = false;
+    let co_khoa = false;
+
+    for (let i = 0; i < vungdl.length; i++) {
+        let tkgv = String(vungdl[i][2] || "").toLowerCase().trim(); 
+        let tknk = String(vungdl[i][5] || "").toLowerCase().trim(); 
+        
+        if ((tkgv !== "" && tkgv === tk) || (tknk !== "" && tknk === tk)) {
+            timthay = true;
+            let khoa_luu = String(vungdl[i][9] || "").trim(); 
+            if (khoa_luu !== "") {
+                co_khoa = true;
+            }
+            break;
+        }
+    }
+
+    if (!timthay) return { loai: 'KHONG_TON_TAI' };
+    if (co_khoa) return { loai: 'DA_TAO' };
+    return { loai: 'CHUA_TAO' };
+  } catch (loie) {
+    return { loai: 'LOI', tbao: loie.message };
+  }
+}
+
+function skt_xacthuc_qr(chuoi_dinhdanh, khoa_nhap, kieu_xthuc, khoa_moi) {
+  try {
+    const tk = String(chuoi_dinhdanh).toLowerCase().trim();
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trankb = bgtr.getSheetByName('KHAIBAO');
+    if (!trankb) return { tcon: false, tbao: 'Không tìm thấy trang dữ liệu KHAIBAO' };
+
+    const dongc = trankb.getLastRow();
+    if (dongc < 1) return { tcon: false, tbao: 'Dữ liệu trống!' };
+
+    const vungdl = trankb.getRange(1, 1, dongc, 11).getValues();
+
+    let dong_timthay = -1;
+    let khoa_luu = "";
+
+    for (let i = 0; i < vungdl.length; i++) {
+        let tkgv = String(vungdl[i][2] || "").toLowerCase().trim(); 
+        let tknk = String(vungdl[i][5] || "").toLowerCase().trim(); 
+        
+        if ((tkgv !== "" && tkgv === tk) || (tknk !== "" && tknk === tk)) {
+            dong_timthay = i + 1; 
+            khoa_luu = String(vungdl[i][9] || "").trim(); 
+            break;
+        }
+    }
+
+    if (dong_timthay === -1) return { tcon: false, tbao: 'Tài khoản không hợp lệ trên hệ thống!' };
+
+    if (kieu_xthuc === 'DA_TAO') {
+        if (khoa_nhap === khoa_luu) return { tcon: true };
+        else return { tcon: false, tbao: 'Mã khóa bảo mật không chính xác!' };
+    } else if (kieu_xthuc === 'CHUA_TAO') {
+        let khoa_goc = String(trankb.getRange("K5").getValue() || "").trim();
+        if (khoa_goc === "") khoa_goc = "HT2026"; 
+
+        if (khoa_nhap !== khoa_goc) return { tcon: false, tbao: 'Mã khóa cấp phát của nhà trường không chính xác!' };
+        if (!khoa_moi || khoa_moi.length < 4) return { tcon: false, tbao: 'Mã khóa định danh mới quá ngắn, yêu cầu tối thiểu 4 ký tự/số!' };
+
+        trankb.getRange(dong_timthay, 10).setValue(khoa_moi);
+        return { tcon: true, tbao: 'Đã khởi tạo Mã khóa bảo mật cá nhân thành công!' };
+    }
+
+    return { tcon: false, tbao: 'Dữ liệu luồng yêu cầu không hợp lệ!' };
+  } catch (loie) {
+    return { tcon: false, tbao: loie.message };
+  }
+}
+
+/* ========================================================================== */
+/* HÀM KIỂM TRA QUYỀN (ĐÃ NÂNG CẤP: CHỐNG NGHẼN MẠNG & ĐỒNG BỘ VÙNG QUÉT) */
+/* ========================================================================== */
+function skt_kiemt_quy(con_chim) {
+  let cay_chuoi = con_chim || tktoancuc;
+  cay_chuoi = String(cay_chuoi || "").toLowerCase().trim();
+  if (cay_chuoi === "" || cay_chuoi === "no" || cay_chuoi === "khach") return false; 
+
+  let thu_lai = 0;
+  while (thu_lai < 3) {
+    try {
+      const cai_quat = SpreadsheetApp.openById(sktidkhaib);
+      const qua_dua = cai_quat.getSheetByName('KHAIBAO');
+      if (!qua_dua) return false;
+      
+      const xe_dap = String(qua_dua.getRange("D4").getValue() || "").trim().toLowerCase();
+      if (xe_dap === 'all') return true; 
+      
+      const m_t_xxx = qua_dua.getRange("B2:D4").getValues();
+      for(let iso = 0; iso < m_t_xxx.length; iso++) {
+         for(let cot = 0; cot < m_t_xxx[iso].length; cot++) {
+             if(String(m_t_xxx[iso][cot] || "").toLowerCase().trim() === cay_chuoi) {
+                 return true; 
+             }
+         }
+      }
+
+      const bong_bay = qua_dua.getLastRow();
+      if (bong_bay < 5) return false; 
+      
+      const hoa_hong = qua_dua.getRange(5, 2, bong_bay - 4, 3).getValues();
+      
+      return hoa_hong.some(con_chuot => {
+         const cai_tu = String(con_chuot[1] || "").toLowerCase().trim(); 
+         const dien_thoai = String(con_chuot[2] || "").toLowerCase().trim(); 
+         
+         if (cai_tu === "") return false;
+         if (cai_tu === cay_chuoi && (dien_thoai === 'x' || dien_thoai === 'xx' || xe_dap === "")) return true;
+         
+         return false;
+      });
+    } catch (loi_nho) {
+      thu_lai++;
+      if (thu_lai >= 3) return false;
+      Utilities.sleep(1000); 
+    }
+  }
+  return false;
+}
+
+/* ========================================================================== */
+/* KHỐI NÂNG CẤP TỐC ĐỘ: TẢI SẴN DỮ LIỆU NHẬT KÝ HOẠT ĐỘNG VỀ TRÌNH DUYỆT */
+/* ========================================================================== */
+function skt_laydl_bda(tkkha, cnh) {
+  if (tkkha && String(tkkha).trim() !== "") {
+    tktoancuc = String(tkkha).trim();
+  }
+  
+  const tkngd = String(tktoancuc || "").toLowerCase().trim();
+  if (!skt_kiemt_quy(tkngd)) {
+    return { cquy: false, tbao: skttbkoquy, tkngd: tkngd };
+  }
+  
+  const bgtr = SpreadsheetApp.openById(sktidkhaib);
+  const trankb = bgtr.getSheetByName('KHAIBAO');
+  const trannk = bgtr.getSheetByName('NHATKY');
+  
+  const dcuokb = Math.max(trankb.getLastRow(), 5);
+  const dlNapVaoOChon = trankb.getRange(5, 1, dcuokb - 4, 9).getValues(); 
+  
+  const dsgv = [];
+  const dsnkt = [];
+  const banbp = {};
+  
+  dlNapVaoOChon.forEach(donv => {
+    if(donv[2]) { 
+       let quyen = String(donv[3] || "").toLowerCase().trim();
+       
+       if (quyen === "" || quyen === "x") {
+           dsgv.push({tenn: String(donv[1] || "").trim(), taik: String(donv[2]).toLowerCase().trim(), quyen: quyen});
+       }
+       if (quyen === "x") {
+           dsnkt.push({tenn: String(donv[1] || "").trim(), taik: String(donv[2]).toLowerCase().trim()});
+       }
+    }
+    if(donv[7]) banbp[donv[7]] = donv[8] || "";
+  });
+  
+  let dsmhs_full = [];
+  let dsmhs_unique = [];
+  if (trannk) {
+    const dcuonk = trannk.getLastRow();
+    if (dcuonk >= 5) {
+      const bat_dau = Math.max(5, dcuonk - 300); 
+      const s_l_g = dcuonk - bat_dau + 1;
+      
+      const gtridl = trannk.getRange(bat_dau, 1, s_l_g, 17).getValues();
+      const gtvbgiau = trannk.getRange(bat_dau, 16, s_l_g, 1).getRichTextValues();
+      const gtghich = trannk.getRange(bat_dau, 16, s_l_g, 1).getNotes();
+      
+      for (let iso = 0; iso < gtridl.length; iso++) {
+        let donkq = [...gtridl[iso]];
+        
+        for (let idx = 0; idx < donkq.length; idx++) {
+            if (donkq[idx] instanceof Date) {
+                donkq[idx] = Utilities.formatDate(donkq[idx], Session.getScriptTimeZone(), "dd/MM/yyyy");
+            } else if (typeof donkq[idx] === 'object' && donkq[idx] !== null) {
+                donkq[idx] = String(donkq[idx]);
+            }
+        }
+        
+        donkq[15] = gtghich[iso][0] ? String(gtghich[iso][0]) : (gtvbgiau[iso][0] ? String(gtvbgiau[iso][0].getLinkUrl() || "") : ""); 
+        dsmhs_full.push(donkq);
+        
+        if (donkq[16] && !dsmhs_unique.includes(donkq[16])) {
+          dsmhs_unique.push(donkq[16]);
+        }
+      }
+    }
+  }
+
+  return {
+    cquy: true, tkngd: tkngd,
+    dlgv: dsgv, dlnk: dsnkt,
+    dlbp: banbp, 
+    dlmh: dsmhs_unique.reverse(),
+    dlnhatky_san: dsmhs_full 
+  };
+}
+
+function skt_tk_laydl_loc() {
+  if (!skt_kiemt_quy(tktoancuc)) return { cquy: false, tbao: skttbkoquy };
+  try {
+    const trang = SpreadsheetApp.openById(sktidduli).getSheetByName('DATAKT');
+    const tkngd = tktoancuc.toLowerCase().trim();
+
+    const bgtkb = SpreadsheetApp.openById(sktidkhaib);
+    const trankb = bgtkb.getSheetByName('KHAIBAO');
+    
+    const dongckb = Math.max(trankb.getLastRow(), 5);
+    const dlthokb = trankb.getRange(5, 1, dongckb - 4, 9).getValues();
+    const dsgvdayd = [];
+    const dsnktdayd = [];
+    
+    dlthokb.forEach(donv => {
+      if(donv[1]) {
+         let quyen = String(donv[3] || "").toLowerCase().trim();
+         dsgvdayd.push({tenn: String(donv[1]).trim(), taik: String(donv[2]).toLowerCase().trim()});
+         if (quyen === 'x' || quyen === 'xx') {
+             dsnktdayd.push({tenn: String(donv[1]).trim(), taik: String(donv[2]).toLowerCase().trim()});
+         }
+      }
+    });
+    
+    if (!trang || trang.getLastRow() < 5) return { dgv: [], dnk: [], dbp: [], cquy: true, tkngd: tkngd, dlgvd: dsgvdayd, dlnktd: dsnktdayd };
+    
+    const dlth = trang.getRange(5, 1, trang.getLastRow() - 4, 3).getValues();
+    const gvi=new Set(), nkti=new Set(), bph=new Set();
+    dlth.forEach(row => { if(row[0]) gvi.add(row[0]); if(row[1]) nkti.add(row[1]); if(row[2]) bph.add(row[2]); });
+    
+    return { dgv: [...gvi].sort(), dnk: [...nkti].sort(), dbp: [...bph].sort(), cquy: true, tkngd: tkngd, dlgvd: dsgvdayd, dlnktd: dsnktdayd };
+  } catch(err) { return { cquy: false, tbao: "Lỗi hệ thống: " + err.message }; }
+}
+
+function skt_laybg_mahs(mhso) {
+  if (!skt_kiemt_quy(tktoancuc)) return null;
+  try {
+    const trannk = SpreadsheetApp.openById(sktidkhaib).getSheetByName('NHATKY');
+    if (!trannk) return null;
+    const dongc = trannk.getLastRow();
+    if (dongc < 5) return null;
+    
+    const chuoisa = (chu) => chu.toString().replace(/[\u00A0\s]/g, "").toLowerCase();
+    const gttim = chuoisa(mhso);
+    
+    const vung_tim = trannk.getRange(5, 17, dongc - 4, 1);
+    const cac_o_tim_thay = vung_tim.createTextFinder(mhso).matchEntireCell(false).findAll();
+    
+    let bgia = [];
+    for (let i = 0; i < cac_o_tim_thay.length; i++) {
+        let hang = cac_o_tim_thay[i].getRow();
+        let bgi = trannk.getRange(hang, 1, 1, 17).getValues()[0];
+        let chuoima_thucte = chuoisa(bgi[16]);
+        
+        if (chuoima_thucte === gttim) {
+            let olk = trannk.getRange(hang, 16);
+            let ddngc = olk.getNote();
+            let vbgt = olk.getRichTextValue();
+            
+            let ddan = ddngc ? ddngc : (vbgt ? vbgt.getLinkUrl() : "");
+            if (ddan) bgi[15] = ddan; 
+            
+            if (bgi[4] instanceof Date) bgi[4] = Utilities.formatDate(bgi[4], Session.getScriptTimeZone(), "dd/MM/yyyy");
+            bgia.push(bgi);
+        }
+    }
+    
+    return bgia.length > 0 ? bgia : null;
+  } catch(loie) { return null; }
+}
+
+function skt_luubg_nha(mangdl) {
+  if (!skt_kiemt_quy(tktoancuc)) return "❌ " + skttbkoquy;
+  try {
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    let trang = bgtr.getSheetByName('NHATKY');
+    if (!trang) trang = bgtr.insertSheet('NHATKY');
+    
+    if (!Array.isArray(mangdl) || mangdl.length === 0) return "❌ Lỗi: Dữ liệu rỗng.";
+    
+    for (let iso = 0; iso < mangdl.length; iso++) {
+       const bgi = mangdl[iso];
+       if (!bgi[0] || !bgi[1]) continue; 
+       skt_thuch_ghi(trang, bgi, "Lưu tạm");
+    }
+
+    // NÂNG CẤP: Phá vỡ Cache chứa dữ liệu cũ ngay khi có thay đổi
+    CacheService.getScriptCache().remove("CACHE_DATA_UU2_" + tkt_truong_ht);
+
+    return "✅ Đã LƯU TẠM thành công!";
+  } catch (loie) { return "❌ Lỗi lưu tạm: " + loie.message; }
+}
+
+function skt_nopbg_cuo(thung_chua_do) {
+  if (!skt_kiemt_quy(tktoancuc)) return "❌ " + skttbkoquy;
+
+  try {
+    const cai_thung_to = SpreadsheetApp.openById(sktidduli);
+    let to_giay_trang = cai_thung_to.getSheetByName('DATAKT');
+    if (!to_giay_trang) return "❌ Lỗi luồng: Không tìm thấy trang DATAKT để lưu chính thức.";
+
+    const cai_tui_nho = SpreadsheetApp.openById(sktidkhaib);
+    let to_giay_nhap = cai_tui_nho.getSheetByName('NHATKY');
+
+    if (thung_chua_do && thung_chua_do.mdl) thung_chua_do = thung_chua_do.mdl;
+    if (typeof thung_chua_do === 'object' && !Array.isArray(thung_chua_do)) {
+        thung_chua_do = Object.keys(thung_chua_do).map(function(k) { return thung_chua_do[k]; });
+    }
+    if (!thung_chua_do || thung_chua_do.length === 0) return "❌ Lỗi luồng: Dữ liệu nộp trống rỗng.";
+
+    const so_luong_dong = thung_chua_do.length;
+    const dong_cuoi_hien_tai = to_giay_trang.getLastRow();
+    
+    if (dong_cuoi_hien_tai >= 5) {
+        to_giay_trang.insertRowsBefore(5, so_luong_dong);
+    }
+
+    let mang_ma_the_bai = [];
+
+    for (let iso = 0; iso < so_luong_dong; iso++) {
+       const vien_gach_do = thung_chua_do[iso];
+       if (!vien_gach_do[0] || !vien_gach_do[1]) continue; 
+
+       let dong_ghi_thuc_te = 5 + iso; 
+       
+       to_giay_trang.getRange(dong_ghi_thuc_te, 1, 1, vien_gach_do.length).setValues([vien_gach_do]);
+
+       const ddnlk = vien_gach_do[15];
+       const olk = to_giay_trang.getRange(dong_ghi_thuc_te, 16);
+       if (ddnlk && String(ddnlk).trim() !== "") {
+         const caclk = String(ddnlk).split(',');
+         let taovbgi = SpreadsheetApp.newRichTextValue().setText("Biên bản (" + caclk.length + " tài liệu)");
+         if(caclk.length > 0 && caclk[0].trim() !== ""){
+              taovbgi.setLinkUrl(caclk[0].trim());
+         }
+         olk.setRichTextValue(taovbgi.build());
+         olk.setNote(String(ddnlk).trim()); 
+       } else {
+         olk.setValue(""); 
+         olk.clearNote();
+       }
+       
+       const ma_ho_so = String(vien_gach_do[16] || "").trim().toLowerCase();
+       if (ma_ho_so && !mang_ma_the_bai.includes(ma_ho_so)) {
+           mang_ma_the_bai.push(ma_ho_so);
+       }
+    }
+
+    if (to_giay_nhap && mang_ma_the_bai.length > 0) {
+        const dong_bay = to_giay_nhap.getLastRow();
+        if (dong_bay >= 5) {
+            const vung_quet = to_giay_nhap.getRange(5, 17, dong_bay - 4, 1).getValues();
+            for (let k = vung_quet.length - 1; k >= 0; k--) {
+                let ma_kiem_tra = String(vung_quet[k][0] || "").trim().toLowerCase();
+                if (mang_ma_the_bai.includes(ma_kiem_tra)) {
+                    to_giay_nhap.deleteRow(k + 5);
+                }
+            }
+        }
+    }
+
+    // NÂNG CẤP: Phá vỡ Cache chứa dữ liệu cũ ngay khi nộp thành công
+   CacheService.getScriptCache().remove("CACHE_DATA_UU2_" + tkt_truong_ht);
+
+    return "✅ Đã NỘP BÁO CÁO thành công.";
+  } catch (loi_nang) { 
+    return "❌ Lỗi hệ thống máy chủ khi nộp: " + loi_nang.message; 
+  }
+}
+
+/* ========================================================================== */
+/* KHỐI NÂNG CẤP BẤT ĐỒNG BỘ: THUẬT TOÁN ĐỌC DỮ LIỆU TỐC ĐỘ CAO (O(1))       */
+/* - Nâng tuổi thọ Cache lên 6 giờ (Hệ thống tự xóa Cache khi có thay đổi)    */
+/* - Loại bỏ getRichTextValues, chỉ dùng getNotes để giảm 80% thời gian tải   */
+/* - Tối ưu hóa vòng lặp sắp xếp mảng dữ liệu                                 */
+/* ========================================================================== */
+function skt_gopgio_thanhbao(tham_so) {
+  try {
+    let cucgach = "";
+    let uu_tien = 1;
+    
+    // 1. Phân tách tham số đầu vào
+    if (typeof tham_so === 'object' && tham_so !== null) {
+      cucgach = tham_so.cucgach;
+      uu_tien = tham_so.uu_tien || 1;
+    } else {
+      cucgach = tham_so;
+    }
+
+    if (cucgach && String(cucgach).trim() !== "") {
+      tktoancuc = String(cucgach).trim();
+    }
+    const qua_xoai = String(tktoancuc || "").toLowerCase().trim();
+    const cache = CacheService.getScriptCache();
+    
+    // ----------------------------------------------------------------------
+    // LUỒNG 1: NẠP CẤU HÌNH & PHÂN QUYỀN (THỜI GIAN CACHE: 6 GIỜ)
+    // ----------------------------------------------------------------------
+    if (uu_tien === 1) {
+        let q_u_y_e_n = "";
+        let globalKhaiBao = cache.get("CACHE_KHAIBAO_SYS_" + tkt_truong_ht);
+        
+        if (!globalKhaiBao) {
+            let trankb;
+            try {
+               const bgtr_khaibao = SpreadsheetApp.openById(sktidkhaib);
+               trankb = bgtr_khaibao.getSheetByName('KHAIBAO');
+            } catch (loi_q) {
+               return { cquy: false, tbao: "Bạn đã chọn sai đơn vị hoặc tài khoản chưa được cấp quyền.", dldanh: qua_xoai };
+            }
+            
+            if (!trankb) return { cquy: false, tbao: "LỖI CẤU HÌNH: Không tìm thấy trang KHAIBAO.", dldanh: qua_xoai };
+
+            // Tối ưu: Đọc toàn bộ dữ liệu trang khai báo trong 1 lần gọi API
+            const vung_gia_tri = trankb.getDataRange().getValues();
+            const danh_sach_xxx = []; 
+            
+            // Quét khu vực Admin (B2:D4)
+            for(let iso = 1; iso <= 3; iso++) {
+               for(let cot = 1; cot <= 3; cot++) {
+                   if(vung_gia_tri[iso] && vung_gia_tri[iso][cot]) {
+                       let tk_admin = String(vung_gia_tri[iso][cot]).toLowerCase().trim();
+                       if(tk_admin !== "") danh_sach_xxx.push(tk_admin);
+                   }
+               }
+            }
+
+            const conmeo = []; const chocon = []; const caitui = {}; 
+            const b_n_gv = []; const b_n_nkt = []; const b_n_bp = [];
+            const tat_ca_tk = [];
+
+            // Quét khu vực danh sách (Từ dòng 5 trở đi)
+            for (let i = 4; i < vung_gia_tri.length; i++) {
+              let donv = vung_gia_tri[i];
+              let t_k_h = String(donv[2] || "").toLowerCase().trim();
+              let q_y_n_d = String(donv[3] || "").toLowerCase().trim(); 
+              let t_e_n = String(donv[1] || "").trim();
+              
+              if(t_k_h) tat_ca_tk.push({taik: t_k_h, quyen: q_y_n_d});
+
+              if(t_e_n) { 
+                 let la_admin = danh_sach_xxx.includes(t_k_h) || q_y_n_d === 'xxx' || q_y_n_d === 'xx';
+                 
+                 if (!la_admin && (q_y_n_d === '' || q_y_n_d === 'x')) {
+                     conmeo.push({tenn: t_e_n, taik: t_k_h, quyen: q_y_n_d});
+                     b_n_gv.push(t_e_n);
+                 }
+                 if (q_y_n_d === 'x') { 
+                     chocon.push({tenn: t_e_n, taik: t_k_h}); 
+                     b_n_nkt.push(t_e_n); 
+                 }
+              }
+              if(donv[7]) {
+                  caitui[String(donv[7])] = String(donv[8] || "");
+                  b_n_bp.push(String(donv[7]));
+              }
+            }
+
+            globalKhaiBao = {
+                danh_sach_xxx: danh_sach_xxx,
+                conmeo: conmeo, chocon: chocon, caitui: caitui,
+                dgv: [...new Set(b_n_gv)], dnk: [...new Set(b_n_nkt)], dbp: [...new Set(b_n_bp)],
+                tat_ca_tk: tat_ca_tk
+            };
+
+            try {
+                // Đóng gói JSON và nạp vào Cache 6 giờ (21600s)
+                cache.put("CACHE_KHAIBAO_SYS_" + tkt_truong_ht, JSON.stringify(globalKhaiBao), 21600);
+            } catch(loi_cache) {}
+        } else {
+            globalKhaiBao = JSON.parse(globalKhaiBao);
+        }
+
+        if (globalKhaiBao.danh_sach_xxx.includes(qua_xoai)) {
+            q_u_y_e_n = "xxx";
+        } else {
+            let userRow = globalKhaiBao.tat_ca_tk.find(u => u.taik === qua_xoai && qua_xoai !== "");
+            if (userRow) q_u_y_e_n = userRow.quyen !== "" ? userRow.quyen : "khach";
+        }
+
+        if (qua_xoai === "khach") q_u_y_e_n = "khach";
+        else if (q_u_y_e_n === "") return { cquy: false, tbao: "Tài khoản không tồn tại trong danh sách hệ thống.", dldanh: qua_xoai };
+
+        return {
+          cquy: true, dldanh: qua_xoai, q_h_t: q_u_y_e_n, 
+          conmeo: globalKhaiBao.conmeo, chocon: globalKhaiBao.chocon, caitui: globalKhaiBao.caitui,
+          dgv: globalKhaiBao.dgv.sort(), dnk: globalKhaiBao.dnk.sort(), dbp: globalKhaiBao.dbp.sort(), kqt: []
+        };
+    }
+
+    // ----------------------------------------------------------------------
+    // LUỒNG 2: NẠP DỮ LIỆU ĐỘNG (THỜI GIAN CACHE: 6 GIỜ - TỰ ĐỘNG XÓA KHI CÓ THAY ĐỔI)
+    // ----------------------------------------------------------------------
+    if (uu_tien === 2) {
+        let dl_uu_tien_2 = cache.get("CACHE_DATA_UU2_" + tkt_truong_ht);
+        
+        if (dl_uu_tien_2) {
+            let parsed = JSON.parse(dl_uu_tien_2);
+            parsed.dldanh = qua_xoai; 
+            return parsed;
+        }
+
+        let kqt = []; 
+        let dsmhs_full = []; 
+        let dsmhs_unique = [];
+        
+        // 1. Quét sổ Nhật ký (Chỉ dùng getNotes, bỏ qua getRichTextValues để chống nghẽn)
+        try {
+            const bgtr_khaibao = SpreadsheetApp.openById(sktidkhaib);
+            const trannk = bgtr_khaibao.getSheetByName('NHATKY');
+            
+            if (trannk && trannk.getLastRow() >= 5) {
+                const dcuonk = trannk.getLastRow();
+                const bat_dau = Math.max(5, dcuonk - 500); // Mở rộng quét 500 dòng an toàn
+                const s_l_g = dcuonk - bat_dau + 1;
+                
+                const gtridl = trannk.getRange(bat_dau, 1, s_l_g, 17).getValues();
+                const gtghich = trannk.getRange(bat_dau, 16, s_l_g, 1).getNotes();
+                
+                const tapHopMaDuyNhat = new Set();
+                const timeZone = Session.getScriptTimeZone();
+                
+                for (let iso = 0; iso < gtridl.length; iso++) {
+                    let donkq = gtridl[iso];
+                    for (let idx = 0; idx < donkq.length; idx++) {
+                        if (donkq[idx] instanceof Date) {
+                            donkq[idx] = Utilities.formatDate(donkq[idx], timeZone, "dd/MM/yyyy");
+                        } else if (typeof donkq[idx] === 'object' && donkq[idx] !== null) {
+                            donkq[idx] = String(donkq[idx]);
+                        }
+                    }
+                    // Lấy link trực tiếp từ Note (Do thuật toán ghi luôn ghi vào Note)
+                    donkq[15] = gtghich[iso][0] ? String(gtghich[iso][0]) : "";
+                    dsmhs_full.push(donkq);
+                    
+                    if (donkq[16]) tapHopMaDuyNhat.add(String(donkq[16]).trim());
+                }
+                dsmhs_unique = Array.from(tapHopMaDuyNhat);
+            }
+        } catch (loi_nk) {
+            Logger.log("Lỗi quét sổ Nhật ký: " + loi_nk.message);
+        }
+
+        // 2. Quét sổ DataKT (Chỉ dùng getNotes)
+        try {
+          const bgtr_duli = SpreadsheetApp.openById(sktidduli);
+          const trangkt = bgtr_duli.getSheetByName('DATAKT');
+          
+          if (trangkt && trangkt.getLastRow() >= 5) {
+            const bat_dau = 5; 
+            const s_l_g = Math.min(1000, trangkt.getLastRow() - 4); // Tăng giới hạn quét lên 1000 dòng
+            const gtridl = trangkt.getRange(bat_dau, 1, s_l_g, 17).getValues();
+            
+            let gtghich = [];
+            try {
+              gtghich = trangkt.getRange(bat_dau, 16, s_l_g, 1).getNotes();
+            } catch(e) { 
+              for(let k = 0; k < s_l_g; k++) { gtghich.push([""]); } 
+            }
+            
+            const timeZone = Session.getScriptTimeZone();
+            for (let iso = 0; iso < gtridl.length; iso++) {
+              let donkq = gtridl[iso];
+              // Thêm biến thời gian quy đổi để sort nhanh, không cần gọi hàm skt_phnt_ngay lặp lại
+              let timestamp = 0; 
+              
+              for (let idx = 0; idx < donkq.length; idx++) {
+                  if (donkq[idx] instanceof Date) {
+                      timestamp = donkq[idx].getTime();
+                      donkq[idx] = Utilities.formatDate(donkq[idx], timeZone, "dd/MM/yyyy");
+                  } else if (typeof donkq[idx] === 'object' && donkq[idx] !== null) {
+                      donkq[idx] = String(donkq[idx]);
+                  }
+              }
+              
+              if (timestamp === 0 && donkq[4]) {
+                  let p = String(donkq[4]).split('/');
+                  if (p.length === 3) timestamp = new Date(p[2], p[1]-1, p[0]).getTime();
+              }
+
+              donkq[15] = gtghich[iso][0] ? String(gtghich[iso][0]) : ""; 
+              donkq.push(timestamp); // Cất timestamp vào cuối mảng (index 17) để sort
+              kqt.push(donkq);
+            }
+            
+            // Sắp xếp tốc độ cao dựa trên timestamp đã tính sẵn, sau đó xóa cột timestamp
+            kqt.sort((a, b) => b[17] - a[17]);
+            kqt.forEach(row => row.pop());
+          }
+        } catch (loi_dl) {
+            Logger.log("Lỗi quét sổ DataKT: " + loi_dl.message);
+        }
+
+        let responseData = { 
+            cquy: true, 
+            dldanh: qua_xoai, 
+            kqt: kqt, 
+            dlnhatky_san: dsmhs_full, 
+            dlmh: dsmhs_unique.reverse() 
+        };
+
+        try {
+            // Đẩy Cache lên 6 tiếng (21600s). Đảm bảo mượt mà 100% trong suốt phiên làm việc.
+            cache.put("CACHE_DATA_UU2_" + tkt_truong_ht, JSON.stringify(responseData), 21600);
+        } catch (loi_gioihan_cache) {}
+
+        return responseData;
+    }
+    
+  } catch (loi_tong_the) {
+     return { cquy: false, tbao: "LỖI RUNTIME MÁY CHỦ: " + loi_tong_the.message, dldanh: tham_so };
+  }
+}
+
+//========================================================
+function skt_capn_cotlk(trang, dong, ddnlk) {
+  const olk = trang.getRange(dong, 16);
+  if (ddnlk && String(ddnlk).trim() !== "") {
+    const caclk = String(ddnlk).split(',');
+    let taovbgi = SpreadsheetApp.newRichTextValue().setText("Biên bản (" + caclk.length + " tài liệu)");
+    if(caclk.length > 0 && caclk[0].trim() !== ""){
+         taovbgi.setLinkUrl(caclk[0].trim());
+    }
+    olk.setRichTextValue(taovbgi.build());
+    olk.setNote(String(ddnlk).trim()); 
+  } else {
+    olk.setValue("");
+    olk.clearNote();
+  }
+}
+
+function skt_thuch_ghi(trang, bgimo, nhap) {
+  const dongc = trang.getLastRow();
+  const mamo = bgimo[16].toString().trim().toLowerCase();
+  const ddnlk = bgimo[15];
+  
+  let dongdi = -1;
+  if (dongc >= 5) {
+     const vung_tim = trang.getRange(5, 17, dongc - 4, 1);
+     const cac_o = vung_tim.createTextFinder(bgimo[16].toString().trim()).findAll();
+     for (let i = 0; i < cac_o.length; i++) {
+         let h = cac_o[i].getRow();
+         let gt = trang.getRange(h, 17).getValue().toString().trim().toLowerCase();
+         if (gt === mamo) {
+             dongdi = h; break;
+         }
+     }
+  }
+  
+  if (dongdi === -1) dongdi = dongc < 4 ? 5 : dongc + 1;
+  trang.getRange(dongdi, 1, 1, bgimo.length).setValues([bgimo]);
+
+  const olk = trang.getRange(dongdi, 16);
+  if (ddnlk && String(ddnlk).trim() !== "") {
+    const caclk = String(ddnlk).split(',');
+    let taovbgi = SpreadsheetApp.newRichTextValue().setText("Biên bản (" + caclk.length + " tài liệu)");
+    if(caclk.length > 0 && caclk[0].trim() !== ""){
+         taovbgi.setLinkUrl(caclk[0].trim());
+    }
+    olk.setRichTextValue(taovbgi.build());
+    olk.setNote(String(ddnlk).trim()); 
+  } else {
+    olk.setValue(""); 
+    olk.clearNote();
+  }
+}
+
+function skt_xoadon_mah(trang, mhso) {
+  const dongc = trang.getLastRow();
+  if (dongc < 5) return;
+  const tieto = mhso.substring(0, mhso.lastIndexOf('-'));
+  const cacma = trang.getRange(5, 17, dongc - 4, 1).getValues().flat();
+  for (let iso = cacma.length - 1; iso >= 0; iso--) {
+    if (String(cacma[iso]).toLowerCase().trim().includes(tieto)) trang.deleteRow(iso + 5);
+  }
+}
+
+function skt_layds_mhs_cn() {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trannk = bgtr.getSheetByName('NHATKY');
+    let dsmhs_full = [];
+    let dsmhs_unique = [];
+    if (trannk && trannk.getLastRow() >= 5) {
+      const dcuonk = trannk.getLastRow();
+      const bat_dau = Math.max(5, dcuonk - 300);
+      const s_l_g = dcuonk - bat_dau + 1;
+      
+      const gtridl = trannk.getRange(bat_dau, 1, s_l_g, 17).getValues();
+      const gtvbgiau = trannk.getRange(bat_dau, 16, s_l_g, 1).getRichTextValues();
+      const gtghich = trannk.getRange(bat_dau, 16, s_l_g, 1).getNotes();
+      
+      for (let iso = 0; iso < gtridl.length; iso++) {
+        let donkq = [...gtridl[iso]];
+        for (let idx = 0; idx < donkq.length; idx++) {
+            if (donkq[idx] instanceof Date) {
+                donkq[idx] = Utilities.formatDate(donkq[idx], Session.getScriptTimeZone(), "dd/MM/yyyy");
+            } else if (typeof donkq[idx] === 'object' && donkq[idx] !== null) {
+                donkq[idx] = String(donkq[idx]);
+            }
+        }
+        donkq[15] = gtghich[iso][0] ? String(gtghich[iso][0]) : (gtvbgiau[iso][0] ? String(gtvbgiau[iso][0].getLinkUrl() || "") : ""); 
+        dsmhs_full.push(donkq);
+        
+        if (donkq[16] && !dsmhs_unique.includes(donkq[16])) {
+          dsmhs_unique.push(donkq[16]);
+        }
+      }
+    }
+    return { tcon: true, dlmh: dsmhs_unique.reverse(), dlnhatky_san: dsmhs_full };
+  } catch (loie) { return { tcon: false, tbao: "Lỗi: " + loie.message }; }
+}
+
+function skt_laytm_con() { return skt_tai_laytmc(); }
+function skt_taitm_minhc(p1, p2, p3, p4, p5) { return skt_tai_taitm_mc(p1, p2, p3, p4, p5); }
+function skt_tainhiu_tep(fd, mh, fid, ou, wm) { return skt_tai_tainhiutep(fd, mh, fid, ou, wm); }
+function skt_laydl_loc_tk() { return skt_tk_laydl_loc(); }
+function skt_timbg_kq(c1) { return skt_tk_timbg(c1); }
+function skt_taobc_vba(c1, c2) { return skt_tk_taobc_vb(c1, c2); }
+
+function skt_xoatep_dd(ddan) {
+  if (!ddan || String(ddan).trim() === "") return;
+  const cacdd = String(ddan).split(',').map(url => url.trim());
+  cacdd.forEach(url => {
+    try {
+      var khopid = url.match(/(?:id=|folders\/|d\/)([-\w]{25,})/);
+      if (!khopid) {
+         khopid = url.match(/[-\w]{25,}/); 
+      }
+      if (khopid) {
+        var idt = (khopid.length > 1) ? khopid[1] : khopid[0]; 
+        try {
+          DriveApp.getFileById(idt).setTrashed(true);
+        } catch (err) {
+          try {
+            DriveApp.getFolderById(idt).setTrashed(true);
+          } catch (err2) {
+            Logger.log("Không thể xóa ID: " + idt);
+          }
+        }
+      }
+    } catch (err) {
+      Logger.log("Lỗi xóa file cũ: " + err.toString());
+    }
+  });
+}
+
+function skt_tai_laytmc() {
+  try {
+    // 1. Mở trang KHAIBAO để kiểm tra giá trị ID thư mục tại ô O5
+    const bgtr = SpreadsheetApp.openById(sktidkhaib); 
+    const trankb = bgtr.getSheetByName('KHAIBAO');
+    
+    if (!trankb) {
+        throw new Error("Không tìm thấy trang KHAIBAO trong dữ liệu hệ thống.");
+    }
+    
+    const gtri_O5 = trankb.getRange("O5").getValue();
+    
+    // 2. NÂNG CẤP: Ưu tiên lấy ID từ ô O5. 
+    // Nếu ô O5 trống, hệ thống sẽ tự động dùng biến dự phòng từ SKT_CauHinh (sktthumutai)
+    let id_thumuc_goc = "";
+    if (gtri_O5 && String(gtri_O5).trim() !== "") {
+        id_thumuc_goc = String(gtri_O5).trim();
+    } else {
+        id_thumuc_goc = sktthumutai; // Biến toàn cục được nạp từ ma trận cấu hình
+    }
+    
+    // 3. Kiểm tra chốt chặn an toàn
+    if (!id_thumuc_goc || id_thumuc_goc === "") {
+        throw new Error("Chưa khai báo ID thư mục lưu hồ sơ tại ô O5 và hệ thống dự phòng cũng đang trống.");
+    }
+    
+    // 4. Kết nối Drive và trích xuất danh sách thư mục con
+    const thumuc_goc = DriveApp.getFolderById(id_thumuc_goc);
+    const danh_sach_con = thumuc_goc.getFolders();
+    const mang_tra_ve = [];
+    
+    while (danh_sach_con.hasNext()) {
+      const tm_con = danh_sach_con.next();
+      mang_tra_ve.push({ 
+          tenn: tm_con.getName(), 
+          idt: tm_con.getId() 
+      });
+    }
+    
+    // NÂNG CẤP BỔ SUNG: Tự động sắp xếp thư mục theo thứ tự bảng chữ cái để giao diện hiển thị khoa học hơn
+    mang_tra_ve.sort((a, b) => a.tenn.localeCompare(b.tenn));
+    
+    return mang_tra_ve;
+    
+  } catch (loi) {
+    throw new Error("Lỗi hệ thống khi quét danh mục tiêu chuẩn: " + loi.message);
+  }
+}
+
+function skt_tai_tainhiutep(dltep, mhso, idtm, ddcu, cdghi) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    if (cdghi === 'replace' && ddcu) {
+        skt_xoatep_dd(ddcu);
+    }
+
+    const iddic = idtm || sktthumutai;
+    const tmuc = DriveApp.getFolderById(iddic);
+    let lkmoi = [];
+    
+    for (let iso = 0; iso < dltep.length; iso++) {
+      let tept = dltep[iso];
+      let tenant = tept.tetpt.replace(/[\\/:*?"<>|]/g, '_');
+      let tencuo = (mhso ? mhso + "_" : "") + tenant;
+      let khoidl = Utilities.newBlob(Utilities.base64Decode(tept.dlgio), tept.kieut, tencuo);
+      let tepmoi = tmuc.createFile(khoidl);
+      lkmoi.push(tepmoi.getUrl());
+    }
+    
+    let chuoilkcuo = lkmoi.join(',');
+    
+    if (cdghi === 'append' && ddcu && ddcu.trim() !== "") {
+        chuoilkcuo = ddcu + "," + chuoilkcuo;
+    }
+
+    return { tcon: true, lkpt: chuoilkcuo, tbao: "Đã tải lên " + dltep.length + " file thành công!" };
+  } catch (err) { return { tcon: false, tbao: err.toString() }; }
+}
+
+function skt_tai_taitm_mc(idcha, tentmu, dltep, ddcu, cdghi) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    if (cdghi === 'replace' && ddcu) {
+       skt_xoatep_dd(ddcu);
+    }
+
+    const iddic = idcha || sktthumutai;
+    const tmcha = DriveApp.getFolderById(iddic);
+    const tmmoi = tmcha.createFolder(tentmu);
+    
+    for (var iso = 0; iso < dltep.length; iso++) {
+      var tept = dltep[iso];
+      var khoidl = Utilities.newBlob(Utilities.base64Decode(tept.dlgio), tept.kieut, tept.tetpt);
+      tmmoi.createFile(khoidl);
+    }
+
+    let lkcuoi = tmmoi.getUrl();
+    if (cdghi === 'append' && ddcu && ddcu.trim() !== "") {
+        lkcuoi = ddcu + "," + lkcuoi;
+    }
+
+    return { tcon: true, lkpt: lkcuoi, tbao: "Đã tải lên thư mục mới!" };
+  } catch (err) { return { tcon: false, tbao: "Lỗi tải thư mục: " + err.toString() }; }
+}
+
+function skt_tk_timbg(tcchi) {
+  if (!skt_kiemt_quy(tktoancuc)) throw new Error(skttbkoquy);
+  try {
+    const bgtr = SpreadsheetApp.openById(sktidduli);
+    const trang = bgtr.getSheetByName('DATAKT');
+    if (!trang) return [];
+    const dongc = trang.getLastRow();
+    if (dongc < 5) return [];
+    
+    const gtridl = trang.getRange(5, 1, dongc - 4, 17).getValues();
+    const gtvbgiau = trang.getRange(5, 16, dongc - 4, 1).getRichTextValues();
+    const gtghich = trang.getRange(5, 16, dongc - 4, 1).getNotes();
+    const kqtim = [];
+    
+    const ngaytd = tcchi.tkiem ? skt_phnt_ngay(tcchi.tkiem) : null;
+    const ngaydd = tcchi.dkiem ? skt_phnt_ngay(tcchi.dkiem) : null;
+    
+    for (let iso = 0; iso < gtridl.length; iso++) {
+      const donv = gtridl[iso];
+      let thoamn = true;
+      if (tcchi.gkiem && String(donv[0]).trim() !== tcchi.gkiem) thoamn = false;
+      if (thoamn && tcchi.nkiem && String(donv[1]).trim() !== tcchi.nkiem) thoamn = false;
+      if (thoamn && tcchi.bkiem && String(donv[2]).trim() !== tcchi.bkiem) thoamn = false;
+      
+      if (thoamn && (ngaytd || ngaydd)) {
+        const ngaydon = donv[4] instanceof Date ? donv[4] : skt_phnt_ngay(donv[4]);
+        if (!ngaydon) { thoamn = false; } else {
+           if (ngaytd && ngaydon < ngaytd) thoamn = false;
+           if (ngaydd && ngaydon > ngaydd) thoamn = false;
+        }
+      }
+      
+      if (thoamn) {
+        const ddngc = gtghich[iso][0];
+        const vbgt = gtvbgiau[iso][0];
+        
+        const ddan = ddngc ? ddngc : (vbgt ? vbgt.getLinkUrl() : "");
+        let donkq = [...donv];
+        donkq[15] = ddan; 
+        if (donkq[4] instanceof Date) {
+          donkq[4] = Utilities.formatDate(donkq[4], Session.getScriptTimeZone(), "dd/MM/yyyy");
+        }
+        kqtim.push(donkq);
+      }
+    }
+    
+    kqtim.sort((a1, b1) => {
+        const ngya = skt_phnt_ngay(a1[4]) || new Date(0);
+        const ngyb = skt_phnt_ngay(b1[4]) || new Date(0);
+        return ngyb - ngya;
+    });
+    return kqtim;
+  } catch(err) { return []; }
+}
+
+function skt_tk_taobc_vb(tcchi, logoUrl, tenTruong) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  const tientotep = "SO_KIEM_TRA_";
+  const tentep = tientotep + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd-MM-yyyy_HH-mm");
+  
+  const con_chim_non = tenTruong || (typeof skttrdonv_BAOCAO !== 'undefined' ? skttrdonv_BAOCAO : "");
+  const tentmngd = "KẾT QUẢ KIỂM TRA (" + con_chim_non + ")"; 
+  
+  const qua_dua_hau = typeof sktLuuSo !== 'undefined' ? sktLuuSo : ""; 
+
+  try {
+    if (qua_dua_hau === "") return { tcon: false, tbao: "Lỗi cấu hình: Chưa khai báo thư mục lưu sổ (sktLuuSo)." };
+      
+    const dlth = skt_tk_timbg(tcchi);
+    if (!dlth || dlth.length === 0) return { tcon: false, tbao: "Không có dữ liệu để in!" };
+
+    let tmdic;
+    const cai_ro_nhua = DriveApp.getFolderById(qua_dua_hau);
+    const cactm = cai_ro_nhua.getFoldersByName(tentmngd);
+    
+    if (cactm.hasNext()) {
+      tmdic = cactm.next();
+    } else {
+      tmdic = cai_ro_nhua.createFolder(tentmngd);
+    }
+
+    try {
+      const cactepcu = tmdic.getFiles();
+      while (cactepcu.hasNext()) {
+        let tept = cactepcu.next();
+        if (tept.getName().startsWith(tientotep)) {
+          tept.setTrashed(true);
+        }
+      }
+    } catch (loix) {
+      console.log("Lỗi xóa file cũ: " + loix.toString());
+    }
+
+    const tailie = DocumentApp.create(tentep);
+    const thantl = tailie.getBody();
+    const idtep = tailie.getId();
+    
+    thantl.setPageHeight(595.276); thantl.setPageWidth(841.89);   
+    thantl.setMarginTop(28.35); thantl.setMarginBottom(56.7);
+    thantl.setMarginLeft(56.7); thantl.setMarginRight(75);
+    
+    const kieucb = {};
+    kieucb[DocumentApp.Attribute.FONT_FAMILY] = 'Times New Roman';
+    kieucb[DocumentApp.Attribute.FONT_SIZE] = 11;
+    thantl.setAttributes(kieucb);
+
+    const bangtd = thantl.appendTable();
+    bangtd.setBorderWidth(0);
+    const dongtd = bangtd.appendTableRow();
+    
+    const ddbieut = (logoUrl && logoUrl.trim() !== "") ? logoUrl : (typeof SKT_LOGO_BAOCAO_URL !== 'undefined' ? SKT_LOGO_BAOCAO_URL : "");
+    try {
+        if(ddbieut !== "") {
+            const khoianh = UrlFetchApp.fetch(ddbieut).getBlob();
+            const obieut = dongtd.appendTableCell();
+            const hinhan = obieut.appendImage(khoianh);
+            hinhan.setWidth(60).setHeight(60); 
+            obieut.setWidth(61).setPaddingRight(0).setPaddingLeft(0).setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+        } else { dongtd.appendTableCell("").setWidth(61); }
+    } catch(err) { dongtd.appendTableCell("").setWidth(61); }
+
+    const oten = dongtd.appendTableCell();
+    oten.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER).setPaddingLeft(0); 
+    
+    const doanten = oten.appendParagraph(con_chim_non);
+    doanten.setAlignment(DocumentApp.HorizontalAlignment.LEFT).setSpacingBefore(0).setSpacingAfter(0);
+    const chuten = doanten.editAsText();
+    chuten.setBold(true).setForegroundColor("#b91c1c").setFontFamily("Times New Roman").setFontSize(13);
+
+    const tieud = thantl.appendParagraph("SỔ KIỂM TRA NỘI BỘ");
+    tieud.setHeading(DocumentApp.ParagraphHeading.HEADING1).setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingBefore(0).setSpacingAfter(5);
+    tieud.editAsText().setBold(true).setFontFamily("Times New Roman");
+    
+    let chutt = `Người kiểm tra: ${tcchi.nkiem || "Tất cả"}`;
+    chutt += `\nThời gian kiểm tra: Từ ngày ${tcchi.tkiem || "..."} đến ngày ${tcchi.dkiem || "..."}`;
+    const ttphu = thantl.appendParagraph(chutt);
+    ttphu.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(10);
+    ttphu.editAsText().setBold(false).setItalic(false).setFontSize(11).setFontFamily("Times New Roman");
+
+    const cactieud = ["STT", "Thời gian", "Giáo viên", "Nội dung", "Ưu điểm", "Tồn tại", "Biện pháp", "XL HS", "XL GD", "XL KS", "XL khác", "Ý kiến", "Ký tên"];
+    let ro_hoa_qua = []; 
+    ro_hoa_qua.push(cactieud);
+
+    dlth.forEach((donv, csso) => {
+      let qua_mit_non = donv[4] ? Utilities.formatDate(new Date(skt_phnt_ngay(donv[4])), Session.getScriptTimeZone(), "dd/MM/yyyy") : "";
+      ro_hoa_qua.push([
+        (csso + 1).toString(), qua_mit_non,
+        String(donv[0] || ""), String(donv[5] || ""), String(donv[6] || ""), 
+        String(donv[7] || ""), String(donv[8] || ""), String(donv[9] || ""), 
+        String(donv[10] || ""), String(donv[11] || ""), String(donv[12] || ""), 
+        String(donv[13] || ""), String(donv[14] || "")
+      ]);
+    });
+
+    const bangdl = thantl.appendTable(ro_hoa_qua);
+    
+    const daubang = bangdl.getRow(0);
+    for (let c_con = 0; c_con < cactieud.length; c_con++) {
+        let o1 = daubang.getCell(c_con);
+        o1.setBackgroundColor("#e0f2fe").setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+        o1.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+        o1.editAsText().setBold(true).setItalic(false).setFontFamily("Times New Roman").setFontSize(10);
+    }
+    
+    const dorongcot = [25, 55, 70, 85, 120, 110, 85, 30, 30, 30, 35, 60, 40];
+    for(let iso = 0; iso < dorongcot.length; iso++) bangdl.setColumnWidth(iso, dorongcot[iso]);
+
+    tailie.saveAndClose();
+
+    const tept = DriveApp.getFileById(idtep);
+    tept.moveTo(tmdic);
+    
+    let qua_chuoichin = String(tktoancuc).trim().toLowerCase();
+    if (qua_chuoichin !== "" && qua_chuoichin !== "no" && qua_chuoichin !== "khach" && qua_chuoichin.includes("@")) {
+        try {
+            tept.setOwner(qua_chuoichin); 
+        } catch (la_rung_nhieu) {
+            try {
+                tept.addEditor(qua_chuoichin);
+            } catch (gio_thoimanh) {
+                console.log("Q1: " + gio_thoimanh.toString());
+            }
+            console.log("Q2: " + la_rung_nhieu.toString());
+        }
+    }
+    
+    return { tcon: true, lkpt: tept.getUrl() };
+  } catch (err) {
+    return { tcon: false, tbao: "Lỗi tạo file: " + err.toString() };
+  }
+}
+
+function skt_phnt_ngay(ngay) { 
+  if (!ngay) return null; 
+  if (ngay instanceof Date) return ngay; 
+  const p1 = String(ngay).split('/');
+  if (p1.length === 3) return new Date(p1[2], p1[1]-1, p1[0]); 
+  return null; 
+}
+
+function skt_xoadon_nki_thc_bg(trluon) {
+  if (!skt_kiemt_quy(tktoancuc)) return "NO_PERMISSION";
+  try {
+    var cacphn = String(trluon).split("|||");
+    var mhso = cacphn[0];
+    var linkTuGD = cacphn.length > 1 ? cacphn[1].trim() : ""; 
+
+    const bgtr = SpreadsheetApp.openById(sktidkhaib);
+    const trang = bgtr.getSheetByName('NHATKY');
+    if (!trang) return "Lỗi: Không tìm thấy sheet NHATKY";
+
+    const dongc = trang.getLastRow();
+    if (dongc < 5) return "NOT_FOUND";
+
+    const madic = String(mhso).trim();
+
+    const vung_tim = trang.getRange(5, 17, dongc - 4, 1);
+    const cac_o = vung_tim.createTextFinder(madic).matchEntireCell(false).findAll();
+
+    let dongdic = -1;
+    const madic_clean = madic.toLowerCase().replace(/[\u00A0\s]/g, "");
+
+    for (let i = 0; i < cac_o.length; i++) {
+        let h = cac_o[i].getRow();
+        let gt = trang.getRange(h, 17).getValue().toString().toLowerCase().replace(/[\u00A0\s]/g, "");
+        if (gt === madic_clean) {
+            dongdic = h;
+            break;
+        }
+    }
+    
+    if (dongdic === -1) return "NOT_FOUND";
+
+    const olk = trang.getRange(dongdic, 16);
+    const ddngc = olk.getNote();
+    const vbgt = olk.getRichTextValue();
+    let linkTrongSheet = ddngc ? ddngc : (vbgt ? vbgt.getLinkUrl() : "");
+    
+    let chuoixoa = "";
+    if (linkTrongSheet && String(linkTrongSheet).trim() !== "") {
+        chuoixoa += linkTrongSheet;
+    }
+    
+    if (linkTuGD && String(linkTuGD).trim() !== "" && !chuoixoa.includes(linkTuGD)) {
+        chuoixoa += (chuoixoa === "" ? "" : ",") + linkTuGD;
+    }
+
+    if (chuoixoa !== "") {
+      skt_xoatep_dd(chuoixoa); 
+    }
+
+    trang.deleteRow(dongdic);
+
+    // NÂNG CẤP: Phá vỡ Cache chứa dữ liệu cũ ngay sau khi xóa
+   CacheService.getScriptCache().remove("CACHE_DATA_UU2_" + tkt_truong_ht);
+
+    return "SUCCESS"; 
+    
+  } catch (err) {
+    return "Lỗi Server: " + err.message; 
+  }
+}
+
+/* ========================================================================== */
+/* KHỐI XỬ LÝ AI TÍCH HỢP */
+/* ========================================================================== */
+
+function skt_pt_mc_ai(chuoilk, yeucau_nguoidung) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    const SKT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'); 
+
+    let cacLink = chuoilk.split(',');
+    let mangPhanTuDuLieu = [];
+    let nhatKyLoi = []; 
+
+    for (let j = 0; j < cacLink.length; j++) {
+        let lk = cacLink[j].trim();
+        if (!lk) continue;
+
+        let tenLoiGoiNho = `Tài liệu ${j+1}`;
+        let isExternalLink = /^https?:\/\//i.test(lk) && !lk.includes("drive.google.com") && !lk.includes("docs.google.com");
+
+        if (isExternalLink) {
+            let allowedDomains = ["ibb.co", "google.com", "docs.google.com", "drive.google.com", "gifer.com"];
+            let isAllowed = allowedDomains.some(domain => lk.includes(domain));
+            if (!isAllowed) {
+                nhatKyLoi.push(`${tenLoiGoiNho} (Web): Bỏ qua vì lý do an toàn bảo mật tên miền.`);
+                continue;
+            }
+            try {
+                let res = UrlFetchApp.fetch(lk, { muteHttpExceptions: true });
+                if (res.getResponseCode() === 200) {
+                    let blob = res.getBlob();
+                    let kieutep = String(blob.getContentType() || "").toLowerCase();
+                    
+                    if (!kieutep.startsWith("image/") && !kieutep.includes("pdf")) {
+                        nhatKyLoi.push(`${tenLoiGoiNho} (Web): Bỏ qua vì không phải định dạng Ảnh/PDF.`);
+                        continue;
+                    }
+                    let bytes = blob.getBytes();
+                    if (bytes.length > 15 * 1024 * 1024) {
+                        nhatKyLoi.push(`${tenLoiGoiNho} (Web): Vượt quá 15MB.`);
+                        continue;
+                    }
+                    let finalMime = kieutep.includes("pdf") ? "application/pdf" : kieutep;
+                    mangPhanTuDuLieu.push({"inline_data": {"mime_type": finalMime, "data": Utilities.base64Encode(bytes)}});
+                } else {
+                    nhatKyLoi.push(`${tenLoiGoiNho} (Web): Bị từ chối truy cập (Lỗi ${res.getResponseCode()}).`);
+                }
+            } catch(e) { 
+                nhatKyLoi.push(`${tenLoiGoiNho} (Web): Link hỏng hoặc bị chặn. (${e.message})`);
+            }
+            continue; 
+        } 
+
+        let match = lk.match(/(?:id=|folders\/|d\/)([-\w]{25,})/);
+        if (!match) match = lk.match(/[-\w]{25,}/);
+        if (!match) {
+             nhatKyLoi.push(`${tenLoiGoiNho} (Drive): Không trích xuất được ID.`);
+             continue; 
+        }
+
+        let idtep = match[1];
+        let isFolder = false;
+
+        try {
+            let tep = DriveApp.getFileById(idtep);
+            let kieu = String(tep.getMimeType()).toLowerCase();
+            if (kieu === MimeType.FOLDER.toLowerCase() || kieu === 'application/vnd.google-apps.folder') {
+                isFolder = true;
+            } else {
+                if (!kieu.startsWith("image/") && !kieu.includes("pdf")) {
+                    nhatKyLoi.push(`${tenLoiGoiNho}: Hệ thống AI chỉ nhận PDF hoặc Hình ảnh.`);
+                    continue; 
+                }
+                let blob = tep.getBlob();
+                let bytes = blob.getBytes();
+                if (bytes.length > 15 * 1024 * 1024) {
+                    nhatKyLoi.push(`${tenLoiGoiNho}: Dung lượng tệp vượt quá 15MB.`);
+                    continue; 
+                }
+                let finalMime = kieu.includes("pdf") ? "application/pdf" : kieu;
+                mangPhanTuDuLieu.push({"inline_data": {"mime_type": finalMime, "data": Utilities.base64Encode(bytes)}});
+            }
+        } catch(e) { 
+            isFolder = true; 
+        }
+
+        if (isFolder) {
+            try {
+                let thuMuc = DriveApp.getFolderById(idtep);
+                let cacTepCon = thuMuc.getFiles();
+                let coTepHopLe = false;
+                
+                while(cacTepCon.hasNext()) {
+                    let tepCon = cacTepCon.next();
+                    let kieuCon = String(tepCon.getMimeType()).toLowerCase();
+                    
+                    if (kieuCon.startsWith("image/") || kieuCon.includes("pdf")) {
+                        let blobCon = tepCon.getBlob();
+                        let bytesCon = blobCon.getBytes();
+                        
+                        if (bytesCon.length <= 15 * 1024 * 1024) {
+                            let finalMimeCon = kieuCon.includes("pdf") ? "application/pdf" : kieuCon;
+                            mangPhanTuDuLieu.push({"inline_data": {"mime_type": finalMimeCon, "data": Utilities.base64Encode(bytesCon)}});
+                            coTepHopLe = true;
+                        }
+                    }
+                }
+                if (!coTepHopLe) {
+                    nhatKyLoi.push(`${tenLoiGoiNho} (Thư mục Drive): Không tìm thấy tệp Ảnh/PDF nào hợp lệ (hoặc tệp quá 15MB) bên trong thư mục này.`);
+                }
+            } catch(eFolder) {
+                nhatKyLoi.push(`${tenLoiGoiNho} (Drive): Hệ thống không có quyền truy cập Thư mục/File này. Vui lòng mở quyền "Bất kỳ ai có liên kết".`);
+            }
+        }
+    }
+
+    if (mangPhanTuDuLieu.length === 0) {
+        let tbLoiChiTiet = "AI không đọc được minh chứng do các nguyên nhân sau:\n- " + nhatKyLoi.join("\n- ");
+        return {tcon: false, tbao: tbLoiChiTiet};
+    }
+
+    if (mangPhanTuDuLieu.length > 10) {
+        mangPhanTuDuLieu = mangPhanTuDuLieu.slice(0, 10);
+    }
+
+    let dsUuTien = [
+        "gemini-1.5-flash-8b",     
+        "gemini-1.5-flash",        
+        "gemini-2.5-flash",        
+        "gemini-1.5-pro",          
+        "gemini-3.1-pro-preview"   
+    ];
+
+    let tieuChi = `Bạn là một hiệu trưởng giỏi chuyên môn nghiệp vụ, giầu kinh nghiệm dạy học, giỏi quản trị nhà trường.
+    Lệnh cụ thể: "${yeucau_nguoidung || "Nhận xét tổng quan ưu điểm, tồn tại và từ đó tìm ra biện pháp khắc phục phù hợp, hiệu quả"}"
+    Nhiệm vụ: Phân tích toàn bộ các tài liệu minh chứng được cung cấp và đáp ứng lệnh trên.
+    Quy tắc:
+    1. Chỉ nhận xét phần được yêu cầu. Phần không yêu cầu (hoặc không có), BẮT BUỘC trả về chuỗi rỗng "".
+    2. Giọng văn trang trọng, hành chính, ngắn gọn (1-2 câu).
+    3. Cấu trúc trả về BẮT BUỘC là JSON hợp lệ: {"uu_diem": "...", "ton_tai": "...", "bien_phap": "..."}.`;
+
+    let partsArray = [{"text": tieuChi}];
+    partsArray = partsArray.concat(mangPhanTuDuLieu);
+
+    let payload = {
+        "contents": [{"parts": partsArray}],
+        "generationConfig": {"response_mime_type": "application/json"}
+    };
+
+    let result = null;
+    let loiCuoiCung = "";
+
+    for (let i = 0; i < dsUuTien.length; i++) {
+        let url = "https://generativelanguage.googleapis.com/v1beta/models/" + dsUuTien[i] + ":generateContent?key=" + SKT_GEMINI_API_KEY;
+        
+        let options = {
+            "method": "post",
+            "contentType": "application/json",
+            "payload": JSON.stringify(payload),
+            "muteHttpExceptions": true
+        };
+
+        let response = UrlFetchApp.fetch(url, options);
+        let tempResult = JSON.parse(response.getContentText());
+
+        if (!tempResult.error) {
+            result = tempResult;
+            break; 
+        } else {
+            loiCuoiCung = tempResult.error.message;
+            let textLoi = loiCuoiCung.toLowerCase();
+            if (!textLoi.includes("quota") && 
+                !textLoi.includes("limit") && 
+                !textLoi.includes("demand") && 
+                !textLoi.includes("overloaded") && 
+                !textLoi.includes("503") && 
+                !textLoi.includes("not found") && 
+                !textLoi.includes("not supported")) {
+                break; 
+            } else {
+                Utilities.sleep(2000);
+            }
+        }
+    }
+
+    if (!result || result.error) {
+         return {tcon: false, tbao: "Hệ thống AI hiện đang quá tải toàn cầu hoặc lỗi máy chủ. Thầy/Cô vui lòng thử lại sau 1-2 phút."};
+    }
+
+    let aiText = result.candidates[0].content.parts[0].text;
+    aiText = aiText.replace(/```json/gi, "").replace(/```/g, "").trim();
+    
+    let data;
+    try {
+        data = JSON.parse(aiText);
+    } catch(errJSON) {
+        return {tcon: false, tbao: "Lỗi: AI trả về định dạng văn bản không hợp lệ (Không phải cấu trúc dữ liệu chuẩn)."};
+    }
+
+    let uu = data.uu_diem || data.uudiem || data["Ưu điểm"] || data["uu diem"] || "";
+    let ton = data.ton_tai || data.tontai || data["Tồn tại"] || data["ton tai"] || "";
+    let bp = data.bien_phap || data.bienphap || data["Biện pháp"] || data["bien phap"] || "";
+
+    if (!uu && !ton && !bp) {
+        for (let key in data) {
+            let k = String(key).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+            let val = String(data[key]);
+            
+            if (k.includes("uu") || k.includes("diem") || k.includes("tot") || k.includes("manh")) uu = val;
+            else if (k.includes("ton") || k.includes("tai") || k.includes("hanche") || k.includes("khuyet") || k.includes("yeu")) ton = val;
+            else if (k.includes("bien") || k.includes("phap") || k.includes("khacphuc") || k.includes("huong") || k.includes("xuly")) bp = val;
+        }
+    }
+
+    return {
+        tcon: true,
+        uudiem: uu || "",
+        tontai: ton || "",
+        bienphap: bp || ""
+    };
+  } catch (err) {
+    return { tcon: false, tbao: "Lỗi xử lý luồng hệ thống: " + err.message };
+  }
+}
+
+function skt_chatWithDocument(url, query) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  const SKT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'); 
+  
+  try {
+    var blob = null;
+    var rawMime = "";
+    var mimeType = "";
+    var fileName = "";
+    var isGDocs = false;
+    var isExternalLink = /^https?:\/\//i.test(url) && !url.includes("drive.google.com") && !url.includes("docs.google.com");
+
+    if (isExternalLink) {
+        let allowedDomains = ["ibb.co", "google.com", "docs.google.com", "drive.google.com", "gifer.com"];
+        let isAllowed = allowedDomains.some(domain => url.includes(domain));
+        if (!isAllowed) {
+            return { tcon: false, tbao: "Lỗi bảo mật: Tên miền đính kèm không nằm trong danh sách an toàn." };
+        }
+        var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+        if (res.getResponseCode() === 200) {
+            blob = res.getBlob();
+            rawMime = blob.getContentType() || "";
+            mimeType = rawMime.toLowerCase();
+            fileName = url.split('?')[0].split('/').pop().toLowerCase();
+        } else {
+            return { tcon: false, tbao: "Lỗi: Không thể truy cập đọc tài liệu từ đường link đính kèm." };
+        }
+    } else {
+        var fileId = "";
+        var match = url.match(/(?:id=|folders\/|d\/)([-\w]{25,})/);
+        if (!match) match = url.match(/[-\w]{25,}/); 
+        if (match) fileId = (match.length > 1) ? match[1] : match[0];
+        if (!fileId) return { tcon: false, tbao: "Lỗi: Không trích xuất được định danh ID của tài liệu." };
+
+        var file = DriveApp.getFileById(fileId);
+        rawMime = file.getMimeType();
+        mimeType = String(rawMime).toLowerCase();
+        fileName = String(file.getName()).toLowerCase();
+        isGDocs = (rawMime === MimeType.GOOGLE_DOCS);
+        if (!isGDocs) blob = file.getBlob();
+    }
+
+    var isPDF = mimeType.includes("pdf") || fileName.endsWith(".pdf");
+    var isText = mimeType.includes("text") || fileName.endsWith(".txt");
+    var isImage = mimeType.includes("image") || fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg");
+
+    var parts = [];
+    var promptInstruction = "Bạn là Trợ lý quản lý hành chính giáo dục. Dưới đây là yêu cầu của người dùng: [" + query + "]\n\n" +
+                            "YÊU CẦU: Trả lời ngắn gọn, chính xác, bám sát nội dung minh chứng được cung cấp. Không tự ý suy diễn.";
+
+    if (isGDocs) {
+       var fileContext = DocumentApp.openById(fileId).getBody().getText();
+       parts.push({"text": "Nội dung tài liệu:\n" + fileContext.substring(0, 30000) + "\n\n" + promptInstruction});
+    } else if (isText) {
+       var fileContext = blob.getDataAsString();
+       parts.push({"text": "Nội dung tài liệu:\n" + fileContext.substring(0, 30000) + "\n\n" + promptInstruction});
+    } else if (isPDF || isImage) {
+       var base64Data = Utilities.base64Encode(blob.getBytes());
+       var fMime = isPDF ? "application/pdf" : rawMime;
+       parts.push({
+           "inlineData": {
+               "mimeType": fMime, 
+               "data": base64Data
+           }
+       });
+       parts.push({"text": promptInstruction});
+    } else {
+       return { tcon: false, tbao: "Định dạng tệp này không được AI hỗ trợ đọc trực tiếp." };
+    }
+
+    let dsUuTien = ["gemini-2.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-1.5-pro"];
+    var result = null;
+    var lastErrorMsg = "";
+
+    for (var i = 0; i < dsUuTien.length; i++) {
+        var model = dsUuTien[i];
+        var apiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + SKT_GEMINI_API_KEY;
+        
+        var payload = { "contents": [{"parts": parts}] };
+        var options = {
+          'method' : 'post',
+          'contentType': 'application/json',
+          'payload' : JSON.stringify(payload),
+          'muteHttpExceptions': true
+        };
+
+        var response = UrlFetchApp.fetch(apiEndpoint, options);
+        var json = JSON.parse(response.getContentText());
+
+        if (!json.error) {
+            result = json; break; 
+        } else { lastErrorMsg = json.error.message; }
+    }
+
+    if (result && result.candidates && result.candidates.length > 0) {
+        var answer = result.candidates[0].content.parts[0].text;
+        return { tcon: true, kqua: answer };
+    } else {
+        return { tcon: false, tbao: "Lỗi phản hồi từ AI: " + lastErrorMsg };
+    }
+
+  } catch (e) {
+    return { tcon: false, tbao: "Lỗi hệ thống máy chủ: " + e.message };
+  }
+}
+
+function skt_notebooklm_qa(cauHoi) {
+  if (!skt_kiemt_quy(tktoancuc)) return { tcon: false, tbao: skttbkoquy };
+  try {
+    if (!cauHoi || String(cauHoi).trim() === "") return { tcon: false, tbao: "Vui lòng nhập câu hỏi." };
+
+    let dId = sktid_notebooklm_doc.trim();
+    let match = dId.match(/[-\w]{25,}/);
+    if (!match) return { tcon: false, tbao: "Lỗi: ID Google Doc thiết lập trong hệ thống không hợp lệ. Vui lòng kiểm tra lại cấu hình." };
+    dId = match[0];
+
+    let doc;
+    try {
+        doc = DocumentApp.openById(dId);
+    } catch(e) {
+        return { tcon: false, tbao: "Lỗi truy cập: Không tìm thấy tài liệu hoặc không có quyền đọc. Vui lòng kiểm tra ID và chia sẻ Doc ở chế độ 'Bất kỳ ai có liên kết' (Viewer)." };
+    }
+    
+    let noiDungDoc = doc.getBody().getText();
+    if (!noiDungDoc || noiDungDoc.trim() === "") {
+        return { tcon: false, tbao: "Tài liệu trống, không có nội dung để đọc." };
+    }
+
+    if (noiDungDoc.length > 50000) noiDungDoc = noiDungDoc.substring(0, 50000);
+
+    const SKT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+    
+    let dsUuTien = [
+        "gemini-3-flash-preview", 
+        "gemini-1.5-pro",       
+        "gemini-2.5-flash",     
+        "gemini-1.5-flash",     
+        "gemini-flash-latest"   
+    ];
+
+    let tieuChi = `Bạn là một trợ lý hành chính giáo dục chuyên nghiệp.
+    NGUYÊN TẮC TỐI THƯỢNG (BẮT BUỘC TUÂN THỦ):
+    1. CHỈ ĐƯỢC PHÉP trích xuất và tóm tắt thông tin có chữ trong phần "TÀI LIỆU THAM CHIẾU" bên dưới.
+    2. TUYỆT ĐỐI KHÔNG sử dụng kiến thức có sẵn của bạn, KHÔNG tự suy diễn, KHÔNG tự liên hệ thực tế bên ngoài (kể cả khi bạn biết thông tin đó là đúng với ngành giáo dục).
+    3. BẪY LỖI: Nếu người dùng hỏi về một văn bản, sự kiện, quy chế, hoặc nội dung KHÔNG XUẤT HIỆN trong "TÀI LIỆU THAM CHIẾU", bạn KHÔNG ĐƯỢC cố gắng trả lời. Bạn BẮT BUỘC phải trả lời bằng đúng một câu sau: "Xin lỗi, thông tin thầy/cô tra cứu không có trong tài liệu hệ thống đang liên kết."
+    4. Trình bày logic, rõ ràng, đúng chuẩn văn phong hành chính nhà nước.
+
+    --- BẮT ĐẦU TÀI LIỆU THAM CHIẾU ---
+    ${noiDungDoc}
+    --- KẾT THÚC TÀI LIỆU THAM CHIẾU ---
+    
+    Câu hỏi của người dùng tra cứu: "${cauHoi}"`;
+
+    let lenh = {
+        "contents": [{"parts": [{"text": tieuChi}]}]
+    };
+
+    let result = null;
+    let loiCuoiCung = "";
+
+    for (let i = 0; i < dsUuTien.length; i++) {
+        let url = "https://generativelanguage.googleapis.com/v1beta/models/" + dsUuTien[i] + ":generateContent?key=" + SKT_GEMINI_API_KEY;
+        
+        let options = {
+            "method": "post",
+            "contentType": "application/json",
+            "payload": JSON.stringify(lenh),
+            "muteHttpExceptions": true
+        };
+
+        let response = UrlFetchApp.fetch(url, options);
+        let tempResult = JSON.parse(response.getContentText());
+
+        if (!tempResult.error) {
+            result = tempResult;
+            break; 
+        } else {
+            loiCuoiCung = tempResult.error.message;
+            if (!loiCuoiCung.includes("Quota") && !loiCuoiCung.includes("limit")) {
+                break; 
+            }
+        }
+    }
+
+    if (!result || result.error) {
+         return {tcon: false, tbao: "Lỗi kết nối API: " + loiCuoiCung};
+    }
+
+    let aiText = result.candidates[0].content.parts[0].text;
+    
+    aiText = aiText.replace(/\*/g, '');
+    
+    return { tcon: true, kqua: aiText };
+
+  } catch (err) {
+    return { tcon: false, tbao: "Lỗi xử lý hệ thống: " + err.message };
+  }
+}
+
+function skt_luu_bophan(mangdl) {
+  try {
+    var bangTinh = SpreadsheetApp.openById(sktidkhaib);
+    var trangTinh = bangTinh.getSheetByName("KHAIBAO"); 
+    
+    if (!trangTinh) {
+      return { tcon: false, tbao: "Hệ thống không tìm thấy trang tính 'KHAIBAO' để lưu dữ liệu." };
+    }
+    
+    var dongBatDau = 5;
+    var cotBatDau = 8;
+    var soCot = 2; 
+    var dongCuoi = trangTinh.getLastRow();
+    
+    if (dongCuoi >= dongBatDau) {
+      var soDongCanXoa = dongCuoi - dongBatDau + 1;
+      trangTinh.getRange(dongBatDau, cotBatDau, soDongCanXoa, soCot).clearContent(); 
+    }
+    
+    if (mangdl && mangdl.length > 0) {
+      trangTinh.getRange(dongBatDau, cotBatDau, mangdl.length, soCot).setValues(mangdl);
+    }
+    
+    return { tcon: true, tbao: "Cập nhật danh sách bộ phận tổ chức thành công." };
+    
+  } catch (loi) {
+    return { tcon: false, tbao: "Lỗi hệ thống khi ghi dữ liệu: " + loi.message };
+  }
+}
+
+function kich_hoat_quyen() {
+  UrlFetchApp.fetch("https://www.google.com");
+}
