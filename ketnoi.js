@@ -6,8 +6,8 @@
 
 const KETNOI = {
     // 1. Thông tin định danh cơ quan/đơn vị
-    TEN_DINH_DANH: "Hợp Thành OS",
-    TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Hợp Thành",
+    TEN_DINH_DANH: "TẢ PHỜI OS",
+    TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Tả Phời",
     
     // 2. Tài nguyên hình ảnh đại diện (Logo & Giao diện)
     LINK_LOGO: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
