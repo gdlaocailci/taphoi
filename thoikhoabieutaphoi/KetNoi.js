@@ -12,7 +12,6 @@ const CAU_HINH_FRONTEND = {
     LINK_ICON_TRONG: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png',
     LINK_ICON_LAM_MOI: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png'
 };
-
 // =========================================================================
 // KHỐI 4: CẤU HÌNH XÁC THỰC (GOOGLE IDENTITY)
 // =========================================================================
