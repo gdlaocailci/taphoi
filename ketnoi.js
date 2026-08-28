@@ -20,7 +20,7 @@ const KETNOI = {
     LINK_YOUTUBE: "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q",
     
     // 3. Đường dẫn máy chủ xử lý dữ liệu (Google Apps Script API)
-    WEB_APP_URL: "https://script.google.com/macros/s/AKfycbwatqZkT9zencA2tHQu9xvbjkzduBkZq42jxnqSqFaHEJcBREoWNFVCvUK17BKVe4PHHw/exec",
+    WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxn7jCAUwrPTcQE_FZaK8p8sYPRDeX2WrS3_hirPUWkKsnlM5mkNjzG3foSOgjwm94HaQ/exec",
 
     // 4. Mã định danh ứng dụng Google (OAuth 2.0 Client ID)
     CLIENT_ID: "1097384743947-1jdc5rhhmbu0s9jp5vgt814g4f4id7lu.apps.googleusercontent.com"
