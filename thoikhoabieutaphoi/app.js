@@ -547,7 +547,36 @@ function xuatMaTranBang(danhSachTiet) {
                 tbodyHTML += `<td id="uiThang_${thu}_${buoi}_${tiet}" data-ngay="${thongTinNgay.ngayDayDu}" class="hidden text-center font-bold text-red-600 align-middle">${valThang}</td>`;
                 tbodyHTML += `<td id="uiNam_${thu}_${buoi}_${tiet}" class="hidden text-center font-bold text-red-600 align-middle">${valNam}</td>`;
                 
-                tbodyHTML += `<td class="text-center font-bold text-slate-800 align-middle border-b border-r border-slate-300" style="position: sticky; left: 145px; z-index: 40; background-color: #ffffff; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.15);">${tiet}</td>`;
+                // =========================================================
+                // [NÂNG CẤP UI]: Thuật toán quét và cảnh báo giáo viên trùng lịch
+                // =========================================================
+                let demGvTrung = {};
+                mangLop.forEach(lop => {
+                    const duLieuO_Check = luoiDuLieu[thu][buoi][tiet] ? luoiDuLieu[thu][buoi][tiet][lop] : null;
+                    let tenGvCheck = duLieuO_Check ? duLieuO_Check.maGv.trim() : "";
+                    if (tenGvCheck !== "") {
+                        demGvTrung[tenGvCheck] = (demGvTrung[tenGvCheck] || 0) + 1;
+                    }
+                });
+
+                let mangGvBiTrung = [];
+                for (let gv in demGvTrung) {
+                    if (demGvTrung[gv] > 1) {
+                        mangGvBiTrung.push(gv);
+                    }
+                }
+
+                let hienThiTrungGv = "";
+                if (mangGvBiTrung.length > 0) {
+                    // Dùng Tailwind CSS thu nhỏ font, ép kiểu cắt chữ (truncate) nếu tên quá dài
+                    hienThiTrungGv = `<div class="text-[10px] text-red-600 font-extrabold leading-tight mt-0.5 max-w-[45px] mx-auto truncate cursor-help" title="Lỗi trùng lịch: ${mangGvBiTrung.join(', ')}">${mangGvBiTrung.join('<br>')}</div>`;
+                }
+
+                tbodyHTML += `<td class="text-center font-bold text-slate-800 align-middle border-b border-r border-slate-300" style="position: sticky; left: 145px; z-index: 40; background-color: #ffffff; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.15);">
+                                <div class="text-base leading-none mt-1">${tiet}</div>
+                                ${hienThiTrungGv}
+                              </td>`;
+                // =========================================================
 
                 mangLop.forEach(lop => {
                     const duLieuO = luoiDuLieu[thu][buoi][tiet] ? luoiDuLieu[thu][buoi][tiet][lop] : null;
