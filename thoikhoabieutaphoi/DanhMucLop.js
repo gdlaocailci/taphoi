@@ -149,3 +149,100 @@ async function luuDuLieuDanhMucLopSangMayChu() {
         btn.disabled = false; 
     }
 }
+// =========================================================================
+// KHỐI NÂNG CẤP: TÍNH NĂNG NHẬP/XUẤT EXCEL CHO DANH MỤC LỚP
+// Chức năng: Đọc dữ liệu từ file Excel, xử lý mảng và kết xuất trực tiếp lên UI. 
+// Khối mã hoạt động độc lập, không kích hoạt API để bảo đảm hiệu suất.
+// =========================================================================
+function xuatExcelDanhMucLop() {
+    if (typeof XLSX === 'undefined') { 
+        alert("Thư viện giải mã Excel chưa sẵn sàng. Vui lòng chờ trong giây lát."); 
+        return; 
+    }
+    
+    // Cập nhật trạng thái mới nhất từ các ô nhập liệu trên giao diện vào mảng
+    dongBoDomLopSangState();
+    
+    let mangXuat = [TIEU_DE_DM_LOP];
+    duLieuDanhMucLop.forEach(lop => { 
+        mangXuat.push([lop.maLop, lop.tenLop]); 
+    });
+    
+    let wb = XLSX.utils.book_new();
+    let ws = XLSX.utils.aoa_to_sheet(mangXuat);
+    
+    // Tinh chỉnh độ rộng các cột hiển thị
+    ws['!cols'] = [{wch: 15}, {wch: 25}];
+    XLSX.utils.book_append_sheet(wb, ws, "DM_LOP");
+    XLSX.writeFile(wb, "DanhMucLop.xlsx");
+}
+
+function nhapExcelDanhMucLop(event) {
+    if (typeof XLSX === 'undefined') {
+        alert("Thư viện Excel chưa phản hồi."); 
+        return;
+    }
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            
+            // Ép cấu trúc mảng, điền chuỗi rỗng để ngăn chặn lỗi undefined
+            const duLieuExcel = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+            if (duLieuExcel.length < 2) {
+                alert("Tệp Excel tải lên trống hoặc định dạng thiếu dòng tiêu đề.");
+                return;
+            }
+            
+            let xoaTrang = confirm("Đồng chí muốn XÓA TRẮNG danh sách lớp hiện tại để nạp mới (OK), hay THÊM NỐI TIẾP vào danh sách cũ (Cancel)?");
+            if (xoaTrang) duLieuDanhMucLop = [];
+            
+            let soLopBiTrung = 0;
+
+            for (let i = 1; i < duLieuExcel.length; i++) {
+                let row = duLieuExcel[i];
+                let maLopMoi = row[0] ? String(row[0]).trim().toUpperCase() : '';
+                let tenLopMoi = row[1] ? String(row[1]).trim().toUpperCase() : '';
+                
+                if (maLopMoi !== '') {
+                    // Thuật toán kiểm tra và chặn trùng lặp mã lớp nếu chọn chế độ nối tiếp
+                    let biTrung = duLieuDanhMucLop.some(lop => lop.maLop === maLopMoi);
+                    if (biTrung && !xoaTrang) {
+                        soLopBiTrung++;
+                        continue; 
+                    }
+
+                    // Tự động sử dụng Mã lớp làm Tên lớp nếu cột Tên lớp bị bỏ trống
+                    if (tenLopMoi === '') tenLopMoi = maLopMoi;
+                    
+                    duLieuDanhMucLop.push({
+                        maLop: maLopMoi,
+                        tenLop: tenLopMoi
+                    });
+                }
+            }
+            
+            // Xóa lưới cũ và kết xuất toàn bộ dữ liệu mới lên UI
+            veBangDanhMucLop();
+            
+            let thongBao = "Đã nạp dữ liệu lớp học từ Excel lên giao diện thành công!";
+            if (soLopBiTrung > 0) {
+                thongBao += `\nĐã tự động loại bỏ ${soLopBiTrung} lớp bị trùng mã.`;
+            }
+            thongBao += "\nĐồng chí hãy kiểm tra bảng và nhấn nút 'Lưu...' để đồng bộ danh sách lên máy chủ.";
+            alert(thongBao);
+            
+        } catch (loi) { 
+            alert("Lỗi trong quá trình giải mã tệp Excel: " + loi.message); 
+        } finally { 
+            event.target.value = ''; // Giải phóng bộ đệm của thẻ input
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
