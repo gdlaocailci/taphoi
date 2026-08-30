@@ -140,6 +140,7 @@ function diChuyenCotMonHoc(element, huong) {
 // KHỐI 3: THỐNG KÊ ĐỊNH MỨC VÀ KIỂM SOÁT TỔNG HỢP CHI TIẾT
 // =========================================================================
 function tinhToanTietDay(maGVVuaChon = null) {
+  // Ghi nhận ID giáo viên vừa tương tác vào biến trạng thái hệ thống
   if (maGVVuaChon !== null) {
       gvDangDuocChon = maGVVuaChon.trim();
   }
@@ -152,7 +153,10 @@ function tinhToanTietDay(maGVVuaChon = null) {
       thongKe[ma] = { hoTen: ten, dinhMuc: gv.dinhMuc, thucTe: 0, chiTiet: [] }; 
   });
 
-  const cacTheSelect = document.querySelectorAll('#bangChinh input[data-lop]');
+  // [SỬA LỖI]: Bỏ giới hạn id #bangChinh, quét toàn bộ input có thuộc tính data-lop 
+  // Điều này đảm bảo thuật toán gom được mọi lớp học ở mọi cấp (Tiểu học, THCS) trên giao diện
+  const cacTheSelect = document.querySelectorAll('input[data-lop]');
+  
   cacTheSelect.forEach(sl => {
     let maGV = sl.value.trim();
     if (maGV && thongKe[maGV]) {
@@ -203,6 +207,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
         textClass = 'text-green-700 font-extrabold';
     }
     
+    // Đánh dấu dòng của giáo viên vừa được chọn
     if (gvDangDuocChon === ma) {
         bgClass = 'bg-yellow-200 border-yellow-400 shadow-inner'; 
     }
@@ -223,6 +228,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
 
+  // Cuộn bảng tĩnh tiến mượt mà
   if (maGVVuaChon) {
       setTimeout(() => {
           let idTimKiem = "tk_gv_" + encodeURIComponent(maGVVuaChon.trim()).replace(/%/g, '_');
