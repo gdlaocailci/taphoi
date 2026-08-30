@@ -140,38 +140,50 @@ function diChuyenCotMonHoc(element, huong) {
 // KHỐI 3: THỐNG KÊ ĐỊNH MỨC VÀ KIỂM SOÁT TỔNG HỢP CHI TIẾT
 // =========================================================================
 function tinhToanTietDay(maGVVuaChon = null) {
-  // Ghi nhận ID giáo viên vừa tương tác vào biến trạng thái hệ thống
-  if (maGVVuaChon !== null) {
-      gvDangDuocChon = maGVVuaChon.trim();
-  }
-
   let thongKe = {};
   
   danhSachGV.forEach(gv => { 
-      let ma = gv.maGv || gv.hoTen;
+      let ma = (gv.maGv || gv.hoTen).trim();
       let ten = gv.hoTen || ma;
       thongKe[ma] = { hoTen: ten, dinhMuc: gv.dinhMuc, thucTe: 0, chiTiet: [] }; 
   });
 
-  // [SỬA LỖI]: Bỏ giới hạn id #bangChinh, quét toàn bộ input có thuộc tính data-lop 
-  // Điều này đảm bảo thuật toán gom được mọi lớp học ở mọi cấp (Tiểu học, THCS) trên giao diện
+  // [NÂNG CẤP]: Xử lý lưu trạng thái focus không phân biệt hoa/thường
+  if (maGVVuaChon !== null) {
+      let idChon = maGVVuaChon.trim().toLowerCase();
+      let idKhop = Object.keys(thongKe).find(k => k.toLowerCase() === idChon);
+      gvDangDuocChon = idKhop ? idKhop : maGVVuaChon.trim();
+  }
+
+  // [NÂNG CẤP LÕI 1]: Quét toàn bộ input trên màn hình, bỏ giới hạn ID #bangChinh
   const cacTheSelect = document.querySelectorAll('input[data-lop]');
   
   cacTheSelect.forEach(sl => {
-    let maGV = sl.value.trim();
-    if (maGV && thongKe[maGV]) {
-      let tenLop = sl.getAttribute('data-lop');
-      let tenMon = sl.getAttribute('data-mon');
+    let maGV_nhap = sl.value.trim();
+    if (!maGV_nhap) return;
+
+    // [NÂNG CẤP LÕI 2]: Khớp mã giáo viên bỏ qua viết hoa/viết thường
+    let maGVKhop = Object.keys(thongKe).find(k => k.toLowerCase() === maGV_nhap.toLowerCase());
+    
+    if (maGVKhop) {
+      let tenLop = sl.getAttribute('data-lop').trim();
+      let tenMon = sl.getAttribute('data-mon').trim();
       
       let soTiet = 0;
-      if (khungChuongTrinhToanTruong[tenLop] && khungChuongTrinhToanTruong[tenLop][tenMon]) {
-          soTiet = parseInt(khungChuongTrinhToanTruong[tenLop][tenMon]) || 0;
+      
+      // [NÂNG CẤP LÕI 3]: Khớp dữ liệu Khung chương trình tuyệt đối, chống lỗi dư khoảng trắng hoặc lệch hoa/thường giữa cấp 1 và cấp 2
+      let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === tenLop.toLowerCase());
+      if (lopKey) {
+          let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === tenMon.toLowerCase());
+          if (monKey) {
+              soTiet = parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) || 0;
+          }
       }
       
-      thongKe[maGV].thucTe += soTiet; 
+      thongKe[maGVKhop].thucTe += soTiet; 
       
       if (soTiet > 0) {
-          thongKe[maGV].chiTiet.push(`<span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 rounded px-1.5 py-0.5 m-0.5 text-[11px] whitespace-nowrap shadow-sm">${tenMon} ${tenLop} (${soTiet})</span>`);
+          thongKe[maGVKhop].chiTiet.push(`<span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 rounded px-1.5 py-0.5 m-0.5 text-[11px] whitespace-nowrap shadow-sm">${tenMon} ${tenLop} (${soTiet})</span>`);
       }
     }
   });
@@ -207,7 +219,6 @@ function tinhToanTietDay(maGVVuaChon = null) {
         textClass = 'text-green-700 font-extrabold';
     }
     
-    // Đánh dấu dòng của giáo viên vừa được chọn
     if (gvDangDuocChon === ma) {
         bgClass = 'bg-yellow-200 border-yellow-400 shadow-inner'; 
     }
@@ -228,10 +239,9 @@ function tinhToanTietDay(maGVVuaChon = null) {
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
 
-  // Cuộn bảng tĩnh tiến mượt mà
-  if (maGVVuaChon) {
+  if (gvDangDuocChon) {
       setTimeout(() => {
-          let idTimKiem = "tk_gv_" + encodeURIComponent(maGVVuaChon.trim()).replace(/%/g, '_');
+          let idTimKiem = "tk_gv_" + encodeURIComponent(gvDangDuocChon).replace(/%/g, '_');
           let dongGiaoVien = document.getElementById(idTimKiem);
           if (dongGiaoVien) {
               dongGiaoVien.scrollIntoView({ behavior: 'smooth', block: 'center' });
