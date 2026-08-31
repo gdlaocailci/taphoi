@@ -526,3 +526,94 @@ async function xuatExcelSoDauBai() {
         alert("Có lỗi khi tạo tệp Excel!");
     }
 }
+
+// =========================================================================
+// KHỐI 5: QUÉT GIAO DIỆN VÀ LƯU CHỐT SỔ ĐẦU BÀI LÊN MÁY CHỦ
+// =========================================================================
+async function luuSoDauBaiSangMayChu() {
+    let tuanChon = document.getElementById('chonTuanSo')?.value;
+    let lopChon = document.getElementById('chonLopSo')?.value;
+    
+    if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
+
+    let xacNhan = confirm(`Xác nhận chốt dữ liệu Sổ đầu bài Lớp ${lopChon} - ${tuanChon} vào Cơ sở dữ liệu?`);
+    if (!xacNhan) return;
+
+    const btn = document.getElementById('btnLuuSoDauBai');
+    let textGoc = btn.innerHTML;
+    btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span class="ml-1">Đang lưu...</span>`;
+    btn.disabled = true;
+
+    try {
+        let duLieuQuetDuoc = [];
+        let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
+
+        cacBang.forEach(khungBang => {
+            // Lấy thông tin Buổi từ Tiêu đề (SÁNG hoặc CHIỀU)
+            let tieuDeBuoi = khungBang.querySelector('.flex.justify-between').innerText;
+            let buoi = tieuDeBuoi.includes('SÁNG') ? 'Sáng' : 'Chiều';
+            
+            let thuHienTai = '';
+            let ngayHienTai = '';
+
+            let cacDong = khungBang.querySelectorAll('table tbody tr');
+            cacDong.forEach(dong => {
+                let rData = [];
+                dong.querySelectorAll('th, td').forEach(cell => rData.push(cell.innerText.trim()));
+
+                // Xử lý thẻ rowspan (Nếu mảng có 7 phần tử -> Đây là dòng Tiết 1, chứa thông tin Thứ và Ngày)
+                if (rData.length === 7) {
+                    let textThuNgay = rData[0].split('\n'); // Tách "Thứ 2" và "07/09/2026"
+                    thuHienTai = textThuNgay[0].trim();
+                    ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
+                    
+                    // Xóa phần tử đầu tiên để cấu trúc mảng giống các dòng sau
+                    rData.shift(); 
+                }
+
+                let tiet = rData[0];
+                let mon = rData[2];
+                let tietPPCT = rData[3];
+                let tenBai = rData[4];
+
+                // Chỉ lưu những ô thực sự có môn học
+                if (mon && mon !== '') {
+                    // Cấu trúc Mã Lưu Trữ: Tuần_Lớp_Thứ_Buổi_Tiết
+                    let tuanSo = tuanChon.replace(/\D/g, '');
+                    let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
+
+                    duLieuQuetDuoc.push({
+                        maLuuTru: maLuuTru, tuan: tuanSo, maLop: lopChon,
+                        thu: thuHienTai, ngay: ngayHienTai, buoi: buoi, tiet: tiet,
+                        mon: mon, tietPPCT: tietPPCT, tenBai: tenBai
+                    });
+                }
+            });
+        });
+
+        if (duLieuQuetDuoc.length === 0) {
+            btn.innerHTML = textGoc; btn.disabled = false;
+            return alert("Sổ đầu bài đang trống, không có dữ liệu môn học nào để lưu.");
+        }
+
+        const payload = { thaoTac: 'luuSoDauBaiDongBo', tuan: tuanChon.replace(/\D/g, ''), lop: lopChon, duLieu: duLieuQuetDuoc };
+
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+            method: 'POST', body: JSON.stringify(payload)
+        });
+        const ketQua = await phanHoi.json();
+
+        if (ketQua.trangThai === 'thanh_cong') {
+            alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
+        } else {
+            throw new Error(ketQua.thongBao);
+        }
+
+    } catch (loi) {
+        console.error("Lỗi lưu sổ:", loi);
+        alert("Lưu thất bại: " + loi.message);
+    } finally {
+        btn.innerHTML = textGoc;
+        btn.disabled = false;
+    }
+}
