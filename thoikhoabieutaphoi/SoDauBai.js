@@ -97,14 +97,14 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // Bản đồ Dữ Liệu Đã Chốt Sổ
+    // [LÕI ĐÃ ĐƯỢC CHUẨN HÓA]: Ép kiểu chữ thường và lọc số tuyệt đối
     let soDauBaiDaLuu = {};
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
-            let tuan = String(dong['Tuần']).trim();
-            let lop = String(dong['Mã Lớp']).trim().toUpperCase();
-            let thu = String(dong['Thứ']).trim();
-            let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sáng' : 'Chiều';
+            let tuan = String(dong['Tuần']).replace(/\D/g, '');
+            let lop = String(dong['Mã Lớp']).trim().toLowerCase();
+            let thu = String(dong['Thứ']).trim().toLowerCase();
+            let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
             let tiet = String(dong['Tiết']).trim();
             
             let khoa = `${tuan}_${lop}_${thu}_${buoi}_${tiet}`;
@@ -115,18 +115,18 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // THUẬT TOÁN ĐẾM TỊNH TIẾN 
+    // THUẬT TOÁN ĐẾM TỊNH TIẾN KẾT HỢP DỮ LIỆU THỰC TẾ
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
-        let tuan = String(dong['Tuần']).trim();
-        let maLop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-        let thu = String(dong['Thứ']).trim();
-        let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sáng' : 'Chiều';
+        let tuan = String(dong['Tuần']).replace(/\D/g, '');
+        let maLop = String(dong['Mã Lớp'] || '').trim();
+        let thu = String(dong['Thứ']).trim().toLowerCase();
+        let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
         let tiet = String(dong['Tiết']).trim();
         let mon = String(dong['Môn Học'] || '').trim();
         
-        let khoaTKB = `${tuan}_${maLop}_${thu}_${buoi}_${tiet}`;
+        let khoaTKB = `${tuan}_${maLop.toLowerCase()}_${thu}_${buoi}_${tiet}`;
         let dongDaLuu = soDauBaiDaLuu[khoaTKB]; 
         
         let tietThucTe = ''; 
@@ -134,7 +134,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         let isDaLuu = false;
 
         if (mon && mon !== '') {
-            let khoaDem = `${maLop}_${mon.toLowerCase()}`;
+            let khoaDem = `${maLop.toUpperCase()}_${mon.toLowerCase()}`;
             
             if (dongDaLuu) {
                 isDaLuu = true;
@@ -201,13 +201,12 @@ function ketXuatSoDauBaiLenLuoi() {
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
-    // --- BỘ MÁY TÍNH TOÁN CẢNH BÁO TIẾN ĐỘ ---
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     let demTietThucTe = {}; 
     
     let tkbDenTuanNay = duLieuTKBGopDaMap.filter(d => {
         let t = parseInt(String(d['Tuần']).replace(/\D/g, '')) || 0;
-        return t <= maxTuanChon && String(d['Mã Lớp']).trim() === lopChon;
+        return t <= maxTuanChon && String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase();
     });
 
     tkbDenTuanNay.forEach(d => {
@@ -245,7 +244,7 @@ function ketXuatSoDauBaiLenLuoi() {
     let thanhCanhBaoRender = hasCanhBao ? `<div class="mb-4 p-3 bg-white border-l-4 border-red-500 shadow-sm text-sm flex flex-col md:flex-row md:items-center gap-3 w-full"><div class="flex items-center gap-2 flex-none"><div class="p-1.5 bg-red-100 rounded-full"><svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div><span class="font-extrabold text-red-700 uppercase tracking-wide">Cảnh báo Tiến độ:</span></div><div class="flex flex-wrap gap-2 flex-1">${canhBaoHtml}</div></div>` : '';
 
     // --- VẼ BẢNG SỔ ĐẦU BÀI ---
-    let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim() === lopChon);
+    let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase());
 
     let dictTKB = {}; 
     let mapNgayChinhXac = {}; 
@@ -319,21 +318,21 @@ function ketXuatSoDauBaiLenLuoi() {
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
                 let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
 
-                // Bám sát CSDL: Format đẹp mắt cho những bài chưa có phân phối
-                let cssTenBai = isDaLuu ? "text-green-800 font-semibold" : "text-slate-700 font-semibold";
-                if (tenBai === 'Chưa có dữ liệu PPCT') cssTenBai = "text-gray-400 italic text-xs font-normal";
+                // Bám sát CSDL: Tô xanh ngọc để khẳng định dữ liệu lịch sử đã khóa
+                let cssTenBai = isDaLuu ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
+                if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
 
-                html += `<tr class="hover:bg-slate-50">`;
+                html += `<tr class="hover:bg-slate-50 transition-colors duration-150 group">`;
                 
-                if (tiet === 1) html += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight" rowspan="${soTietToiDa}">${hienThiThu}</td>`;
+                if (tiet === 1) html += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight bg-white group-hover:bg-slate-50" rowspan="${soTietToiDa}">${hienThiThu}</td>`;
 
                 html += `
-                    <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
-                    <td class="border border-gray-500 text-center p-1.5"></td>
-                    <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800" data-loai="mon">${monHoc}</td>
-                    <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800" data-loai="tiet">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1.5 ${cssTenBai}" data-loai="tenBai" data-daluu="${isDaLuu}">${tenBai}</td>
-                    <td class="border border-gray-500 p-1.5"></td>
+                    <td class="border border-gray-500 text-center p-1.5 bg-white group-hover:bg-slate-50">${tiet}</td>
+                    <td class="border border-gray-500 text-center p-1.5 bg-white group-hover:bg-slate-50"></td>
+                    <td class="border border-gray-500 p-1.5 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
+                    <td class="border border-gray-500 text-center p-1.5 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
+                    <td class="border border-gray-500 p-1.5 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-daluu="${isDaLuu}">${tenBai}</td>
+                    <td class="border border-gray-500 p-1.5 bg-white group-hover:bg-slate-50"></td>
                 </tr>`;
             }
         });
@@ -374,8 +373,9 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
+                // Tôn trọng Lịch sử: Ô nào đã chốt sổ (DaLuu = true) thì tuyệt đối không ghi đè
                 let isDaLuu = oTenBai.getAttribute('data-daluu') === 'true';
-                if (isDaLuu) return; // Bảo vệ nguyên trạng Dữ liệu quá khứ
+                if (isDaLuu) return; 
 
                 let mon = oMon.innerText.trim().toLowerCase();
                 let tiet = oTiet.innerText.trim();
@@ -393,7 +393,7 @@ function dongBoTenBaiHoc() {
                     if (baiDay !== '') {
                         oTenBai.innerText = baiDay;
                     } else {
-                        oTenBai.innerHTML = `<span class="text-gray-400 italic text-xs font-normal">Chưa có dữ liệu PPCT</span>`;
+                        oTenBai.innerHTML = `<span class="text-gray-400 italic text-[11px] font-normal tracking-tight">Chưa có dữ liệu PPCT</span>`;
                     }
                 }
             }
@@ -414,7 +414,7 @@ async function luuSoDauBaiSangMayChu() {
     let lopChon = document.getElementById('chonLopSo')?.value;
     if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
 
-    if (!confirm(`Xác nhận chốt dữ liệu Sổ đầu bài Lớp ${lopChon} - ${tuanChon} vào Cơ sở dữ liệu?`)) return;
+    if (!confirm(`Xác nhận chốt dữ liệu Sổ đầu bài Lớp ${lopChon} - ${tuanChon.replace(/\D/g,'')} vào Cơ sở dữ liệu?`)) return;
 
     const btn = document.getElementById('btnLuuSoDauBai');
     let textGoc = btn.innerHTML;
