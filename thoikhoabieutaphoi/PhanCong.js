@@ -153,30 +153,25 @@ function tinhToanTietDay(maGVVuaChon = null) {
       thongKe[ma] = { hoTen: ten, dinhMuc: gv.dinhMuc, thucTe: 0, chiTiet: [] }; 
   });
 
-  // [NÂNG CẤP]: Xử lý lưu trạng thái focus không phân biệt hoa/thường
   if (maGVVuaChon !== null) {
       let idChon = maGVVuaChon.trim().toLowerCase();
       let idKhop = Object.keys(thongKe).find(k => k.toLowerCase() === idChon);
       gvDangDuocChon = idKhop ? idKhop : maGVVuaChon.trim();
   }
 
-  // [NÂNG CẤP LÕI 1]: Quét toàn bộ input trên màn hình, bỏ giới hạn ID #bangChinh
   const cacTheSelect = document.querySelectorAll('input[data-lop]');
   
   cacTheSelect.forEach(sl => {
     let maGV_nhap = sl.value.trim();
     if (!maGV_nhap) return;
 
-    // [NÂNG CẤP LÕI 2]: Khớp mã giáo viên bỏ qua viết hoa/viết thường
     let maGVKhop = Object.keys(thongKe).find(k => k.toLowerCase() === maGV_nhap.toLowerCase());
     
     if (maGVKhop) {
       let tenLop = sl.getAttribute('data-lop').trim();
       let tenMon = sl.getAttribute('data-mon').trim();
-      
       let soTiet = 0;
       
-      // [NÂNG CẤP LÕI 3]: Khớp dữ liệu Khung chương trình tuyệt đối, chống lỗi dư khoảng trắng hoặc lệch hoa/thường giữa cấp 1 và cấp 2
       let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === tenLop.toLowerCase());
       if (lopKey) {
           let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === tenMon.toLowerCase());
@@ -186,19 +181,14 @@ function tinhToanTietDay(maGVVuaChon = null) {
       }
       
       thongKe[maGVKhop].thucTe += soTiet; 
-      
       if (soTiet > 0) {
           thongKe[maGVKhop].chiTiet.push(`<span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 rounded px-1.5 py-0.5 m-0.5 text-[11px] whitespace-nowrap shadow-sm">${tenMon} ${tenLop} (${soTiet})</span>`);
       }
     }
   });
 
-  let containerThongKe = document.getElementById('duLieuThongKe').parentElement.parentElement;
-  if (containerThongKe) {
-      containerThongKe.className = 'w-[500px] overflow-auto border border-gray-400 shadow-sm bg-white flex-none relative scroll-smooth';
-  }
+  // [NÂNG CẤP LÕI]: Đã lược bỏ lệnh ép chiều rộng (className = 'w-[500px]...') gây vỡ khung giao diện mới
 
-// [NÂNG CẤP BỔ SUNG]: Chèn nút Xuất Excel vào trực tiếp DOM của dòng tiêu đề
   const theadThongKe = document.querySelector('#duLieuThongKe').previousElementSibling;
   if (theadThongKe) {
       theadThongKe.className = 'bg-purple-100 text-purple-900 shadow-sm';
@@ -207,15 +197,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
             <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">Giáo viên</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Định mức</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Thực tế</th>
-            <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">
-                <div class="flex justify-between items-center">
-                    <span>Chi tiết giảng dạy</span>
-                    <button onclick="xuatExcelThongKePhanCong()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-0.5 rounded shadow-sm text-[11px] flex items-center gap-1 transition-colors" title="Tải xuống bảng Thống kê khung phải">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        Xuất Excel
-                    </button>
-                </div>
-            </th>
+            <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Chi tiết giảng dạy</th>
         </tr>
       `;
   }
@@ -239,7 +221,6 @@ function tinhToanTietDay(maGVVuaChon = null) {
 
     let chiTietHienThi = soLieu.chiTiet.length > 0 ? soLieu.chiTiet.join(' ') : '<span class="text-gray-400 italic text-[11px]">Chưa phân công</span>';
     let hienThiTen = (soLieu.hoTen && soLieu.hoTen !== ma) ? `${soLieu.hoTen} <br><span class="text-[13px] text-gray-500 font-bold italic">(${ma})</span>` : ma;
-    
     let safeId = "tk_gv_" + encodeURIComponent(ma.trim()).replace(/%/g, '_');
 
     tbodyThongKe += `
@@ -461,18 +442,19 @@ function xuLyTaiLenExcelPhanCong(e) {
     reader.readAsArrayBuffer(file);
 }
 
-// [NÂNG CẤP BỔ SUNG]: Hàm xử lý xuất Excel chuyên biệt cho khung Thống Kê (Khung phải)
+// =========================================================================
+// [BỔ SUNG MỚI]: HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ)
+// =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
-    let textGoc = btn ? btn.innerHTML : 'Xuất Bảng Thống Kê';
+    let textGoc = btn ? btn.innerHTML : 'Xuất Excel';
     
     if (btn) {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`;
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
         btn.disabled = true;
     }
     
     try {
-        // Kiểm tra và tải thư viện ExcelJS nếu chưa khởi tạo trong phiên làm việc
         if (typeof ExcelJS === 'undefined') {
             await new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -484,29 +466,25 @@ async function xuatExcelThongKePhanCong() {
         }
 
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('THONG_KE_DINH_MUC');
+        const worksheet = workbook.addWorksheet('THONG_KE_CHI_TIET');
         
-        // Thiết lập cấu trúc cột chuẩn hành chính
         worksheet.columns = [
             { header: 'Họ và tên Giáo viên', key: 'gv', width: 30 },
-            { header: 'Định mức', key: 'dinhMuc', width: 15 },
-            { header: 'Thực tế', key: 'thucTe', width: 15 },
-            { header: 'Chi tiết giảng dạy', key: 'chiTiet', width: 60 }
+            { header: 'Định mức', key: 'dinhMuc', width: 12 },
+            { header: 'Thực tế', key: 'thucTe', width: 12 },
+            { header: 'Chi tiết phân công (Lớp - Số tiết)', key: 'chiTiet', width: 65 }
         ];
 
-        // Định dạng tiêu đề cột chuyên nghiệp
         worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Times New Roman', size: 12 };
-        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B21A8' } }; 
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B5394' } }; 
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // Quét và nạp dữ liệu từ DOM của Khung bên phải
         const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
         
         cacDongThongKe.forEach(tr => {
             const cacCot = tr.querySelectorAll('td');
             if (cacCot.length >= 4) {
-                // Xử lý làm sạch chuỗi văn bản, loại bỏ thẻ HTML và khoảng trắng thừa
-                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').trim();
+                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/\(.*?\)/g, '').trim(); 
                 let dinhMuc = parseInt(cacCot[1].innerText) || 0;
                 let thucTe = parseInt(cacCot[2].innerText) || 0;
                 let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
@@ -518,8 +496,7 @@ async function xuatExcelThongKePhanCong() {
                     chiTiet: chiTiet
                 });
                 
-                // Áp dụng bộ lọc màu tự động để cảnh báo định mức
-                row.font = { name: 'Times New Roman', size: 11 };
+                row.font = { name: 'Times New Roman', size: 12 };
                 if (thucTe > dinhMuc) {
                     row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
                 } else if (thucTe === dinhMuc && dinhMuc > 0) {
@@ -528,7 +505,6 @@ async function xuatExcelThongKePhanCong() {
             }
         });
 
-        // Căn lề chuẩn cho toàn bộ vùng dữ liệu
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber > 1) {
                 row.getCell('dinhMuc').alignment = { vertical: 'middle', horizontal: 'center' };
@@ -537,7 +513,6 @@ async function xuatExcelThongKePhanCong() {
             }
         });
 
-        // Kết xuất tệp tin và tải về máy khách
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
@@ -545,13 +520,13 @@ async function xuatExcelThongKePhanCong() {
         
         const ngay = new Date();
         const chuoiNgay = `${String(ngay.getDate()).padStart(2, '0')}${String(ngay.getMonth() + 1).padStart(2, '0')}${ngay.getFullYear()}`;
-        link.download = `BaoCao_ThongKeDinhMuc_${chuoiNgay}.xlsx`;
+        link.download = `PhanCongChiTiet_${chuoiNgay}.xlsx`;
         
         link.click();
         
     } catch(loi) {
-        console.error("Lỗi khi kết xuất Excel Thống kê:", loi);
-        alert("Hệ thống gặp sự cố khi tạo biểu mẫu Excel. Vui lòng thử lại!");
+        console.error("Lỗi khi kết xuất Excel:", loi);
+        alert("Có lỗi khi tạo biểu mẫu Excel, vui lòng thử lại!");
     } finally {
         if (btn) {
             btn.innerHTML = textGoc;
