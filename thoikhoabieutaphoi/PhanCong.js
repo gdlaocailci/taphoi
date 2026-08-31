@@ -114,7 +114,7 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               <div class="flex justify-center items-center w-full h-full min-h-[45px] cursor-not-allowed py-1">
                                   <svg viewBox="0 0 100 100" class="w-[45px] h-[45px] drop-shadow-lg">
                                       <polygon points="30,4 70,4 96,30 96,70 70,96 30,96 4,70 4,30" fill="#dc2626" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-                                      <text x="50" y="64" fill="#ffffff" font-size="28" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" letter-spacing="1">STOP</text>
+                                      <text x="50" y="50" fill="#ffffff" font-size="28" font-weight="900" font-family="Times New Roman, Helvetica, sans-serif" text-anchor="middle" letter-spacing="1">STOP</text>
                                   </svg>
                               </div>
                               <input type="hidden" data-lop="${maLop}" data-mon="${tenMon}" value="">
