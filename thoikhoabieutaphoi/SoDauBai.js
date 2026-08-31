@@ -1,10 +1,10 @@
 // =========================================================================
-// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ KHI KÍCH HOẠT TAB
+// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ KHI KÍCH HOẠT TAB (TÍCH HỢP CHỐNG LỖI)
 // =========================================================================
 let daTaiDuLieuSoDauBai = false;
 
 async function taiDuLieuSoDauBaiTuMayChu() {
-    if (daTaiDuLieuSoDauBai) return; // Chỉ tải 1 lần để tối ưu hệ thống
+    if (daTaiDuLieuSoDauBai) return;
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     if (vungHienThi) {
@@ -15,15 +15,31 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     }
 
     try {
-        const phanHoi = await fetch(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai`);
-        const duLieuSever = await phanHoi.json();
+        // Sử dụng hàm bảo vệ từ app.js để tự động thử lại khi mất mạng
+        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai`);
         
-        khoiTaoDuLieuSoDauBai(duLieuSever); // Gọi hàm Lõi O(1) đã thiết lập
+        // Quét thô dữ liệu để kiểm soát ngoại lệ từ Google
+        const phanHoiText = await phanHoi.text();
+        let duLieuSever;
+        try {
+            duLieuSever = JSON.parse(phanHoiText);
+        } catch (loiParse) {
+            throw new Error("Phản hồi từ Google Apps Script bị hỏng hoặc chưa Deploy phiên bản mới.");
+        }
+
+        // Bắt lỗi truyền lên từ khối Try...Catch của tệp Code.gs
+        if (duLieuSever.trangThai === 'loi_he_thong') {
+            throw new Error(duLieuSever.thongBao);
+        }
+        
+        khoiTaoDuLieuSoDauBai(duLieuSever);
         daTaiDuLieuSoDauBai = true;
     } catch (loi) {
         console.error("Lỗi tải Sổ đầu bài:", loi);
         if (vungHienThi) {
-            vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">Lỗi kết nối máy chủ. Vui lòng thử lại.</div>`;
+            vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">
+                ⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span>
+            </div>`;
         }
     }
 }
