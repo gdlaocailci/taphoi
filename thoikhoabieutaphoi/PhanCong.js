@@ -452,6 +452,105 @@ function xuLyTaiLenExcelPhanCong(e) {
     reader.readAsArrayBuffer(file);
 }
 
+// [NÂNG CẤP BỔ SUNG]: Hàm xử lý xuất Excel chuyên biệt cho khung Thống Kê (Khung phải)
+async function xuatExcelThongKePhanCong() {
+    const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
+    let textGoc = btn ? btn.innerHTML : 'Xuất Bảng Thống Kê';
+    
+    if (btn) {
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`;
+        btn.disabled = true;
+    }
+    
+    try {
+        // Kiểm tra và tải thư viện ExcelJS nếu chưa khởi tạo trong phiên làm việc
+        if (typeof ExcelJS === 'undefined') {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('THONG_KE_DINH_MUC');
+        
+        // Thiết lập cấu trúc cột chuẩn hành chính
+        worksheet.columns = [
+            { header: 'Họ và tên Giáo viên', key: 'gv', width: 30 },
+            { header: 'Định mức', key: 'dinhMuc', width: 15 },
+            { header: 'Thực tế', key: 'thucTe', width: 15 },
+            { header: 'Chi tiết giảng dạy', key: 'chiTiet', width: 60 }
+        ];
+
+        // Định dạng tiêu đề cột chuyên nghiệp
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Times New Roman', size: 12 };
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B21A8' } }; 
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Quét và nạp dữ liệu từ DOM của Khung bên phải
+        const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
+        
+        cacDongThongKe.forEach(tr => {
+            const cacCot = tr.querySelectorAll('td');
+            if (cacCot.length >= 4) {
+                // Xử lý làm sạch chuỗi văn bản, loại bỏ thẻ HTML và khoảng trắng thừa
+                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').trim();
+                let dinhMuc = parseInt(cacCot[1].innerText) || 0;
+                let thucTe = parseInt(cacCot[2].innerText) || 0;
+                let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
+
+                const row = worksheet.addRow({
+                    gv: tenGV,
+                    dinhMuc: dinhMuc,
+                    thucTe: thucTe,
+                    chiTiet: chiTiet
+                });
+                
+                // Áp dụng bộ lọc màu tự động để cảnh báo định mức
+                row.font = { name: 'Times New Roman', size: 11 };
+                if (thucTe > dinhMuc) {
+                    row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
+                } else if (thucTe === dinhMuc && dinhMuc > 0) {
+                    row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
+                }
+            }
+        });
+
+        // Căn lề chuẩn cho toàn bộ vùng dữ liệu
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) {
+                row.getCell('dinhMuc').alignment = { vertical: 'middle', horizontal: 'center' };
+                row.getCell('thucTe').alignment = { vertical: 'middle', horizontal: 'center' };
+                row.getCell('chiTiet').alignment = { vertical: 'middle', wrapText: true };
+            }
+        });
+
+        // Kết xuất tệp tin và tải về máy khách
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        
+        const ngay = new Date();
+        const chuoiNgay = `${String(ngay.getDate()).padStart(2, '0')}${String(ngay.getMonth() + 1).padStart(2, '0')}${ngay.getFullYear()}`;
+        link.download = `BaoCao_ThongKeDinhMuc_${chuoiNgay}.xlsx`;
+        
+        link.click();
+        
+    } catch(loi) {
+        console.error("Lỗi khi kết xuất Excel Thống kê:", loi);
+        alert("Hệ thống gặp sự cố khi tạo biểu mẫu Excel. Vui lòng thử lại!");
+    } finally {
+        if (btn) {
+            btn.innerHTML = textGoc;
+            btn.disabled = false;
+        }
+    }
+}
+
 // =========================================================================
 // KHỐI 5: ĐIỀU HƯỚNG MÀN HÌNH TỔNG LỰC (ĐÃ TÍCH HỢP TẤT CẢ CÁC TAB)
 // =========================================================================
