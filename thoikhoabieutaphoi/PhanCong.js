@@ -109,12 +109,12 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               onfocus="this.select(); tinhToanTietDay(this.value);">
                            </td>`;
           } else {
-              // [NÂNG CẤP]: Tối ưu đồ họa nút STOP (phóng to chữ, viền nét và kích thước tổng thể)
+              // [NÂNG CẤP]: Đổi vòng tròn thành hình đa giác (bát giác chuẩn STOP) để mở rộng không gian chiều ngang, tăng kích thước lên 32px
               bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-90" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
-                              <div class="flex justify-center items-center w-full h-full min-h-[28px] cursor-not-allowed">
-                                  <svg viewBox="0 0 100 100" class="w-[28px] h-[28px] drop-shadow-md">
-                                      <circle cx="50" cy="50" r="45" fill="#dc2626" stroke="#ffffff" stroke-width="6"/>
-                                      <text x="50" y="62" fill="#ffffff" font-size="32" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" letter-spacing="2">STOP</text>
+                              <div class="flex justify-center items-center w-full h-full min-h-[32px] cursor-not-allowed">
+                                  <svg viewBox="0 0 100 100" class="w-[32px] h-[32px] drop-shadow-md">
+                                      <polygon points="28,5 72,5 95,28 95,72 72,95 28,95 5,72 5,28" fill="#dc2626" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
+                                      <text x="50" y="61" fill="#ffffff" font-size="28" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" letter-spacing="1">STOP</text>
                                   </svg>
                               </div>
                               <input type="hidden" data-lop="${maLop}" data-mon="${tenMon}" value="">
