@@ -109,11 +109,15 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               onfocus="this.select(); tinhToanTietDay(this.value);">
                            </td>`;
           } else {
-              // Trường hợp vô hiệu hóa: Môn học không có trong Khung chương trình (Làm mờ và khóa nhập liệu)
-              bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-70" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
-                              <input type="text" disabled data-lop="${maLop}" data-mon="${tenMon}" value="" 
-                              class="w-full h-full min-h-[26px] min-w-0 outline-none text-center bg-transparent cursor-not-allowed text-slate-500 font-bold" 
-                              placeholder="✋">
+              // [NÂNG CẤP]: Môn học không có trong Khung chương trình -> Ẩn input, hiển thị đồ họa nút STOP đỏ viền trắng
+              bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-90" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
+                              <div class="flex justify-center items-center w-full h-full min-h-[26px] cursor-not-allowed">
+                                  <svg viewBox="0 0 24 24" class="w-[20px] h-[20px] drop-shadow-sm">
+                                      <circle cx="12" cy="12" r="10.5" fill="#dc2626" stroke="#ffffff" stroke-width="1.5"/>
+                                      <text x="12" y="14.3" fill="#ffffff" font-size="6.5" font-weight="900" font-family="Arial, sans-serif" text-anchor="middle" letter-spacing="0.5">STOP</text>
+                                  </svg>
+                              </div>
+                              <input type="hidden" data-lop="${maLop}" data-mon="${tenMon}" value="">
                            </td>`;
           }
         }
