@@ -233,20 +233,26 @@
                     <div class="flex justify-between items-center mb-3">
                         <h2 class="text-xl font-extrabold text-blue-900 uppercase">BẢNG PHÂN CÔNG CHUYÊN MÔN</h2>
                         
-                        <div class="flex items-center gap-2">
-                            <input type="file" id="tepExcelPhanCong" accept=".xlsx, .xls" class="hidden" onchange="xuLyTaiLenExcelPhanCong(event)">
-                            <button onclick="document.getElementById('tepExcelPhanCong').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Nhập Excel
-                            </button>
-                            <button onclick="xuatExcelPhanCong()" class="bg-green-700 hover:bg-green-800 text-white font-bold px-3 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Xuất Excel
-                            </button>
-                            <button onclick="xuLyLuuTru()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
-                                Lưu Phân Công
-                            </button>
-                        </div>
+                       <div class="flex items-center gap-2">
+                        <input type="file" id="tepExcelPhanCong" accept=".xlsx, .xls" class="hidden" onchange="xuLyTaiLenExcelPhanCong(event)">
+                        <button onclick="document.getElementById('tepExcelPhanCong').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Nhập Excel
+                        </button>
+                        <button onclick="xuatExcelPhanCong()" class="bg-green-700 hover:bg-green-800 text-white font-bold px-3 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Xuất Bảng Phân Công
+                        </button>
+                        
+                        <!-- [BỔ SUNG]: Nút xuất Excel riêng cho Khung Thống Kê (Bên phải) tích hợp hiệu ứng ReactBits -->
+                        <button onclick="xuatExcelThongKePhanCong()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5 group" title="Tải xuống dữ liệu Thống kê định mức (Khung bên phải)">
+                            <img src="https://www.svgrepo.com/show/474360/excel.svg" class="w-4 h-4 filter invert group-hover:reactbits-bap-benh" alt="Excel">
+                            Xuất Bảng Thống Kê
+                        </button>
+                        
+                        <button onclick="xuLyLuuTru()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-1.5 text-xs shadow transition duration-200 rounded flex items-center gap-1.5">
+                            Lưu Phân Công
+                        </button>
                     </div>
                     
                     <div class="flex gap-4 h-full overflow-hidden">
