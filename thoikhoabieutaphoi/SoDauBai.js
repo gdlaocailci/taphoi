@@ -10,7 +10,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-10 text-slate-500 font-bold">
             <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang trích xuất Lịch sử TKB và tính toán Khung PPCT toàn trường...
+            Đang trích xuất Lịch sử TKB và Khung PPCT toàn trường...
         </div>`;
     }
 
@@ -35,7 +35,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
 }
 
 // =========================================================================
-// KHỐI 1: ÁNH XẠ DỮ LIỆU TỰ ĐỘNG BẰNG TỊNH TIẾN TỪ TUẦN 1
+// KHỐI 1: ÁNH XẠ DỮ LIỆU PPCT (CHỐNG LỖI GỘP Ô) VÀ ĐẾM TIẾT TỊNH TIẾN
 // =========================================================================
 let duLieuTKBGopDaMap = [];
 let tuDienPPCTToanCuc = {}; 
@@ -48,6 +48,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
+    // Sắp xếp lịch sử TKB theo trục thời gian chuẩn (Tuần -> Thứ -> Buổi -> Tiết)
     tkbGop.sort((a, b) => {
         let tuanA = parseInt(a['Tuần']) || 0; let tuanB = parseInt(b['Tuần']) || 0;
         if (tuanA !== tuanB) return tuanA - tuanB;
@@ -60,9 +61,16 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
 
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
+        let boNhoKhoi = ''; // BỘ NHỚ FALLBACK: Khắc phục lỗi gộp ô Khối trên Sheets
+        
         duLieuSever.PPCT.forEach(dong => {
-            // [ĐÃ FIX]: Ép tách lấy đúng chữ số từ tên Khối (Kể cả ghi "Khối 4" cũng lấy "4")
             let khoiGoc = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
+            
+            // Nếu ô hiện tại không trống, lưu vào bộ nhớ. Nếu trống, lấy lại dữ liệu bộ nhớ.
+            if (khoiGoc !== '') boNhoKhoi = khoiGoc; 
+            else khoiGoc = boNhoKhoi; 
+            
+            // Lọc tách Khối (Ví dụ: "Khối 4" -> "4")
             let matchKhoi = khoiGoc.match(/\d+/);
             let khoi = matchKhoi ? matchKhoi[0] : khoiGoc; 
             
@@ -74,33 +82,23 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
+    // Đếm số Tiết PPCT tịnh tiến từ tuần 1 cho từng Lớp
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
         let maLop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
         let mon = String(dong['Môn Học'] || '').trim();
-        let matchKhoiLop = maLop.match(/\d+/);
-        let khoi = matchKhoiLop ? matchKhoiLop[0] : ''; 
         
-        let tietThucTe = ''; let tenBaiHoc = '';
-        
+        let tietThucTe = ''; 
         if (mon && mon !== '') {
             let khoaDem = `${maLop}_${mon.toLowerCase()}`;
             if (!boDemTietCuaLop[khoaDem]) boDemTietCuaLop[khoaDem] = 0;
             boDemTietCuaLop[khoaDem]++; 
             tietThucTe = boDemTietCuaLop[khoaDem];
-            
-            let khoaTraPPCT = `${khoi}_${mon.toLowerCase()}_${tietThucTe}`;
-            tenBaiHoc = tuDienPPCTToanCuc[khoaTraPPCT] || ''; 
-            
-            if (tenBaiHoc === '') {
-                let monKhongSo = mon.toLowerCase().replace(/[0-9]/g, '').trim();
-                let khoaPhu = `${khoi}_${monKhongSo}_${tietThucTe}`;
-                tenBaiHoc = tuDienPPCTToanCuc[khoaPhu] || '';
-            }
         }
         
-        return { ...dong, TietPPCT_Thuc: tietThucTe, TenBai_Thuc: tenBaiHoc };
+        // Trả về dữ liệu TKB gộp Tiết PPCT (Cố tình không gán Tên bài học ở đây)
+        return { ...dong, TietPPCT_Thuc: tietThucTe };
     });
 
     napDropdownSoDauBai();
@@ -129,7 +127,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN & HÀM ĐỒNG BỘ THỦ CÔNG
+// KHỐI 2: VẼ GIAO DIỆN (CHỈ RÁP MA TRẬN VÀ TIẾT PPCT)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -184,7 +182,6 @@ function ketXuatSoDauBaiLenLuoi() {
 
                 let monHoc = dongDuLieu ? dongDuLieu['Môn Học'] : '';
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
-                let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
 
                 html += `<tr class="hover:bg-slate-50">`;
                 
@@ -192,12 +189,13 @@ function ketXuatSoDauBaiLenLuoi() {
                     html += `<td class="border border-gray-500 text-center font-bold uppercase" rowspan="${soTietToiDa}">${thu}</td>`;
                 }
 
+                // Cài data-loai để quét đồng bộ, để trống hoàn toàn tên bài dạy
                 html += `
                     <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
                     <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800" data-loai="tiet">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1.5 text-slate-700 font-semibold" data-loai="tenBai">${tenBai}</td>
+                    <td class="border border-gray-500 p-1.5 text-slate-700 font-semibold" data-loai="tenBai"></td>
                     <td class="border border-gray-500 p-1.5"></td>
                 </tr>`;
             }
@@ -207,15 +205,18 @@ function ketXuatSoDauBaiLenLuoi() {
         return html;
     };
 
+    // Khi chuyển Tuần/Lớp, hệ thống chỉ vẽ khung và định vị 2 trường cơ bản. Xóa bỏ lệnh tự động đồng bộ.
     vungHienThi.innerHTML = taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
-    setTimeout(dongBoTenBaiHoc, 100);
 }
 
+// =========================================================================
+// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (TRA CỨU TRỰC TIẾP TỪ GIAO DIỆN)
+// =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
     let textGoc = btn ? btn.innerHTML : '';
     if (btn) {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span class="ml-1">Đang xử lý...</span>`;
         btn.disabled = true;
     }
 
@@ -226,11 +227,11 @@ function dongBoTenBaiHoc() {
             return;
         }
         
-        // [ĐÃ SỬA LỖI TÁCH KHỐI]
         let matchKhoi = lopChon.match(/\d+/);
         let khoi = matchKhoi ? matchKhoi[0] : '';
         
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
+        let baiDaDongBo = 0;
         
         cacDong.forEach(dong => {
             let oMon = dong.querySelector('td[data-loai="mon"]');
@@ -245,6 +246,7 @@ function dongBoTenBaiHoc() {
                     let khoaChinh = `${khoi}_${mon}_${tiet}`;
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || '';
                     
+                    // Cơ chế Fallback loại bỏ số đếm môn học (HĐTN1 -> hdtn)
                     if (baiDay === '') {
                         let monRutGon = mon.replace(/[0-9]/g, '').trim();
                         let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
@@ -253,17 +255,24 @@ function dongBoTenBaiHoc() {
 
                     if (baiDay !== '') {
                         oTenBai.innerText = baiDay;
+                        baiDaDongBo++;
+                    } else {
+                        // Nếu vẫn không tìm thấy, hiển thị nhãn ẩn báo hiệu để GV dễ rà soát
+                        oTenBai.innerHTML = `<span class="text-gray-400 italic text-xs font-normal">Chưa có dữ liệu PPCT</span>`;
                     }
                 }
             }
         });
         
-        if (btn) { btn.innerHTML = textGoc; btn.disabled = false; }
+        if (btn) { 
+            btn.innerHTML = textGoc; 
+            btn.disabled = false; 
+        }
     }, 100); 
 }
 
 // =========================================================================
-// KHỐI 3: KẾT XUẤT VĂN BẢN (WORD VÀ EXCEL)
+// KHỐI 4: KẾT XUẤT VĂN BẢN (WORD VÀ EXCEL)
 // =========================================================================
 function xuatWordSoDauBai() {
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
