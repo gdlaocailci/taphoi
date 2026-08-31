@@ -443,11 +443,11 @@ function xuLyTaiLenExcelPhanCong(e) {
 }
 
 // =========================================================================
-// [BỔ SUNG MỚI]: HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ)
+// HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ) - ĐÃ BỔ SUNG STT VÀ GIỮ ID
 // =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
-    let textGoc = btn ? btn.innerHTML : 'Xuất Excel';
+    let textGoc = btn ? btn.innerHTML : 'Xuất Bảng Phân Công Chi Tiết';
     
     if (btn) {
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
@@ -468,8 +468,10 @@ async function xuatExcelThongKePhanCong() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('THONG_KE_CHI_TIET');
         
+        // [CẬP NHẬT 1]: Bổ sung cột STT lên đầu
         worksheet.columns = [
-            { header: 'Họ và tên Giáo viên', key: 'gv', width: 30 },
+            { header: 'STT', key: 'stt', width: 8 },
+            { header: 'Họ và tên Giáo viên', key: 'gv', width: 35 },
             { header: 'Định mức', key: 'dinhMuc', width: 12 },
             { header: 'Thực tế', key: 'thucTe', width: 12 },
             { header: 'Chi tiết phân công (Lớp - Số tiết)', key: 'chiTiet', width: 65 }
@@ -480,16 +482,19 @@ async function xuatExcelThongKePhanCong() {
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
         const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
+        let stt = 1; // Biến đếm số thứ tự
         
         cacDongThongKe.forEach(tr => {
             const cacCot = tr.querySelectorAll('td');
             if (cacCot.length >= 4) {
-                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/\(.*?\)/g, '').trim(); 
+                // [CẬP NHẬT 2]: Giữ lại ID bằng cách chỉ xóa dấu ngoặc, giữ nội dung bên trong, định dạng thành Dấu gạch ngang
+                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/[()]/g, '').replace(/\s+-\s+/g, ' - ').trim(); 
                 let dinhMuc = parseInt(cacCot[1].innerText) || 0;
                 let thucTe = parseInt(cacCot[2].innerText) || 0;
                 let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
 
                 const row = worksheet.addRow({
+                    stt: stt,
                     gv: tenGV,
                     dinhMuc: dinhMuc,
                     thucTe: thucTe,
@@ -502,11 +507,14 @@ async function xuatExcelThongKePhanCong() {
                 } else if (thucTe === dinhMuc && dinhMuc > 0) {
                     row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
                 }
+                
+                stt++; // Tăng chỉ số STT
             }
         });
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber > 1) {
+                row.getCell('stt').alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa cột STT
                 row.getCell('dinhMuc').alignment = { vertical: 'middle', horizontal: 'center' };
                 row.getCell('thucTe').alignment = { vertical: 'middle', horizontal: 'center' };
                 row.getCell('chiTiet').alignment = { vertical: 'middle', wrapText: true };
