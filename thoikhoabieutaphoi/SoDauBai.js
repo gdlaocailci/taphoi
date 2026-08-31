@@ -39,7 +39,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
 // =========================================================================
 let duLieuTKBGopDaMap = [];
 let tuDienPPCTToanCuc = {}; 
-let dinhMucKhungCT = {}; // Lưu trữ định mức tiết: dinhMucKhungCT["1"]["toán"] = 5
+let dinhMucKhungCT = {}; 
 
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
     let tkbLichSu = duLieuSever.DATA_TKB || [];
@@ -69,7 +69,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             
             Object.keys(dong).forEach(key => {
                 let matchKhoi = key.match(/\d+/);
-                // Quét bỏ qua các cột tên chữ, chỉ lấy các cột số Khối (1, 2, 3...)
                 if (matchKhoi && key !== 'Môn học' && key !== 'Ưu tiên' && key !== 'Tên môn học') {
                     let khoi = matchKhoi[0];
                     if (!dinhMucKhungCT[khoi]) dinhMucKhungCT[khoi] = {};
@@ -80,6 +79,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
+    // 2. Nạp từ điển PPCT để Đồng bộ Tên bài
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         let boNhoKhoi = ''; 
@@ -97,6 +97,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
+    // 3. Đếm số Tiết PPCT thực tế (Gán vào ma trận TKB)
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
@@ -162,19 +163,24 @@ function ketXuatSoDauBaiLenLuoi() {
 
     // --- BỘ MÁY TÍNH TOÁN CẢNH BÁO TIẾN ĐỘ ---
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
-    let maxTietThucTe = {}; 
+    let demTietThucTe = {}; 
     
-    // Quét toàn bộ TKB từ Tuần 1 đến cuối Tuần đang chọn để lấy số tiết tối đa của từng môn
+    // Quét TKB từ Tuần 1 đến cuối Tuần đang chọn
     let tkbDenTuanNay = duLieuTKBGopDaMap.filter(d => {
         let t = parseInt(String(d['Tuần']).replace(/\D/g, '')) || 0;
         return t <= maxTuanChon && String(d['Mã Lớp']).trim() === lopChon;
     });
 
+    // Thuật toán gộp đếm: Loại bỏ rác số (Ví dụ HĐTN 1 và HĐTN 2 đều cộng chung vào HĐTN)
     tkbDenTuanNay.forEach(d => {
-        let mon = String(d['Môn Học']).trim().toLowerCase();
-        let tiet = parseInt(d.TietPPCT_Thuc) || 0;
-        if (!maxTietThucTe[mon] || tiet > maxTietThucTe[mon]) {
-            maxTietThucTe[mon] = tiet;
+        let monGoc = String(d['Môn Học']).trim().toLowerCase();
+        if (!monGoc) return;
+        
+        demTietThucTe[monGoc] = (demTietThucTe[monGoc] || 0) + 1;
+        
+        let monRutGon = monGoc.replace(/[0-9]/g, '').trim();
+        if (monGoc !== monRutGon && monRutGon !== '') {
+            demTietThucTe[monRutGon] = (demTietThucTe[monRutGon] || 0) + 1;
         }
     });
 
@@ -185,26 +191,25 @@ function ketXuatSoDauBaiLenLuoi() {
     let canhBaoHtml = '';
     let hasCanhBao = false;
 
-    // So khớp mọi môn học có trong khung chương trình của Khối
+    // Đối chiếu trực tiếp với Khung CT
     for (let mon in dinhMucKhoiNay) {
         let dinhMuc = dinhMucKhoiNay[mon];
-        let tietThucTe = maxTietThucTe[mon] || 0;
+        let tietThucTe = demTietThucTe[mon] || 0; 
         let tietChuanDuKien = dinhMuc * maxTuanChon;
         let doLech = tietThucTe - tietChuanDuKien;
 
-        // Định dạng viết hoa chữ cái đầu cho đẹp
         let tenMonIn = mon.charAt(0).toUpperCase() + mon.slice(1);
 
-        if (doLech < 0) { // Chậm chương trình
-            canhBaoHtml += `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded border border-red-200 shadow-sm flex items-center gap-1 text-xs">
+        if (doLech < 0) { 
+            canhBaoHtml += `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded border border-red-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-                ${tenMonIn}: Chậm ${Math.abs(doLech)} tiết
+                ${tenMonIn}: Chậm ${Math.abs(doLech)}
             </span>`;
             hasCanhBao = true;
-        } else if (doLech > 0) { // Vượt chương trình
-            canhBaoHtml += `<span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded border border-orange-200 shadow-sm flex items-center gap-1 text-xs">
+        } else if (doLech > 0) { 
+            canhBaoHtml += `<span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded border border-orange-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
-                ${tenMonIn}: Vượt ${doLech} tiết
+                ${tenMonIn}: Vượt ${doLech}
             </span>`;
             hasCanhBao = true;
         }
@@ -213,12 +218,12 @@ function ketXuatSoDauBaiLenLuoi() {
     let thanhCanhBaoRender = '';
     if (hasCanhBao) {
         thanhCanhBaoRender = `
-            <div class="mb-4 p-3 bg-white border-l-4 border-red-500 shadow text-sm flex flex-col md:flex-row md:items-center gap-3 w-full animate-pulse-once">
+            <div class="mb-4 p-3 bg-white border-l-4 border-red-500 shadow-sm text-sm flex flex-col md:flex-row md:items-center gap-3 w-full">
                 <div class="flex items-center gap-2 flex-none">
                     <div class="p-1.5 bg-red-100 rounded-full">
-                        <svg class="w-5 h-5 text-red-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     </div>
-                    <span class="font-extrabold text-red-700 uppercase tracking-wide">Cảnh báo Tiến độ PPCT:</span>
+                    <span class="font-extrabold text-red-700 uppercase tracking-wide">Cảnh báo Tiến độ:</span>
                 </div>
                 <div class="flex flex-wrap gap-2 flex-1">
                     ${canhBaoHtml}
@@ -309,6 +314,7 @@ function ketXuatSoDauBaiLenLuoi() {
                     html += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight" rowspan="${soTietToiDa}">${hienThiThu}</td>`;
                 }
 
+                // Cố ý rỗng Tên Bài Dạy để chờ bấm nút Đồng Bộ
                 html += `
                     <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
@@ -324,7 +330,7 @@ function ketXuatSoDauBaiLenLuoi() {
         return html;
     };
 
-    // Nhúng thanh cảnh báo Radar vào ngay trên Sổ Đầu Bài
+    // Khi thanhCanhBaoRender trống, cảnh báo lập tức bị xóa sạch khỏi DOM
     vungHienThi.innerHTML = thanhCanhBaoRender + taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
 }
 
@@ -414,7 +420,6 @@ function xuatWordSoDauBai() {
         </head><body><div class='WordSection1'>
     `;
     
-    // Khi xuất Word, loại bỏ thanh cảnh báo tiến độ để tránh làm rác hồ sơ lưu trữ
     let noiDungClone = vungHienThi.cloneNode(true);
     let canhBaoNode = noiDungClone.querySelector('.border-red-500');
     if (canhBaoNode) canhBaoNode.remove();
@@ -423,7 +428,7 @@ function xuatWordSoDauBai() {
     let blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
     let link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon}.doc`;
+    link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon.replace(/\D/g,'')}.doc`;
     link.click();
 }
 
@@ -513,7 +518,7 @@ async function xuatExcelSoDauBai() {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon}.xlsx`;
+        link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon.replace(/\D/g,'')}.xlsx`;
         link.click();
 
     } catch (loi) {
