@@ -688,11 +688,10 @@ async function luuDuLieu(event, loaiLuu) {
 
 // =========================================================================
 // KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC (MASTER ROUTER TỰ ĐỘNG)
-// Khắc phục triệt để lỗi "Dính Khung UI" và "Đứng hình trình duyệt"
 // =========================================================================
 window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
     try {
-        // 1. CHUYỂN MÀU MENU MƯỢT MÀ (Tự động quét toàn bộ thanh Menu)
+        // 1. CHUYỂN MÀU MENU MƯỢT MÀ
         document.querySelectorAll('nav a').forEach(m => {
             m.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group";
             let span = m.querySelector('span');
@@ -712,15 +711,16 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
             }
         }
 
-        // 2. DỌN DẸP GIAO DIỆN (Quét TẤT CẢ các thẻ DIV chứa Khung để ép ẨN)
-        // Kỹ thuật này miễn nhiễm với lỗi sai ID, đảm bảo SGK chắc chắn bị ẩn
-        document.querySelectorAll('div[id^="khung"]').forEach(el => {
-            // Giữ lại Khung đọc PDF của SGK để không hỏng sách
-            if (el.id !== 'khungNoiDungModal' && el.id !== idKhung && !el.classList.contains('hidden')) {
-                el.classList.add('hidden');
-                el.classList.remove('block', 'flex');
-            }
-        });
+        // 2. DỌN DẸP GIAO DIỆN (Quét TẤT CẢ các thẻ DIV con trong vùng chính để ép ẨN)
+        let vungChinh = document.getElementById('vungHienThiChinh');
+        if (vungChinh) {
+            Array.from(vungChinh.children).forEach(el => {
+                if (el.tagName === 'DIV' && el.id !== 'khungNoiDungModal' && el.id !== idKhung) {
+                    el.classList.add('hidden');
+                    el.classList.remove('block', 'flex');
+                }
+            });
+        }
 
         // 3. HIỂN THỊ KHUNG MỤC TIÊU VÀO ĐÚNG VỊ TRÍ
         let khungDich = document.getElementById(idKhung);
@@ -748,8 +748,7 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
         console.error("Sự cố chuyển giao diện UI:", loiUI);
     }
 
-    // 5. ĐÁNH THỨC DỮ LIỆU ĐA TẦNG (TÁCH LUỒNG UI BẰNG SETTIMEOUT)
-    // Giúp giao diện chuyển ngay lập tức, không bị giật lag nếu dữ liệu tải chậm
+    // 5. ĐÁNH THỨC DỮ LIỆU ĐA TẦNG
     setTimeout(() => {
         try {
             if (idKhung === 'khungThongKe' && typeof taiCayDanhMucThongKe === 'function' && Object.keys(cayDanhMucThongKe).length === 0) taiCayDanhMucThongKe();
@@ -760,7 +759,7 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
             if (idKhung === 'khungDanhMucLop' && typeof taiDuLieuDanhMucLop === 'function' && typeof duLieuDanhMucLop !== 'undefined' && duLieuDanhMucLop.length === 0) taiDuLieuDanhMucLop();
             if (idKhung === 'khungDanhMucSGK' && typeof taiLaiDuLieuDanhMucSGK === 'function') taiLaiDuLieuDanhMucSGK();
             if (idKhung === 'khungSoDauBai' && typeof taiDuLieuSoDauBaiTuMayChu === 'function') taiDuLieuSoDauBaiTuMayChu();
-            // Bắt mọi ID liên quan đến Phân phối chương trình để đánh thức
+            
             if (idKhung && (idKhung.toLowerCase().includes('phanphoi') || idKhung.toLowerCase().includes('ppct'))) {
                 if (typeof taiDuLieuPhanPhoiChuongTrinh === 'function') taiDuLieuPhanPhoiChuongTrinh();
                 if (typeof taiDuLieuPPCT === 'function') taiDuLieuPPCT();
@@ -768,7 +767,7 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
         } catch (loiData) {
             console.error("Lỗi động cơ tải dữ liệu:", loiData);
         }
-    }, 50); // Độ trễ vàng 50ms cho phép trình duyệt vẽ xong UI
+    }, 50);
 };
 
 // =========================================================================
@@ -1086,11 +1085,17 @@ document.addEventListener('click', function(suKien) {
         let vungChinh = document.getElementById('vungHienThiChinh');
         if (!vungChinh) return;
 
-        // Đợi 20 mili-giây để các hàm onclick cũ của PPCT chạy xong màn hình
+        // Đợi 20 mili-giây để các hàm onclick riêng lẻ chạy xong
         setTimeout(() => {
             Array.from(vungChinh.children).forEach(khung => {
                 if (khung.tagName === 'DIV' && !khung.classList.contains('hidden')) {
                     
+                    // [BỔ SUNG QUAN TRỌNG]: Nếu đang kẹt Khung Sổ đầu bài mà người dùng KHÔNG bấm Menu Sổ đầu bài -> ÉP ẨN NGAY
+                    if (khung.id === 'khungSoDauBai' && menuDuocBam.id !== 'menuSoDauBai') {
+                        khung.classList.add('hidden');
+                        khung.classList.remove('flex', 'block');
+                    }
+
                     // XỬ LÝ 1: Nếu đang kẹt Khung SGK mà người dùng KHÔNG bấm Menu SGK -> Ép Ẩn
                     if (khung.id === 'khungDanhMucSGK' && menuDuocBam.id !== 'menuDanhMucSGK') {
                         khung.classList.add('hidden');
