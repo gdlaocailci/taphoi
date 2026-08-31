@@ -687,11 +687,11 @@ async function luuDuLieu(event, loaiLuu) {
 }
 
 // =========================================================================
-// KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC (MASTER ROUTER TỰ ĐỘNG)
+// KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC (ĐÃ TỐI ƯU CHỐNG LAG DOM)
 // =========================================================================
 window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
     try {
-        // 1. CHUYỂN MÀU MENU MƯỢT MÀ
+        // 1. CHUYỂN MÀU MENU NGAY LẬP TỨC (Tạo cảm giác phản hồi cực nhạy - Không lag)
         document.querySelectorAll('nav a').forEach(m => {
             m.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group";
             let span = m.querySelector('span');
@@ -711,63 +711,65 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
             }
         }
 
-        // 2. DỌN DẸP GIAO DIỆN (Quét TẤT CẢ các thẻ DIV con trong vùng chính để ép ẨN)
-        let vungChinh = document.getElementById('vungHienThiChinh');
-        if (vungChinh) {
-            Array.from(vungChinh.children).forEach(el => {
-                if (el.tagName === 'DIV' && el.id !== 'khungNoiDungModal' && el.id !== idKhung) {
-                    el.classList.add('hidden');
-                    el.classList.remove('block', 'flex');
+        // 2. TÁCH LUỒNG HIỂN THỊ NẶNG (Nhường 20ms cho trình duyệt vẽ xong Menu)
+        setTimeout(() => {
+            // A. DỌN DẸP GIAO DIỆN CŨ
+            let vungChinh = document.getElementById('vungHienThiChinh');
+            if (vungChinh) {
+                Array.from(vungChinh.children).forEach(el => {
+                    if (el.tagName === 'DIV' && el.id !== 'khungNoiDungModal' && el.id !== idKhung) {
+                        el.classList.add('hidden');
+                        el.classList.remove('block', 'flex');
+                    }
+                });
+            }
+
+            // B. HIỂN THỊ KHUNG MỤC TIÊU MỚI
+            let khungDich = document.getElementById(idKhung);
+            if (khungDich) {
+                khungDich.classList.remove('hidden');
+                if (idKhung === 'khungTKB' || idKhung === 'khungThongKe') {
+                    khungDich.classList.add('block');
+                } else {
+                    khungDich.classList.add('flex');
                 }
-            });
-        }
-
-        // 3. HIỂN THỊ KHUNG MỤC TIÊU VÀO ĐÚNG VỊ TRÍ
-        let khungDich = document.getElementById(idKhung);
-        if (khungDich) {
-            khungDich.classList.remove('hidden');
-            if (idKhung === 'khungTKB' || idKhung === 'khungThongKe') {
-                khungDich.classList.add('block');
-            } else {
-                khungDich.classList.add('flex');
             }
-        }
 
-        // 4. QUẢN LÝ THANH CÔNG CỤ TKB
-        let thanhCongCu = document.getElementById('thanhCongCuTKB');
-        if (thanhCongCu) {
-            if (hienThanhCongCuTKB) {
-                thanhCongCu.classList.remove('hidden');
-                thanhCongCu.classList.add('flex');
-            } else {
-                thanhCongCu.classList.remove('flex');
-                thanhCongCu.classList.add('hidden');
+            // C. QUẢN LÝ THANH CÔNG CỤ
+            let thanhCongCu = document.getElementById('thanhCongCuTKB');
+            if (thanhCongCu) {
+                if (hienThanhCongCuTKB) {
+                    thanhCongCu.classList.remove('hidden');
+                    thanhCongCu.classList.add('flex');
+                } else {
+                    thanhCongCu.classList.remove('flex');
+                    thanhCongCu.classList.add('hidden');
+                }
             }
-        }
+
+            // D. ĐÁNH THỨC DỮ LIỆU ĐA TẦNG
+            try {
+                if (idKhung === 'khungThongKe' && typeof taiCayDanhMucThongKe === 'function' && Object.keys(cayDanhMucThongKe).length === 0) taiCayDanhMucThongKe();
+                if (idKhung === 'khungPhanCong' && typeof taiDuLieuPhanCongTuMayChu === 'function' && typeof danhSachGV !== 'undefined' && danhSachGV.length === 0) taiDuLieuPhanCongTuMayChu();
+                if (idKhung === 'khungDanhMucGV' && typeof taiDuLieuDanhMucGV === 'function' && typeof duLieuDanhMucGV !== 'undefined' && duLieuDanhMucGV.length === 0) taiDuLieuDanhMucGV();
+                if (idKhung === 'khungKhungChuongTrinh' && typeof taiDuLieuKhungChuongTrinhTuMayChu === 'function' && typeof duLieuBangKCT !== 'undefined' && duLieuBangKCT.length === 0) taiDuLieuKhungChuongTrinhTuMayChu();
+                if (idKhung === 'khungCaiDat' && typeof taiDuLieuCaiDatHeThong === 'function' && typeof dsThamSo !== 'undefined' && dsThamSo.length === 0) taiDuLieuCaiDatHeThong();
+                if (idKhung === 'khungDanhMucLop' && typeof taiDuLieuDanhMucLop === 'function' && typeof duLieuDanhMucLop !== 'undefined' && duLieuDanhMucLop.length === 0) taiDuLieuDanhMucLop();
+                if (idKhung === 'khungDanhMucSGK' && typeof taiLaiDuLieuDanhMucSGK === 'function') taiLaiDuLieuDanhMucSGK();
+                if (idKhung === 'khungSoDauBai' && typeof taiDuLieuSoDauBaiTuMayChu === 'function') taiDuLieuSoDauBaiTuMayChu();
+                
+                if (idKhung && (idKhung.toLowerCase().includes('phanphoi') || idKhung.toLowerCase().includes('ppct'))) {
+                    if (typeof taiDuLieuPhanPhoiChuongTrinh === 'function') taiDuLieuPhanPhoiChuongTrinh();
+                    if (typeof taiDuLieuPPCT === 'function') taiDuLieuPPCT();
+                }
+            } catch (loiData) {
+                console.error("Lỗi động cơ tải dữ liệu:", loiData);
+            }
+        }, 20); // Cú lùi bước chiến thuật 20 mili-giây
+        
     } catch (loiUI) {
         console.error("Sự cố chuyển giao diện UI:", loiUI);
     }
-
-    // 5. ĐÁNH THỨC DỮ LIỆU ĐA TẦNG
-    setTimeout(() => {
-        try {
-            if (idKhung === 'khungThongKe' && typeof taiCayDanhMucThongKe === 'function' && Object.keys(cayDanhMucThongKe).length === 0) taiCayDanhMucThongKe();
-            if (idKhung === 'khungPhanCong' && typeof taiDuLieuPhanCongTuMayChu === 'function' && typeof danhSachGV !== 'undefined' && danhSachGV.length === 0) taiDuLieuPhanCongTuMayChu();
-            if (idKhung === 'khungDanhMucGV' && typeof taiDuLieuDanhMucGV === 'function' && typeof duLieuDanhMucGV !== 'undefined' && duLieuDanhMucGV.length === 0) taiDuLieuDanhMucGV();
-            if (idKhung === 'khungKhungChuongTrinh' && typeof taiDuLieuKhungChuongTrinhTuMayChu === 'function' && typeof duLieuBangKCT !== 'undefined' && duLieuBangKCT.length === 0) taiDuLieuKhungChuongTrinhTuMayChu();
-            if (idKhung === 'khungCaiDat' && typeof taiDuLieuCaiDatHeThong === 'function' && typeof dsThamSo !== 'undefined' && dsThamSo.length === 0) taiDuLieuCaiDatHeThong();
-            if (idKhung === 'khungDanhMucLop' && typeof taiDuLieuDanhMucLop === 'function' && typeof duLieuDanhMucLop !== 'undefined' && duLieuDanhMucLop.length === 0) taiDuLieuDanhMucLop();
-            if (idKhung === 'khungDanhMucSGK' && typeof taiLaiDuLieuDanhMucSGK === 'function') taiLaiDuLieuDanhMucSGK();
-            if (idKhung === 'khungSoDauBai' && typeof taiDuLieuSoDauBaiTuMayChu === 'function') taiDuLieuSoDauBaiTuMayChu();
-            
-            if (idKhung && (idKhung.toLowerCase().includes('phanphoi') || idKhung.toLowerCase().includes('ppct'))) {
-                if (typeof taiDuLieuPhanPhoiChuongTrinh === 'function') taiDuLieuPhanPhoiChuongTrinh();
-                if (typeof taiDuLieuPPCT === 'function') taiDuLieuPPCT();
-            }
-        } catch (loiData) {
-            console.error("Lỗi động cơ tải dữ liệu:", loiData);
-        }
-    }, 50);
 };
 
 // =========================================================================
