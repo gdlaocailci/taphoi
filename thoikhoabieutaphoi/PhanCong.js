@@ -109,12 +109,12 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               onfocus="this.select(); tinhToanTietDay(this.value);">
                            </td>`;
           } else {
-              // [NÂNG CẤP]: Đổi vòng tròn thành hình đa giác (bát giác chuẩn STOP) để mở rộng không gian chiều ngang, tăng kích thước lên 32px
+              // [NÂNG CẤP]: Phóng to toàn bộ khung SVG lên 45px, mở rộng đa giác, tăng độ dày viền trắng và kích thước chữ
               bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-90" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
-                              <div class="flex justify-center items-center w-full h-full min-h-[32px] cursor-not-allowed">
-                                  <svg viewBox="0 0 100 100" class="w-[32px] h-[32px] drop-shadow-md">
-                                      <polygon points="28,5 72,5 95,28 95,72 72,95 28,95 5,72 5,28" fill="#dc2626" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
-                                      <text x="50" y="61" fill="#ffffff" font-size="28" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" letter-spacing="1">STOP</text>
+                              <div class="flex justify-center items-center w-full h-full min-h-[45px] cursor-not-allowed py-1">
+                                  <svg viewBox="0 0 100 100" class="w-[45px] h-[45px] drop-shadow-lg">
+                                      <polygon points="30,4 70,4 96,30 96,70 70,96 30,96 4,70 4,30" fill="#dc2626" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
+                                      <text x="50" y="64" fill="#ffffff" font-size="34" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" letter-spacing="1">STOP</text>
                                   </svg>
                               </div>
                               <input type="hidden" data-lop="${maLop}" data-mon="${tenMon}" value="">
