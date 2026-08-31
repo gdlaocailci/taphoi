@@ -38,7 +38,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
 // KHỐI 1: ÁNH XẠ DỮ LIỆU TỰ ĐỘNG BẰNG TỊNH TIẾN TỪ TUẦN 1
 // =========================================================================
 let duLieuTKBGopDaMap = [];
-let tuDienPPCTToanCuc = {}; // Biến toàn cục để tra cứu khi bấm nút "Đồng bộ"
+let tuDienPPCTToanCuc = {}; 
 
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
     let tkbLichSu = duLieuSever.DATA_TKB || [];
@@ -58,7 +58,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // Bắt bao quát mọi tên cột có thể có trong Sheet PPCT
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         duLieuSever.PPCT.forEach(dong => {
@@ -76,7 +75,10 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     duLieuTKBGopDaMap = tkbGop.map(dong => {
         let maLop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
         let mon = String(dong['Môn Học'] || '').trim();
-        let khoi = maLop.replace(/[^0-9]/g, ''); 
+        
+        // [ĐÃ SỬA LỖI TÁCH KHỐI]: Bốc chính xác nhóm số đầu tiên (Lớp 1A1 -> Khối 1)
+        let matchKhoi = maLop.match(/\d+/);
+        let khoi = matchKhoi ? matchKhoi[0] : ''; 
         
         let tietThucTe = ''; let tenBaiHoc = '';
         
@@ -89,7 +91,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             let khoaTraPPCT = `${khoi}_${mon.toLowerCase()}_${tietThucTe}`;
             tenBaiHoc = tuDienPPCTToanCuc[khoaTraPPCT] || ''; 
             
-            // Xử lý thông minh: Nếu môn "HĐTN1" không khớp, tự động thử tìm "hđtn"
             if (tenBaiHoc === '') {
                 let monKhongSo = mon.toLowerCase().replace(/[0-9]/g, '').trim();
                 let khoaPhu = `${khoi}_${monKhongSo}_${tietThucTe}`;
@@ -189,13 +190,12 @@ function ketXuatSoDauBaiLenLuoi() {
                     html += `<td class="border border-gray-500 text-center font-bold uppercase" rowspan="${soTietToiDa}">${thu}</td>`;
                 }
 
-                // Cài cắm thẻ data-loai để Nút "Đồng bộ" tìm đọc
                 html += `
                     <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
                     <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800" data-loai="tiet">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1.5 text-slate-700" data-loai="tenBai">${tenBai}</td>
+                    <td class="border border-gray-500 p-1.5 text-slate-700 font-semibold" data-loai="tenBai">${tenBai}</td>
                     <td class="border border-gray-500 p-1.5"></td>
                 </tr>`;
             }
@@ -206,12 +206,9 @@ function ketXuatSoDauBaiLenLuoi() {
     };
 
     vungHienThi.innerHTML = taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
-    
-    // Tự động kích hoạt đồng bộ ngầm sau khi vẽ bảng để đảm bảo Tên bài không bao giờ rỗng
     setTimeout(dongBoTenBaiHoc, 100);
 }
 
-// [HÀM NÂNG CẤP MỚI]: Bốc Tên bài dạy từ PPCT dựa trên thông tin hiển thị ở UI
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
     let textGoc = btn ? btn.innerHTML : '';
@@ -227,7 +224,10 @@ function dongBoTenBaiHoc() {
             return;
         }
         
-        let khoi = lopChon.replace(/[^0-9]/g, '');
+        // [ĐÃ SỬA LỖI TÁCH KHỐI]
+        let matchKhoi = lopChon.match(/\d+/);
+        let khoi = matchKhoi ? matchKhoi[0] : '';
+        
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
         
         cacDong.forEach(dong => {
@@ -240,18 +240,15 @@ function dongBoTenBaiHoc() {
                 let tiet = oTiet.innerText.trim();
                 
                 if (mon !== '' && tiet !== '') {
-                    // Ánh xạ chính
                     let khoaChinh = `${khoi}_${mon}_${tiet}`;
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || '';
                     
-                    // Ánh xạ phụ (Bỏ hậu tố số: HĐTN1 -> hdtn)
                     if (baiDay === '') {
                         let monRutGon = mon.replace(/[0-9]/g, '').trim();
                         let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
                         baiDay = tuDienPPCTToanCuc[khoaPhu] || '';
                     }
 
-                    // Ép dữ liệu vào giao diện nếu tìm thấy
                     if (baiDay !== '') {
                         oTenBai.innerText = baiDay;
                     }
