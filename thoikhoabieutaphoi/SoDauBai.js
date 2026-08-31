@@ -49,7 +49,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
-    // 1. Sắp xếp trục thời gian tuyệt đối (QUAN TRỌNG ĐỂ TỊNH TIẾN ĐÚNG)
+    // Sắp xếp trục thời gian tuyệt đối
     tkbGop.sort((a, b) => {
         let tuanA = parseInt(String(a['Tuần']).replace(/\D/g, '')) || 0; 
         let tuanB = parseInt(String(b['Tuần']).replace(/\D/g, '')) || 0;
@@ -61,7 +61,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // 2. Phân tích Khung Chương Trình (Radar)
+    // Phân tích Khung Chương Trình (Radar)
     dinhMucKhungCT = {};
     if (duLieuSever.KHUNG_CHUONG_TRINH) {
         duLieuSever.KHUNG_CHUONG_TRINH.forEach(dong => {
@@ -79,7 +79,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // 3. Nạp Từ điển PPCT
+    // Nạp Từ điển PPCT
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         let boNhoKhoi = ''; 
@@ -97,7 +97,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // 4. Lập Bản đồ Dữ Liệu Đã Chốt Sổ (Source of Truth)
+    // Bản đồ Dữ Liệu Đã Chốt Sổ
     let soDauBaiDaLuu = {};
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
@@ -115,7 +115,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // 5. THUẬT TOÁN ĐẾM TỊNH TIẾN KẾT HỢP DỮ LIỆU THỰC TẾ
+    // THUẬT TOÁN ĐẾM TỊNH TIẾN 
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
@@ -127,7 +127,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         let mon = String(dong['Môn Học'] || '').trim();
         
         let khoaTKB = `${tuan}_${maLop}_${thu}_${buoi}_${tiet}`;
-        let dongDaLuu = soDauBaiDaLuu[khoaTKB]; // Tra cứu xem slot này đã chốt sổ chưa
+        let dongDaLuu = soDauBaiDaLuu[khoaTKB]; 
         
         let tietThucTe = ''; 
         let tenBaiHoc = '';
@@ -137,18 +137,15 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             let khoaDem = `${maLop}_${mon.toLowerCase()}`;
             
             if (dongDaLuu) {
-                // Nếu ĐÃ CHỐT SỔ: Lấy nguyên văn dữ liệu quá khứ, ghim lại mốc đếm
                 isDaLuu = true;
                 tietThucTe = dongDaLuu.TietPPCT;
                 tenBaiHoc = dongDaLuu.TenBai;
                 
-                // Đồng bộ Mốc đếm tịnh tiến theo thực tế đã chốt
                 let tietNum = parseInt(String(tietThucTe).replace(/\D/g, '')) || 0;
                 if (tietNum > (boDemTietCuaLop[khoaDem] || 0)) {
                     boDemTietCuaLop[khoaDem] = tietNum; 
                 }
             } else {
-                // Nếu CHƯA CHỐT SỔ: Tịnh tiến bộ đếm lên 1, để trống Tên Bài chờ Đồng bộ
                 if (!boDemTietCuaLop[khoaDem]) boDemTietCuaLop[khoaDem] = 0;
                 boDemTietCuaLop[khoaDem]++; 
                 tietThucTe = boDemTietCuaLop[khoaDem];
@@ -322,8 +319,9 @@ function ketXuatSoDauBaiLenLuoi() {
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
                 let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
 
-                // Nếu đã lưu, tô màu xanh nhẹ để nhận biết. Nếu chưa lưu, để trống chờ đồng bộ.
+                // Bám sát CSDL: Format đẹp mắt cho những bài chưa có phân phối
                 let cssTenBai = isDaLuu ? "text-green-800 font-semibold" : "text-slate-700 font-semibold";
+                if (tenBai === 'Chưa có dữ liệu PPCT') cssTenBai = "text-gray-400 italic text-xs font-normal";
 
                 html += `<tr class="hover:bg-slate-50">`;
                 
@@ -348,7 +346,7 @@ function ketXuatSoDauBaiLenLuoi() {
 }
 
 // =========================================================================
-// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI (CHỈ QUÉT CÁC TIẾT CHƯA CHỐT SỔ)
+// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -376,9 +374,8 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
-                // [LÕI BẢO VỆ]: Nếu dòng này là Dữ liệu Lịch sử đã lưu -> TUYỆT ĐỐI KHÔNG ĐỒNG BỘ LẠI
                 let isDaLuu = oTenBai.getAttribute('data-daluu') === 'true';
-                if (isDaLuu) return;
+                if (isDaLuu) return; // Bảo vệ nguyên trạng Dữ liệu quá khứ
 
                 let mon = oMon.innerText.trim().toLowerCase();
                 let tiet = oTiet.innerText.trim();
