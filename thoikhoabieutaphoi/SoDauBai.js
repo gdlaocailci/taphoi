@@ -1,5 +1,5 @@
 // =========================================================================
-// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ
+// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ KHI KÍCH HOẠT TAB
 // =========================================================================
 let daTaiDuLieuSoDauBai = false;
 
@@ -19,39 +19,32 @@ async function taiDuLieuSoDauBaiTuMayChu() {
         const phanHoiText = await phanHoi.text();
         let duLieuSever;
         
-        try {
-            duLieuSever = JSON.parse(phanHoiText);
-        } catch (loiParse) {
-            throw new Error("Phản hồi từ máy chủ bị hỏng. Vui lòng Deploy lại mã Code.gs.");
-        }
+        try { duLieuSever = JSON.parse(phanHoiText); } 
+        catch (loiParse) { throw new Error("Phản hồi từ máy chủ bị hỏng. Vui lòng Deploy lại mã Code.gs."); }
 
-        if (duLieuSever.trangThai === 'loi_he_thong') {
-            throw new Error(duLieuSever.thongBao);
-        }
+        if (duLieuSever.trangThai === 'loi_he_thong') throw new Error(duLieuSever.thongBao);
         
         khoiTaoDuLieuSoDauBai(duLieuSever);
         daTaiDuLieuSoDauBai = true;
     } catch (loi) {
         console.error("Lỗi tải Sổ đầu bài:", loi);
         if (vungHienThi) {
-            vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">
-                ⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span>
-            </div>`;
+            vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span></div>`;
         }
     }
 }
 
 // =========================================================================
-// KHỐI 1: ÁNH XẠ DỮ LIỆU BẰNG THUẬT TOÁN ĐẾM TỊNH TIẾN TỪ TUẦN 1
+// KHỐI 1: ÁNH XẠ DỮ LIỆU TỰ ĐỘNG BẰNG TỊNH TIẾN TỪ TUẦN 1
 // =========================================================================
 let duLieuTKBGopDaMap = [];
+let tuDienPPCTToanCuc = {}; // Biến toàn cục để tra cứu khi bấm nút "Đồng bộ"
 
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
     let tkbLichSu = duLieuSever.DATA_TKB || [];
     let tkbHienTai = duLieuSever.TKB_HIEN_TAI || [];
     let tkbGop = [...tkbLichSu, ...tkbHienTai];
 
-    // 1. Sắp xếp TKB tuần tự tuyệt đối theo thời gian (Từ tuần 1 -> hiện tại)
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
@@ -65,21 +58,19 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // 2. Nạp dữ liệu PPCT vào Bộ từ điển (Dictionary) để tra cứu O(1)
-    let tuDienPPCT = {}; 
+    // Bắt bao quát mọi tên cột có thể có trong Sheet PPCT
+    tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         duLieuSever.PPCT.forEach(dong => {
-            let khoi = String(dong['Khối lớp'] || '').trim();
-            let mon = String(dong['Tên môn học'] || '').trim().toLowerCase();
-            let tietPPCT_Goc = String(dong['Tiết PPCT'] || '').trim();
+            let khoi = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
+            let mon = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
+            let tietPPCT_Goc = String(dong['Tiết PPCT'] || dong['Tiết'] || '').trim();
             
-            // Khóa tra cứu: Khối_Môn_SốTiết (VD: 1_tiếng việt_12)
             let khoa = `${khoi}_${mon}_${tietPPCT_Goc}`;
-            tuDienPPCT[khoa] = dong['Tên bài học'] || '';
+            tuDienPPCTToanCuc[khoa] = dong['Tên bài học'] || dong['Tên bài'] || dong['Tên bài dạy'] || dong['Nội dung'] || '';
         });
     }
 
-    // 3. THUẬT TOÁN ĐẾM TỊNH TIẾN: Quét TKB từ đầu năm, cộng dồn số tiết cho từng lớp
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
@@ -87,39 +78,33 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         let mon = String(dong['Môn Học'] || '').trim();
         let khoi = maLop.replace(/[^0-9]/g, ''); 
         
-        let tietThucTe = '';
-        let tenBaiHoc = '';
+        let tietThucTe = ''; let tenBaiHoc = '';
         
-        // Nếu có môn học, tiến hành đếm
         if (mon && mon !== '') {
             let khoaDem = `${maLop}_${mon.toLowerCase()}`;
-            
-            if (!boDemTietCuaLop[khoaDem]) {
-                boDemTietCuaLop[khoaDem] = 0;
-            }
-            
-            boDemTietCuaLop[khoaDem]++; // Tăng số tiết lên 1
+            if (!boDemTietCuaLop[khoaDem]) boDemTietCuaLop[khoaDem] = 0;
+            boDemTietCuaLop[khoaDem]++; 
             tietThucTe = boDemTietCuaLop[khoaDem];
             
-            // Dùng số tiết vừa đếm được ráp vào Khối để tìm Tên bài dạy
             let khoaTraPPCT = `${khoi}_${mon.toLowerCase()}_${tietThucTe}`;
-            tenBaiHoc = tuDienPPCT[khoaTraPPCT] || ''; 
+            tenBaiHoc = tuDienPPCTToanCuc[khoaTraPPCT] || ''; 
+            
+            // Xử lý thông minh: Nếu môn "HĐTN1" không khớp, tự động thử tìm "hđtn"
+            if (tenBaiHoc === '') {
+                let monKhongSo = mon.toLowerCase().replace(/[0-9]/g, '').trim();
+                let khoaPhu = `${khoi}_${monKhongSo}_${tietThucTe}`;
+                tenBaiHoc = tuDienPPCTToanCuc[khoaPhu] || '';
+            }
         }
         
-        return {
-            ...dong,
-            TietPPCT_Thuc: tietThucTe,
-            TenBai_Thuc: tenBaiHoc
-        };
+        return { ...dong, TietPPCT_Thuc: tietThucTe, TenBai_Thuc: tenBaiHoc };
     });
 
     napDropdownSoDauBai();
 }
 
 function napDropdownSoDauBai() {
-    let tapHopTuan = new Set();
-    let tapHopLop = new Set();
-
+    let tapHopTuan = new Set(); let tapHopLop = new Set();
     duLieuTKBGopDaMap.forEach(dong => {
         if (dong['Tuần']) tapHopTuan.add(String(dong['Tuần']).trim());
         if (dong['Mã Lớp']) tapHopLop.add(String(dong['Mã Lớp']).trim());
@@ -141,7 +126,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN "KHUNG CỨNG" (SÁNG 5 TIẾT, CHIỀU 4 TIẾT)
+// KHỐI 2: VẼ GIAO DIỆN & HÀM ĐỒNG BỘ THỦ CÔNG
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -150,12 +135,9 @@ function ketXuatSoDauBaiLenLuoi() {
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
-    // Lấy dữ liệu của tuần và lớp đang chọn
     let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim() === lopChon);
 
-    // Chuyển thành Dictionary để điền vào Khung cứng cực nhanh
-    let dictTKB = {};
-    let ngayBatDau = '...';
+    let dictTKB = {}; let ngayBatDau = '...';
     tkbTuanNay.forEach(dong => {
         if (ngayBatDau === '...') ngayBatDau = dong['Ngày'] || '...';
         let buoiKiemTra = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
@@ -192,11 +174,10 @@ function ketXuatSoDauBaiLenLuoi() {
                     <tbody>
         `;
 
-        // Vòng lặp Khung cứng
         danhSachThu.forEach(thu => {
             for (let tiet = 1; tiet <= soTietToiDa; tiet++) {
                 let khoaKiemTra = `${thu}_${buoiKey}_${tiet}`;
-                let dongDuLieu = dictTKB[khoaKiemTra]; // Lấy dữ liệu nếu tiết này có phân công
+                let dongDuLieu = dictTKB[khoaKiemTra]; 
 
                 let monHoc = dongDuLieu ? dongDuLieu['Môn Học'] : '';
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
@@ -204,17 +185,17 @@ function ketXuatSoDauBaiLenLuoi() {
 
                 html += `<tr class="hover:bg-slate-50">`;
                 
-                // Cột THỨ chỉ in ở tiết 1 và gộp dòng bằng số tiết tối đa
                 if (tiet === 1) {
                     html += `<td class="border border-gray-500 text-center font-bold uppercase" rowspan="${soTietToiDa}">${thu}</td>`;
                 }
 
+                // Cài cắm thẻ data-loai để Nút "Đồng bộ" tìm đọc
                 html += `
                     <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
-                    <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800">${monHoc}</td>
-                    <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1.5 text-slate-700">${tenBai}</td>
+                    <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800" data-loai="mon">${monHoc}</td>
+                    <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800" data-loai="tiet">${tietPPCT}</td>
+                    <td class="border border-gray-500 p-1.5 text-slate-700" data-loai="tenBai">${tenBai}</td>
                     <td class="border border-gray-500 p-1.5"></td>
                 </tr>`;
             }
@@ -224,8 +205,62 @@ function ketXuatSoDauBaiLenLuoi() {
         return html;
     };
 
-    // Vẽ Bảng Sáng (5 tiết) và Bảng Chiều (4 tiết)
     vungHienThi.innerHTML = taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
+    
+    // Tự động kích hoạt đồng bộ ngầm sau khi vẽ bảng để đảm bảo Tên bài không bao giờ rỗng
+    setTimeout(dongBoTenBaiHoc, 100);
+}
+
+// [HÀM NÂNG CẤP MỚI]: Bốc Tên bài dạy từ PPCT dựa trên thông tin hiển thị ở UI
+function dongBoTenBaiHoc() {
+    const btn = document.getElementById('btnDongBoTenBai');
+    let textGoc = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
+        btn.disabled = true;
+    }
+
+    setTimeout(() => {
+        let lopChon = document.getElementById('chonLopSo')?.value;
+        if (!lopChon) {
+            if (btn) { btn.innerHTML = textGoc; btn.disabled = false; }
+            return;
+        }
+        
+        let khoi = lopChon.replace(/[^0-9]/g, '');
+        let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
+        
+        cacDong.forEach(dong => {
+            let oMon = dong.querySelector('td[data-loai="mon"]');
+            let oTiet = dong.querySelector('td[data-loai="tiet"]');
+            let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
+            
+            if (oMon && oTiet && oTenBai) {
+                let mon = oMon.innerText.trim().toLowerCase();
+                let tiet = oTiet.innerText.trim();
+                
+                if (mon !== '' && tiet !== '') {
+                    // Ánh xạ chính
+                    let khoaChinh = `${khoi}_${mon}_${tiet}`;
+                    let baiDay = tuDienPPCTToanCuc[khoaChinh] || '';
+                    
+                    // Ánh xạ phụ (Bỏ hậu tố số: HĐTN1 -> hdtn)
+                    if (baiDay === '') {
+                        let monRutGon = mon.replace(/[0-9]/g, '').trim();
+                        let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
+                        baiDay = tuDienPPCTToanCuc[khoaPhu] || '';
+                    }
+
+                    // Ép dữ liệu vào giao diện nếu tìm thấy
+                    if (baiDay !== '') {
+                        oTenBai.innerText = baiDay;
+                    }
+                }
+            }
+        });
+        
+        if (btn) { btn.innerHTML = textGoc; btn.disabled = false; }
+    }, 100); 
 }
 
 // =========================================================================
