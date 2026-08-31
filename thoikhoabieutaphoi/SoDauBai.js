@@ -127,26 +127,70 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN (CHỈ RÁP MA TRẬN VÀ TIẾT PPCT)
+// KHỐI 2: VẼ GIAO DIỆN "KHUNG CỨNG" & TỰ ĐỘNG TÍNH TOÁN NGÀY TỪ INPUT
 // =========================================================================
+
+// Thuật toán hỗ trợ: Tịnh tiến ngày từ mốc YYYY-MM-DD của thẻ <input type="date">
+function tinhNgayTuInputDate(ngayYMD, tenThu) {
+    if (!ngayYMD) return '';
+    let dateObj = new Date(ngayYMD);
+    if (isNaN(dateObj.getTime())) return '';
+
+    const doLech = { "Thứ 2": 0, "Thứ 3": 1, "Thứ 4": 2, "Thứ 5": 3, "Thứ 6": 4, "Thứ 7": 5, "Chủ nhật": 6 };
+    let soNgayLech = doLech[tenThu] || 0;
+
+    dateObj.setDate(dateObj.getDate() + soNgayLech);
+
+    let dd = dateObj.getDate().toString().padStart(2, '0');
+    let mm = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    let yyyy = dateObj.getFullYear();
+
+    return `${dd}/${mm}/${yyyy}`;
+}
+
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
     let lopChon = document.getElementById('chonLopSo')?.value;
+    let inputNgay = document.getElementById('chonNgaySDB');
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
     let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim() === lopChon);
 
-    let dictTKB = {}; let ngayBatDau = '...';
+    let dictTKB = {}; 
+    let ngayTkbGoc = ''; // Ngày lấy từ CSDL (Dạng DD/MM/YYYY)
+    
     tkbTuanNay.forEach(dong => {
-        if (ngayBatDau === '...') ngayBatDau = dong['Ngày'] || '...';
+        if (ngayTkbGoc === '' && dong['Ngày'] && dong['Ngày'] !== '...') {
+            ngayTkbGoc = dong['Ngày']; 
+        }
         let buoiKiemTra = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
         let khoa = `${String(dong['Thứ']).trim()}_${buoiKiemTra}_${dong['Tiết']}`;
         dictTKB[khoa] = dong;
     });
 
+    // Xử lý ưu tiên Ngày đầu tuần từ giao diện
+    let mienNgayHienTai = inputNgay ? inputNgay.value : '';
+    
+    // Nếu giao diện trống mà CSDL có ngày, tự động chuyển đổi và gán lên giao diện
+    if (!mienNgayHienTai && ngayTkbGoc !== '') {
+        let p = ngayTkbGoc.split('/');
+        if (p.length === 3) {
+            mienNgayHienTai = `${p[2]}-${p[1]}-${p[0]}`; // Chuyển DD/MM/YYYY thành YYYY-MM-DD
+            if (inputNgay) inputNgay.value = mienNgayHienTai;
+        }
+    }
+
     const danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
+    
+    // Tính toán chuỗi ngày tháng hiển thị trên tiêu đề
+    let chuoiThoiGian = "(Từ ngày ... đến ngày ...)";
+    if (mienNgayHienTai) {
+        let ngayBatDauIn = tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2");
+        let ngayKetThucIn = tinhNgayTuInputDate(mienNgayHienTai, "Thứ 6");
+        chuoiThoiGian = `(Từ ngày ${ngayBatDauIn} đến ngày ${ngayKetThucIn})`;
+    }
 
     const taoBangHtml = (tenBuoi, soTietToiDa) => {
         let buoiKey = tenBuoi === "SÁNG" ? "Sang" : "Chieu";
@@ -158,12 +202,12 @@ function ketXuatSoDauBaiLenLuoi() {
                     <span>TUẦN ${tuanChon}: BUỔI ${tenBuoi}</span>
                 </div>
                 <div class="text-center italic mb-2 text-sm text-slate-600">
-                    (Từ ngày ${ngayBatDau} đến ngày ... tháng ... năm ...)
+                    ${chuoiThoiGian}
                 </div>
                 <table class="w-full border-collapse border border-gray-500 text-sm">
                     <thead class="bg-slate-100 text-center font-bold">
                         <tr>
-                            <th class="border border-gray-500 p-2 w-16">THỨ</th>
+                            <th class="border border-gray-500 p-2 w-20">THỨ</th>
                             <th class="border border-gray-500 p-2 w-12">TIẾT</th>
                             <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
                             <th class="border border-gray-500 p-2 w-32">MÔN</th>
@@ -176,6 +220,10 @@ function ketXuatSoDauBaiLenLuoi() {
         `;
 
         danhSachThu.forEach(thu => {
+            // Tính ngày động cho từng Thứ dựa trên ô input
+            let ngayCuaThu = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '';
+            let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-xs font-normal normal-case tracking-tighter">${ngayCuaThu}</span>` : thu;
+
             for (let tiet = 1; tiet <= soTietToiDa; tiet++) {
                 let khoaKiemTra = `${thu}_${buoiKey}_${tiet}`;
                 let dongDuLieu = dictTKB[khoaKiemTra]; 
@@ -186,10 +234,9 @@ function ketXuatSoDauBaiLenLuoi() {
                 html += `<tr class="hover:bg-slate-50">`;
                 
                 if (tiet === 1) {
-                    html += `<td class="border border-gray-500 text-center font-bold uppercase" rowspan="${soTietToiDa}">${thu}</td>`;
+                    html += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight" rowspan="${soTietToiDa}">${hienThiThu}</td>`;
                 }
 
-                // Cài data-loai để quét đồng bộ, để trống hoàn toàn tên bài dạy
                 html += `
                     <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
@@ -205,7 +252,6 @@ function ketXuatSoDauBaiLenLuoi() {
         return html;
     };
 
-    // Khi chuyển Tuần/Lớp, hệ thống chỉ vẽ khung và định vị 2 trường cơ bản. Xóa bỏ lệnh tự động đồng bộ.
     vungHienThi.innerHTML = taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
 }
 
