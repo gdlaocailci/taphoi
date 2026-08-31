@@ -61,7 +61,11 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         duLieuSever.PPCT.forEach(dong => {
-            let khoi = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
+            // [ĐÃ FIX]: Ép tách lấy đúng chữ số từ tên Khối (Kể cả ghi "Khối 4" cũng lấy "4")
+            let khoiGoc = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
+            let matchKhoi = khoiGoc.match(/\d+/);
+            let khoi = matchKhoi ? matchKhoi[0] : khoiGoc; 
+            
             let mon = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
             let tietPPCT_Goc = String(dong['Tiết PPCT'] || dong['Tiết'] || '').trim();
             
@@ -75,10 +79,8 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     duLieuTKBGopDaMap = tkbGop.map(dong => {
         let maLop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
         let mon = String(dong['Môn Học'] || '').trim();
-        
-        // [ĐÃ SỬA LỖI TÁCH KHỐI]: Bốc chính xác nhóm số đầu tiên (Lớp 1A1 -> Khối 1)
-        let matchKhoi = maLop.match(/\d+/);
-        let khoi = matchKhoi ? matchKhoi[0] : ''; 
+        let matchKhoiLop = maLop.match(/\d+/);
+        let khoi = matchKhoiLop ? matchKhoiLop[0] : ''; 
         
         let tietThucTe = ''; let tenBaiHoc = '';
         
