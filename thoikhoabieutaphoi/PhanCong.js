@@ -109,15 +109,11 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               onfocus="this.select(); tinhToanTietDay(this.value);">
                            </td>`;
           } else {
-           // [NÂNG CẤP]: Thu nhỏ cỡ chữ (24), căn giữa chuẩn tuyệt đối (dominant-baseline="central") và tăng độ sắc nét
-              bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-90" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
-                              <div class="flex justify-center items-center w-full h-full min-h-[45px] cursor-not-allowed py-1">
-                                  <svg viewBox="0 0 100 100" class="w-[45px] h-[45px] drop-shadow-lg">
-                                      <polygon points="30,4 70,4 96,30 96,70 70,96 30,96 4,70 4,30" fill="#dc2626" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-                                      <text x="50" y="50" fill="#ffffff" font-size="24" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" dominant-baseline="central" letter-spacing="1.5">STOP</text>
-                                  </svg>
-                              </div>
-                              <input type="hidden" data-lop="${maLop}" data-mon="${tenMon}" value="">
+          // Trường hợp vô hiệu hóa: Môn học không có trong Khung chương trình (Làm mờ và khóa nhập liệu)
+              bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-70" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
+                              <input type="text" disabled data-lop="${maLop}" data-mon="${tenMon}" value="" 
+                              class="w-full h-full min-h-[26px] min-w-0 outline-none text-center bg-transparent cursor-not-allowed text-slate-500 font-bold" 
+                              placeholder="✖">
                            </td>`;
           }
         }
