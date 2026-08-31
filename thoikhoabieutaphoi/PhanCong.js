@@ -198,6 +198,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
       containerThongKe.className = 'w-[500px] overflow-auto border border-gray-400 shadow-sm bg-white flex-none relative scroll-smooth';
   }
 
+// [NÂNG CẤP BỔ SUNG]: Chèn nút Xuất Excel vào trực tiếp DOM của dòng tiêu đề
   const theadThongKe = document.querySelector('#duLieuThongKe').previousElementSibling;
   if (theadThongKe) {
       theadThongKe.className = 'bg-purple-100 text-purple-900 shadow-sm';
@@ -206,7 +207,15 @@ function tinhToanTietDay(maGVVuaChon = null) {
             <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">Giáo viên</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Định mức</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Thực tế</th>
-            <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Chi tiết giảng dạy</th>
+            <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">
+                <div class="flex justify-between items-center">
+                    <span>Chi tiết giảng dạy</span>
+                    <button onclick="xuatExcelThongKePhanCong()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-0.5 rounded shadow-sm text-[11px] flex items-center gap-1 transition-colors" title="Tải xuống bảng Thống kê khung phải">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Xuất Excel
+                    </button>
+                </div>
+            </th>
         </tr>
       `;
   }
