@@ -1,5 +1,5 @@
 // =========================================================================
-// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ KHI KÍCH HOẠT TAB (TÍCH HỢP CHỐNG LỖI)
+// HÀM FETCH DỮ LIỆU TỪ MÁY CHỦ
 // =========================================================================
 let daTaiDuLieuSoDauBai = false;
 
@@ -10,7 +10,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-10 text-slate-500 font-bold">
             <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang trích xuất Lịch sử TKB và Khung PPCT toàn trường...
+            Đang trích xuất Lịch sử TKB và tính toán Khung PPCT toàn trường...
         </div>`;
     }
 
@@ -22,14 +22,13 @@ async function taiDuLieuSoDauBaiTuMayChu() {
         try {
             duLieuSever = JSON.parse(phanHoiText);
         } catch (loiParse) {
-            throw new Error("Phản hồi từ Google Apps Script bị hỏng hoặc chưa Deploy phiên bản mới.");
+            throw new Error("Phản hồi từ máy chủ bị hỏng. Vui lòng Deploy lại mã Code.gs.");
         }
 
         if (duLieuSever.trangThai === 'loi_he_thong') {
             throw new Error(duLieuSever.thongBao);
         }
         
-        // Gọi hàm lõi để xử lý (Hàm này nằm ngay bên dưới)
         khoiTaoDuLieuSoDauBai(duLieuSever);
         daTaiDuLieuSoDauBai = true;
     } catch (loi) {
@@ -43,7 +42,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
 }
 
 // =========================================================================
-// KHỐI 1: KHỞI TẠO VÀ ÁNH XẠ DỮ LIỆU TỐC ĐỘ CAO (THUẬT TOÁN CON TRỞ TIẾN ĐỘ)
+// KHỐI 1: ÁNH XẠ DỮ LIỆU BẰNG THUẬT TOÁN ĐẾM TỊNH TIẾN TỪ TUẦN 1
 // =========================================================================
 let duLieuTKBGopDaMap = [];
 
@@ -52,7 +51,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     let tkbHienTai = duLieuSever.TKB_HIEN_TAI || [];
     let tkbGop = [...tkbLichSu, ...tkbHienTai];
 
-    // 1. Sắp xếp TKB tuần tự tuyệt đối theo thời gian
+    // 1. Sắp xếp TKB tuần tự tuyệt đối theo thời gian (Từ tuần 1 -> hiện tại)
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
@@ -66,53 +65,51 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // 2. Nạp khung PPCT gốc theo KHỐI
-    let khungPPCT = {}; 
+    // 2. Nạp dữ liệu PPCT vào Bộ từ điển (Dictionary) để tra cứu O(1)
+    let tuDienPPCT = {}; 
     if (duLieuSever.PPCT) {
         duLieuSever.PPCT.forEach(dong => {
             let khoi = String(dong['Khối lớp'] || '').trim();
             let mon = String(dong['Tên môn học'] || '').trim().toLowerCase();
-            let khoa = `${khoi}_${mon}`;
+            let tietPPCT_Goc = String(dong['Tiết PPCT'] || '').trim();
             
-            if (!khungPPCT[khoa]) khungPPCT[khoa] = [];
-            khungPPCT[khoa].push({
-                tietPPCT: dong['Tiết PPCT'] || '',
-                tenBai: dong['Tên bài học'] || ''
-            });
+            // Khóa tra cứu: Khối_Môn_SốTiết (VD: 1_tiếng việt_12)
+            let khoa = `${khoi}_${mon}_${tietPPCT_Goc}`;
+            tuDienPPCT[khoa] = dong['Tên bài học'] || '';
         });
     }
 
-    // 3. Quét TKB, ráp PPCT sử dụng Con trỏ độc lập cho từng LỚP + MÔN
-    let conTroPPCT = {}; 
+    // 3. THUẬT TOÁN ĐẾM TỊNH TIẾN: Quét TKB từ đầu năm, cộng dồn số tiết cho từng lớp
+    let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
         let maLop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-        let mon = String(dong['Môn Học'] || '').trim().toLowerCase();
+        let mon = String(dong['Môn Học'] || '').trim();
         let khoi = maLop.replace(/[^0-9]/g, ''); 
         
-        let khoaKhung = `${khoi}_${mon}`;
-        let khoaLop = `${maLop}_${mon}`; 
+        let tietThucTe = '';
+        let tenBaiHoc = '';
         
-        if (conTroPPCT[khoaLop] === undefined) {
-            conTroPPCT[khoaLop] = 0; 
-        }
-        
-        let tietPPCT = '';
-        let tenBai = '';
-        
-        if (khungPPCT[khoaKhung] && conTroPPCT[khoaLop] < khungPPCT[khoaKhung].length) {
-            let indexHienTai = conTroPPCT[khoaLop];
-            let duLieuTiet = khungPPCT[khoaKhung][indexHienTai];
-            tietPPCT = duLieuTiet.tietPPCT;
-            tenBai = duLieuTiet.tenBai;
+        // Nếu có môn học, tiến hành đếm
+        if (mon && mon !== '') {
+            let khoaDem = `${maLop}_${mon.toLowerCase()}`;
             
-            conTroPPCT[khoaLop]++; 
+            if (!boDemTietCuaLop[khoaDem]) {
+                boDemTietCuaLop[khoaDem] = 0;
+            }
+            
+            boDemTietCuaLop[khoaDem]++; // Tăng số tiết lên 1
+            tietThucTe = boDemTietCuaLop[khoaDem];
+            
+            // Dùng số tiết vừa đếm được ráp vào Khối để tìm Tên bài dạy
+            let khoaTraPPCT = `${khoi}_${mon.toLowerCase()}_${tietThucTe}`;
+            tenBaiHoc = tuDienPPCT[khoaTraPPCT] || ''; 
         }
         
         return {
             ...dong,
-            TietPPCT: tietPPCT,
-            TenBai: tenBai
+            TietPPCT_Thuc: tietThucTe,
+            TenBai_Thuc: tenBaiHoc
         };
     });
 
@@ -144,7 +141,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: XỬ LÝ LỌC VÀ VẼ GIAO DIỆN HTML THEO MẪU SỔ
+// KHỐI 2: VẼ GIAO DIỆN "KHUNG CỨNG" (SÁNG 5 TIẾT, CHIỀU 4 TIẾT)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -153,15 +150,23 @@ function ketXuatSoDauBaiLenLuoi() {
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
-    let tkbLop = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim() === lopChon);
+    // Lấy dữ liệu của tuần và lớp đang chọn
+    let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim() === lopChon);
 
-    let duLieuSang = tkbLop.filter(d => String(d['Buổi']).trim().toLowerCase() === 'sáng');
-    let duLieuChieu = tkbLop.filter(d => String(d['Buổi']).trim().toLowerCase() === 'chiều');
+    // Chuyển thành Dictionary để điền vào Khung cứng cực nhanh
+    let dictTKB = {};
+    let ngayBatDau = '...';
+    tkbTuanNay.forEach(dong => {
+        if (ngayBatDau === '...') ngayBatDau = dong['Ngày'] || '...';
+        let buoiKiemTra = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
+        let khoa = `${String(dong['Thứ']).trim()}_${buoiKiemTra}_${dong['Tiết']}`;
+        dictTKB[khoa] = dong;
+    });
 
-    let ngayBatDau = tkbLop.length > 0 ? tkbLop[0]['Ngày'] : '...';
+    const danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
 
-    const taoBangHtml = (duLieu, tenBuoi) => {
-        if (duLieu.length === 0) return '';
+    const taoBangHtml = (tenBuoi, soTietToiDa) => {
+        let buoiKey = tenBuoi === "SÁNG" ? "Sang" : "Chieu";
         
         let html = `
             <div class="mb-8 bang-so-dau-bai-container">
@@ -178,7 +183,7 @@ function ketXuatSoDauBaiLenLuoi() {
                             <th class="border border-gray-500 p-2 w-16">THỨ</th>
                             <th class="border border-gray-500 p-2 w-12">TIẾT</th>
                             <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
-                            <th class="border border-gray-500 p-2 w-28">MÔN</th>
+                            <th class="border border-gray-500 p-2 w-32">MÔN</th>
                             <th class="border border-gray-500 p-2 w-16">TIẾT PPCT</th>
                             <th class="border border-gray-500 p-2">TÊN BÀI DẠY</th>
                             <th class="border border-gray-500 p-2 w-24">CHỮ KÝ CỦA GV</th>
@@ -187,34 +192,40 @@ function ketXuatSoDauBaiLenLuoi() {
                     <tbody>
         `;
 
-        let thuHienTai = '';
-        let rowSpanCount = 0;
-        
-        duLieu.forEach(dong => {
-            if (dong['Thứ'] !== thuHienTai) {
-                rowSpanCount = duLieu.filter(d => d['Thứ'] === dong['Thứ']).length;
-                html += `<tr><td class="border border-gray-500 text-center font-bold uppercase" rowspan="${rowSpanCount}">${dong['Thứ']}</td>`;
-                thuHienTai = dong['Thứ'];
-            } else {
-                html += `<tr>`;
-            }
+        // Vòng lặp Khung cứng
+        danhSachThu.forEach(thu => {
+            for (let tiet = 1; tiet <= soTietToiDa; tiet++) {
+                let khoaKiemTra = `${thu}_${buoiKey}_${tiet}`;
+                let dongDuLieu = dictTKB[khoaKiemTra]; // Lấy dữ liệu nếu tiết này có phân công
 
-            html += `
-                    <td class="border border-gray-500 text-center p-1.5">${dong['Tiết']}</td>
+                let monHoc = dongDuLieu ? dongDuLieu['Môn Học'] : '';
+                let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
+                let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
+
+                html += `<tr class="hover:bg-slate-50">`;
+                
+                // Cột THỨ chỉ in ở tiết 1 và gộp dòng bằng số tiết tối đa
+                if (tiet === 1) {
+                    html += `<td class="border border-gray-500 text-center font-bold uppercase" rowspan="${soTietToiDa}">${thu}</td>`;
+                }
+
+                html += `
+                    <td class="border border-gray-500 text-center p-1.5">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5"></td>
-                    <td class="border border-gray-500 p-1.5 font-semibold text-center">${dong['Môn Học']}</td>
-                    <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800">${dong['TietPPCT']}</td>
-                    <td class="border border-gray-500 p-1.5">${dong['TenBai']}</td>
+                    <td class="border border-gray-500 p-1.5 font-semibold text-center text-slate-800">${monHoc}</td>
+                    <td class="border border-gray-500 text-center p-1.5 font-bold text-blue-800">${tietPPCT}</td>
+                    <td class="border border-gray-500 p-1.5 text-slate-700">${tenBai}</td>
                     <td class="border border-gray-500 p-1.5"></td>
-                </tr>
-            `;
+                </tr>`;
+            }
         });
 
         html += `</tbody></table></div>`;
         return html;
     };
 
-    vungHienThi.innerHTML = taoBangHtml(duLieuSang, "SÁNG") + taoBangHtml(duLieuChieu, "CHIỀU");
+    // Vẽ Bảng Sáng (5 tiết) và Bảng Chiều (4 tiết)
+    vungHienThi.innerHTML = taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
 }
 
 // =========================================================================
