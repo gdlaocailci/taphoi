@@ -113,7 +113,7 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
               bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-70" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
                               <input type="text" disabled data-lop="${maLop}" data-mon="${tenMon}" value="" 
                               class="w-full h-full min-h-[26px] min-w-0 outline-none text-center bg-transparent cursor-not-allowed text-slate-500 font-bold" 
-                              placeholder="✖">
+                              placeholder="✋">
                            </td>`;
           }
         }
