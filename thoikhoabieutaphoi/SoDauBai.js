@@ -94,6 +94,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
+    // MAP CHỮ KÝ TỪ LỊCH SỬ CSDL
     let soDauBaiDaLuu = {};
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
@@ -106,7 +107,8 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             let khoa = `${tuan}_${lop}_${thu}_${buoi}_${tiet}`;
             soDauBaiDaLuu[khoa] = {
                 TietPPCT: dong['Tiết PPCT'] || '',
-                TenBai: dong['Tên Bài Dạy'] || dong['Tên bài dạy'] || dong['Tên Bài'] || dong['Tên bài'] || ''
+                TenBai: dong['Tên Bài Dạy'] || dong['Tên bài dạy'] || dong['Tên Bài'] || dong['Tên bài'] || '',
+                ChuKy: dong['Chữ Ký GV'] || dong['Chữ ký GV'] || dong['Chữ ký'] || '' // Hỗ trợ tương thích cột
             };
         });
     }
@@ -126,6 +128,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         
         let tietThucTe = ''; 
         let tenBaiHoc = '';
+        let chuKyGV = '';
         let isDaLuu = false;
 
         if (mon && mon !== '') {
@@ -135,6 +138,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 isDaLuu = true;
                 tietThucTe = dongDaLuu.TietPPCT;
                 tenBaiHoc = dongDaLuu.TenBai;
+                chuKyGV = dongDaLuu.ChuKy;
                 
                 let tietNum = parseInt(String(tietThucTe).replace(/\D/g, '')) || 0;
                 if (tietNum > (boDemTietCuaLop[khoaDem] || 0)) {
@@ -145,10 +149,11 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 boDemTietCuaLop[khoaDem]++; 
                 tietThucTe = boDemTietCuaLop[khoaDem];
                 tenBaiHoc = ''; 
+                chuKyGV = '';
             }
         }
         
-        return { ...dong, TietPPCT_Thuc: tietThucTe, TenBai_Thuc: tenBaiHoc, DaLuu: isDaLuu };
+        return { ...dong, TietPPCT_Thuc: tietThucTe, TenBai_Thuc: tenBaiHoc, ChuKy_Thuc: chuKyGV, DaLuu: isDaLuu };
     });
 
     napDropdownSoDauBai();
@@ -180,7 +185,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN (HỢP NHẤT MỘT BẢNG DUY NHẤT 9 TIẾT)
+// KHỐI 2: VẼ GIAO DIỆN (HỢP NHẤT BẢNG - TẠO CỘT CHỮ KÝ THÔNG MINH)
 // =========================================================================
 function tinhNgayTuInputDate(ngayYMD, tenThu) {
     if (!ngayYMD) return '';
@@ -280,10 +285,10 @@ function ketXuatSoDauBaiLenLuoi() {
                 <div class="mb-4 p-2 bg-amber-50 border border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded animate-pulse-once">
                     <div class="flex items-center gap-2">
                         <div class="bg-amber-500 rounded-full p-1"><svg class="w-3 h-3 text-white animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></div>
-                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">ĐÂY LÀ DỮ LIỆU MỚI CẦN PHẢI LƯU</span>
+                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI TỊNH TIẾN (CHƯA LƯU)</span>
                     </div>
                     <span class="text-xs font-bold text-amber-800 bg-amber-200 px-3 py-1 rounded-full border border-amber-400">
-                        ⚠️ Yêu cầu: Hãy "Đồng bộ Tên Bài" và bấm "Lưu sổ đầu bài" để lưu trữ!
+                        ⚠️ Yêu cầu: Bấm "Đồng bộ", Ký tên và bấm "Chốt Sổ" để lưu trữ!
                     </span>
                 </div>`;
         }
@@ -305,7 +310,6 @@ function ketXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
 
-    // VẼ 1 BẢNG DUY NHẤT BAO GỒM CẢ SÁNG LẪN CHIỀU
     let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container">
             <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
@@ -334,13 +338,12 @@ function ketXuatSoDauBaiLenLuoi() {
         let ngayCuaThu = mapNgayChinhXac[thu] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '');
         let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-[11px] font-normal tracking-tight normal-case">${ngayCuaThu}</span>` : thu;
 
-        // Cấu trúc hợp nhất: Sáng 5, Chiều 4
         let danhSachBuoi = [
             { id: 'Sang', dataBuoi: 'Sáng', dsTiet: [1, 2, 3, 4, 5] },
             { id: 'Chieu', dataBuoi: 'Chiều', dsTiet: [1, 2, 3, 4] }
         ];
 
-        let tongDongTrongNgay = 9; // 5 + 4
+        let tongDongTrongNgay = 9; 
         let daInCotThu = false;
 
         danhSachBuoi.forEach(buoiObj => {
@@ -352,15 +355,22 @@ function ketXuatSoDauBaiLenLuoi() {
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
                 let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
+                let chuKy = dongDuLieu ? dongDuLieu['ChuKy_Thuc'] : '';
 
                 let cssTenBai = isDaLuu ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
                 if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
 
-                // Nhấn viền nhỏ ngăn cách giữa Sáng và Chiều để giáo viên dễ nhìn
+                // LOGIC CHỮ KÝ: Mở Input nếu chưa lưu, Khóa cứng thành Text nếu đã lưu
+                let theChuKy = "";
+                if (monHoc && monHoc !== "") {
+                    theChuKy = isDaLuu 
+                        ? `<span class="font-bold text-slate-800 uppercase">${chuKy}</span>` 
+                        : `<input type="text" class="w-full text-center outline-none bg-transparent font-semibold text-blue-700 placeholder-blue-300" placeholder="Ký..." value="${chuKy}" data-loai="chuKy">`;
+                }
+
                 let isRowDauChieu = (buoiObj.id === 'Chieu' && tiet === 1);
                 let cssRow = isRowDauChieu ? "border-t-2 border-t-gray-400" : "";
 
-                // [BẢO MẬT]: Nhúng thẻ tàng hình data-buoi để thuật toán Lưu Sổ nhận biết chính xác buổi Sáng/Chiều
                 htmlBang += `<tr class="hover:bg-slate-50 transition-colors duration-150 group ${cssRow}" data-buoi="${buoiObj.dataBuoi}">`;
                 
                 if (!daInCotThu) {
@@ -374,7 +384,7 @@ function ketXuatSoDauBaiLenLuoi() {
                     <td class="border border-gray-500 p-1.5 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1.5 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
                     <td class="border border-gray-500 p-1.5 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-daluu="${isDaLuu}">${tenBai}</td>
-                    <td class="border border-gray-500 p-1.5 bg-white group-hover:bg-slate-50"></td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 text-center align-middle">${theChuKy}</td>
                 </tr>`;
             });
         });
@@ -446,7 +456,7 @@ function dongBoTenBaiHoc() {
 }
 
 // =========================================================================
-// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL)
+// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL HỖ TRỢ INPUT CHỮ KÝ)
 // =========================================================================
 async function luuSoDauBaiSangMayChu() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -470,19 +480,24 @@ async function luuSoDauBaiSangMayChu() {
             
             cacDong.forEach(dong => {
                 let rData = [];
-                dong.querySelectorAll('th, td').forEach(cell => rData.push(cell.innerText.trim()));
+                // Bốc dữ liệu: Nếu là input chữ ký thì bốc value, ngược lại bốc text
+                dong.querySelectorAll('th, td').forEach(cell => {
+                    let input = cell.querySelector('input');
+                    if (input) rData.push(input.value.trim());
+                    else rData.push(cell.innerText.trim());
+                });
 
-                // Nhận biết dòng đầu tiên của Ngày để lấy thông tin Thứ và Ngày
                 if (rData.length === 7) {
                     let textThuNgay = rData[0].split('\n'); 
                     thuHienTai = textThuNgay[0].trim();
                     ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
-                    rData.shift(); // Ép chuẩn hóa mảng thành 6 phần tử như các dòng bình thường
+                    rData.shift(); 
                 }
 
-                let tiet = rData[0]; let mon = rData[2]; let tietPPCT = rData[3]; let tenBai = rData[4];
+                // Cấu trúc mảng rData bây giờ: 0:Tiết, 1:CC, 2:Môn, 3:Tiết PPCT, 4:Bài dạy, 5:Chữ ký
+                let tiet = rData[0]; let mon = rData[2]; let tietPPCT = rData[3]; 
+                let tenBai = rData[4]; let chuKyGV = rData[5];
                 
-                // [LÕI AN TOÀN]: Bốc Nhãn tàng hình (Sáng/Chiều) được chèn từ lúc vẽ bảng
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
                 if (mon && mon !== '') {
@@ -492,7 +507,7 @@ async function luuSoDauBaiSangMayChu() {
                     duLieuQuetDuoc.push({
                         maLuuTru: maLuuTru, tuan: tuanSo, maLop: lopChon,
                         thu: thuHienTai, ngay: ngayHienTai, buoi: buoi, tiet: tiet,
-                        mon: mon, tietPPCT: tietPPCT, tenBai: tenBai
+                        mon: mon, tietPPCT: tietPPCT, tenBai: tenBai, chuKy: chuKyGV
                     });
                 }
             });
@@ -507,8 +522,13 @@ async function luuSoDauBaiSangMayChu() {
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
         const ketQua = await phanHoi.json();
 
-        if (ketQua.trangThai === 'thanh_cong') alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
-        else throw new Error(ketQua.thongBao);
+        if (ketQua.trangThai === 'thanh_cong') {
+            alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
+            // Load lại màn hình để Khóa cứng các Input thành dạng Text
+            await taiDuLieuSoDauBaiTuMayChu();
+            daTaiDuLieuSoDauBai = false; // Buộc làm mới
+            taiDuLieuSoDauBaiTuMayChu();
+        } else throw new Error(ketQua.thongBao);
 
     } catch (loi) { alert("Lưu thất bại: " + loi.message); } 
     finally { btn.innerHTML = textGoc; btn.disabled = false; }
@@ -542,6 +562,13 @@ function xuatWordSoDauBai() {
     let noiDungClone = vungHienThi.cloneNode(true);
     let canhBaoNode = noiDungClone.querySelector('.border-red-500');
     if (canhBaoNode) canhBaoNode.remove();
+
+    // Hỗ trợ in chữ ký từ Input ra Word
+    let cacInputGoc = vungHienThi.querySelectorAll('input');
+    let cacInputClone = noiDungClone.querySelectorAll('input');
+    cacInputGoc.forEach((input, idx) => {
+        if (cacInputClone[idx]) cacInputClone[idx].setAttribute('value', input.value);
+    });
 
     let htmlContent = preHtml + noiDungClone.innerHTML + "</div></body></html>";
     let blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
@@ -590,7 +617,10 @@ async function xuatExcelSoDauBai() {
             const rows = khungBang.querySelectorAll('table tr');
             rows.forEach((tr, idx) => {
                 let rData = [];
-                tr.querySelectorAll('th, td').forEach(cell => rData.push(cell.innerText));
+                tr.querySelectorAll('th, td').forEach(cell => {
+                    let input = cell.querySelector('input');
+                    rData.push(input ? input.value : cell.innerText);
+                });
 
                 if(idx > 0 && rData.length < 7) rData.unshift(''); 
 
@@ -631,7 +661,7 @@ async function xuatExcelSoDauBai() {
         worksheet.getColumn(4).width = 25;
         worksheet.getColumn(5).width = 12;
         worksheet.getColumn(6).width = 50;
-        worksheet.getColumn(7).width = 20;
+        worksheet.getColumn(7).width = 20; // Độ rộng cột chữ ký
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
