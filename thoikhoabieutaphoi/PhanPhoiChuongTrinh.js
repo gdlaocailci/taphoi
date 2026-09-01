@@ -88,10 +88,22 @@ function taoKhungGiaoDienPPCT() {
                     <input type="text" id="locMonPPCT" list="listMonPPCT" class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50" placeholder="Chọn môn">
                     <datalist id="listMonPPCT"></datalist>
                 </div>
-               <button onclick="taiDuLieuTkbVaPpct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-6 rounded shadow transition duration-200 text-sm ml-auto flex items-center gap-2 h-[34px]">
-                    Xác nhận
-                </button>
+               
+               <!-- [BẢN NÂNG CẤP]: Thêm nút Xoá trắng bên cạnh nút Xác nhận -->
+               <div class="flex items-center gap-2 ml-auto h-[34px]">
+                    <button onclick="xoDuLieuTraCuuPPCTOnUI()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-4 rounded shadow transition duration-200 text-sm flex items-center gap-1.5" title="Xóa dữ liệu lọc và làm sạch bảng">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Xoá trắng
+                    </button>
+                    <button onclick="taiDuLieuTkbVaPpct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-6 rounded shadow transition duration-200 text-sm flex items-center gap-2">
+                        Xác nhận
+                    </button>
+                </div>
             </div>
+
+            <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative">
 
             <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative">
                 <table class="bang-excel w-full text-center border-collapse">
@@ -646,4 +658,41 @@ async function luuDuLieuPPCTLenMayChu(event) {
         nutBam.innerHTML = noiDungGoc;
         nutBam.disabled = false;
     }
+}
+
+// =========================================================================
+// KHỐI 6: XỬ LÝ XOÁ DỮ LIỆU TRA CỨU TRÊN UI
+// =========================================================================
+function xoDuLieuTraCuuPPCTOnUI() {
+    // 1. Reset các ô input lọc về giá trị rỗng hoặc mặc định
+    const inputTuan = document.getElementById('locTuanUI');
+    if (inputTuan) {
+        if (typeof tuanDangXem !== 'undefined') inputTuan.value = tuanDangXem;
+        else inputTuan.value = "1";
+    }
+
+    const inputLop = document.getElementById('locLopPPCT');
+    if (inputLop) inputLop.value = "";
+
+    const inputKhoi = document.getElementById('locKhoiPPCT');
+    if (inputKhoi) {
+        inputKhoi.value = "";
+        inputKhoi.removeAttribute('data-khoi-so');
+    }
+
+    const inputMon = document.getElementById('locMonPPCT');
+    if (inputMon) inputMon.value = "";
+
+    // 2. Clear bảng dữ liệu về trạng thái ban đầu
+    const tbody = document.getElementById('vungDuLieuLichPPCT');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500 font-bold italic">Vui lòng chọn Tuần, Lớp, Môn và bấm "Xác nhận"</td></tr>`;
+    }
+
+    // 3. Reset các biến dữ liệu toàn cục liên quan đến view này (để tránh Lưu nhầm)
+    duLieuTkbTuan = [];
+    duLieuPpctGoc = [];
+    
+    // 4. Khôi phục lại datalist cho các ô input (nếu có)
+    bomDuLieuVaoBoLoc();
 }
