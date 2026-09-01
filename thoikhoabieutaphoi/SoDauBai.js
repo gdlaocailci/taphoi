@@ -35,7 +35,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
 }
 
 // =========================================================================
-// KHỐI 1: MA TRẬN TỊNH TIẾN DỰA TRÊN LỊCH SỬ CHỐT SỔ (SOURCE OF TRUTH)
+// KHỐI 1: BỘ MÁY TỊNH TIẾN VÀ ÁNH XẠ THÔNG MINH (ĐÃ FIX LỖI)
 // =========================================================================
 let duLieuTKBGopDaMap = [];
 let tuDienPPCTToanCuc = {}; 
@@ -77,20 +77,32 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
+    // [LÕI FIX 1]: Tạo Từ điển PPCT thông minh chống Merge Cell
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         let boNhoKhoi = ''; 
+        let boNhoMon = ''; 
+        
         duLieuSever.PPCT.forEach(dong => {
             let khoiGoc = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
             if (khoiGoc !== '') boNhoKhoi = khoiGoc; else khoiGoc = boNhoKhoi; 
             
             let matchKhoi = khoiGoc.match(/\d+/);
             let khoi = matchKhoi ? matchKhoi[0] : khoiGoc; 
-            let mon = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
-            let tietPPCT_Goc = String(dong['Tiết PPCT'] || dong['Tiết'] || '').trim();
             
-            let khoa = `${khoi}_${mon}_${tietPPCT_Goc}`;
-            tuDienPPCTToanCuc[khoa] = dong['Tên bài học'] || dong['Tên bài'] || dong['Tên bài dạy'] || dong['Nội dung'] || '';
+            // Xử lý tàng hình do gộp ô (Merge) trong file PPCT
+            let monGoc = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
+            if (monGoc !== '') boNhoMon = monGoc; else monGoc = boNhoMon; 
+            
+            let monRutGon = monGoc.replace(/[0-9]/g, '').trim().replace(/\s+/g, ' ');
+            let tietPPCT_Goc = String(dong['Tiết PPCT'] || dong['Tiết'] || '').trim();
+            let baiDay = dong['Tên bài học'] || dong['Tên bài'] || dong['Tên bài dạy'] || dong['Nội dung'] || '';
+            
+            // Lưu cả khóa Gốc (TN1) và khóa Phụ (tn) để dự phòng ánh xạ
+            tuDienPPCTToanCuc[`${khoi}_${monGoc}_${tietPPCT_Goc}`] = baiDay;
+            if (!tuDienPPCTToanCuc[`${khoi}_${monRutGon}_${tietPPCT_Goc}`]) {
+                tuDienPPCTToanCuc[`${khoi}_${monRutGon}_${tietPPCT_Goc}`] = baiDay;
+            }
         });
     }
 
@@ -132,7 +144,9 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         let isDaLuu = false;
 
         if (mon && mon !== '') {
-            let khoaDem = `${maLop.toUpperCase()}_${mon.toLowerCase()}`;
+            // [LÕI FIX 2]: Lọc bỏ chữ số khỏi tên môn trước khi đếm, ép TN1 và TN2 đếm chung 1 mạch
+            let monDem = mon.replace(/[0-9]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+            let khoaDem = `${maLop.toUpperCase()}_${monDem}`;
             
             if (dongDaLuu) {
                 isDaLuu = true;
@@ -189,7 +203,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN HỢP NHẤT
+// KHỐI 2: VẼ GIAO DIỆN (ĐÃ TỐI ƯU CĂN LỀ & LOGIC KHÓA INPUT)
 // =========================================================================
 function tinhNgayTuInputDate(ngayYMD, tenThu) {
     if (!ngayYMD) return '';
@@ -280,19 +294,19 @@ function ketXuatSoDauBaiLenLuoi() {
                 <div class="mb-4 p-2 bg-emerald-50 border border-emerald-200 shadow-sm flex items-center justify-between rounded">
                     <div class="flex items-center gap-2">
                         <div class="bg-emerald-500 rounded-full p-1"><svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
-                        
+                        <span class="text-sm font-extrabold text-emerald-800 tracking-wide uppercase">CÓ DỮ LIỆU ĐÃ ĐƯỢC CHỐT SỔ</span>
                     </div>
-                    
+                    <span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Các tiết đã Ký Tên sẽ bị khóa cứng. Các tiết chưa ký vẫn tiếp tục mở để bổ sung.</span>
                 </div>`;
         } else {
             theTrangThaiHtml = `
                 <div class="mb-4 p-2 bg-amber-50 border border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded animate-pulse-once">
                     <div class="flex items-center gap-2">
                         <div class="bg-amber-500 rounded-full p-1"><svg class="w-3 h-3 text-white animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></div>
-                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI (CHƯA LƯU)</span>
+                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI TỊNH TIẾN (CHƯA LƯU)</span>
                     </div>
                     <span class="text-xs font-bold text-amber-800 bg-amber-200 px-3 py-1 rounded-full border border-amber-400">
-                        ⚠️ Yêu cầu: Bấm "Đồng bộ Tên bài", Nhập Đánh giá, Ký tên và bấm "Lưu Sổ đầu bài" để lưu!
+                        ⚠️ Yêu cầu: Bấm "Đồng bộ Tên bài", Nhập Đánh giá, Ký tên và bấm "Chốt Sổ" để lưu!
                     </span>
                 </div>`;
         }
@@ -314,7 +328,6 @@ function ketXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
 
-    // NÂNG CẤP UI: Chỉnh lại độ rộng cột (w-*) chuẩn tỷ lệ vàng
     let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container overflow-x-auto">
             <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
@@ -333,9 +346,9 @@ function ketXuatSoDauBaiLenLuoi() {
                         <th class="border border-gray-500 p-2 w-20">MÔN</th>
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
                         <th class="border border-gray-500 p-2 min-w-[200px] w-auto">TÊN BÀI DẠY</th>
-                        <th class="border border-gray-500 p-2 min-w-[180px] w-auto">NHẬN XÉT CỦA GV</th>
+                        <th class="border border-gray-500 p-2 min-w-[200px] w-auto">NHẬN XÉT CỦA GV</th>
                         <th class="border border-gray-500 p-2 w-16">XẾP LOẠI</th>
-                        <th class="border border-gray-500 p-2 w-24">CHỮ KÝ</th>
+                        <th class="border border-gray-500 p-2 w-20">CHỮ KÝ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -370,7 +383,7 @@ function ketXuatSoDauBaiLenLuoi() {
                 let cssTenBai = isDaLuu ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
                 if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
 
-                // NÂNG CẤP LÕI KHÓA INPUT: Chỉ khóa các cột nhập tay khi isDaLuu = true VÀ Chữ ký đã có dữ liệu.
+                // [LÕI KHÓA INPUT THÔNG MINH]: Chỉ khóa khi Đã Lưu VÀ Đã có chữ ký
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
                 let theNhanXet = ""; let theXepLoai = ""; let theChuKy = "";
@@ -417,7 +430,7 @@ function ketXuatSoDauBaiLenLuoi() {
 }
 
 // =========================================================================
-// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM
+// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (ĐÃ CHUẨN HÓA ÁNH XẠ)
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -445,7 +458,6 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
-                // Tên bài dạy đã chốt sổ (có trên DB) thì không cho ghi đè, bảo vệ tính lịch sử
                 let isDaLuu = oTenBai.getAttribute('data-daluu') === 'true';
                 if (isDaLuu) return; 
 
@@ -453,14 +465,13 @@ function dongBoTenBaiHoc() {
                 let tiet = oTiet.innerText.trim();
                 
                 if (mon !== '' && tiet !== '') {
-                    let khoaChinh = `${khoi}_${mon}_${tiet}`;
-                    let baiDay = tuDienPPCTToanCuc[khoaChinh] || '';
+                    // Áp dụng bộ lọc bóc số tương đương với lõi Dictionary
+                    let monRutGon = mon.replace(/[0-9]/g, '').trim().replace(/\s+/g, ' ');
                     
-                    if (baiDay === '') {
-                        let monRutGon = mon.replace(/[0-9]/g, '').trim();
-                        let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
-                        baiDay = tuDienPPCTToanCuc[khoaPhu] || '';
-                    }
+                    let khoaChinh = `${khoi}_${mon}_${tiet}`;
+                    let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
+                    
+                    let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
                     if (baiDay !== '') {
                         oTenBai.innerText = baiDay;
@@ -479,7 +490,7 @@ function dongBoTenBaiHoc() {
 }
 
 // =========================================================================
-// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL HỖ TRỢ INPUT HỖN HỢP)
+// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL)
 // =========================================================================
 async function luuSoDauBaiSangMayChu() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
