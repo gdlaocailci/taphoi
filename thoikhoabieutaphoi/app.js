@@ -687,17 +687,18 @@ async function luuDuLieu(event, loaiLuu) {
 }
 
 // =========================================================================
-// KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC (ĐÃ TỐI ƯU CHỐNG LAG DOM)
+// KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC (ÉP ĐỔI MÀU MENU DỨT KHOÁT)
 // =========================================================================
 window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
     try {
-        // 1. CHUYỂN MÀU MENU NGAY LẬP TỨC (Tạo cảm giác phản hồi cực nhạy - Không lag)
+        // 1. CHUYỂN MÀU MENU NGAY LẬP TỨC 
+        // LÕI FIX LỖI: Xóa bỏ các class 'transition-all duration-150' để không bị đóng băng hiệu ứng
         document.querySelectorAll('nav a').forEach(m => {
-            m.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group";
+            m.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 cursor-pointer group";
             let span = m.querySelector('span');
-            if (span) span.className = "font-bold text-white/80 group-hover:text-white transition-colors text-[14px]";
+            if (span) span.className = "font-bold text-white/80 group-hover:text-white text-[14px]";
             let svg = m.querySelector('svg');
-            if (svg) svg.className = "w-5 h-5 flex-none opacity-70 group-hover:opacity-100 transition-opacity text-white";
+            if (svg) svg.className = "w-5 h-5 flex-none opacity-70 group-hover:opacity-100 text-white";
         });
 
         if (idMenu) {
@@ -711,7 +712,8 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
             }
         }
 
-        // 2. TÁCH LUỒNG HIỂN THỊ NẶNG (Nhường 20ms cho trình duyệt vẽ xong Menu)
+        // 2. TÁCH LUỒNG HIỂN THỊ NẶNG 
+        // Nới rộng lên 50ms để trình duyệt kịp phủ màu Menu dứt khoát trước khi bị khóa luồng
         setTimeout(() => {
             // A. DỌN DẸP GIAO DIỆN CŨ
             let vungChinh = document.getElementById('vungHienThiChinh');
@@ -765,7 +767,7 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
             } catch (loiData) {
                 console.error("Lỗi động cơ tải dữ liệu:", loiData);
             }
-        }, 20); // Cú lùi bước chiến thuật 20 mili-giây
+        }, 50); 
         
     } catch (loiUI) {
         console.error("Sự cố chuyển giao diện UI:", loiUI);
