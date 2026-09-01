@@ -94,7 +94,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // MAP THÊM CỘT NHẬN XÉT VÀ XẾP LOẠI
     let soDauBaiDaLuu = {};
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
@@ -281,9 +280,9 @@ function ketXuatSoDauBaiLenLuoi() {
                 <div class="mb-4 p-2 bg-emerald-50 border border-emerald-200 shadow-sm flex items-center justify-between rounded">
                     <div class="flex items-center gap-2">
                         <div class="bg-emerald-500 rounded-full p-1"><svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
-                        <span class="text-sm font-extrabold text-emerald-800 tracking-wide uppercase">ĐÃ CHỐT SỔ TỪ LỊCH SỬ</span>
+                        <span class="text-sm font-extrabold text-emerald-800 tracking-wide uppercase">CÓ DỮ LIỆU ĐÃ ĐƯỢC CHỐT SỔ</span>
                     </div>
-                    <span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Dữ liệu được trích xuất an toàn từ CSDL Sổ đầu bài.</span>
+                    <span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Các tiết đã Ký Tên sẽ bị khóa cứng. Các tiết chưa ký vẫn có thể tiếp tục bổ sung.</span>
                 </div>`;
         } else {
             theTrangThaiHtml = `
@@ -293,7 +292,7 @@ function ketXuatSoDauBaiLenLuoi() {
                         <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI TỊNH TIẾN (CHƯA LƯU)</span>
                     </div>
                     <span class="text-xs font-bold text-amber-800 bg-amber-200 px-3 py-1 rounded-full border border-amber-400">
-                        ⚠️ Yêu cầu: Nhập nhận xét, Ký tên và bấm "Chốt Sổ" để lưu trữ!
+                        ⚠️ Yêu cầu: Bấm "Đồng bộ Tên bài", Nhập Đánh giá, Ký tên và bấm "Chốt Sổ" để lưu!
                     </span>
                 </div>`;
         }
@@ -315,7 +314,7 @@ function ketXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
 
-    // ĐÃ BỔ SUNG: Cột Nhận xét và Xếp loại
+    // NÂNG CẤP UI: Chỉnh lại độ rộng cột (w-*) chuẩn tỷ lệ vàng
     let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container overflow-x-auto">
             <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
@@ -325,18 +324,18 @@ function ketXuatSoDauBaiLenLuoi() {
             <div class="text-center italic mb-2 text-sm text-slate-600">
                 (Từ ngày ${ngayDauTieuDe} đến ngày ${ngayCuoiTieuDe})
             </div>
-            <table class="w-full min-w-[900px] border-collapse border border-gray-500 text-sm">
+            <table class="w-full min-w-[950px] border-collapse border border-gray-500 text-sm">
                 <thead class="bg-slate-100 text-center font-bold">
                     <tr>
                         <th class="border border-gray-500 p-2 w-16">THỨ</th>
                         <th class="border border-gray-500 p-2 w-10">TIẾT</th>
-                        <th class="border border-gray-500 p-2 w-14">C.CẦN</th>
-                        <th class="border border-gray-500 p-2 w-28">MÔN</th>
-                        <th class="border border-gray-500 p-2 w-14">TIẾT PPCT</th>
-                        <th class="border border-gray-500 p-2 w-64">TÊN BÀI DẠY</th>
-                        <th class="border border-gray-500 p-2 w-48">NHẬN XÉT CỦA GV</th>
-                        <th class="border border-gray-500 p-2 w-20">XẾP LOẠI</th>
-                        <th class="border border-gray-500 p-2 w-20">CHỮ KÝ</th>
+                        <th class="border border-gray-500 p-2 w-12">C.CẦN</th>
+                        <th class="border border-gray-500 p-2 w-20">MÔN</th>
+                        <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
+                        <th class="border border-gray-500 p-2 min-w-[200px] w-auto">TÊN BÀI DẠY</th>
+                        <th class="border border-gray-500 p-2 min-w-[180px] w-auto">NHẬN XÉT CỦA GV</th>
+                        <th class="border border-gray-500 p-2 w-16">XẾP LOẠI</th>
+                        <th class="border border-gray-500 p-2 w-24">CHỮ KÝ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -371,19 +370,21 @@ function ketXuatSoDauBaiLenLuoi() {
                 let cssTenBai = isDaLuu ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
                 if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
 
-                // LOGIC BẢO VỆ VÀ ĐỔ DỮ LIỆU INPUT
+                // NÂNG CẤP LÕI KHÓA INPUT: Chỉ khóa các cột nhập tay khi isDaLuu = true VÀ Chữ ký đã có dữ liệu.
+                let isLocked = isDaLuu && chuKy.trim() !== '';
+
                 let theNhanXet = ""; let theXepLoai = ""; let theChuKy = "";
                 if (monHoc && monHoc !== "") {
-                    theNhanXet = isDaLuu 
-                        ? `<span class="font-normal text-slate-800 break-words">${nhanXet}</span>` 
+                    theNhanXet = isLocked 
+                        ? `<span class="font-normal text-slate-800 break-words block">${nhanXet}</span>` 
                         : `<input type="text" class="w-full text-left outline-none bg-transparent font-normal text-slate-800 placeholder-slate-300 px-1" placeholder="Nhận xét..." value="${nhanXet}">`;
                     
-                    theXepLoai = isDaLuu 
-                        ? `<span class="font-bold text-slate-800">${xepLoai}</span>` 
+                    theXepLoai = isLocked 
+                        ? `<span class="font-bold text-slate-800 block text-center">${xepLoai}</span>` 
                         : `<input type="text" class="w-full text-center outline-none bg-transparent font-bold text-slate-800 placeholder-slate-300" placeholder="XL" value="${xepLoai}">`;
                     
-                    theChuKy = isDaLuu 
-                        ? `<span class="font-bold text-slate-800 uppercase">${chuKy}</span>` 
+                    theChuKy = isLocked 
+                        ? `<span class="font-bold text-slate-800 uppercase block text-center">${chuKy}</span>` 
                         : `<input type="text" class="w-full text-center outline-none bg-transparent font-semibold text-blue-700 placeholder-blue-300" placeholder="Ký..." value="${chuKy}">`;
                 }
 
@@ -404,8 +405,8 @@ function ketXuatSoDauBaiLenLuoi() {
                     <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
                     <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-daluu="${isDaLuu}">${tenBai}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle">${theNhanXet}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle">${theXepLoai}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle">${theChuKy}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theXepLoai}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theChuKy}</td>
                 </tr>`;
             });
         });
@@ -444,6 +445,7 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
+                // Tên bài dạy đã chốt sổ (có trên DB) thì không cho ghi đè, bảo vệ tính lịch sử
                 let isDaLuu = oTenBai.getAttribute('data-daluu') === 'true';
                 if (isDaLuu) return; 
 
@@ -477,7 +479,7 @@ function dongBoTenBaiHoc() {
 }
 
 // =========================================================================
-// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL 9 CỘT MỚI)
+// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL HỖ TRỢ INPUT HỖN HỢP)
 // =========================================================================
 async function luuSoDauBaiSangMayChu() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -514,7 +516,6 @@ async function luuSoDauBaiSangMayChu() {
                     rData.shift(); 
                 }
 
-                // Cấu trúc rData mới [8 pt]: 0:Tiết, 1:CC, 2:Môn, 3:PPCT, 4:Bài dạy, 5:Nhận xét, 6:Xếp loại, 7:Chữ ký
                 let tiet = rData[0]; let mon = rData[2]; let tietPPCT = rData[3]; 
                 let tenBai = rData[4]; let nhanXetGV = rData[5]; let xepLoaiGV = rData[6]; let chuKyGV = rData[7];
                 
@@ -680,10 +681,10 @@ async function xuatExcelSoDauBai() {
         worksheet.getColumn(3).width = 8;
         worksheet.getColumn(4).width = 15;
         worksheet.getColumn(5).width = 10;
-        worksheet.getColumn(6).width = 40; // Tên bài
-        worksheet.getColumn(7).width = 25; // Nhận xét
-        worksheet.getColumn(8).width = 10; // Xếp loại
-        worksheet.getColumn(9).width = 15; // Chữ ký
+        worksheet.getColumn(6).width = 40; 
+        worksheet.getColumn(7).width = 25; 
+        worksheet.getColumn(8).width = 10; 
+        worksheet.getColumn(9).width = 15; 
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
