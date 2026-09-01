@@ -49,7 +49,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
-    // Sắp xếp trục thời gian tuyệt đối
     tkbGop.sort((a, b) => {
         let tuanA = parseInt(String(a['Tuần']).replace(/\D/g, '')) || 0; 
         let tuanB = parseInt(String(b['Tuần']).replace(/\D/g, '')) || 0;
@@ -61,7 +60,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // Phân tích Khung Chương Trình (Radar)
     dinhMucKhungCT = {};
     if (duLieuSever.KHUNG_CHUONG_TRINH) {
         duLieuSever.KHUNG_CHUONG_TRINH.forEach(dong => {
@@ -79,7 +77,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // Nạp Từ điển PPCT
     tuDienPPCTToanCuc = {}; 
     if (duLieuSever.PPCT) {
         let boNhoKhoi = ''; 
@@ -97,7 +94,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // [LÕI ĐÃ ĐƯỢC CHUẨN HÓA]: Ép kiểu chữ thường và lọc số tuyệt đối
     let soDauBaiDaLuu = {};
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
@@ -115,7 +111,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // THUẬT TOÁN ĐẾM TỊNH TIẾN KẾT HỢP DỮ LIỆU THỰC TẾ
     let boDemTietCuaLop = {}; 
     
     duLieuTKBGopDaMap = tkbGop.map(dong => {
@@ -169,7 +164,6 @@ function napDropdownSoDauBai() {
     let mangTuan = Array.from(tapHopTuan).sort((a, b) => parseInt(a.replace(/\D/g,'')) - parseInt(b.replace(/\D/g,'')));
     let mangLop = Array.from(tapHopLop).sort();
 
-    // Bổ sung thẻ <option> mặc định để hệ thống không tự chọn lớp đầu tiên
     let chonTuanHtml = `<option value="" disabled selected>-- Chọn Tuần --</option>` + mangTuan.map(t => `<option value="${t}">Tuần ${t.replace(/\D/g,'')}</option>`).join('');
     let chonLopHtml = `<option value="" disabled selected>-- Chọn Lớp --</option>` + mangLop.map(l => `<option value="${l}">Lớp ${l}</option>`).join('');
 
@@ -179,7 +173,6 @@ function napDropdownSoDauBai() {
     if(elementTuan) elementTuan.innerHTML = chonTuanHtml;
     if(elementLop) elementLop.innerHTML = chonLopHtml;
 
-    // Giữ màn hình rỗng với thông báo mặc định cho đến khi người dùng tự chọn
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="p-4"><p class="text-center py-10 text-slate-500 font-bold">Vui lòng chọn Tuần và Lớp để xem Sổ đầu bài.</p></div>`;
@@ -187,7 +180,7 @@ function napDropdownSoDauBai() {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN & THANH RADAR CẢNH BÁO TIẾN ĐỘ
+// KHỐI 2: VẼ GIAO DIỆN (HỢP NHẤT MỘT BẢNG DUY NHẤT 9 TIẾT)
 // =========================================================================
 function tinhNgayTuInputDate(ngayYMD, tenThu) {
     if (!ngayYMD) return '';
@@ -204,7 +197,6 @@ function ketXuatSoDauBaiLenLuoi() {
     let inputNgay = document.getElementById('chonNgaySDB');
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
 
-    // Nếu chưa chọn Tuần hoặc Lớp thì dừng lại (chống tải thừa)
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
@@ -251,11 +243,8 @@ function ketXuatSoDauBaiLenLuoi() {
 
     let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase());
 
-    // --- KIỂM TRA TRẠNG THÁI LƯU TRỮ CHUYÊN SÂU ---
-    let soTietDaLuu = 0;
-    let tongSoTietCoMon = 0;
-    let dictTKB = {}; 
-    let mapNgayChinhXac = {}; 
+    let soTietDaLuu = 0; let tongSoTietCoMon = 0;
+    let dictTKB = {}; let mapNgayChinhXac = {}; 
     let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
     tkbTuanNay.forEach(dong => {
@@ -275,7 +264,6 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     });
 
-    // --- TẠO BANNER NHẮC NHỞ ---
     let theTrangThaiHtml = '';
     if (tongSoTietCoMon > 0) {
         if (soTietDaLuu > 0) {
@@ -292,10 +280,10 @@ function ketXuatSoDauBaiLenLuoi() {
                 <div class="mb-4 p-2 bg-amber-50 border border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded animate-pulse-once">
                     <div class="flex items-center gap-2">
                         <div class="bg-amber-500 rounded-full p-1"><svg class="w-3 h-3 text-white animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></div>
-                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI (CHƯA LƯU)</span>
+                        <span class="text-sm font-extrabold text-amber-800 tracking-wide uppercase">DỮ LIỆU MỚI TỊNH TIẾN (CHƯA LƯU)</span>
                     </div>
                     <span class="text-xs font-bold text-amber-800 bg-amber-200 px-3 py-1 rounded-full border border-amber-400">
-                        ⚠️ Yêu cầu: Hãy "Đồng bộ Tên Bài" và bấm "Lưu sổ đầu bài" để lưu trữ!
+                        ⚠️ Yêu cầu: Hãy "Đồng bộ Tên Bài" và bấm "Chốt Sổ" để lưu trữ!
                     </span>
                 </div>`;
         }
@@ -317,39 +305,47 @@ function ketXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
 
-    const taoBangHtml = (tenBuoi, soTietToiDa) => {
-        let buoiKey = tenBuoi === "SÁNG" ? "Sang" : "Chieu";
-        
-        let html = `
-            <div class="mb-8 bang-so-dau-bai-container">
-                <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
-                    <span>LỚP: ${lopChon}</span>
-                    <span>TUẦN ${tuanChon.replace(/\D/g,'')}: BUỔI ${tenBuoi}</span>
-                </div>
-                <div class="text-center italic mb-2 text-sm text-slate-600">
-                    (Từ ngày ${ngayDauTieuDe} đến ngày ${ngayCuoiTieuDe})
-                </div>
-                <table class="w-full border-collapse border border-gray-500 text-sm">
-                    <thead class="bg-slate-100 text-center font-bold">
-                        <tr>
-                            <th class="border border-gray-500 p-2 w-20">THỨ</th>
-                            <th class="border border-gray-500 p-2 w-12">TIẾT</th>
-                            <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
-                            <th class="border border-gray-500 p-2 w-32">MÔN</th>
-                            <th class="border border-gray-500 p-2 w-16">TIẾT PPCT</th>
-                            <th class="border border-gray-500 p-2">TÊN BÀI DẠY</th>
-                            <th class="border border-gray-500 p-2 w-24">CHỮ KÝ CỦA GV</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+    // VẼ 1 BẢNG DUY NHẤT BAO GỒM CẢ SÁNG LẪN CHIỀU
+    let htmlBang = `
+        <div class="mb-8 bang-so-dau-bai-container">
+            <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
+                <span>LỚP: ${lopChon}</span>
+                <span>TUẦN ${tuanChon.replace(/\D/g,'')}</span>
+            </div>
+            <div class="text-center italic mb-2 text-sm text-slate-600">
+                (Từ ngày ${ngayDauTieuDe} đến ngày ${ngayCuoiTieuDe})
+            </div>
+            <table class="w-full border-collapse border border-gray-500 text-sm">
+                <thead class="bg-slate-100 text-center font-bold">
+                    <tr>
+                        <th class="border border-gray-500 p-2 w-20">THỨ</th>
+                        <th class="border border-gray-500 p-2 w-12">TIẾT</th>
+                        <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
+                        <th class="border border-gray-500 p-2 w-32">MÔN</th>
+                        <th class="border border-gray-500 p-2 w-16">TIẾT PPCT</th>
+                        <th class="border border-gray-500 p-2">TÊN BÀI DẠY</th>
+                        <th class="border border-gray-500 p-2 w-24">CHỮ KÝ CỦA GV</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
-        danhSachThu.forEach(thu => {
-            let ngayCuaThu = mapNgayChinhXac[thu] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '');
-            let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-[11px] font-normal tracking-tight normal-case">${ngayCuaThu}</span>` : thu;
+    danhSachThu.forEach(thu => {
+        let ngayCuaThu = mapNgayChinhXac[thu] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '');
+        let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-[11px] font-normal tracking-tight normal-case">${ngayCuaThu}</span>` : thu;
 
-            for (let tiet = 1; tiet <= soTietToiDa; tiet++) {
-                let khoaKiemTra = `${thu}_${buoiKey}_${tiet}`;
+        // Cấu trúc hợp nhất: Sáng 5, Chiều 4
+        let danhSachBuoi = [
+            { id: 'Sang', dataBuoi: 'Sáng', dsTiet: [1, 2, 3, 4, 5] },
+            { id: 'Chieu', dataBuoi: 'Chiều', dsTiet: [1, 2, 3, 4] }
+        ];
+
+        let tongDongTrongNgay = 9; // 5 + 4
+        let daInCotThu = false;
+
+        danhSachBuoi.forEach(buoiObj => {
+            buoiObj.dsTiet.forEach(tiet => {
+                let khoaKiemTra = `${thu}_${buoiObj.id}_${tiet}`;
                 let dongDuLieu = dictTKB[khoaKiemTra]; 
 
                 let monHoc = dongDuLieu ? dongDuLieu['Môn Học'] : '';
@@ -360,27 +356,32 @@ function ketXuatSoDauBaiLenLuoi() {
                 let cssTenBai = isDaLuu ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
                 if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
 
-                html += `<tr class="hover:bg-slate-50 transition-colors duration-150 group">`;
-                
-                if (tiet === 1) html += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight bg-white group-hover:bg-slate-50" rowspan="${soTietToiDa}">${hienThiThu}</td>`;
+                // Nhấn viền nhỏ ngăn cách giữa Sáng và Chiều để giáo viên dễ nhìn
+                let isRowDauChieu = (buoiObj.id === 'Chieu' && tiet === 1);
+                let cssRow = isRowDauChieu ? "border-t-2 border-t-gray-400" : "";
 
-                html += `
-                    <td class="border border-gray-500 text-center p-1.5 bg-white group-hover:bg-slate-50">${tiet}</td>
+                // [BẢO MẬT]: Nhúng thẻ tàng hình data-buoi để thuật toán Lưu Sổ nhận biết chính xác buổi Sáng/Chiều
+                htmlBang += `<tr class="hover:bg-slate-50 transition-colors duration-150 group ${cssRow}" data-buoi="${buoiObj.dataBuoi}">`;
+                
+                if (!daInCotThu) {
+                    htmlBang += `<td class="border border-gray-500 text-center font-bold uppercase leading-tight bg-white group-hover:bg-slate-50" rowspan="${tongDongTrongNgay}">${hienThiThu}</td>`;
+                    daInCotThu = true;
+                }
+
+                htmlBang += `
+                    <td class="border border-gray-500 text-center p-1.5 bg-white group-hover:bg-slate-50" title="Buổi ${buoiObj.dataBuoi}">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1.5 bg-white group-hover:bg-slate-50"></td>
                     <td class="border border-gray-500 p-1.5 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1.5 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
                     <td class="border border-gray-500 p-1.5 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-daluu="${isDaLuu}">${tenBai}</td>
                     <td class="border border-gray-500 p-1.5 bg-white group-hover:bg-slate-50"></td>
                 </tr>`;
-            }
+            });
         });
+    });
 
-        html += `</tbody></table></div>`;
-        return html;
-    };
-
-    // Nhúng Trạng thái Lưu và Cảnh báo Tiến độ vào vùng hiển thị
-    vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + taoBangHtml("SÁNG", 5) + taoBangHtml("CHIỀU", 4);
+    htmlBang += `</tbody></table></div>`;
+    vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + htmlBang;
 }
 
 // =========================================================================
@@ -412,7 +413,6 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
-                // Tôn trọng Lịch sử: Ô nào đã chốt sổ (DaLuu = true) thì tuyệt đối không ghi đè
                 let isDaLuu = oTenBai.getAttribute('data-daluu') === 'true';
                 if (isDaLuu) return; 
 
@@ -465,23 +465,25 @@ async function luuSoDauBaiSangMayChu() {
         let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
 
         cacBang.forEach(khungBang => {
-            let tieuDeBuoi = khungBang.querySelector('.flex.justify-between').innerText;
-            let buoi = tieuDeBuoi.includes('SÁNG') ? 'Sáng' : 'Chiều';
             let thuHienTai = ''; let ngayHienTai = '';
-
             let cacDong = khungBang.querySelectorAll('table tbody tr');
+            
             cacDong.forEach(dong => {
                 let rData = [];
                 dong.querySelectorAll('th, td').forEach(cell => rData.push(cell.innerText.trim()));
 
+                // Nhận biết dòng đầu tiên của Ngày để lấy thông tin Thứ và Ngày
                 if (rData.length === 7) {
                     let textThuNgay = rData[0].split('\n'); 
                     thuHienTai = textThuNgay[0].trim();
                     ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
-                    rData.shift(); 
+                    rData.shift(); // Ép chuẩn hóa mảng thành 6 phần tử như các dòng bình thường
                 }
 
                 let tiet = rData[0]; let mon = rData[2]; let tietPPCT = rData[3]; let tenBai = rData[4];
+                
+                // [LÕI AN TOÀN]: Bốc Nhãn tàng hình (Sáng/Chiều) được chèn từ lúc vẽ bảng
+                let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
                 if (mon && mon !== '') {
                     let tuanSo = tuanChon.replace(/\D/g, '');
