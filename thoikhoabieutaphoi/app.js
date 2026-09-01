@@ -45,7 +45,7 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
 // KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
 // =========================================================================
 function kiemSoatGiaoDien() {
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra'];
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnAiTinhChinh'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
@@ -1160,3 +1160,142 @@ window.kiemTraTrungGiaoVienToanBang = function() {
         });
     });
 };
+
+// =========================================================================
+// [KHỐI NÂNG CẤP AI]: KIỂM SOÁT GIAO DIỆN VÀ GỬI LỆNH TINH CHỈNH CỤC BỘ
+// =========================================================================
+function moKhungAiTinhChinh() {
+    document.getElementById('lenhAiDauVao').value = '';
+    document.getElementById('vungAiDangXuLy').classList.add('hidden');
+    document.getElementById('vungKqAi').classList.add('hidden');
+    document.getElementById('btnCopyGoiY').classList.add('hidden');
+    document.getElementById('modalAiTinhChinh').classList.remove('hidden');
+    document.getElementById('lenhAiDauVao').focus();
+}
+
+function dongKhungAiTinhChinh() {
+    document.getElementById('modalAiTinhChinh').classList.add('hidden');
+}
+
+function copyGoiYAi() {
+    let vanBan = document.getElementById('noiDungKqAi').innerText;
+    navigator.clipboard.writeText(vanBan).then(() => {
+        let btn = document.getElementById('btnCopyGoiY');
+        let textGoc = btn.innerText;
+        btn.innerText = "Đã Copy!";
+        btn.classList.replace('bg-slate-200', 'bg-green-200');
+        setTimeout(() => { 
+            btn.innerText = textGoc; 
+            btn.classList.replace('bg-green-200', 'bg-slate-200');
+        }, 2000);
+    });
+}
+
+async function thucThiLenhAi() {
+    let lenhInput = document.getElementById('lenhAiDauVao').value.trim();
+    if (!lenhInput) {
+        alert("Đồng chí cần nhập yêu cầu tinh chỉnh trước khi thực thi.");
+        return;
+    }
+
+    let btnGoi = document.getElementById('btnGoiAi');
+    let vungLoading = document.getElementById('vungAiDangXuLy');
+    let vungKq = document.getElementById('vungKqAi');
+    
+    btnGoi.disabled = true;
+    btnGoi.classList.add('opacity-50', 'cursor-not-allowed');
+    vungLoading.classList.remove('hidden');
+    vungLoading.classList.add('flex');
+    vungKq.classList.add('hidden');
+
+    try {
+        // [THUẬT TOÁN ĐÓNG GÓI UI]: Chụp lại chính xác trạng thái TKB đang hiển thị trên màn hình
+        let dsTietLuoiHienTai = []; 
+        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        
+        cacOMon.forEach(oMon => {
+            let valMon = oMon.value.trim();
+            if (valMon !== "") {
+                let parts = oMon.id.split('_'); 
+                let thu = parts[1]; let buoi = parts[2]; let tiet = parts[3];
+                let lop = parts.slice(4).join('_'); 
+                
+                let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
+                let valGv = oGv ? oGv.value.trim() : "";
+                
+                dsTietLuoiHienTai.push({ thu: thu, buoi: buoi, tiet: tiet, maLop: lop, monHoc: valMon, maGv: valGv });
+            }
+        });
+
+        // Gửi qua hàm fetchVoiCoCheThuLai chống lỗi mạng
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                thaoTac: 'tinhChinhBangAI', 
+                yeuCau: lenhInput, 
+                duLieu: dsTietLuoiHienTai 
+            }) 
+        });
+
+        const kqAi = await phanHoi.json();
+        
+        vungLoading.classList.remove('flex');
+        vungLoading.classList.add('hidden');
+        vungKq.classList.remove('hidden');
+        vungKq.classList.add('flex');
+
+        let theTieuDe = document.getElementById('tieuDeKqAi');
+        let theNoiDung = document.getElementById('noiDungKqAi');
+        let nutCopy = document.getElementById('btnCopyGoiY');
+
+        if (kqAi.trangThai === 'thanh_cong') {
+            theTieuDe.innerText = "✅ Xử lý thành công! Đã cập nhật lên màn hình TKB.";
+            theTieuDe.className = "font-extrabold text-sm text-green-700";
+            theNoiDung.innerText = kqAi.thongBao;
+            theNoiDung.className = "text-sm text-green-800 whitespace-pre-wrap font-medium";
+            nutCopy.classList.add('hidden');
+            
+            // [ÁNH XẠ NGƯỢC]: Gán lại dữ liệu AI trả về vào mảng toàn cục và vẽ lại UI ngay lập tức
+            if (kqAi.duLieuMoi && kqAi.duLieuMoi.length > 0) {
+                // Giữ lại các trường hệ thống (tuan, namHoc, ngay) từ dữ liệu cũ để không mất ngữ cảnh
+                let duLieuHienThiGhepLai = kqAi.duLieuMoi.map(tMoi => {
+                    return {
+                        maTiet: `${tuanDangXem}_${tMoi.thu}_${tMoi.buoi === 'Sáng' ? 'S' : 'C'}_${tMoi.tiet}_${tMoi.maLop}`,
+                        namHoc: thongSoHocVu.NAM_HOC || "",
+                        tuan: tuanDangXem,
+                        thu: tMoi.thu,
+                        buoi: tMoi.buoi,
+                        tiet: tMoi.tiet,
+                        maLop: tMoi.maLop,
+                        monHoc: tMoi.monHoc,
+                        maGv: tMoi.maGv
+                    };
+                });
+                
+                duLieuTkbHienTai = duLieuHienThiGhepLai;
+                xuatMaTranBang(duLieuTkbHienTai);
+            }
+            
+        } else {
+            theTieuDe.innerText = "⚠️ Không thể thực hiện (Xung đột hệ thống):";
+            theTieuDe.className = "font-extrabold text-sm text-orange-700";
+            theNoiDung.innerText = kqAi.thongBao;
+            theNoiDung.className = "text-sm text-slate-800 whitespace-pre-wrap font-medium bg-orange-50 p-2 rounded border border-orange-200";
+            nutCopy.classList.remove('hidden');
+        }
+
+    } catch (loi) {
+        vungLoading.classList.remove('flex');
+        vungLoading.classList.add('hidden');
+        vungKq.classList.remove('hidden');
+        vungKq.classList.add('flex');
+        
+        document.getElementById('tieuDeKqAi').innerText = "❌ Lỗi kết nối AI";
+        document.getElementById('tieuDeKqAi').className = "font-extrabold text-sm text-red-700";
+        document.getElementById('noiDungKqAi').innerText = "Hệ thống AI đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.\nChi tiết: " + loi.message;
+        document.getElementById('btnCopyGoiY').classList.add('hidden');
+    } finally {
+        btnGoi.disabled = false;
+        btnGoi.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
