@@ -1249,33 +1249,15 @@ async function thucThiLenhAi() {
         let nutCopy = document.getElementById('btnCopyGoiY');
 
         if (kqAi.trangThai === 'thanh_cong') {
-            theTieuDe.innerText = "✅ Xử lý thành công! Đã cập nhật lên màn hình TKB.";
-            theTieuDe.className = "font-extrabold text-sm text-green-700";
+            theTieuDe.innerText = "💡 Chuyên gia AI Phân tích & Đề xuất:";
+            theTieuDe.className = "font-extrabold text-base text-indigo-800";
             theNoiDung.innerText = kqAi.thongBao;
-            theNoiDung.className = "text-sm text-green-800 whitespace-pre-wrap font-medium";
-            nutCopy.classList.add('hidden');
+            theNoiDung.className = "text-[15px] text-slate-800 whitespace-pre-wrap font-medium leading-relaxed";
+            nutCopy.classList.remove('hidden');
             
-            // [ÁNH XẠ NGƯỢC]: Gán lại dữ liệu AI trả về vào mảng toàn cục và vẽ lại UI ngay lập tức
-            if (kqAi.duLieuMoi && kqAi.duLieuMoi.length > 0) {
-                // Giữ lại các trường hệ thống (tuan, namHoc, ngay) từ dữ liệu cũ để không mất ngữ cảnh
-                let duLieuHienThiGhepLai = kqAi.duLieuMoi.map(tMoi => {
-                    return {
-                        maTiet: `${tuanDangXem}_${tMoi.thu}_${tMoi.buoi === 'Sáng' ? 'S' : 'C'}_${tMoi.tiet}_${tMoi.maLop}`,
-                        namHoc: thongSoHocVu.NAM_HOC || "",
-                        tuan: tuanDangXem,
-                        thu: tMoi.thu,
-                        buoi: tMoi.buoi,
-                        tiet: tMoi.tiet,
-                        maLop: tMoi.maLop,
-                        monHoc: tMoi.monHoc,
-                        maGv: tMoi.maGv
-                    };
-                });
-                
-                duLieuTkbHienTai = duLieuHienThiGhepLai;
-                xuatMaTranBang(duLieuTkbHienTai);
-            }
-            
+            // [ĐÃ GỠ BỎ TOÀN BỘ PHẦN ÁNH XẠ NGƯỢC]
+            // Hệ thống chỉ trả kết quả vào khung gợi ý theo đúng yêu cầu, không tự động can thiệp vào lưới TKB.
+
         } else {
             theTieuDe.innerText = "⚠️ Không thể thực hiện (Xung đột hệ thống):";
             theTieuDe.className = "font-extrabold text-sm text-orange-700";
