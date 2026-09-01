@@ -327,7 +327,6 @@ function ketXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
 
-    // NÂNG CẤP UI: Chỉnh lại tỷ lệ vàng (Cột Môn, Tiết thu hẹp. Cột Bài, Nhận xét mở rộng)
     let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container overflow-x-auto">
             <div class="flex justify-between items-center mb-2 font-bold text-slate-800 uppercase">
@@ -371,7 +370,6 @@ function ketXuatSoDauBaiLenLuoi() {
                 let khoaKiemTra = `${thu}_${buoiObj.id}_${tiet}`;
                 let dongDuLieu = dictTKB[khoaKiemTra]; 
 
-                // GỌI CHÍNH XÁC MÔN HỌC TỪ TKB (KHÔNG THAY ĐỔI)
                 let monHoc = dongDuLieu ? dongDuLieu['Môn Học'] : '';
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
@@ -381,11 +379,22 @@ function ketXuatSoDauBaiLenLuoi() {
                 let xepLoai = dongDuLieu ? dongDuLieu['XepLoai_Thuc'] : '';
                 let chuKy = dongDuLieu ? dongDuLieu['ChuKy_Thuc'] : '';
 
-                // [LÕI KHÓA INPUT THÔNG MINH]: Chỉ khóa khi Đã Lưu VÀ Đã có chữ ký
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                let cssTenBai = isLocked ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
-                if (tenBai.includes('Chưa có dữ liệu PPCT')) cssTenBai = "text-gray-400 italic text-xs font-normal";
+                // === BẮT ĐẦU NÂNG CẤP: KHI RỖNG THÌ NHẬP, CÓ DỮ LIỆU THÌ KHÓA ===
+                let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
+                let cssTenBai = "";
+                let theTenBai = "";
+                
+                if (monHoc && monHoc !== "") {
+                    if (isEmptyTenBai) {
+                        theTenBai = `<input type="text" class="w-full text-left outline-none bg-transparent font-normal text-slate-800 placeholder-slate-300 px-1" placeholder="Nhập tên bài..." value="">`;
+                    } else {
+                        cssTenBai = isLocked ? "text-emerald-700 font-bold" : "text-slate-800 font-semibold";
+                        theTenBai = tenBai;
+                    }
+                }
+                // === KẾT THÚC NÂNG CẤP ===
 
                 let theNhanXet = ""; let theXepLoai = ""; let theChuKy = "";
                 if (monHoc && monHoc !== "") {
@@ -417,7 +426,7 @@ function ketXuatSoDauBaiLenLuoi() {
                     <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50"></td>
                     <td class="border border-gray-500 p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-islocked="${isLocked}">${tenBai}</td>
+                    <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-islocked="${isLocked}">${theTenBai}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle">${theNhanXet}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theXepLoai}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theChuKy}</td>
@@ -474,11 +483,15 @@ function dongBoTenBaiHoc() {
                     
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
+                    // === BẮT ĐẦU NÂNG CẤP: NẾU CÓ DỮ LIỆU THÌ KHÓA, RỖNG THÌ MỞ NHẬP ===
                     if (baiDay !== '') {
                         oTenBai.innerText = baiDay;
+                        oTenBai.className = "border border-gray-500 p-1 text-slate-800 font-semibold bg-white group-hover:bg-slate-50";
                     } else {
-                        oTenBai.innerHTML = `<span class="text-gray-400 italic text-[11px] font-normal tracking-tight">Chưa có dữ liệu PPCT</span>`;
+                        oTenBai.innerHTML = `<input type="text" class="w-full text-left outline-none bg-transparent font-normal text-slate-800 placeholder-slate-300 px-1" placeholder="Nhập tên bài..." value="">`;
+                        oTenBai.className = "border border-gray-500 p-1 bg-white group-hover:bg-slate-50";
                     }
+                    // === KẾT THÚC NÂNG CẤP ===
                 }
             }
         });
