@@ -114,8 +114,8 @@ function taoKhungGiaoDienPPCT() {
                             <th class="py-2.5 px-2 border border-slate-400 w-12">Tiết</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-24">Tiết PPC</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-32">Môn</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[250px]">Tên bài học</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[200px]">Điều chỉnh</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[200px]">Tên bài học</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[250px]">Điều chỉnh</th>
                         </tr>
                     </thead>
                     <tbody id="vungDuLieuLichPPCT">
