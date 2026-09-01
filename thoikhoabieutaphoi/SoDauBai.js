@@ -283,7 +283,7 @@ function ketXuatSoDauBaiLenLuoi() {
                         <div class="bg-emerald-500 rounded-full p-1"><svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
                         <span class="text-sm font-extrabold text-emerald-800 tracking-wide uppercase">ĐÃ CHỐT SỔ TỪ LỊCH SỬ</span>
                     </div>
-                    <span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Dữ liệu được trích xuất an toàn từ CSDL SoDauBai.</span>
+                    <span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Dữ liệu được trích xuất an toàn từ CSDL Sổ đầu bài.</span>
                 </div>`;
         } else {
             theTrangThaiHtml = `
