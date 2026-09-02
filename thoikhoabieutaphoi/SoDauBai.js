@@ -694,6 +694,7 @@ async function xuatExcelSoDauBai() {
                     cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
                     if([1, 2, 3, 4, 5, 8, 9].includes(colNumber)) cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
                     else cell.alignment = { vertical: 'middle', wrapText: true };
+                    if (colNumber === 2) cell.numFmt = '@'; // Ép file Excel định dạng Text cho Cột C.Cần
                 });
                 rowIndex++;
             });
