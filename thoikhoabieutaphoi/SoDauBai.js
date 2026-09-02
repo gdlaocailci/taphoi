@@ -213,6 +213,9 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
     return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
 }
 
+// =========================================================================
+// HÀM 1: KẾT XUẤT LƯỚI (Đã ghim thẻ căn cước data-loai cho mọi cột)
+// =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
     let lopChon = document.getElementById('chonLopSo')?.value;
@@ -424,15 +427,16 @@ function ketXuatSoDauBaiLenLuoi() {
                     daInCotThu = true;
                 }
 
+                // [CẬP NHẬT CỐT LÕI]: Đính kèm thẻ căn cước (data-loai) vào mọi cột
                 htmlBang += `
-                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50" title="Buổi ${buoiObj.dataBuoi}">${tiet}</td>
-                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50 align-middle">${theChuyenCan}</td>
+                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50" title="Buổi ${buoiObj.dataBuoi}" data-loai="tietSDB">${tiet}</td>
+                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="chuyenCan">${theChuyenCan}</td>
                     <td class="border border-gray-500 p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
                     <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-islocked="${isLocked}">${theTenBai}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle">${theNhanXet}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theXepLoai}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center">${theChuKy}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="nhanXet">${theNhanXet}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center" data-loai="xepLoai">${theXepLoai}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center" data-loai="chuKy">${theChuKy}</td>
                 </tr>`;
             });
         });
@@ -440,6 +444,88 @@ function ketXuatSoDauBaiLenLuoi() {
 
     htmlBang += `</tbody></table></div>`;
     vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + htmlBang;
+}
+
+// =========================================================================
+// HÀM 2: LƯU SỔ ĐẦU BÀI (Chống trượt index tuyệt đối)
+// =========================================================================
+async function luuSoDauBaiSangMayChu() {
+    let tuanChon = document.getElementById('chonTuanSo')?.value;
+    let lopChon = document.getElementById('chonLopSo')?.value;
+    if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
+
+    if (!confirm(`Xác nhận chốt dữ liệu Sổ đầu bài Lớp ${lopChon} - ${tuanChon.replace(/\D/g,'')} vào Cơ sở dữ liệu?`)) return;
+
+    const btn = document.getElementById('btnLuuSoDauBai');
+    let textGoc = btn.innerHTML;
+    btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span class="ml-1">Đang lưu...</span>`;
+    btn.disabled = true;
+
+    try {
+        let duLieuQuetDuoc = [];
+        let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
+
+        cacBang.forEach(khungBang => {
+            let thuHienTai = ''; let ngayHienTai = '';
+            let cacDong = khungBang.querySelectorAll('table tbody tr');
+            
+            cacDong.forEach(dong => {
+                // Rút trích Thứ và Ngày (chỉ có ở dòng đầu tiên của mỗi Thứ)
+                let cellThu = dong.querySelector('td[rowspan]');
+                if (cellThu) {
+                    let textThuNgay = cellThu.innerText.split('\n');
+                    thuHienTai = textThuNgay[0].trim();
+                    ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
+                }
+
+                let cellMon = dong.querySelector('td[data-loai="mon"]');
+                let mon = cellMon ? cellMon.innerText.trim() : '';
+
+                if (mon && mon !== '') {
+                    // Cấu trúc hàm con quét thẳng vào lõi thẻ td, bắt input hoặc innerText an toàn
+                    let getVal = (cell) => cell ? (cell.querySelector('input') ? cell.querySelector('input').value.trim() : cell.innerText.trim()) : '';
+
+                    let tiet = getVal(dong.querySelector('td[data-loai="tietSDB"]'));
+                    let chuyenCan = getVal(dong.querySelector('td[data-loai="chuyenCan"]'));
+                    let tietPPCT = getVal(dong.querySelector('td[data-loai="tiet"]'));
+                    let tenBai = getVal(dong.querySelector('td[data-loai="tenBai"]'));
+                    let nhanXetGV = getVal(dong.querySelector('td[data-loai="nhanXet"]'));
+                    let xepLoaiGV = getVal(dong.querySelector('td[data-loai="xepLoai"]'));
+                    let chuKyGV = getVal(dong.querySelector('td[data-loai="chuKy"]'));
+                    let buoi = dong.getAttribute('data-buoi') || 'Sáng';
+
+                    let tuanSo = tuanChon.replace(/\D/g, '');
+                    let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
+
+                    duLieuQuetDuoc.push({
+                        maLuuTru: maLuuTru, tuan: tuanSo, maLop: lopChon,
+                        thu: thuHienTai, ngay: ngayHienTai, buoi: buoi, tiet: tiet,
+                        mon: mon, tietPPCT: tietPPCT, tenBai: tenBai, 
+                        nhanXet: nhanXetGV, xepLoai: xepLoaiGV, chuKy: chuKyGV,
+                        chuyenCan: chuyenCan
+                    });
+                }
+            });
+        });
+
+        if (duLieuQuetDuoc.length === 0) {
+            btn.innerHTML = textGoc; btn.disabled = false;
+            return alert("Sổ đầu bài đang trống, không có dữ liệu để lưu.");
+        }
+
+        const payload = { thaoTac: 'luuSoDauBaiDongBo', tuan: tuanChon.replace(/\D/g, ''), lop: lopChon, duLieu: duLieuQuetDuoc };
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
+        const ketQua = await phanHoi.json();
+
+        if (ketQua.trangThai === 'thanh_cong') {
+            alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
+            await taiDuLieuSoDauBaiTuMayChu();
+            daTaiDuLieuSoDauBai = false; 
+            taiDuLieuSoDauBaiTuMayChu();
+        } else throw new Error(ketQua.thongBao);
+
+    } catch (loi) { alert("Lưu thất bại: " + loi.message); } 
+    finally { btn.innerHTML = textGoc; btn.disabled = false; }
 }
 
 // =========================================================================
@@ -506,82 +592,6 @@ function dongBoTenBaiHoc() {
     }, 100); 
 }
 
-// =========================================================================
-// KHỐI 4: LƯU SỔ ĐẦU BÀI VÀ KẾT XUẤT (WORD/EXCEL HỖ TRỢ INPUT HỖN HỢP)
-// =========================================================================
-async function luuSoDauBaiSangMayChu() {
-    let tuanChon = document.getElementById('chonTuanSo')?.value;
-    let lopChon = document.getElementById('chonLopSo')?.value;
-    if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
-
-    if (!confirm(`Xác nhận chốt dữ liệu Sổ đầu bài Lớp ${lopChon} - ${tuanChon.replace(/\D/g,'')} vào Cơ sở dữ liệu?`)) return;
-
-    const btn = document.getElementById('btnLuuSoDauBai');
-    let textGoc = btn.innerHTML;
-    btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span class="ml-1">Đang lưu...</span>`;
-    btn.disabled = true;
-
-    try {
-        let duLieuQuetDuoc = [];
-        let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
-
-        cacBang.forEach(khungBang => {
-            let thuHienTai = ''; let ngayHienTai = '';
-            let cacDong = khungBang.querySelectorAll('table tbody tr');
-            
-            cacDong.forEach(dong => {
-                let rData = [];
-                dong.querySelectorAll('th, td').forEach(cell => {
-                    let input = cell.querySelector('input');
-                    if (input) rData.push(input.value.trim());
-                    else rData.push(cell.innerText.trim());
-                });
-
-                if (rData.length === 9) {
-                    let textThuNgay = rData[0].split('\n'); 
-                    thuHienTai = textThuNgay[0].trim();
-                    ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
-                    rData.shift(); 
-                }
-
-                let tiet = rData[0]; let mon = rData[2]; let tietPPCT = rData[3]; 
-                let tenBai = rData[4]; let nhanXetGV = rData[5]; let xepLoaiGV = rData[6]; let chuKyGV = rData[7];
-                
-                let buoi = dong.getAttribute('data-buoi') || 'Sáng';
-
-                if (mon && mon !== '') {
-                    let tuanSo = tuanChon.replace(/\D/g, '');
-                    let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
-
-                    duLieuQuetDuoc.push({
-                        maLuuTru: maLuuTru, tuan: tuanSo, maLop: lopChon,
-                        thu: thuHienTai, ngay: ngayHienTai, buoi: buoi, tiet: tiet,
-                        mon: mon, tietPPCT: tietPPCT, tenBai: tenBai, 
-                        nhanXet: nhanXetGV, xepLoai: xepLoaiGV, chuKy: chuKyGV
-                    });
-                }
-            });
-        });
-
-        if (duLieuQuetDuoc.length === 0) {
-            btn.innerHTML = textGoc; btn.disabled = false;
-            return alert("Sổ đầu bài đang trống, không có dữ liệu để lưu.");
-        }
-
-        const payload = { thaoTac: 'luuSoDauBaiDongBo', tuan: tuanChon.replace(/\D/g, ''), lop: lopChon, duLieu: duLieuQuetDuoc };
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
-        const ketQua = await phanHoi.json();
-
-        if (ketQua.trangThai === 'thanh_cong') {
-            alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
-            await taiDuLieuSoDauBaiTuMayChu();
-            daTaiDuLieuSoDauBai = false; 
-            taiDuLieuSoDauBaiTuMayChu();
-        } else throw new Error(ketQua.thongBao);
-
-    } catch (loi) { alert("Lưu thất bại: " + loi.message); } 
-    finally { btn.innerHTML = textGoc; btn.disabled = false; }
-}
 
 function xuatWordSoDauBai() {
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
