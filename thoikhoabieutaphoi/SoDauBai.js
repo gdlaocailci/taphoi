@@ -118,7 +118,8 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 TenBai: dong['Tên Bài Dạy'] || dong['Tên bài dạy'] || dong['Tên Bài'] || dong['Tên bài'] || '',
                 NhanXet: dong['Nhận Xét'] || dong['Nhận xét'] || '',
                 XepLoai: dong['Xếp Loại'] || dong['Xếp loại'] || '',
-                ChuKy: dong['Chữ Ký GV'] || dong['Chữ ký GV'] || dong['Chữ ký'] || '' 
+                ChuKy: dong['Chữ Ký GV'] || dong['Chữ ký GV'] || dong['Chữ ký'] || '',
+                ChuyenCan: dong['Chuyên Cần'] || dong['Chuyên cần'] || ''
             };
         });
     }
@@ -132,18 +133,15 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
         let tiet = String(dong['Tiết']).trim();
         
-        // MÔN HỌC GIỮ NGUYÊN BẢN GỐC TỪ TKB ĐỂ HIỂN THỊ
         let mon = String(dong['Môn Học'] || '').trim(); 
-        
         let khoaTKB = `${tuan}_${maLop.toLowerCase()}_${thu}_${buoi}_${tiet}`;
         let dongDaLuu = soDauBaiDaLuu[khoaTKB]; 
         
         let tietThucTe = ''; let tenBaiHoc = '';
-        let nhanXetGv = ''; let xepLoaiGv = ''; let chuKyGV = '';
+        let nhanXetGv = ''; let xepLoaiGv = ''; let chuKyGV = ''; let chuyenCanHs = '';
         let isDaLuu = false;
 
         if (mon !== '') {
-            // Tách số khỏi tên môn chỉ để ĐẾM TIẾT
             let monDem = mon.replace(/[0-9]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
             let khoaDem = `${maLop.toUpperCase()}_${monDem}`;
             
@@ -154,6 +152,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 nhanXetGv = dongDaLuu.NhanXet;
                 xepLoaiGv = dongDaLuu.XepLoai;
                 chuKyGV = dongDaLuu.ChuKy;
+                chuyenCanHs = dongDaLuu.ChuyenCan;
                 
                 let tietNum = parseInt(String(tietThucTe).replace(/\D/g, '')) || 0;
                 if (tietNum > (boDemTietCuaLop[khoaDem] || 0)) {
@@ -163,13 +162,14 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 if (!boDemTietCuaLop[khoaDem]) boDemTietCuaLop[khoaDem] = 0;
                 boDemTietCuaLop[khoaDem]++; 
                 tietThucTe = boDemTietCuaLop[khoaDem];
-                tenBaiHoc = ''; nhanXetGv = ''; xepLoaiGv = ''; chuKyGV = '';
+                tenBaiHoc = ''; nhanXetGv = ''; xepLoaiGv = ''; chuKyGV = ''; chuyenCanHs = '';
             }
         }
         
         return { 
             ...dong, TietPPCT_Thuc: tietThucTe, TenBai_Thuc: tenBaiHoc, 
-            NhanXet_Thuc: nhanXetGv, XepLoai_Thuc: xepLoaiGv, ChuKy_Thuc: chuKyGV, DaLuu: isDaLuu 
+            NhanXet_Thuc: nhanXetGv, XepLoai_Thuc: xepLoaiGv, ChuKy_Thuc: chuKyGV, 
+            ChuyenCan_Thuc: chuyenCanHs, DaLuu: isDaLuu 
         };
     });
 
@@ -378,10 +378,10 @@ function ketXuatSoDauBaiLenLuoi() {
                 let nhanXet = dongDuLieu ? dongDuLieu['NhanXet_Thuc'] : '';
                 let xepLoai = dongDuLieu ? dongDuLieu['XepLoai_Thuc'] : '';
                 let chuKy = dongDuLieu ? dongDuLieu['ChuKy_Thuc'] : '';
+                let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
 
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                // === BẮT ĐẦU NÂNG CẤP: KHI RỖNG THÌ NHẬP, CÓ DỮ LIỆU THÌ KHÓA ===
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
                 let cssTenBai = "";
                 let theTenBai = "";
@@ -394,10 +394,13 @@ function ketXuatSoDauBaiLenLuoi() {
                         theTenBai = tenBai;
                     }
                 }
-                // === KẾT THÚC NÂNG CẤP ===
 
-                let theNhanXet = ""; let theXepLoai = ""; let theChuKy = "";
+                let theNhanXet = ""; let theXepLoai = ""; let theChuKy = ""; let theChuyenCan = "";
                 if (monHoc && monHoc !== "") {
+                    theChuyenCan = isLocked 
+                        ? `<span class="font-bold text-slate-800 block text-center">${chuyenCan}</span>` 
+                        : `<input type="text" class="w-full text-center outline-none bg-transparent font-semibold text-slate-800 placeholder-slate-300" placeholder="..." value="${chuyenCan}">`;
+
                     theNhanXet = isLocked 
                         ? `<span class="font-normal text-slate-800 break-words block">${nhanXet}</span>` 
                         : `<input type="text" class="w-full text-left outline-none bg-transparent font-normal text-slate-800 placeholder-slate-300 px-1" placeholder="Nhận xét..." value="${nhanXet}">`;
@@ -423,7 +426,7 @@ function ketXuatSoDauBaiLenLuoi() {
 
                 htmlBang += `
                     <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50" title="Buổi ${buoiObj.dataBuoi}">${tiet}</td>
-                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50"></td>
+                    <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50 align-middle">${theChuyenCan}</td>
                     <td class="border border-gray-500 p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
                     <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-islocked="${isLocked}">${theTenBai}</td>
