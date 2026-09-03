@@ -310,6 +310,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
 }
 
 // [NÂNG CẤP LÕI]: Hàm xử lý kết hợp song song 2 điều kiện (Khu vực + Tên/Mã)
+// Đã khắc phục triệt để lỗi Regex \b không tương thích với bộ gõ Tiếng Việt
 function locDuLieuThongKeThoiGianThuc() {
     let oTimKiem = document.getElementById('locGiaoVienThongKe');
     let oKhuVuc = document.getElementById('locKhuVucThongKe');
@@ -327,15 +328,15 @@ function locDuLieuThongKeThoiGianThuc() {
             // 1. Kiểm tra khớp từ khóa tên/mã
             let thapTuKhoa = (tuKhoa === "") || duLieuTimKiem.includes(tuKhoa);
             
-            // 2. Kiểm tra khớp khu vực sử dụng Regex ranh giới từ (\b)
-            // Ví dụ: Gõ 'c' -> Tìm \bc\d*\b -> Khớp 'c', 'c1', 'c2' nhưng KHÔNG khớp chữ 'c' trong 'công'
+            // 2. Kiểm tra khớp khu vực (Sử dụng khoảng trắng \s thay vì \b để xử lý chuẩn Tiếng Việt)
+            // Cấu trúc (^|\\s) bắt buộc ký tự Khu vực phải đứng ngay đầu chuỗi hoặc sau một dấu cách
             let thapKhuVuc = true;
             if (khuVuc !== "") {
                 try {
-                    let regexKhuVuc = new RegExp('\\b' + khuVuc + '\\d*\\b', 'i');
+                    let regexKhuVuc = new RegExp('(^|\\s)' + khuVuc + '\\d*($|\\s)', 'i');
                     thapKhuVuc = regexKhuVuc.test(duLieuTimKiem);
                 } catch (e) {
-                    // Fallback phòng hờ khi người dùng gõ ký tự đặc biệt gây lỗi Regex
+                    // Fallback phòng hờ
                     thapKhuVuc = duLieuTimKiem.includes(khuVuc);
                 }
             }
