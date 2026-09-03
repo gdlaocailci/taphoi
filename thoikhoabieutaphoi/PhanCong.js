@@ -548,9 +548,12 @@ function xuLyTaiLenExcelPhanCong(e) {
     reader.readAsArrayBuffer(file);
 }
 
+// =========================================================================
+// HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ)
+// [NÂNG CẤP LÕI]: Xuất dữ liệu chính xác theo những gì đang hiển thị trên UI (Đã lọc)
+// =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
-    // Thay đổi fallback text thành "Xuất File"
     let textGoc = btn ? btn.innerHTML : 'Xuất File';
     
     if (btn) {
@@ -585,32 +588,35 @@ async function xuatExcelThongKePhanCong() {
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
         const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
-        let stt = 1;
+        let stt = 1; // Khởi tạo biến đếm STT
         
         cacDongThongKe.forEach(tr => {
-            const cacCot = tr.querySelectorAll('td');
-            if (cacCot.length >= 4) {
-                let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/[()]/g, '').replace(/\s+-\s+/g, ' - ').trim(); 
-                let dinhMuc = parseInt(cacCot[1].innerText) || 0;
-                let thucTe = parseInt(cacCot[2].innerText) || 0;
-                let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
+            // Chỉ trích xuất các dòng không bị ẩn bởi bộ lọc UI
+            if (tr.style.display !== 'none') {
+                const cacCot = tr.querySelectorAll('td');
+                if (cacCot.length >= 4) {
+                    let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/[()]/g, '').replace(/\s+-\s+/g, ' - ').trim(); 
+                    let dinhMuc = parseInt(cacCot[1].innerText) || 0;
+                    let thucTe = parseInt(cacCot[2].innerText) || 0;
+                    let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
 
-                const row = worksheet.addRow({
-                    stt: stt,
-                    gv: tenGV,
-                    dinhMuc: dinhMuc,
-                    thucTe: thucTe,
-                    chiTiet: chiTiet
-                });
-                
-                row.font = { name: 'Times New Roman', size: 12 };
-                if (thucTe > dinhMuc) {
-                    row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
-                } else if (thucTe === dinhMuc && dinhMuc > 0) {
-                    row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
+                    const row = worksheet.addRow({
+                        stt: stt,
+                        gv: tenGV,
+                        dinhMuc: dinhMuc,
+                        thucTe: thucTe,
+                        chiTiet: chiTiet
+                    });
+                    
+                    row.font = { name: 'Times New Roman', size: 12 };
+                    if (thucTe > dinhMuc) {
+                        row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
+                    } else if (thucTe === dinhMuc && dinhMuc > 0) {
+                        row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
+                    }
+                    
+                    stt++; // Tăng STT lên 1 đơn vị cho dòng hiển thị tiếp theo
                 }
-                
-                stt++; 
             }
         });
 
