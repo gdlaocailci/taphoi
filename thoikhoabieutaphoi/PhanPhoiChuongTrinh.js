@@ -4,12 +4,13 @@
 let duLieuPpctGoc = []; 
 let duLieuTkbTuan = [];
 let trangThaiDaTaiGiaoDienPPCT = false;
+let trangThaiChoPhepSua = false; // [NÂNG CẤP]: Biến lưu trạng thái khoá/mở sửa bảng
 
 document.addEventListener('DOMContentLoaded', () => {
     taoMenuPhanPhoiChuongTrinh();
     taoKhungGiaoDienPPCT();
     
-    // [BẢN NÂNG CẤP]: Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin
+    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin
     setInterval(() => {
         if (typeof quyenSuaChua !== 'undefined') {
             let nhomNut = document.getElementById('nhomNutCongCuPPCT');
@@ -54,12 +55,18 @@ function taoKhungGiaoDienPPCT() {
                     <h2 class="text-xl font-extrabold text-blue-900 uppercase tracking-wide">Quản lý Phân Phối Chương Trình</h2>
                 </div>
                 
-                <!-- [ĐIỂM CHỐT]: Bọc 3 nút trong ID này và gán thuộc tính ẩn mặc định -->
                 <div id="nhomNutCongCuPPCT" class="flex flex-wrap items-center gap-2" style="display: none;">
                     <input type="file" id="fileNhapPPCT" accept=".xlsx, .xls" class="hidden" onchange="xuLyNhapExcelPPCT(event)">
                     <button onclick="document.getElementById('fileNhapPPCT').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
                         Nhập Excel
                     </button>
+                    
+                    <!-- [NÂNG CẤP]: Nút bật/tắt trạng thái sửa (Nằm trái nút Xuất) -->
+                    <button id="nutSuaDuLieuPPCT" onclick="chuyenDoiTrangThaiSuaPPCT()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-3 rounded shadow transition-colors duration-300 flex items-center gap-1.5 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Khóa Sửa
+                    </button>
+
                     <button onclick="xuLyXuatExcelPPCT()" class="bg-green-700 hover:bg-green-800 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
                         Xuất Excel
                     </button>
@@ -88,22 +95,10 @@ function taoKhungGiaoDienPPCT() {
                     <input type="text" id="locMonPPCT" list="listMonPPCT" class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50" placeholder="Chọn môn">
                     <datalist id="listMonPPCT"></datalist>
                 </div>
-               
-               <!-- [BẢN NÂNG CẤP]: Thêm nút Xoá trắng bên cạnh nút Xác nhận -->
-               <div class="flex items-center gap-2 ml-auto h-[34px]">
-                    <button onclick="xoDuLieuTraCuuPPCTOnUI()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-4 rounded shadow transition duration-200 text-sm flex items-center gap-1.5" title="Xóa dữ liệu lọc và làm sạch bảng">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                        Xoá trắng
-                    </button>
-                    <button onclick="taiDuLieuTkbVaPpct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-6 rounded shadow transition duration-200 text-sm flex items-center gap-2">
-                        Xác nhận
-                    </button>
-                </div>
+               <button onclick="taiDuLieuTkbVaPpct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-6 rounded shadow transition duration-200 text-sm ml-auto flex items-center gap-2 h-[34px]">
+                    Xác nhận
+                </button>
             </div>
-
-            <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative">
 
             <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative">
                 <table class="bang-excel w-full text-center border-collapse">
@@ -114,8 +109,8 @@ function taoKhungGiaoDienPPCT() {
                             <th class="py-2.5 px-2 border border-slate-400 w-12">Tiết</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-24">Tiết PPC</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-32">Môn</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[220px]">Tên bài học</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[230px]">Nội dung Điều chỉnh/Tích hợp</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[250px]">Tên bài học</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[200px]">Điều chỉnh</th>
                         </tr>
                     </thead>
                     <tbody id="vungDuLieuLichPPCT">
@@ -128,6 +123,40 @@ function taoKhungGiaoDienPPCT() {
     }
 }
 
+// =========================================================================
+// KHỐI 1.5: ĐIỀU KHIỂN BẬT/TẮT TRẠNG THÁI SỬA DỮ LIỆU
+// =========================================================================
+function chuyenDoiTrangThaiSuaPPCT() {
+    trangThaiChoPhepSua = !trangThaiChoPhepSua;
+    const nutSua = document.getElementById('nutSuaDuLieuPPCT');
+    
+    if (trangThaiChoPhepSua) {
+        nutSua.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded shadow transition-colors duration-300 flex items-center gap-1.5 text-sm';
+        nutSua.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            Mở Sửa
+        `;
+    } else {
+        nutSua.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-3 rounded shadow transition-colors duration-300 flex items-center gap-1.5 text-sm';
+        nutSua.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            Khóa Sửa
+        `;
+    }
+    capNhatTrangThaiCacO();
+}
+
+function capNhatTrangThaiCacO() {
+    const cacO = document.querySelectorAll('[data-loai="tietPpc"], [data-loai="tenBai"], [data-loai="dieuChinh"]');
+    cacO.forEach(o => {
+        o.contentEditable = trangThaiChoPhepSua ? "true" : "false";
+        if (trangThaiChoPhepSua) {
+            o.classList.add('outline-none', 'ring-1', 'ring-blue-400', 'bg-blue-50/50', 'hover:bg-blue-100', 'cursor-text', 'px-1', 'rounded', 'min-h-[24px]');
+        } else {
+            o.classList.remove('outline-none', 'ring-1', 'ring-blue-400', 'bg-blue-50/50', 'hover:bg-blue-100', 'cursor-text', 'px-1', 'rounded', 'min-h-[24px]');
+        }
+    });
+}
 // =========================================================================
 // KHỐI 2: ĐIỀU HƯỚNG TAB VÀ XỬ LÝ LAZY LOADING
 // =========================================================================
@@ -303,7 +332,6 @@ function veBangKhungLichPPCT(monDangChon) {
     const tuan = parseInt(document.getElementById('locTuanUI').value.trim()) || 1;
     const lop = document.getElementById('locLopPPCT').value.trim();
     
-    // [YÊU CẦU MỚI 3]: Nội suy ngày tự động và gán cờ isTuongLai
     let ngayGocThu2 = null;
     const tuanHienTaiHeThong = (typeof tuanDangXem !== 'undefined') ? parseInt(tuanDangXem) : 1;
     const isTuongLai = tuan > tuanHienTaiHeThong;
@@ -403,18 +431,17 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         let idKhoa = `${thu}_${buoi}_${tiet}`;
 
-                       // [BẢN NÂNG CẤP]: Ép xuống dòng triệt để cho cột Tên bài và Điều chỉnh
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
-                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
-                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal">${tenMonTkb}</td>
+                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 break-words whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
+                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 break-words whitespace-normal">${tenMonTkb}</td>
 
-                          <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
-                                <div class="flex items-start justify-between gap-2">
-                                    <span class="font-semibold text-slate-900 flex-1 whitespace-normal break-words" style="word-break: break-word;" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
+                            <td class="border-r border-gray-300 align-middle text-left p-3 break-words whitespace-normal leading-relaxed" style="white-space: normal !important; max-width: 400px; word-break: break-word;">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-semibold text-slate-900 flex-1" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
                                     
                                     <button onclick="kichHoatXemTruocSGK(document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so'), '${tenMonTkb}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText)" 
-                                            class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200 mt-0.5" 
+                                            class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200" 
                                             title="Xem và tải trang SGK bài học này">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -424,7 +451,7 @@ function veBangKhungLichPPCT(monDangChon) {
                                 </div>
                             </td>                     
 
-                            <td class="align-middle text-left p-3 italic text-gray-700 leading-relaxed whitespace-normal break-words" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: normal !important; min-width: 250px; max-width: 450px; word-wrap: break-word; word-break: break-word;">${valDieuChinh}</td>
+                            <td class="align-middle text-left p-3 italic text-gray-700 break-words whitespace-normal leading-relaxed" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: normal !important; max-width: 300px; word-break: break-word;">${valDieuChinh}</td>
                         </tr>`;
                     });
                 }
@@ -436,6 +463,9 @@ function veBangKhungLichPPCT(monDangChon) {
         html = `<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold italic">Lịch giảng dạy tuần này không có môn "${monDangChon}".</td></tr>`;
     }
     tbody.innerHTML = html;
+    
+    // [NÂNG CẤP]: Phục hồi trạng thái hiển thị (Khoá/Mở Sửa) cho toàn bộ ô vừa tạo
+    capNhatTrangThaiCacO();
 }
 
 // =========================================================================
