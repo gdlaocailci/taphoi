@@ -208,37 +208,39 @@ function tinhToanTietDay(maGVVuaChon = null) {
     }
   });
 
-  // [NÂNG CẤP LÕI]: Tạo cụm công cụ gồm 2 bộ lọc (Khu vực & Tìm kiếm chung) trên cùng 1 hàng
   const nutXuatExcel = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
   let oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe');
   
   if (nutXuatExcel && !oTimKiemGiaoVien) {
+      // Tự động đổi tên nút xuất Excel thành "Xuất File" để tiết kiệm diện tích mà không làm mất icon
+      nutXuatExcel.innerHTML = nutXuatExcel.innerHTML.replace(/Xuất Bảng Phân Công Chi Tiết/g, 'Xuất File');
+
       const thanhCongCu = nutXuatExcel.parentElement;
       
       thanhCongCu.classList.add('flex', 'justify-between', 'items-center', 'w-full', 'mb-3');
       thanhCongCu.classList.remove('justify-end'); 
       
       const divBoLoc = document.createElement('div');
-      divBoLoc.className = 'flex items-center gap-3';
+      divBoLoc.className = 'flex items-center gap-2'; // Rút gọn khoảng cách 2 ô lọc
       
-      // 1. Ô Lọc theo Khu vực (VD: B, C, C1...)
+      // Thu hẹp ô Khu vực và giảm size text
       const htmlKhuVuc = `
-          <div class="flex items-center bg-emerald-50 border border-emerald-400 rounded-md px-2 py-1.5 shadow-sm focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all" title="Lọc toàn bộ giáo viên theo khu vực (VD: gõ C để lọc C1, C2...)">
-              <svg class="text-emerald-600 mr-1.5" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-              <input type="text" id="locKhuVucThongKe" oninput="locDuLieuThongKeThoiGianThuc()" placeholder="Khu (VD: B, C)" autocomplete="off" class="outline-none text-[14px] text-emerald-900 bg-transparent font-semibold w-[120px] placeholder-emerald-500/70">
+          <div class="flex items-center bg-emerald-50 border border-emerald-400 rounded-md px-2 py-1 shadow-sm focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all" title="Lọc toàn bộ giáo viên theo khu vực (VD: gõ C để lọc C1, C2...)">
+              <svg class="text-emerald-600 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <input type="text" id="locKhuVucThongKe" oninput="locDuLieuThongKeThoiGianThuc()" placeholder="Khu (B, C)" autocomplete="off" class="outline-none text-[13px] text-emerald-900 bg-transparent font-semibold w-[90px] placeholder-emerald-500/70">
           </div>
       `;
 
-      // 2. Ô Tìm kiếm tự do theo Tên/Mã
+      // Thu hẹp ô Tìm kiếm và sửa lại chữ gợi ý
       const htmlTimKiem = `
-          <div class="flex items-center bg-white border border-blue-400 rounded-md px-3 py-1.5 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all">
-              <svg class="text-blue-500 mr-2" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <div class="flex items-center bg-white border border-blue-400 rounded-md px-2 py-1 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all">
+              <svg class="text-blue-500 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" 
                      oninput="locDuLieuThongKeThoiGianThuc()" 
                      onchange="locDuLieuThongKeThoiGianThuc()"
-                     placeholder="Lọc mã/tên giáo viên..." 
+                     placeholder="Tên/mã..." 
                      autocomplete="off"
-                     class="outline-none text-[14px] text-slate-800 bg-transparent w-[200px] min-w-[150px]">
+                     class="outline-none text-[13px] text-slate-800 bg-transparent w-[110px] min-w-[80px]">
           </div>
       `;
       
@@ -247,7 +249,6 @@ function tinhToanTietDay(maGVVuaChon = null) {
       oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe'); 
   }
 
-  // Khởi tạo thẻ tiêu đề bảng
   const theadThongKe = document.querySelector('#duLieuThongKe').previousElementSibling;
   if (theadThongKe) {
       theadThongKe.className = 'bg-purple-100 text-purple-900 shadow-sm';
@@ -295,7 +296,6 @@ function tinhToanTietDay(maGVVuaChon = null) {
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
 
-  // Thực thi lọc ngay sau khi vẽ bảng
   locDuLieuThongKeThoiGianThuc();
 
   if (gvDangDuocChon) {
@@ -548,12 +548,10 @@ function xuLyTaiLenExcelPhanCong(e) {
     reader.readAsArrayBuffer(file);
 }
 
-// =========================================================================
-// HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ) - ĐÃ BỔ SUNG STT VÀ GIỮ ID
-// =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
-    let textGoc = btn ? btn.innerHTML : 'Xuất file';
+    // Thay đổi fallback text thành "Xuất File"
+    let textGoc = btn ? btn.innerHTML : 'Xuất File';
     
     if (btn) {
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
@@ -574,7 +572,6 @@ async function xuatExcelThongKePhanCong() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('THONG_KE_CHI_TIET');
         
-        // [CẬP NHẬT 1]: Bổ sung cột STT lên đầu
         worksheet.columns = [
             { header: 'STT', key: 'stt', width: 8 },
             { header: 'Họ và tên Giáo viên', key: 'gv', width: 35 },
@@ -588,12 +585,11 @@ async function xuatExcelThongKePhanCong() {
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
         const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
-        let stt = 1; // Biến đếm số thứ tự
+        let stt = 1;
         
         cacDongThongKe.forEach(tr => {
             const cacCot = tr.querySelectorAll('td');
             if (cacCot.length >= 4) {
-                // [CẬP NHẬT 2]: Giữ lại ID bằng cách chỉ xóa dấu ngoặc, giữ nội dung bên trong, định dạng thành Dấu gạch ngang
                 let tenGV = cacCot[0].innerText.replace(/\n/g, ' - ').replace(/[()]/g, '').replace(/\s+-\s+/g, ' - ').trim(); 
                 let dinhMuc = parseInt(cacCot[1].innerText) || 0;
                 let thucTe = parseInt(cacCot[2].innerText) || 0;
@@ -614,13 +610,13 @@ async function xuatExcelThongKePhanCong() {
                     row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
                 }
                 
-                stt++; // Tăng chỉ số STT
+                stt++; 
             }
         });
 
         worksheet.eachRow((row, rowNumber) => {
             if (rowNumber > 1) {
-                row.getCell('stt').alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa cột STT
+                row.getCell('stt').alignment = { vertical: 'middle', horizontal: 'center' }; 
                 row.getCell('dinhMuc').alignment = { vertical: 'middle', horizontal: 'center' };
                 row.getCell('thucTe').alignment = { vertical: 'middle', horizontal: 'center' };
                 row.getCell('chiTiet').alignment = { vertical: 'middle', wrapText: true };
