@@ -208,33 +208,52 @@ function tinhToanTietDay(maGVVuaChon = null) {
     }
   });
 
-  // [NÂNG CẤP LÕI]: Đã lược bỏ lệnh ép chiều rộng (className = 'w-[500px]...') gây vỡ khung giao diện mới
-
-  // [NÂNG CẤP BỔ SUNG]: Lưu trữ trạng thái từ khóa tìm kiếm để không bị mất khi hàm vẽ lại DOM
-  let tuKhoaHienTai = '';
+  // [NÂNG CẤP LÕI]: Tạo cụm công cụ gồm 2 bộ lọc (Khu vực & Tìm kiếm chung) trên cùng 1 hàng
+  const nutXuatExcel = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
   let oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe');
-  if (oTimKiemGiaoVien) {
-      tuKhoaHienTai = oTimKiemGiaoVien.value;
+  
+  if (nutXuatExcel && !oTimKiemGiaoVien) {
+      const thanhCongCu = nutXuatExcel.parentElement;
+      
+      thanhCongCu.classList.add('flex', 'justify-between', 'items-center', 'w-full', 'mb-3');
+      thanhCongCu.classList.remove('justify-end'); 
+      
+      const divBoLoc = document.createElement('div');
+      divBoLoc.className = 'flex items-center gap-3';
+      
+      // 1. Ô Lọc theo Khu vực (VD: B, C, C1...)
+      const htmlKhuVuc = `
+          <div class="flex items-center bg-emerald-50 border border-emerald-400 rounded-md px-2 py-1.5 shadow-sm focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all" title="Lọc toàn bộ giáo viên theo khu vực (VD: gõ C để lọc C1, C2...)">
+              <svg class="text-emerald-600 mr-1.5" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <input type="text" id="locKhuVucThongKe" oninput="locDuLieuThongKeThoiGianThuc()" placeholder="Khu (VD: B, C)" autocomplete="off" class="outline-none text-[14px] text-emerald-900 bg-transparent font-semibold w-[120px] placeholder-emerald-500/70">
+          </div>
+      `;
+
+      // 2. Ô Tìm kiếm tự do theo Tên/Mã
+      const htmlTimKiem = `
+          <div class="flex items-center bg-white border border-blue-400 rounded-md px-3 py-1.5 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all">
+              <svg class="text-blue-500 mr-2" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" 
+                     oninput="locDuLieuThongKeThoiGianThuc()" 
+                     onchange="locDuLieuThongKeThoiGianThuc()"
+                     placeholder="Lọc mã/tên giáo viên..." 
+                     autocomplete="off"
+                     class="outline-none text-[14px] text-slate-800 bg-transparent w-[200px] min-w-[150px]">
+          </div>
+      `;
+      
+      divBoLoc.innerHTML = htmlKhuVuc + htmlTimKiem;
+      thanhCongCu.insertBefore(divBoLoc, nutXuatExcel);
+      oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe'); 
   }
 
+  // Khởi tạo thẻ tiêu đề bảng
   const theadThongKe = document.querySelector('#duLieuThongKe').previousElementSibling;
   if (theadThongKe) {
       theadThongKe.className = 'bg-purple-100 text-purple-900 shadow-sm';
-      // [NÂNG CẤP BỔ SUNG]: Chèn thêm ô input tìm kiếm liên kết với datalist "danhSachGiaoVienPhanCong"
       theadThongKe.innerHTML = `
         <tr>
-            <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">
-                <div class="flex flex-col gap-1.5">
-                    <span>Giáo viên</span>
-                    <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" 
-                           value="${tuKhoaHienTai}"
-                           oninput="locDuLieuThongKeThoiGianThuc()" 
-                           onchange="locDuLieuThongKeThoiGianThuc()"
-                           placeholder="🔍 Lọc mã/tên..." 
-                           autocomplete="off"
-                           class="w-full min-w-[140px] text-[13px] font-normal px-2 py-1 rounded border border-gray-400 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-slate-800 bg-white shadow-inner transition-all">
-                </div>
-            </th>
+            <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">Giáo viên</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Định mức</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Thực tế</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Chi tiết giảng dạy</th>
@@ -263,7 +282,6 @@ function tinhToanTietDay(maGVVuaChon = null) {
     let hienThiTen = (soLieu.hoTen && soLieu.hoTen !== ma) ? `${soLieu.hoTen} <br><span class="text-[13px] text-gray-500 font-bold italic">(${ma})</span>` : ma;
     let safeId = "tk_gv_" + encodeURIComponent(ma.trim()).replace(/%/g, '_');
     
-    // [NÂNG CẤP BỔ SUNG]: Thêm thuộc tính data-timkiem để hỗ trợ tìm kiếm không phụ thuộc vào thẻ HTML bên trong
     let chuoiTimKiem = `${soLieu.hoTen.toLowerCase()} ${ma.toLowerCase()}`;
 
     tbodyThongKe += `
@@ -277,7 +295,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
 
-  // [NÂNG CẤP BỔ SUNG]: Thực thi ngay bộ lọc sau khi vẽ lại bảng để duy trì kết quả hiển thị
+  // Thực thi lọc ngay sau khi vẽ bảng
   locDuLieuThongKeThoiGianThuc();
 
   if (gvDangDuocChon) {
@@ -291,19 +309,39 @@ function tinhToanTietDay(maGVVuaChon = null) {
   }
 }
 
-// [NÂNG CẤP BỔ SUNG]: Hàm xử lý nghiệp vụ tìm kiếm, tách biệt rõ ràng để mã nguồn sạch sẽ
+// [NÂNG CẤP LÕI]: Hàm xử lý kết hợp song song 2 điều kiện (Khu vực + Tên/Mã)
 function locDuLieuThongKeThoiGianThuc() {
     let oTimKiem = document.getElementById('locGiaoVienThongKe');
-    if (!oTimKiem) return;
+    let oKhuVuc = document.getElementById('locKhuVucThongKe');
     
-    let tuKhoa = oTimKiem.value.trim().toLowerCase();
+    let tuKhoa = oTimKiem ? oTimKiem.value.trim().toLowerCase() : "";
+    let khuVuc = oKhuVuc ? oKhuVuc.value.trim().toLowerCase() : "";
+    
     let cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
     
     cacDongThongKe.forEach(dong => {
         let oGiaoVien = dong.querySelector('td:first-child');
         if (oGiaoVien) {
             let duLieuTimKiem = oGiaoVien.getAttribute('data-timkiem') || oGiaoVien.innerText.toLowerCase();
-            if (duLieuTimKiem.includes(tuKhoa)) {
+            
+            // 1. Kiểm tra khớp từ khóa tên/mã
+            let thapTuKhoa = (tuKhoa === "") || duLieuTimKiem.includes(tuKhoa);
+            
+            // 2. Kiểm tra khớp khu vực sử dụng Regex ranh giới từ (\b)
+            // Ví dụ: Gõ 'c' -> Tìm \bc\d*\b -> Khớp 'c', 'c1', 'c2' nhưng KHÔNG khớp chữ 'c' trong 'công'
+            let thapKhuVuc = true;
+            if (khuVuc !== "") {
+                try {
+                    let regexKhuVuc = new RegExp('\\b' + khuVuc + '\\d*\\b', 'i');
+                    thapKhuVuc = regexKhuVuc.test(duLieuTimKiem);
+                } catch (e) {
+                    // Fallback phòng hờ khi người dùng gõ ký tự đặc biệt gây lỗi Regex
+                    thapKhuVuc = duLieuTimKiem.includes(khuVuc);
+                }
+            }
+            
+            // Dòng chỉ hiển thị khi thỏa mãn ĐỒNG THỜI cả 2 tiêu chí
+            if (thapTuKhoa && thapKhuVuc) {
                 dong.style.display = '';
             } else {
                 dong.style.display = 'none';
@@ -514,7 +552,7 @@ function xuLyTaiLenExcelPhanCong(e) {
 // =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
-    let textGoc = btn ? btn.innerHTML : 'Xuất Bảng Phân Công Chi Tiết';
+    let textGoc = btn ? btn.innerHTML : 'Xuất file';
     
     if (btn) {
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
