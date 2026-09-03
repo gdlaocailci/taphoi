@@ -124,7 +124,7 @@ function taoKhungGiaoDienPPCT() {
 }
 
 // =========================================================================
-// KHỐI 1.5: ĐIỀU KHIỂN BẬT/TẮT TRẠNG THÁI SỬA DỮ LIỆU
+// KHỐI 1.5: ĐIỀU KHIỂN BẬT/TẮT TRẠNG THÁI SỬA DỮ LIỆU VÀ BẮT SỰ KIỆN GHI ĐÈ
 // =========================================================================
 function chuyenDoiTrangThaiSuaPPCT() {
     trangThaiChoPhepSua = !trangThaiChoPhepSua;
@@ -150,12 +150,38 @@ function capNhatTrangThaiCacO() {
     const cacO = document.querySelectorAll('[data-loai="tietPpc"], [data-loai="tenBai"], [data-loai="dieuChinh"]');
     cacO.forEach(o => {
         o.contentEditable = trangThaiChoPhepSua ? "true" : "false";
+        
+        // Luôn gỡ sự kiện cũ trước khi gắn mới để tránh lặp (Memory leak)
+        o.removeEventListener('input', xuLyKhiNhapDuLieu);
+        
         if (trangThaiChoPhepSua) {
             o.classList.add('outline-none', 'ring-1', 'ring-blue-400', 'bg-blue-50/50', 'hover:bg-blue-100', 'cursor-text', 'px-1', 'rounded', 'min-h-[24px]');
+            o.addEventListener('input', xuLyKhiNhapDuLieu);
         } else {
             o.classList.remove('outline-none', 'ring-1', 'ring-blue-400', 'bg-blue-50/50', 'hover:bg-blue-100', 'cursor-text', 'px-1', 'rounded', 'min-h-[24px]');
         }
     });
+}
+
+function xuLyKhiNhapDuLieu(event) {
+    const tr = event.target.closest('tr');
+    // Chỉ xử lý gắn cờ 1 lần duy nhất cho mỗi dòng khi phát sinh thay đổi
+    if (tr && tr.getAttribute('data-da-sua') !== 'true') {
+        tr.setAttribute('data-da-sua', 'true');
+        
+        // Kích hoạt hiệu ứng cảnh báo trên dòng
+        tr.classList.remove('bg-white', 'hover:bg-slate-50');
+        tr.classList.add('bg-amber-100', 'hover:bg-amber-200');
+        
+        // Tìm cột Môn học (liền kề cột Tiết PPCT) để gắn badge mà không làm hỏng dữ liệu nhập
+        const oTietPpc = tr.querySelector('[data-loai="tietPpc"]');
+        if (oTietPpc) {
+            const tdMon = oTietPpc.nextElementSibling;
+            if (tdMon && !tdMon.querySelector('.badge-sua')) {
+                tdMon.innerHTML += `<div class="badge-sua text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded shadow-sm mt-1 font-bold animate-pulse flex items-center justify-center gap-1 mx-auto w-max"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>ĐÃ SỬA</div>`;
+            }
+        }
+    }
 }
 // =========================================================================
 // KHỐI 2: ĐIỀU HƯỚNG TAB VÀ XỬ LÝ LAZY LOADING
@@ -599,7 +625,6 @@ function xuLyNhapExcelPPCT(event) {
 
 // =========================================================================
 // KHỐI 5: LƯU TRỮ KÉP (PPCT VÀ TKB) LÊN MÁY CHỦ
-// Thiết kế và phát triển: Hoàng Ngọc Lâm
 // =========================================================================
 async function luuDuLieuPPCTLenMayChu(event) {
     const nutBam = event.currentTarget;
@@ -618,8 +643,11 @@ async function luuDuLieuPPCTLenMayChu(event) {
     let mangGhi = [];
     const cacOInputTiet = document.querySelectorAll('[data-loai="tietPpc"]');
     
-    // Gom dữ liệu từ lưới UI của tuần hiện tại
     cacOInputTiet.forEach(inp => {
+        let tr = inp.closest('tr');
+        // [NÂNG CẤP]: Đọc trạng thái cờ từ giao diện
+        let laDongDaSua = tr.getAttribute('data-da-sua') === 'true'; 
+        
         let valTiet = inp.innerText.trim();
         if (valTiet !== '') {
             let idKhoa = inp.getAttribute('data-ppct-id');
@@ -634,7 +662,8 @@ async function luuDuLieuPPCTLenMayChu(event) {
                 mon: mon, 
                 tenBai: valTenBai, 
                 dieuChinh: valDieuChinh,
-                thongTinTkb: { tuan: tuan, lop: lop, thu: parts[0], buoi: parts[1], tietTkb: parts[2] }
+                thongTinTkb: { tuan: tuan, lop: lop, thu: parts[0], buoi: parts[1], tietTkb: parts[2] },
+                daSua: laDongDaSua // Truyền tín hiệu "Ghi đè" cho máy chủ
             });
             
             let idx = duLieuPpctGoc.findIndex(b => String(b.tiet) === valTiet);
@@ -647,18 +676,17 @@ async function luuDuLieuPPCTLenMayChu(event) {
         }
     });
     
-    // Bổ sung toàn bộ các tiết còn lại từ mảng gốc (do đã nạp từ Excel)
     duLieuPpctGoc.forEach(goc => {
         let daCoTrenLuoi = mangGhi.some(ghi => String(ghi.tietPpc) === String(goc.tiet));
         if (!daCoTrenLuoi && goc.tiet !== '') {
             mangGhi.push({
                 khoi: khoi, tietPpc: goc.tiet, mon: mon, tenBai: goc.tenBaiHoc || '', dieuChinh: goc.dieuChinh || '',
-                thongTinTkb: null
+                thongTinTkb: null,
+                daSua: false // Dữ liệu gốc đang bị ẩn không bị tác động nên cờ là false
             });
         }
     });
     
-    // Hiệu ứng Loading
     nutBam.innerHTML = `<div class="flex items-center gap-1.5"><div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang lưu...</span></div>`;
     nutBam.disabled = true;
 
@@ -673,16 +701,21 @@ async function luuDuLieuPPCTLenMayChu(event) {
         if (ketQua.trangThai === 'Thành công') {
             alert(`Đã lưu Phân phối chương trình Môn ${mon} - Khối ${khoi} lên hệ thống thành công!`);
             
-            // [BẢN NÂNG CẤP]: Gọi hàm vẽ lại lưới để xóa sạch Bản xem trước Excel trên UI
-            // Hàm này sẽ thiết lập lại giao diện lưới gốc, chỉ giữ lại các tiết của tuần hiện tại
-            veBangKhungLichPPCT(mon);
+            // [NÂNG CẤP]: Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
+            document.querySelectorAll('tr[data-da-sua="true"]').forEach(tr => {
+                tr.removeAttribute('data-da-sua');
+                tr.classList.remove('bg-amber-100', 'hover:bg-amber-200');
+                tr.classList.add('bg-white', 'hover:bg-slate-50');
+                let badge = tr.querySelector('.badge-sua');
+                if (badge) badge.remove();
+            });
+            
         } else {
             alert(`Sự cố lưu trữ: ${ketQua.thongBao}`);
         }
     } catch (loi) {
         alert('Lỗi kết nối máy chủ.');
     } finally {
-        // Khôi phục trạng thái nút bấm
         nutBam.innerHTML = noiDungGoc;
         nutBam.disabled = false;
     }
