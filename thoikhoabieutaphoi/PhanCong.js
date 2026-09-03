@@ -210,12 +210,31 @@ function tinhToanTietDay(maGVVuaChon = null) {
 
   // [NÂNG CẤP LÕI]: Đã lược bỏ lệnh ép chiều rộng (className = 'w-[500px]...') gây vỡ khung giao diện mới
 
+  // [NÂNG CẤP BỔ SUNG]: Lưu trữ trạng thái từ khóa tìm kiếm để không bị mất khi hàm vẽ lại DOM
+  let tuKhoaHienTai = '';
+  let oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe');
+  if (oTimKiemGiaoVien) {
+      tuKhoaHienTai = oTimKiemGiaoVien.value;
+  }
+
   const theadThongKe = document.querySelector('#duLieuThongKe').previousElementSibling;
   if (theadThongKe) {
       theadThongKe.className = 'bg-purple-100 text-purple-900 shadow-sm';
+      // [NÂNG CẤP BỔ SUNG]: Chèn thêm ô input tìm kiếm liên kết với datalist "danhSachGiaoVienPhanCong"
       theadThongKe.innerHTML = `
         <tr>
-            <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">Giáo viên</th>
+            <th class="py-1 px-2 border border-gray-400 bg-purple-200 text-slate-900 font-bold sticky top-0 left-0 z-30 shadow-[1px_1px_0_0_#9ca3af]">
+                <div class="flex flex-col gap-1.5">
+                    <span>Giáo viên</span>
+                    <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" 
+                           value="${tuKhoaHienTai}"
+                           oninput="locDuLieuThongKeThoiGianThuc()" 
+                           onchange="locDuLieuThongKeThoiGianThuc()"
+                           placeholder="🔍 Lọc mã/tên..." 
+                           autocomplete="off"
+                           class="w-full min-w-[140px] text-[13px] font-normal px-2 py-1 rounded border border-gray-400 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-slate-800 bg-white shadow-inner transition-all">
+                </div>
+            </th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Định mức</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 w-[12%] sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Thực tế</th>
             <th class="py-1 px-2 border border-gray-400 bg-purple-100 text-left w-auto sticky top-0 z-20 shadow-[0_1px_0_0_#9ca3af]">Chi tiết giảng dạy</th>
@@ -243,10 +262,13 @@ function tinhToanTietDay(maGVVuaChon = null) {
     let chiTietHienThi = soLieu.chiTiet.length > 0 ? soLieu.chiTiet.join(' ') : '<span class="text-gray-400 italic text-[11px]">Chưa phân công</span>';
     let hienThiTen = (soLieu.hoTen && soLieu.hoTen !== ma) ? `${soLieu.hoTen} <br><span class="text-[13px] text-gray-500 font-bold italic">(${ma})</span>` : ma;
     let safeId = "tk_gv_" + encodeURIComponent(ma.trim()).replace(/%/g, '_');
+    
+    // [NÂNG CẤP BỔ SUNG]: Thêm thuộc tính data-timkiem để hỗ trợ tìm kiếm không phụ thuộc vào thẻ HTML bên trong
+    let chuoiTimKiem = `${soLieu.hoTen.toLowerCase()} ${ma.toLowerCase()}`;
 
     tbodyThongKe += `
       <tr id="${safeId}" class="${bgClass} hover:bg-gray-50 transition-colors duration-300">
-        <td class="py-1 px-2 font-semibold text-slate-800 text-left pl-3 border-b border-r border-gray-300 whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_#d1d5db]">${hienThiTen}</td>
+        <td class="py-1 px-2 font-semibold text-slate-800 text-left pl-3 border-b border-r border-gray-300 whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_#d1d5db]" data-timkiem="${chuoiTimKiem}">${hienThiTen}</td>
         <td class="py-1 px-2 font-bold text-slate-600 border-b border-r border-gray-300 text-center">${soLieu.dinhMuc}</td>
         <td class="py-1 px-2 ${textClass} text-base border-b border-r border-gray-300 text-center">${soLieu.thucTe}</td>
         <td class="py-1 px-2 text-left leading-tight whitespace-normal border-b border-gray-300">${chiTietHienThi}</td>
@@ -254,6 +276,9 @@ function tinhToanTietDay(maGVVuaChon = null) {
     `;
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
+
+  // [NÂNG CẤP BỔ SUNG]: Thực thi ngay bộ lọc sau khi vẽ lại bảng để duy trì kết quả hiển thị
+  locDuLieuThongKeThoiGianThuc();
 
   if (gvDangDuocChon) {
       setTimeout(() => {
@@ -264,6 +289,27 @@ function tinhToanTietDay(maGVVuaChon = null) {
           }
       }, 50);
   }
+}
+
+// [NÂNG CẤP BỔ SUNG]: Hàm xử lý nghiệp vụ tìm kiếm, tách biệt rõ ràng để mã nguồn sạch sẽ
+function locDuLieuThongKeThoiGianThuc() {
+    let oTimKiem = document.getElementById('locGiaoVienThongKe');
+    if (!oTimKiem) return;
+    
+    let tuKhoa = oTimKiem.value.trim().toLowerCase();
+    let cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
+    
+    cacDongThongKe.forEach(dong => {
+        let oGiaoVien = dong.querySelector('td:first-child');
+        if (oGiaoVien) {
+            let duLieuTimKiem = oGiaoVien.getAttribute('data-timkiem') || oGiaoVien.innerText.toLowerCase();
+            if (duLieuTimKiem.includes(tuKhoa)) {
+                dong.style.display = '';
+            } else {
+                dong.style.display = 'none';
+            }
+        }
+    });
 }
 
 // =========================================================================
