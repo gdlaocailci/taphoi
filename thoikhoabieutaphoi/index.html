@@ -44,7 +44,7 @@
 
 <!-- 1. CỘT MENU BÊN TRÁI -->
     <!-- [ĐÃ SỬA]: Thay h-full min-h-screen bằng h-screen để chốt cứng chiều cao bằng đúng màn hình -->
-    <div id="sidebarMenu" class="fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-[280px] h-full bg-menu-main flex flex-col shadow-xl font-sans text-white z-50 flex-none">
+    <div id="sidebarMenu" class="fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out w-[280px] h-[100dvh] overflow-hidden bg-menu-main flex flex-col shadow-xl font-sans text-white z-50 flex-none">
          
          <!-- PHẦN ĐẦU: LOGO (Thêm flex-none để không bị bóp méo khi phóng to) -->
          <div class="flex flex-col items-center pt-8 pb-3 px-4 flex-none">
@@ -124,7 +124,7 @@
 
         
         <!-- PHẦN CUỐI: NÚT ĐĂNG NHẬP VÀ BẢN QUYỀN (Thêm flex-none để ghim chặt dưới đáy màn hình) -->
-        <div class="p-4 bg-black/20 text-center flex-none">
+       <div class="p-4 bg-black/20 text-center flex-none mt-auto w-full relative z-20">
             <button id="nutDangNhapG" onclick="khoiDongDangNhap()" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold py-2 px-4 rounded shadow-md flex items-center justify-center gap-2 transition duration-200 mb-4 group">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="G">
                 <span class="group-hover:text-blue-300 transition-colors">Đăng nhập</span>
@@ -136,7 +136,7 @@
 
     <!-- KHỐI 2: NỘI DUNG CHÍNH BÊN PHẢI -->
     <div id="sidebarBackdrop" onclick="moDongMenuMobile()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
-    <div class="flex-1 min-w-0 h-full flex flex-col bg-gray-100 relative overflow-hidden">
+    <div class="flex-1 min-w-0 h-[100dvh] flex flex-col bg-gray-100 relative overflow-hidden">
         <div class="flex-none p-2 pb-0">
             <!-- THANH TIÊU ĐỀ (HEADER) -->
             <header class="bg-white shadow-sm border border-gray-300 p-2 mb-2 flex items-center reactbits-fade-in delay-100">
@@ -225,7 +225,7 @@
             <div id="vungHienThiChinh" class="bg-white shadow-inner border border-gray-400 border-t-0 flex-1 min-w-0 min-h-0 overflow-auto relative">
                 
                 <!-- KHUNG 1: TKB HIỆN TẠI (Thêm min-w-[1200px] vào table để tự động cuộn ngang) -->
-                <div id="khungTKB" class="block w-full h-full">
+               <div id="khungTKB" class="block min-w-full min-h-full">
                     <table class="bang-excel relative min-w-[1200px]">
                         <thead id="tieuDeBang" class="sticky top-0 z-10 bg-slate-50 shadow-sm">
                             <tr><th class="text-center text-slate-500 py-3">Đang phân tích định dạng biểu mẫu...</th></tr>
