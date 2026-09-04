@@ -124,15 +124,16 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
   document.getElementById('duLieuLopHoc').innerHTML = bodyHtml + datalistHtml;
   tinhToanTietDay();
 
-  // [NÂNG CẤP BỔ SUNG]: Khởi tạo thanh lọc khung phân công bên trái
+// [NÂNG CẤP BỔ SUNG]: Khởi tạo thanh lọc khung phân công bên trái
   const nutLuuPhanCong = document.querySelector('#khungPhanCong button[onclick="xuLyLuuTru()"]');
   let oLocLopPhanCong = document.getElementById('locLopPhanCong');
   
   if (nutLuuPhanCong && !oLocLopPhanCong) {
       const thanhCongCuTrai = nutLuuPhanCong.parentElement;
       
-      thanhCongCuTrai.classList.add('flex', 'justify-between', 'items-center', 'w-full', 'mb-3', 'flex-wrap', 'gap-2');
-      thanhCongCuTrai.classList.remove('justify-end');
+      // SỬA Ở ĐÂY: Dùng justify-start thay vì justify-between, dùng gap-3 để tạo khoảng cách đều đặn
+      thanhCongCuTrai.classList.add('flex', 'justify-start', 'items-center', 'w-full', 'mb-3', 'flex-wrap', 'gap-3');
+      thanhCongCuTrai.classList.remove('justify-end', 'justify-between');
 
       const divBoLocTrai = document.createElement('div');
       divBoLocTrai.className = 'flex items-center gap-3'; 
