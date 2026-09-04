@@ -98,11 +98,11 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
           }
 
           if (monHocHopLe) {
-              // Trường hợp hợp lệ: Hiển thị ô nhập liệu bình thường
+              // Trường hợp hợp lệ: Hiển thị ô nhập liệu bình thường. Tích hợp gọi hàm lọc thời gian thực.
               let gvHienTai = duLieuCuCuaLop[j + 1] || ''; 
               bodyHtml += `<td class="p-0 border border-gray-400 transition-all duration-300 bg-white group-hover:bg-slate-50">
                               <input type="text" size="1" list="danhSachGiaoVienPhanCong" data-lop="${maLop}" data-mon="${tenMon}" value="${gvHienTai}" 
-                              onchange="tinhToanTietDay(this.value)" 
+                              onchange="tinhToanTietDay(this.value); locDuLieuPhanCongThoiGianThuc();" 
                               placeholder="--" class="w-full h-full min-h-[26px] min-w-0 outline-none text-center bg-transparent focus:bg-blue-100 cursor-pointer font-semibold text-slate-800" 
                               autocomplete="off" 
                               onclick="if(this.showPicker) this.showPicker(); tinhToanTietDay(this.value);" 
@@ -123,6 +123,79 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
   
   document.getElementById('duLieuLopHoc').innerHTML = bodyHtml + datalistHtml;
   tinhToanTietDay();
+
+  // [NÂNG CẤP BỔ SUNG]: Khởi tạo thanh lọc khung phân công bên trái
+  const nutLuuPhanCong = document.querySelector('#khungPhanCong button[onclick="xuLyLuuTru()"]');
+  let oLocLopPhanCong = document.getElementById('locLopPhanCong');
+  
+  if (nutLuuPhanCong && !oLocLopPhanCong) {
+      const thanhCongCuTrai = nutLuuPhanCong.parentElement;
+      
+      thanhCongCuTrai.classList.add('flex', 'justify-between', 'items-center', 'w-full', 'mb-3', 'flex-wrap', 'gap-2');
+      thanhCongCuTrai.classList.remove('justify-end');
+
+      const divBoLocTrai = document.createElement('div');
+      divBoLocTrai.className = 'flex items-center gap-3'; 
+      
+      const htmlLocLop = `
+          <div class="flex items-center bg-blue-50 border border-blue-400 rounded-md px-2 py-1.5 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all" title="Lọc hiển thị theo khu vực mã lớp (VD: A, B, 1A, 2B...)">
+              <svg class="text-blue-600 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              <input type="text" id="locLopPhanCong" oninput="locDuLieuPhanCongThoiGianThuc()" placeholder="Khu vực lớp (A, B...)" autocomplete="off" class="outline-none text-[13px] text-blue-900 bg-transparent font-semibold w-[130px] placeholder-blue-500/70">
+          </div>
+      `;
+
+      const htmlLocGV = `
+          <div class="flex items-center bg-amber-50 border border-amber-400 rounded-md px-2 py-1.5 shadow-sm focus-within:border-amber-600 focus-within:ring-1 focus-within:ring-amber-600 transition-all" title="Lọc các lớp mà giáo viên đang dạy">
+              <svg class="text-amber-600 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" id="locGiaoVienPhanCong" list="danhSachGiaoVienPhanCong" oninput="locDuLieuPhanCongThoiGianThuc()" onchange="locDuLieuPhanCongThoiGianThuc()" placeholder="Mã GV đang dạy..." autocomplete="off" class="outline-none text-[13px] text-amber-900 bg-transparent font-semibold w-[130px] placeholder-amber-500/70">
+          </div>
+      `;
+      
+      divBoLocTrai.innerHTML = htmlLocLop + htmlLocGV;
+      thanhCongCuTrai.insertBefore(divBoLocTrai, nutLuuPhanCong);
+  }
+}
+
+// [NÂNG CẤP BỔ SUNG]: Hàm xử lý logic lọc lưới dữ liệu Phân công
+function locDuLieuPhanCongThoiGianThuc() {
+    let oLocLop = document.getElementById('locLopPhanCong');
+    let oLocGV = document.getElementById('locGiaoVienPhanCong');
+
+    let tuKhoaLop = oLocLop ? oLocLop.value.trim().toLowerCase() : "";
+    let tuKhoaGV = oLocGV ? oLocGV.value.trim().toLowerCase() : "";
+
+    let cacDongLop = document.querySelectorAll('#duLieuLopHoc tr');
+
+    cacDongLop.forEach(dong => {
+        let tdLop = dong.querySelector('td:first-child');
+        if (!tdLop) return;
+
+        let tenLop = tdLop.innerText.toLowerCase();
+
+        // 1. Kiểm tra khớp mã lớp (Khu vực)
+        let thapLop = (tuKhoaLop === "") || tenLop.includes(tuKhoaLop);
+
+        // 2. Kiểm tra khớp mã giáo viên (Tìm trong tất cả các ô nhập liệu của dòng hiện tại)
+        let thapGV = false;
+        if (tuKhoaGV === "") {
+            thapGV = true;
+        } else {
+            let cacSelect = dong.querySelectorAll('input[data-lop]');
+            for (let i = 0; i < cacSelect.length; i++) {
+                if (cacSelect[i].value.trim().toLowerCase().includes(tuKhoaGV)) {
+                    thapGV = true;
+                    break; // Giáo viên dạy ít nhất 1 môn là đạt điều kiện hiển thị lớp
+                }
+            }
+        }
+
+        // Hiển thị nếu khớp đồng thời cả 2 điều kiện
+        if (thapLop && thapGV) {
+            dong.style.display = '';
+        } else {
+            dong.style.display = 'none';
+        }
+    });
 }
 
 // [NÂNG CẤP BỔ SUNG]: Hàm xử lý logic đảo cột trong DOM
