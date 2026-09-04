@@ -184,6 +184,11 @@
                             <datalist id="danhSachGvList"></datalist>
                         </div>
                         
+                       <input type="file" id="tepExcelTKB" accept=".xlsx, .xls" class="hidden" onchange="nhapExcelTKB(event)">
+                        <button onclick="document.getElementById('tepExcelTKB').click()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded flex whitespace-nowrap flex-none">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Nhập Excel
+                        </button>
                         <button onclick="xuatExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded flex whitespace-nowrap flex-none">
                             Xuất Excel
                         </button>
@@ -207,12 +212,7 @@
                    <button id="btnXepTuDong" onclick="goiThuatToanXepLich()" style="display: none;" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap">
                        Xếp Tự Động
                     </button>
-
-                    <button id="btnAiTinhChinh" onclick="moKhungAiTinhChinh()" style="display: none;" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap border border-indigo-400">
-                       <svg class="w-4 h-4 inline-block -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                       Tinh chỉnh
-                    </button>
-                    
+                                   
                     <button id="btnKiemTra" onclick="kiemTraDinhMuc()" style="display: none;" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap w-full sm:w-auto">
                        Định Mức tiết
                     </button>
@@ -550,18 +550,7 @@
         </div>
     </div>
 
-<!-- [KHỐI NÂNG CẤP AI]: Modal Giao tiếp và xử lý lệnh AI -->
-<div id="modalAiTinhChinh" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 font-sans reactbits-fade-in backdrop-blur-sm">
-    <div class="bg-white rounded-xl shadow-2xl w-11/12 md:w-2/3 lg:w-1/2 flex flex-col overflow-hidden border border-indigo-300 transform transition-all">
-        <div class="bg-gradient-to-r from-indigo-700 to-purple-600 text-white p-4 flex justify-between items-center border-b">
-            <h3 class="text-lg font-bold flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                Trợ lý AI Tinh chỉnh Thời khóa biểu
-            </h3>
-            <button onclick="dongKhungAiTinhChinh()" class="text-white hover:text-indigo-200 text-2xl leading-none font-bold">&times;</button>
-        </div>
-        
-        <div class="p-5 flex flex-col gap-4">
+       <div class="p-5 flex flex-col gap-4">
             <div>
                 <label class="block text-sm font-extrabold text-indigo-900 mb-1">Nhập lệnh tinh chỉnh cục bộ:</label>
                 <textarea id="lenhAiDauVao" rows="3" class="w-full border border-gray-400 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800 placeholder-slate-400 shadow-inner" placeholder="Ví dụ: Đổi tiết Toán của thầy Lâm lớp 1A ngày Thứ 2 sang Tiết 4 Sáng Thứ 3. Các môn khác tự động dồn lên."></textarea>
