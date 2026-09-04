@@ -1122,10 +1122,21 @@ document.addEventListener('click', function(suKien) {
 
 // =========================================================================
 // [NÂNG CẤP UI]: Thuật toán quét và cảnh báo giáo viên trùng lịch (Real-time)
+// Đã nâng cấp: Lờ đi cảnh báo trùng lịch đối với Ưu tiên 1 và Ưu tiên 6
 // =========================================================================
 window.kiemTraTrungGiaoVienToanBang = function() {
     const thuMacDinh = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     const buoiMacDinh = ["Sáng", "Chiều"];
+    
+    // Khởi tạo bảng tra cứu uuTien từ khung chương trình (bộ nhớ tạm)
+    const khung = thongSoHocVu.KHUNG_CHUONG_TRINH || {};
+    let keyUuTien = "";
+    for (let k in khung) {
+        if (k.toLowerCase().replace(/\s+/g, '').indexOf("ưutiên") !== -1 || k.toLowerCase().replace(/\s+/g, '').indexOf("uutien") !== -1) {
+            keyUuTien = k; break;
+        }
+    }
+    const uuTienMon = keyUuTien ? khung[keyUuTien] : {};
     
     thuMacDinh.forEach(thu => {
         buoiMacDinh.forEach(buoi => {
@@ -1139,7 +1150,19 @@ window.kiemTraTrungGiaoVienToanBang = function() {
                 cacOGiaoVien.forEach(oGv => {
                     let tenGv = oGv.value.trim();
                     if (tenGv !== "" && tenGv !== "--") {
-                        demGv[tenGv] = (demGv[tenGv] || 0) + 1;
+                        // Tách id "gv_Thứ 2_Sáng_1_1A1" để lấy id "mon_Thứ 2_Sáng_1_1A1"
+                        let parts = oGv.id.split('_'); 
+                        let lop = parts.slice(4).join('_'); 
+                        let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`;
+                        let theMon = document.getElementById(idMon);
+                        
+                        let monHoc = theMon ? theMon.value.trim() : "";
+                        let ut = parseInt(uuTienMon[monHoc]) || 99;
+
+                        // [CHỐT CHẶN]: Nếu KHÔNG phải là Ưu tiên 1 và KHÔNG phải là Ưu tiên 6, mới được đưa vào danh sách kiểm đếm trùng lịch
+                        if (ut !== 1 && ut !== 6) {
+                            demGv[tenGv] = (demGv[tenGv] || 0) + 1;
+                        }
                     }
                 });
                 
