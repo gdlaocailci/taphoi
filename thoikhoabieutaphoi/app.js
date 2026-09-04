@@ -45,7 +45,7 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
 // KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
 // =========================================================================
 function kiemSoatGiaoDien() {
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnAiTinhChinh'];
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
@@ -1183,124 +1183,93 @@ window.kiemTraTrungGiaoVienToanBang = function() {
         });
     });
 };
-
 // =========================================================================
-// [KHỐI NÂNG CẤP AI]: KIỂM SOÁT GIAO DIỆN VÀ GỬI LỆNH TINH CHỈNH CỤC BỘ
+// KHỐI TIỆN ÍCH: ĐỌC DỮ LIỆU TỪ TỆP EXCEL VÀ ÁNH XẠ LÊN GIAO DIỆN UI
 // =========================================================================
-function moKhungAiTinhChinh() {
-    document.getElementById('lenhAiDauVao').value = '';
-    document.getElementById('vungAiDangXuLy').classList.add('hidden');
-    document.getElementById('vungKqAi').classList.add('hidden');
-    document.getElementById('btnCopyGoiY').classList.add('hidden');
-    document.getElementById('modalAiTinhChinh').classList.remove('hidden');
-    document.getElementById('lenhAiDauVao').focus();
-}
-
-function dongKhungAiTinhChinh() {
-    document.getElementById('modalAiTinhChinh').classList.add('hidden');
-}
-
-function copyGoiYAi() {
-    let vanBan = document.getElementById('noiDungKqAi').innerText;
-    navigator.clipboard.writeText(vanBan).then(() => {
-        let btn = document.getElementById('btnCopyGoiY');
-        let textGoc = btn.innerText;
-        btn.innerText = "Đã Copy!";
-        btn.classList.replace('bg-slate-200', 'bg-green-200');
-        setTimeout(() => { 
-            btn.innerText = textGoc; 
-            btn.classList.replace('bg-green-200', 'bg-slate-200');
-        }, 2000);
-    });
-}
-
-async function thucThiLenhAi() {
-    let lenhInput = document.getElementById('lenhAiDauVao').value.trim();
-    if (!lenhInput) {
-        alert("Đồng chí cần nhập yêu cầu tinh chỉnh trước khi thực thi.");
-        return;
-    }
-
-    let btnGoi = document.getElementById('btnGoiAi');
-    let vungLoading = document.getElementById('vungAiDangXuLy');
-    let vungKq = document.getElementById('vungKqAi');
-    
-    btnGoi.disabled = true;
-    btnGoi.classList.add('opacity-50', 'cursor-not-allowed');
-    vungLoading.classList.remove('hidden');
-    vungLoading.classList.add('flex');
-    vungKq.classList.add('hidden');
+async function nhapExcelTKB(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
     try {
-        // [THUẬT TOÁN ĐÓNG GÓI UI]: Chụp lại chính xác trạng thái TKB đang hiển thị trên màn hình
-        let dsTietLuoiHienTai = []; 
-        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
-        
-        cacOMon.forEach(oMon => {
-            let valMon = oMon.value.trim();
-            if (valMon !== "") {
-                let parts = oMon.id.split('_'); 
-                let thu = parts[1]; let buoi = parts[2]; let tiet = parts[3];
-                let lop = parts.slice(4).join('_'); 
-                
-                let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
-                let valGv = oGv ? oGv.value.trim() : "";
-                
-                dsTietLuoiHienTai.push({ thu: thu, buoi: buoi, tiet: tiet, maLop: lop, monHoc: valMon, maGv: valGv });
-            }
-        });
-
-        // Gửi qua hàm fetchVoiCoCheThuLai chống lỗi mạng
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                thaoTac: 'tinhChinhBangAI', 
-                yeuCau: lenhInput, 
-                duLieu: dsTietLuoiHienTai 
-            }) 
-        });
-
-        const kqAi = await phanHoi.json();
-        
-        vungLoading.classList.remove('flex');
-        vungLoading.classList.add('hidden');
-        vungKq.classList.remove('hidden');
-        vungKq.classList.add('flex');
-
-        let theTieuDe = document.getElementById('tieuDeKqAi');
-        let theNoiDung = document.getElementById('noiDungKqAi');
-        let nutCopy = document.getElementById('btnCopyGoiY');
-
-        if (kqAi.trangThai === 'thanh_cong') {
-            theTieuDe.innerText = "💡 Chuyên gia AI Phân tích & Đề xuất:";
-            theTieuDe.className = "font-extrabold text-base text-indigo-800";
-            theNoiDung.innerText = kqAi.thongBao;
-            theNoiDung.className = "text-[15px] text-slate-800 whitespace-pre-wrap font-medium leading-relaxed";
-            nutCopy.classList.remove('hidden');
-            
-            // [ĐÃ GỠ BỎ TOÀN BỘ PHẦN ÁNH XẠ NGƯỢC]
-            // Hệ thống chỉ trả kết quả vào khung gợi ý theo đúng yêu cầu, không tự động can thiệp vào lưới TKB.
-
-        } else {
-            theTieuDe.innerText = "⚠️ Không thể thực hiện (Xung đột hệ thống):";
-            theTieuDe.className = "font-extrabold text-sm text-orange-700";
-            theNoiDung.innerText = kqAi.thongBao;
-            theNoiDung.className = "text-sm text-slate-800 whitespace-pre-wrap font-medium bg-orange-50 p-2 rounded border border-orange-200";
-            nutCopy.classList.remove('hidden');
+        if (typeof XLSX === 'undefined') {
+            alert("Thư viện hệ thống chưa sẵn sàng. Vui lòng đợi trong giây lát hoặc tải lại trang.");
+            return;
         }
 
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0]; 
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+
+                if (jsonData.length < 3) {
+                    alert("Tệp Excel tải lên không đúng chuẩn biểu mẫu của hệ thống.");
+                    return;
+                }
+
+                // Dòng 0 chứa tiêu đề các Lớp
+                const headerLop = jsonData[0];
+                const danhSachLopCol = [];
+                
+                // Thu thập cấu trúc lớp từ cột 3 trở đi
+                for (let i = 3; i < headerLop.length; i += 2) {
+                    if (headerLop[i] && headerLop[i].toString().trim() !== "") {
+                        danhSachLopCol.push({ tenLop: headerLop[i].toString().trim(), colIndex: i });
+                    }
+                }
+
+                let thuHienTai = "";
+                let buoiHienTai = "";
+
+                // Đọc dữ liệu từ dòng 2
+                for (let r = 2; r < jsonData.length; r++) {
+                    const row = jsonData[r];
+                    if (!row || row.length === 0) continue;
+
+                    // Lọc dữ liệu định vị dòng (Bảo toàn trạng thái do ô gộp trong Excel)
+                    if (row[0] && row[0].toString().trim() !== "") {
+                        thuHienTai = row[0].toString().split('\n')[0].trim();
+                    }
+                    if (row[1] && row[1].toString().trim() !== "") {
+                        buoiHienTai = row[1].toString().trim();
+                    }
+                    
+                    let tiet = row[2] ? row[2].toString().trim() : "";
+                    if (!thuHienTai || !buoiHienTai || !tiet) continue;
+
+                    // Ánh xạ dữ liệu lên các ô Input UI
+                    danhSachLopCol.forEach(lopInfo => {
+                        let monVal = row[lopInfo.colIndex] ? row[lopInfo.colIndex].toString().trim() : "";
+                        let gvVal = row[lopInfo.colIndex + 1] ? row[lopInfo.colIndex + 1].toString().trim() : "";
+
+                        let theMon = document.getElementById(`mon_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
+                        let theGv = document.getElementById(`gv_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
+
+                        if (theMon) theMon.value = monVal;
+                        if (theGv) theGv.value = gvVal;
+                    });
+                }
+                
+                // Kích hoạt bộ engine báo lỗi trùng lịch sau khi dữ liệu đã lên lưới
+                if (typeof kiemTraTrungGiaoVienToanBang === 'function') {
+                    kiemTraTrungGiaoVienToanBang();
+                }
+                
+                alert("Đã kết xuất dữ liệu từ Excel lên giao diện thành công! Vui lòng kiểm tra đối chiếu và bấm [Lưu TKB Tuần] để lưu hệ thống.");
+            } catch (errParse) {
+                console.error("Lỗi phân tích cú pháp tệp Excel: ", errParse);
+                alert("Sự cố xảy ra khi trích xuất dữ liệu biểu mẫu.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
     } catch (loi) {
-        vungLoading.classList.remove('flex');
-        vungLoading.classList.add('hidden');
-        vungKq.classList.remove('hidden');
-        vungKq.classList.add('flex');
-        
-        document.getElementById('tieuDeKqAi').innerText = "❌ Lỗi kết nối AI";
-        document.getElementById('tieuDeKqAi').className = "font-extrabold text-sm text-red-700";
-        document.getElementById('noiDungKqAi').innerText = "Hệ thống AI đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.\nChi tiết: " + loi.message;
-        document.getElementById('btnCopyGoiY').classList.add('hidden');
+        console.error("Lỗi cục bộ: ", loi);
+        alert("Sự cố tải tệp Excel.");
     } finally {
-        btnGoi.disabled = false;
-        btnGoi.classList.remove('opacity-50', 'cursor-not-allowed');
+        // Reset bộ đệm input để cho phép tải lại cùng một tệp
+        event.target.value = "";
     }
 }
