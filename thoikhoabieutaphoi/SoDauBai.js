@@ -76,30 +76,42 @@ function kiemTraTrangThaiDangNhapSDB() {
     }, 500);
 }
 
+// =========================================================================
+// HÀM TẢI DỮ LIỆU TỐC ĐỘ CAO (ASYNCHRONOUS BACKGROUND THREAD)
+// =========================================================================
 async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
-        vungHienThi.innerHTML = `<div class="text-center py-10 text-slate-500 font-bold">
-            <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang đồng bộ danh tính và trích xuất Lịch sử Chốt sổ toàn trường...
+        vungHienThi.innerHTML = `<div class="text-center py-12 text-slate-500 font-bold">
+            <div class="w-9 h-9 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+            <p class="text-base text-blue-900 font-extrabold">Đang tối ưu hóa phân quyền & trích xuất dữ liệu...</p>
+            <span class="text-xs text-slate-400 font-normal mt-1 block">Tự động cấu hình theo thời gian thực</span>
         </div>`;
     }
+
     try {
-        // [NÂNG CẤP CỐT LÕI]: Đọc định danh từ app.js và đính kèm vào URL để vượt rào Google
         let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
+        
+        // Gọi API nén dữ liệu
         const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`);
-        
         const phanHoiText = await phanHoi.text();
-        let duLieuSever;
         
-        try { duLieuSever = JSON.parse(phanHoiText); } 
-        catch (loiParse) { throw new Error("Phản hồi từ máy chủ bị hỏng. Vui lòng Deploy lại mã Code.gs."); }
+        let duLieuSever;
+        try { 
+            duLieuSever = JSON.parse(phanHoiText); 
+        } catch (loiParse) { 
+            throw new Error("Phản hồi máy chủ gặp sự cố định dạng. Vui lòng thử lại!"); 
+        }
 
         if (duLieuSever.trangThai === 'loi_he_thong') throw new Error(duLieuSever.thongBao);
-        
-        khoiTaoDuLieuSoDauBai(duLieuSever);
-        daTaiDuLieuSoDauBai = true;
+
+        // Tách luồng để trình duyệt không bị treo giao diện
+        setTimeout(() => {
+            khoiTaoDuLieuSoDauBai(duLieuSever);
+            daTaiDuLieuSoDauBai = true;
+        }, 10);
+
     } catch (loi) {
-        console.error("Lỗi tải Sổ đầu bài:", loi);
+        console.error("Lỗi Sổ đầu bài:", loi);
         if (vungHienThi) {
             vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span></div>`;
         }
