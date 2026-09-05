@@ -7,6 +7,7 @@ let tuDienPPCTToanCuc = {};
 let dinhMucKhungCT = {}; 
 let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
+let maGvDangNhapHeThong = '';
 
 async function taiDuLieuSoDauBaiTuMayChu() {
     if (daTaiDuLieuSoDauBai) return;
@@ -105,6 +106,7 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
     tuDienQuyenPhanCong = duLieuSever.QUYEN_THEO_LOP || {};
     coToanQuyenSDB = duLieuSever.TOAN_QUYEN || false;
+    maGvDangNhapHeThong = duLieuSever.MA_GIAO_VIEN || '';
 
     let tkbLichSu = duLieuSever.DATA_TKB || [];
     let tkbHienTai = duLieuSever.TKB_HIEN_TAI || [];
@@ -250,7 +252,6 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
 
 // =========================================================================
 // HÀM 1: KẾT XUẤT LƯỚI (Đã đính kèm thẻ căn cước data-loai & phân quyền khóa ô)
-// (Bản nâng cấp: Chuẩn hóa chuỗi ký tự so sánh quyền hạn tuyệt đối)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -402,19 +403,30 @@ function ketXuatSoDauBaiLenLuoi() {
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
                 let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
+                
+                // --- ĐOẠN MÃ ĐÃ ĐƯỢC LỒNG GHÉP VÀO ĐÚNG VỊ TRÍ ---
                 let nhanXet = dongDuLieu ? dongDuLieu['NhanXet_Thuc'] : '';
                 let xepLoai = dongDuLieu ? dongDuLieu['XepLoai_Thuc'] : '';
                 let chuKy = dongDuLieu ? dongDuLieu['ChuKy_Thuc'] : '';
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                // [CỐT LÕI NÂNG CẤP]: Chuẩn hóa biến môn học y hệt máy chủ trước khi kiểm tra Includes
+                // [CỐT LÕI NÂNG CẤP TỐI THƯỢNG]: Đối chiếu chéo 2 lớp bảo vệ
+                let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim() : '';
                 let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
-                let quyenNhapThuCong = coToanQuyenSDB || (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
+
+                // Quyền được cấp nếu: 
+                // 1. Là Ban giám hiệu (Toàn quyền)
+                // 2. Dạy thay: Tên GV trên TKB khớp với người đang đăng nhập
+                // 3. Dạy chính: Tên môn học có trong Bảng Phân Công của lớp
+                let quyenNhapThuCong = coToanQuyenSDB || 
+                                       (maGvDangNhapHeThong !== '' && gvTkb === maGvDangNhapHeThong) || 
+                                       (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
                 let cssTenBai = ""; let theTenBai = "";
                 let theNhanXet = ""; let theXepLoai = ""; let theChuKy = ""; let theChuyenCan = "";
+                // --- KẾT THÚC ĐOẠN MÃ LỒNG GHÉP ---
                 
                 if (monHoc && monHoc !== "") {
                     if (isLocked) {
