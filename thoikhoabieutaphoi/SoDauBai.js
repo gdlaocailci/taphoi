@@ -80,11 +80,14 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-10 text-slate-500 font-bold">
             <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang trích xuất Lịch sử Chốt sổ và Khung PPCT toàn trường...
+            Đang đồng bộ danh tính và trích xuất Lịch sử Chốt sổ toàn trường...
         </div>`;
     }
     try {
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai`);
+        // [NÂNG CẤP CỐT LÕI]: Đọc định danh từ app.js và đính kèm vào URL để vượt rào Google
+        let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
+        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`);
+        
         const phanHoiText = await phanHoi.text();
         let duLieuSever;
         
