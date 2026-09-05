@@ -853,6 +853,7 @@ async function xuLyLayThongTin(maTokenTruyCap) {
         const dinhDanhHeThong = duLieuXacThuc[tuKhoaDinhDanh]; 
         const tenHienThi = duLieuXacThuc.name; 
         const anhDaiDien = duLieuXacThuc.picture;
+        window.emailGiaoVienToanCuc = dinhDanhHeThong;
         
         if (nutDangNhap) {
             nutDangNhap.innerHTML = `<img src="${anhDaiDien}" class="w-6 h-6 rounded-full border border-white"><span class="truncate text-sm font-semibold">${tenHienThi}</span>`;
