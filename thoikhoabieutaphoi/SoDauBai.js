@@ -104,9 +104,22 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
 }
 
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
-    tuDienQuyenPhanCong = duLieuSever.QUYEN_THEO_LOP || {};
-    coToanQuyenSDB = duLieuSever.TOAN_QUYEN || false;
-    maGvDangNhapHeThong = duLieuSever.MA_GIAO_VIEN || '';
+    // [CỐT LÕI ĐÚNG Ý TƯỞNG]: Neo dữ liệu phân quyền trực tiếp vào UI để chống lệch pha
+    let theChotQuyen = document.getElementById('theChotQuyenSDB');
+    if (!theChotQuyen) {
+        theChotQuyen = document.createElement('div');
+        theChotQuyen.id = 'theChotQuyenSDB';
+        theChotQuyen.style.display = 'none';
+        
+        let vungChinh = document.getElementById('khungSoDauBai');
+        if (vungChinh) vungChinh.appendChild(theChotQuyen);
+        else document.body.appendChild(theChotQuyen);
+    }
+    
+    // Gán dữ liệu vào thẻ HTML
+    theChotQuyen.setAttribute('data-madinhdanh', duLieuSever.MA_GIAO_VIEN || '');
+    theChotQuyen.setAttribute('data-quantri', duLieuSever.TOAN_QUYEN || false);
+    theChotQuyen.setAttribute('data-matranquyen', JSON.stringify(duLieuSever.QUYEN_THEO_LOP || {}));
 
     let tkbLichSu = duLieuSever.DATA_TKB || [];
     let tkbHienTai = duLieuSever.TKB_HIEN_TAI || [];
@@ -151,10 +164,8 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         duLieuSever.PPCT.forEach(dong => {
             let khoiGoc = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
             if (khoiGoc !== '') boNhoKhoi = khoiGoc; else khoiGoc = boNhoKhoi; 
-            
             let matchKhoi = khoiGoc.match(/\d+/);
             let khoi = matchKhoi ? matchKhoi[0] : khoiGoc; 
-            
             let monGoc = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
             if (monGoc !== '') boNhoMon = monGoc; else monGoc = boNhoMon; 
             
@@ -250,9 +261,6 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
     return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
 }
 
-// =========================================================================
-// HÀM 1: KẾT XUẤT LƯỚI VÀ ĐIỀU KIỂN PHÂN QUYỀN ĐỘNG
-// =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
     let lopChon = document.getElementById('chonLopSo')?.value;
@@ -261,7 +269,17 @@ function ketXuatSoDauBaiLenLuoi() {
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
+    // [CỐT LÕI ĐÚNG Ý TƯỞNG]: Đọc quyền trực tiếp từ UI thay vì biến toàn cục
+    let theChotQuyen = document.getElementById('theChotQuyenSDB');
+    let maGvDangNhapHeThong = theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '';
+    let coToanQuyenSDB = theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true') : false;
+    let chuoiQuyen = theChotQuyen ? theChotQuyen.getAttribute('data-matranquyen') : '{}';
+    
+    let tuDienQuyenPhanCong = {};
+    try { tuDienQuyenPhanCong = JSON.parse(chuoiQuyen); } catch(e) {}
+
     let dsMonDuocSuaCuaLop = tuDienQuyenPhanCong[lopChon.toUpperCase()] || [];
+
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     let demTietThucTe = {}; 
     
@@ -342,7 +360,6 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    // [HIỂN THỊ THANH CHẨN ĐOÁN QUYỀN HẠN]
     let theHienThiQuyen = '';
     if (coToanQuyenSDB) {
         theHienThiQuyen = `<div class="mb-4 p-2.5 bg-purple-50 border border-purple-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
@@ -417,11 +434,11 @@ function ketXuatSoDauBaiLenLuoi() {
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
+                // Logic khóa bảo vệ
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase() : '';
                 let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
                 let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
 
-                // Quyền được cấp: Ban giám hiệu HOẶC GV dạy thay HOẶC GV dạy chính có tên trong danh sách phân công
                 let quyenNhapThuCong = coToanQuyenSDB || 
                                        (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
                                        (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
