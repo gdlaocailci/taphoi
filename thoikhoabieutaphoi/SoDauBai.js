@@ -251,7 +251,7 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
 }
 
 // =========================================================================
-// HÀM 1: KẾT XUẤT LƯỚI (Đã đính kèm thẻ căn cước data-loai & phân quyền khóa ô)
+// HÀM 1: KẾT XUẤT LƯỚI VÀ ĐIỀU KIỂN PHÂN QUYỀN ĐỘNG
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -305,16 +305,12 @@ function ketXuatSoDauBaiLenLuoi() {
     let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase());
     let soTietDaLuu = 0; let tongSoTietCoMon = 0;
     let dictTKB = {}; let mapNgayChinhXac = {}; 
-    let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
     tkbTuanNay.forEach(dong => {
         let thuGoc = String(dong['Thứ']).trim();
-        if (thuGoc === 'Thứ 7') coDayBuThu7 = true;
-        if (thuGoc === 'Chủ nhật') coDayBuChuNhat = true;
         if (dong['Ngày'] && dong['Ngày'] !== '' && dong['Ngày'] !== '...') mapNgayChinhXac[thuGoc] = dong['Ngày']; 
         let buoiKiemTra = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
         dictTKB[`${thuGoc}_${buoiKiemTra}_${dong['Tiết']}`] = dong;
-
         if (String(dong['Môn Học']).trim() !== '') {
             tongSoTietCoMon++;
             if (dong['DaLuu'] === true) soTietDaLuu++;
@@ -346,10 +342,22 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
-    if (coDayBuThu7) danhSachThu.push("Thứ 7");
-    if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
+    // [HIỂN THỊ THANH CHẨN ĐOÁN QUYỀN HẠN]
+    let theHienThiQuyen = '';
+    if (coToanQuyenSDB) {
+        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-purple-50 border border-purple-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
+            <div><span class="font-bold text-purple-800">Định danh:</span> <span class="text-purple-700 font-semibold">${maGvDangNhapHeThong || 'Quản trị viên'}</span></div>
+            <div><span class="font-bold text-purple-800 mr-2">Quyền của bạn:</span> <span class="bg-purple-600 text-white px-2 py-1 rounded text-[11px] font-extrabold uppercase tracking-wide">Toàn quyền Admin</span></div>
+        </div>`;
+    } else {
+        let danhSachMonUI = dsMonDuocSuaCuaLop.length > 0 ? dsMonDuocSuaCuaLop.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ') : '<span class="text-red-600 font-bold">Không được phân công lớp này</span>';
+        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
+            <div><span class="font-bold text-blue-800">Giáo viên:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
+            <div><span class="font-bold text-blue-800">Quyền tại ${lopChon}:</span> <span class="text-blue-700 font-semibold">${danhSachMonUI}</span></div>
+        </div>`;
+    }
 
+    let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
     let mienNgayHienTai = inputNgay ? inputNgay.value : '';
     if (!mienNgayHienTai && mapNgayChinhXac['Thứ 2']) {
         let p = mapNgayChinhXac['Thứ 2'].split('/');
@@ -403,30 +411,24 @@ function ketXuatSoDauBaiLenLuoi() {
                 let tietPPCT = dongDuLieu ? dongDuLieu['TietPPCT_Thuc'] : '';
                 let isDaLuu = dongDuLieu ? dongDuLieu['DaLuu'] : false;
                 let tenBai = dongDuLieu ? dongDuLieu['TenBai_Thuc'] : '';
-                
-                // --- ĐOẠN MÃ ĐÃ ĐƯỢC LỒNG GHÉP VÀO ĐÚNG VỊ TRÍ ---
                 let nhanXet = dongDuLieu ? dongDuLieu['NhanXet_Thuc'] : '';
                 let xepLoai = dongDuLieu ? dongDuLieu['XepLoai_Thuc'] : '';
                 let chuKy = dongDuLieu ? dongDuLieu['ChuKy_Thuc'] : '';
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                // [CỐT LÕI NÂNG CẤP TỐI THƯỢNG]: Đối chiếu chéo 2 lớp bảo vệ
-                let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim() : '';
+                let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase() : '';
+                let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
                 let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
 
-                // Quyền được cấp nếu: 
-                // 1. Là Ban giám hiệu (Toàn quyền)
-                // 2. Dạy thay: Tên GV trên TKB khớp với người đang đăng nhập
-                // 3. Dạy chính: Tên môn học có trong Bảng Phân Công của lớp
+                // Quyền được cấp: Ban giám hiệu HOẶC GV dạy thay HOẶC GV dạy chính có tên trong danh sách phân công
                 let quyenNhapThuCong = coToanQuyenSDB || 
-                                       (maGvDangNhapHeThong !== '' && gvTkb === maGvDangNhapHeThong) || 
+                                       (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
                                        (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
                 let cssTenBai = ""; let theTenBai = "";
                 let theNhanXet = ""; let theXepLoai = ""; let theChuKy = ""; let theChuyenCan = "";
-                // --- KẾT THÚC ĐOẠN MÃ LỒNG GHÉP ---
                 
                 if (monHoc && monHoc !== "") {
                     if (isLocked) {
@@ -479,7 +481,7 @@ function ketXuatSoDauBaiLenLuoi() {
     });
 
     htmlBang += `</tbody></table></div>`;
-    vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + htmlBang;
+    vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + theHienThiQuyen + htmlBang;
 }
 
 // =========================================================================
