@@ -1,5 +1,5 @@
 // =========================================================================
-// KHỐI 1: KHỞI TẠO, TÍCH HỢP XÁC THỰC GIS & BỘ MÁY TỊNH TIẾN
+// KHỐI 1: KIỂM SOÁT ĐĂNG NHẬP VÀ BỘ MÁY TỊNH TIẾN SỔ ĐẦU BÀI
 // =========================================================================
 let daTaiDuLieuSoDauBai = false;
 let duLieuTKBGopDaMap = [];
@@ -12,36 +12,68 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     if (daTaiDuLieuSoDauBai) return;
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
-    if (vungHienThi) {
-        vungHienThi.innerHTML = `<div class="text-center py-10 text-slate-500 font-bold">
-            <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang chờ hệ thống xác thực danh tính để phân quyền Sổ đầu bài...
-        </div>`;
-    }
+    
+    // [NÂNG CẤP CỐT LÕI]: Kiểm tra trạng thái đăng nhập từ app.js
+    // Dấu hiệu nhận biết: Nút đăng nhập gốc bị gỡ sự kiện onclick khi thành công
+    const nutDangNhapGoc = document.getElementById('nutDangNhapG');
+    const chuaDangNhap = nutDangNhapGoc && nutDangNhapGoc.onclick !== null;
 
-    // [XỬ LÝ LỖI 401]: Kế thừa trực tiếp biến SKT_GOOGLE_CLIENT_ID từ tệp KetNoi.js
-    if (typeof google === 'undefined' || !google.accounts || typeof SKT_GOOGLE_CLIENT_ID === 'undefined') {
-        console.warn("Cảnh báo: Thư viện GIS hoặc Client ID chưa sẵn sàng. Chuyển sang luồng tải dữ liệu tiêu chuẩn...");
-        thucThiTaiDuLieuVaVeLuoi(vungHienThi); 
+    if (chuaDangNhap) {
+        // Giao diện Khóa bảo mật: Yêu cầu định danh trực quan trên vùng hiển thị
+        if (vungHienThi) {
+            vungHienThi.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 animate-pulse-once">
+                    <div class="bg-red-50 text-red-600 p-4 rounded-full mb-4 border border-red-200 shadow-sm">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-slate-800 mb-2 uppercase tracking-wide">Yêu cầu định danh</h3>
+                    <p class="text-sm text-slate-600 text-center max-w-md mb-6 font-semibold">Để đảm bảo bảo mật và phân quyền chính xác, hệ thống yêu cầu đồng chí đăng nhập tài khoản trước khi truy cập Sổ Đầu Bài.</p>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="document.getElementById('menuTKB').click()" class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-slate-700 font-bold rounded shadow-sm transition-colors border border-gray-400">
+                            Quay lại TKB
+                        </button>
+                        <button onclick="khoiDongDangNhap(); kiemTraTrangThaiDangNhapSDB()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow transition-colors flex items-center gap-2">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="G">
+                            Đăng nhập ngay
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
         return;
     }
 
-    google.accounts.id.initialize({
-        client_id: SKT_GOOGLE_CLIENT_ID, // Sử dụng biến toàn cục
-        callback: () => { thucThiTaiDuLieuVaVeLuoi(vungHienThi); },
-        cancel_on_tap_outside: false
-    });
-
-    google.accounts.id.prompt((thongBaoTrangThai) => {
-        if (thongBaoTrangThai.isDismissedMoment() || thongBaoTrangThai.isSkippedMoment()) {
-            if (vungHienThi) vungHienThi.innerHTML = '';
-            console.warn("Hủy thao tác xác thực. Đang bẻ lái UX về Thời khóa biểu...");
-            const nutTabThoiKhoaBieu = document.getElementById('menuTKB'); 
-            if (nutTabThoiKhoaBieu) nutTabThoiKhoaBieu.click();
-        }
-    });
+    // Nếu đã đăng nhập, tiến hành gọi dữ liệu bình thường
+    thucThiTaiDuLieuVaVeLuoi(vungHienThi);
 }
 
+// HÀM PHỤ TRỢ: Lắng nghe trạng thái đăng nhập để tự động mở Sổ đầu bài
+function kiemTraTrangThaiDangNhapSDB() {
+    let soLanKiemTra = 0;
+    const vungHienThi = document.getElementById('vungHienThiSoDauBai');
+    
+    // Chuyển nút sang trạng thái đang chờ
+    if (vungHienThi) {
+         let btnDangNhap = vungHienThi.querySelector('.bg-blue-600');
+         if(btnDangNhap) btnDangNhap.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xác thực...`;
+    }
+
+    let vongLap = setInterval(() => {
+        const nutDangNhapGoc = document.getElementById('nutDangNhapG');
+        // Khi đăng nhập hoàn tất, app.js tự động gán onclick = null
+        if (nutDangNhapGoc && nutDangNhapGoc.onclick === null) {
+            clearInterval(vongLap);
+            thucThiTaiDuLieuVaVeLuoi(vungHienThi);
+        }
+        soLanKiemTra++;
+        // Hủy vòng lặp chờ sau 1 phút nếu người dùng tắt ngang cửa sổ popup
+        if (soLanKiemTra > 120) {
+            clearInterval(vongLap); 
+            if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); 
+        }
+    }, 500);
+}
 
 async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
@@ -63,6 +95,7 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
         khoiTaoDuLieuSoDauBai(duLieuSever);
         daTaiDuLieuSoDauBai = true;
     } catch (loi) {
+        console.error("Lỗi tải Sổ đầu bài:", loi);
         if (vungHienThi) {
             vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span></div>`;
         }
@@ -116,8 +149,10 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         duLieuSever.PPCT.forEach(dong => {
             let khoiGoc = String(dong['Khối lớp'] || dong['Khối'] || '').trim();
             if (khoiGoc !== '') boNhoKhoi = khoiGoc; else khoiGoc = boNhoKhoi; 
+            
             let matchKhoi = khoiGoc.match(/\d+/);
             let khoi = matchKhoi ? matchKhoi[0] : khoiGoc; 
+            
             let monGoc = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
             if (monGoc !== '') boNhoMon = monGoc; else monGoc = boNhoMon; 
             
