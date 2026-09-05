@@ -264,6 +264,9 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
     return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
 }
 
+// =========================================================================
+// HÀM 1: KẾT XUẤT LƯỚI (SIẾT CHẶT BẢO MẬT: HỦY BỎ ĐẶC QUYỀN ADMIN)
+// =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
     let lopChon = document.getElementById('chonLopSo')?.value;
@@ -272,10 +275,8 @@ function ketXuatSoDauBaiLenLuoi() {
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
-    // [CỐT LÕI ĐÚNG Ý TƯỞNG]: Đọc quyền trực tiếp từ UI thay vì biến toàn cục
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let maGvDangNhapHeThong = theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '';
-    let coToanQuyenSDB = theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true') : false;
     let chuoiQuyen = theChotQuyen ? theChotQuyen.getAttribute('data-matranquyen') : '{}';
     
     let tuDienQuyenPhanCong = {};
@@ -363,19 +364,12 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    let theHienThiQuyen = '';
-    if (coToanQuyenSDB) {
-        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-purple-50 border border-purple-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
-            <div><span class="font-bold text-purple-800">Định danh:</span> <span class="text-purple-700 font-semibold">${maGvDangNhapHeThong || 'Quản trị viên'}</span></div>
-            <div><span class="font-bold text-purple-800 mr-2">Quyền của bạn:</span> <span class="bg-purple-600 text-white px-2 py-1 rounded text-[11px] font-extrabold uppercase tracking-wide">Toàn quyền Admin</span></div>
-        </div>`;
-    } else {
-        let danhSachMonUI = dsMonDuocSuaCuaLop.length > 0 ? dsMonDuocSuaCuaLop.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ') : '<span class="text-red-600 font-bold">Không được phân công lớp này</span>';
-        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
-            <div><span class="font-bold text-blue-800">Giáo viên:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
-            <div><span class="font-bold text-blue-800">Quyền tại ${lopChon}:</span> <span class="text-blue-700 font-semibold">${danhSachMonUI}</span></div>
-        </div>`;
-    }
+    // [CẬP NHẬT UI]: Loại bỏ hoàn toàn khối hiển thị "TOÀN QUYỀN ADMIN"
+    let danhSachMonUI = dsMonDuocSuaCuaLop.length > 0 ? dsMonDuocSuaCuaLop.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ') : '<span class="text-red-600 font-bold">Không dạy lớp này</span>';
+    let theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
+        <div><span class="font-bold text-blue-800">Định danh:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
+        <div><span class="font-bold text-blue-800">Quyền ký tại ${lopChon}:</span> <span class="text-blue-700 font-semibold">${danhSachMonUI}</span></div>
+    </div>`;
 
     let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
     let mienNgayHienTai = inputNgay ? inputNgay.value : '';
@@ -437,13 +431,13 @@ function ketXuatSoDauBaiLenLuoi() {
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                // Logic khóa bảo vệ
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase() : '';
                 let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
                 let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
 
-                let quyenNhapThuCong = coToanQuyenSDB || 
-                                       (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
+                // [CỐT LÕI BẢO MẬT]: Tước bỏ biến "coToanQuyenSDB" khỏi biểu thức
+                // Quyền ký sổ CHỈ CÒN ĐƯỢC CẤP NẾU: Dạy thay (GV TKB khớp ID) HOẶC Dạy chính (Môn có trong Phân công)
+                let quyenNhapThuCong = (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
                                        (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
