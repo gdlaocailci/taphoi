@@ -250,6 +250,7 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
 
 // =========================================================================
 // HÀM 1: KẾT XUẤT LƯỚI (Đã đính kèm thẻ căn cước data-loai & phân quyền khóa ô)
+// (Bản nâng cấp: Chuẩn hóa chuỗi ký tự so sánh quyền hạn tuyệt đối)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -407,7 +408,8 @@ function ketXuatSoDauBaiLenLuoi() {
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                let monHocChuan = monHoc ? monHoc.trim() : '';
+                // [CỐT LÕI NÂNG CẤP]: Chuẩn hóa biến môn học y hệt máy chủ trước khi kiểm tra Includes
+                let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
                 let quyenNhapThuCong = coToanQuyenSDB || (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
