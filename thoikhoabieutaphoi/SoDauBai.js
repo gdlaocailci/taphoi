@@ -19,14 +19,15 @@ async function taiDuLieuSoDauBaiTuMayChu() {
         </div>`;
     }
 
-    const maDinhDanhUngDung = 'MÃ_CLIENT_ID_CUA_TRUONG.apps.googleusercontent.com'; // SỬA MÃ NÀY
-    
-    if (typeof google === 'undefined' || !google.accounts) {
-        thucThiTaiDuLieuVaVeLuoi(vungHienThi); return;
+    // [XỬ LÝ LỖI 401]: Kế thừa trực tiếp biến SKT_GOOGLE_CLIENT_ID từ tệp KetNoi.js
+    if (typeof google === 'undefined' || !google.accounts || typeof SKT_GOOGLE_CLIENT_ID === 'undefined') {
+        console.warn("Cảnh báo: Thư viện GIS hoặc Client ID chưa sẵn sàng. Chuyển sang luồng tải dữ liệu tiêu chuẩn...");
+        thucThiTaiDuLieuVaVeLuoi(vungHienThi); 
+        return;
     }
 
     google.accounts.id.initialize({
-        client_id: maDinhDanhUngDung,
+        client_id: SKT_GOOGLE_CLIENT_ID, // Sử dụng biến toàn cục
         callback: () => { thucThiTaiDuLieuVaVeLuoi(vungHienThi); },
         cancel_on_tap_outside: false
     });
@@ -34,11 +35,13 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     google.accounts.id.prompt((thongBaoTrangThai) => {
         if (thongBaoTrangThai.isDismissedMoment() || thongBaoTrangThai.isSkippedMoment()) {
             if (vungHienThi) vungHienThi.innerHTML = '';
+            console.warn("Hủy thao tác xác thực. Đang bẻ lái UX về Thời khóa biểu...");
             const nutTabThoiKhoaBieu = document.getElementById('menuTKB'); 
             if (nutTabThoiKhoaBieu) nutTabThoiKhoaBieu.click();
         }
     });
 }
+
 
 async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
