@@ -760,3 +760,28 @@ async function xuatExcelSoDauBai() {
         alert("Có lỗi khi tạo tệp Excel!");
     }
 }
+
+function napDropdownSoDauBai() {
+    let tapHopTuan = new Set(); let tapHopLop = new Set();
+    duLieuTKBGopDaMap.forEach(dong => {
+        if (dong['Tuần']) tapHopTuan.add(String(dong['Tuần']).trim());
+        if (dong['Mã Lớp']) tapHopLop.add(String(dong['Mã Lớp']).trim());
+    });
+
+    let mangTuan = Array.from(tapHopTuan).sort((a, b) => parseInt(a.replace(/\D/g,'')) - parseInt(b.replace(/\D/g,'')));
+    let mangLop = Array.from(tapHopLop).sort();
+
+    let chonTuanHtml = `<option value="" disabled selected>-- Chọn Tuần --</option>` + mangTuan.map(t => `<option value="${t}">Tuần ${t.replace(/\D/g,'')}</option>`).join('');
+    let chonLopHtml = `<option value="" disabled selected>-- Chọn Lớp --</option>` + mangLop.map(l => `<option value="${l}">Lớp ${l}</option>`).join('');
+
+    let elementTuan = document.getElementById('chonTuanSo');
+    let elementLop = document.getElementById('chonLopSo');
+    
+    if(elementTuan) elementTuan.innerHTML = chonTuanHtml;
+    if(elementLop) elementLop.innerHTML = chonLopHtml;
+
+    let vungHienThi = document.getElementById('vungHienThiSoDauBai');
+    if (vungHienThi) {
+        vungHienThi.innerHTML = `<div class="p-4"><p class="text-center py-10 text-slate-500 font-bold">Vui lòng chọn Tuần và Lớp để xem Sổ đầu bài.</p></div>`;
+    }
+}
