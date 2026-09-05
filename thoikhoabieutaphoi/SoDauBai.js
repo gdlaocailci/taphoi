@@ -277,7 +277,7 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
 }
 
 // =========================================================================
-// HÀM 1: KẾT XUẤT LƯỚI (PHỤC HỒI ĐẶC QUYỀN ADMIN TỪ SHEET CAI_DAT)
+// HÀM 1: KẾT XUẤT LƯỚI (PHỤC HỒI HIỂN THỊ THỨ 7, CHỦ NHẬT)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -289,8 +289,6 @@ function ketXuatSoDauBaiLenLuoi() {
 
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let maGvDangNhapHeThong = theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '';
-    // Lấy trạng thái Admin (True/False) đã được máy chủ đối chiếu từ Cột E sheet CAI_DAT
-    let coToanQuyenSDB = theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true') : false;
     let chuoiQuyen = theChotQuyen ? theChotQuyen.getAttribute('data-matranquyen') : '{}';
     
     let tuDienQuyenPhanCong = {};
@@ -341,9 +339,17 @@ function ketXuatSoDauBaiLenLuoi() {
     let tkbTuanNay = duLieuTKBGopDaMap.filter(d => String(d['Tuần']).trim() === tuanChon && String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase());
     let soTietDaLuu = 0; let tongSoTietCoMon = 0;
     let dictTKB = {}; let mapNgayChinhXac = {}; 
+    
+    // [PHỤC HỒI]: Khởi tạo biến dò tìm Thứ 7, Chủ nhật
+    let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
     tkbTuanNay.forEach(dong => {
         let thuGoc = String(dong['Thứ']).trim();
+        
+        // [PHỤC HỒI]: Bắt tín hiệu nếu có dữ liệu vào Thứ 7 hoặc Chủ nhật
+        if (thuGoc === 'Thứ 7') coDayBuThu7 = true;
+        if (thuGoc === 'Chủ nhật') coDayBuChuNhat = true;
+
         if (dong['Ngày'] && dong['Ngày'] !== '' && dong['Ngày'] !== '...') mapNgayChinhXac[thuGoc] = dong['Ngày']; 
         let buoiKiemTra = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
         dictTKB[`${thuGoc}_${buoiKiemTra}_${dong['Tiết']}`] = dong;
@@ -378,22 +384,18 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    // [HIỂN THỊ UI QUYỀN HẠN]: Phục hồi thanh trạng thái Admin
-    let theHienThiQuyen = '';
-    if (coToanQuyenSDB) {
-        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-purple-50 border border-purple-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
-            <div><span class="font-bold text-purple-800">Định danh:</span> <span class="text-purple-700 font-semibold">${maGvDangNhapHeThong || 'Quản trị viên'}</span></div>
-            <div><span class="font-bold text-purple-800 mr-2">Quyền của bạn:</span> <span class="bg-purple-600 text-white px-2 py-1 rounded text-[11px] font-extrabold uppercase tracking-wide">Toàn quyền Admin</span></div>
-        </div>`;
-    } else {
-        let danhSachMonUI = dsMonDuocSuaCuaLop.length > 0 ? dsMonDuocSuaCuaLop.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ') : '<span class="text-red-600 font-bold">Không dạy lớp này</span>';
-        theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
-            <div><span class="font-bold text-blue-800">Định danh:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
-            <div><span class="font-bold text-blue-800">Quyền ký tại ${lopChon}:</span> <span class="text-blue-700 font-semibold">${danhSachMonUI}</span></div>
-        </div>`;
-    }
+    let danhSachMonUI = dsMonDuocSuaCuaLop.length > 0 ? dsMonDuocSuaCuaLop.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ') : '<span class="text-red-600 font-bold">Không dạy lớp này</span>';
+    let theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex items-center justify-between animate-pulse-once">
+        <div><span class="font-bold text-blue-800">Định danh:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
+        <div><span class="font-bold text-blue-800">Quyền ký tại ${lopChon}:</span> <span class="text-blue-700 font-semibold">${danhSachMonUI}</span></div>
+    </div>`;
 
     let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
+    
+    // [PHỤC HỒI]: Chèn ngày cuối tuần vào danh sách in ra lưới nếu có dữ liệu học bù
+    if (coDayBuThu7) danhSachThu.push("Thứ 7");
+    if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
+
     let mienNgayHienTai = inputNgay ? inputNgay.value : '';
     if (!mienNgayHienTai && mapNgayChinhXac['Thứ 2']) {
         let p = mapNgayChinhXac['Thứ 2'].split('/');
@@ -457,9 +459,8 @@ function ketXuatSoDauBaiLenLuoi() {
                 let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
                 let monHocChuan = monHoc ? monHoc.trim().toLowerCase().replace(/\s+/g, ' ') : '';
 
-                // [CỐT LÕI BẢO MẬT]: Phục hồi biến `coToanQuyenSDB` vào biểu thức cấp quyền
-                let quyenNhapThuCong = coToanQuyenSDB || 
-                                       (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
+                // Quyền ký sổ CHỈ CÒN ĐƯỢC CẤP NẾU: Dạy thay (GV TKB khớp ID) HOẶC Dạy chính (Môn có trong Phân công)
+                let quyenNhapThuCong = (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC) || 
                                        (monHocChuan !== '' && dsMonDuocSuaCuaLop.includes(monHocChuan));
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
