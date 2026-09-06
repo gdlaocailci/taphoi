@@ -1,7 +1,7 @@
 const KETNOI = {
     // 1. Thông tin định danh cơ quan/đơn vị
-    TEN_DINH_DANH: "Hợp Thành OS",
-    TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Hợp Thành",
+    TEN_DINH_DANH: "TẢ PHỜI OS",
+    TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Tả Phời",
     
     // 2. Tài nguyên hình ảnh đại diện (Logo & Giao diện)
     LINK_LOGO: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
@@ -14,7 +14,7 @@ const KETNOI = {
     LINK_YOUTUBE: "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q",
     
     // 3. Đường dẫn máy chủ xử lý dữ liệu (Google Apps Script API)
-    WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxJEriNwHp3twwlVk_yqViktUo96XOj71ciMdNsNY8TSuH_76t7gPt48DGnWU34gWVdeQ/exec",
+    WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzoWr-UmfIKUn8FLtnT3wUHw6xEeUtQu0V7fOALceb0uXUAcBjufPU8lqHwVEyVgf8H/exec",
 
     // 4. Mã định danh ứng dụng Google (OAuth 2.0 Client ID)
     CLIENT_ID: "1097384743947-1jdc5rhhmbu0s9jp5vgt814g4f4id7lu.apps.googleusercontent.com"
