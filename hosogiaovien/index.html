@@ -797,8 +797,12 @@
                 
                 <div class="pq-panel pq-table-container">
                     <h3>Danh mục Cán bộ trực thuộc</h3>
+                    <!-- Bổ sung ô tìm kiếm nhanh -->
+                    <input type="text" id="pq-search-filter" onkeyup="locDanhSachCanBo()" placeholder="🔍 Gõ từ khóa để lọc nhanh Tên hoặc ID cán bộ..." style="width: 100%; padding: 8px 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#8E24AA'" onblur="this.style.borderColor='#ccc'">
+                    
                     <table class="pq-table">
                         <thead>
+                            
                             <tr><th>Tên định danh</th><th>ID Hệ thống</th><th>Chi tiết Phân quyền</th><th width="100">Cơ chế</th></tr>
                         </thead>
                         <tbody id="bang-phanquyen-body">
@@ -2127,6 +2131,34 @@ function xuLySuaHoSo() {
         });
     }
 
+    // =========================================================================
+    // THUẬT TOÁN LỌC TÌM KIẾM CÁN BỘ TRONG BẢNG PHÂN QUYỀN
+    // =========================================================================
+    function locDanhSachCanBo() {
+        var input = document.getElementById("pq-search-filter");
+        var filter = input.value.toUpperCase();
+        var tbody = document.getElementById("bang-phanquyen-body");
+        var tr = tbody.getElementsByTagName("tr");
+
+        for (var i = 0; i < tr.length; i++) {
+            // Lấy dữ liệu ở cột Tên định danh (cột 0) và cột ID Hệ thống (cột 1)
+            var tdName = tr[i].getElementsByTagName("td")[0];
+            var tdId = tr[i].getElementsByTagName("td")[1];
+            
+            if (tdName || tdId) {
+                var txtValueName = tdName.textContent || tdName.innerText;
+                var txtValueId = tdId.textContent || tdId.innerText;
+                
+                // So khớp từ khóa (không phân biệt hoa/thường)
+                if (txtValueName.toUpperCase().indexOf(filter) > -1 || txtValueId.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
     function dieuChinhQuyen(tsa, tsb, roles, iconRoles) {
         document.getElementById('pq-danhsach-bulk').value = tsa + '\t' + tsb;
         document.getElementById('role-taohoso').checked = roles.includes('taohoso');
@@ -2400,6 +2432,7 @@ function xuLySuaHoSo() {
         if (isLoggedIn) kiemTraCongVanMoi();
     }, 60000);
 
+    
 </script>
 </body>
 </html>
