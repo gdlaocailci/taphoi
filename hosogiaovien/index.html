@@ -767,14 +767,13 @@
             <div class="phanquyen-layout">
                 <div class="pq-panel pq-form">
                     <h3>Thông số Cấp quyền</h3>
-                    <div class="form-group">
-                        <label>Tên định danh hiển thị:</label>
-                        <input type="text" id="pq-tsa" class="form-native" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Nhập tên hiển thị...">
+                    
+                   <div class="form-group">
+                        <label>Danh sách Cán bộ / Giáo viên:</label>
+                        <textarea id="pq-danhsach-bulk" class="form-native" style="width: 100%; height: 95px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 13px;" placeholder="Nhập 1 người, hoặc DÁN NHIỀU NGƯỜI TỪ EXCEL:&#10;Cột Tên [Khoảng Tab] Cột ID&#10;&#10;VD: Nguyễn Văn A       nguyenvana"></textarea>
+                        <small style="color: #2e7d32; font-weight: bold; margin-top: 5px; display: block;">💡 Mẹo: Bôi đen 2 cột (Tên & ID) trên Excel và Paste thẳng vào ô này.</small>
                     </div>
-                    <div class="form-group">
-                        <label>Định danh hệ thống (ID nội bộ):</label>
-                        <input type="text" id="pq-tsb" class="form-native" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Nhập ID tham chiếu hệ thống...">
-                    </div>
+                    
                     <div class="form-group">
                         <label>Chỉ định Phân quyền:</label>
                         <div class="checkbox-group">
@@ -2129,7 +2128,7 @@ function xuLySuaHoSo() {
     }
 
     function dieuChinhQuyen(tsa, tsb, roles, iconRoles) {
-        document.getElementById('pq-tsa').value = tsa; document.getElementById('pq-tsb').value = tsb;
+        document.getElementById('pq-danhsach-bulk').value = tsa + '\t' + tsb;
         document.getElementById('role-taohoso').checked = roles.includes('taohoso');
         document.getElementById('role-ganhoso').checked = roles.includes('ganhoso');
         document.getElementById('role-xoahoso').checked = roles.includes('xoahoso');
@@ -2142,14 +2141,35 @@ function xuLySuaHoSo() {
     }
 
     function lamMoiBieuMauQuyen() {
-        document.getElementById('pq-tsa').value = ''; document.getElementById('pq-tsb').value = '';
+        document.getElementById('pq-danhsach-bulk').value = '';
         document.getElementById('role-taohoso').checked = false; document.getElementById('role-ganhoso').checked = false; document.getElementById('role-xoahoso').checked = false; document.getElementById('role-xx').checked = false;
         document.querySelectorAll('.icon-role-cb').forEach(cb => cb.checked = false);
     }
 
-function ghiNhanQuyen() {
-        const tsa = document.getElementById('pq-tsa').value.trim(); const tsb = document.getElementById('pq-tsb').value.trim();
-        if (!tsa || !tsb) { alert("Yêu cầu hệ thống: Bắt buộc điền đủ các trường định danh!"); return; }
+    async function ghiNhanQuyen() {
+        const rawData = document.getElementById('pq-danhsach-bulk').value.trim();
+        if (!rawData) { alert("Yêu cầu hệ thống: Vui lòng nhập hoặc dán danh sách định danh!"); return; }
+
+        let lines = rawData.split('\n');
+        let danhSachCapQuyen = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+            if (!line) continue;
+            
+            let parts = line.split(/\t/);
+            if (parts.length < 2) {
+                parts = line.split(/[,]/).map(p => p.trim());
+            }
+            
+            if (parts.length >= 2) {
+                danhSachCapQuyen.push({ tsa: parts[0].trim(), tsb: parts[1].trim() });
+            } else {
+                alert(`Dòng dữ liệu số ${i+1} không đúng định dạng. Cần có đủ Tên và ID (cách nhau bằng phím Tab hoặc dấu phẩy).`);
+                return;
+            }
+        }
+
         let roles = [];
         if (document.getElementById('role-taohoso').checked) roles.push('taohoso');
         if (document.getElementById('role-ganhoso').checked) roles.push('ganhoso');
@@ -2160,33 +2180,46 @@ function ghiNhanQuyen() {
         document.querySelectorAll('.icon-role-cb:checked').forEach(cb => selectedIcons.push(cb.value));
         let iconRolesStr = selectedIcons.join('|');
 
-        document.getElementById('pq-status').style.display = 'block';
+        let statusEl = document.getElementById('pq-status');
+        statusEl.style.display = 'block';
         
-        fetch(KETNOI.WEB_APP_URL, {
-            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'saveAccount', tsa: tsa, tsb: tsb, roles: roles.join(','), iconRoles: iconRolesStr, khoaBaoMat: localStorage.getItem(PREFIX_MEM + 'session') })
-        })
-        .then(response => response.text())
-        .then(text => {
-            document.getElementById('pq-status').style.display = 'none';
+        let soLuong = danhSachCapQuyen.length;
+        let thanhCong = 0;
+
+        for (let i = 0; i < soLuong; i++) {
+            statusEl.innerText = `Đang đồng bộ (${i+1}/${soLuong}): ${danhSachCapQuyen[i].tsa}...`;
             try {
+                let response = await fetch(KETNOI.WEB_APP_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ 
+                        action: 'saveAccount', 
+                        tsa: danhSachCapQuyen[i].tsa, 
+                        tsb: danhSachCapQuyen[i].tsb, 
+                        roles: roles.join(','), 
+                        iconRoles: iconRolesStr, 
+                        khoaBaoMat: localStorage.getItem(PREFIX_MEM + 'session') 
+                    })
+                });
+                let text = await response.text();
                 let result = JSON.parse(text);
-                if (result.status === 'success') { 
-                    lamMoiBieuMauQuyen(); 
-                    taiDuLieuQuyen(); 
-                    
-                    // [NÂNG CẤP]: Trì hoãn luồng xác thực 1.2s để tránh đụng độ luồng đọc/ghi, chống nghẽn máy chủ Google
-                    setTimeout(() => {
-                        xacThucPhienDangNhap(localStorage.getItem(PREFIX_MEM + 'session')); 
-                    }, 1200);
-                } else { 
-                    alert("Cảnh báo: " + result.message); 
-                }
-            } catch (jsonError) {
-                console.error("Lỗi từ backend:", text);
-                alert("Cảnh báo từ hệ thống: Backend trả về lỗi định dạng HTML. Vui lòng kiểm tra lại log hoạt động.");
+                if (result.status === 'success') thanhCong++;
+            } catch (error) {
+                console.error("Lỗi đồng bộ cán bộ:", error);
             }
-        });
+        }
+
+        statusEl.style.display = 'none';
+        if (thanhCong > 0) {
+            lamMoiBieuMauQuyen(); 
+            taiDuLieuQuyen(); 
+            setTimeout(() => { xacThucPhienDangNhap(localStorage.getItem(PREFIX_MEM + 'session')); }, 1200);
+            
+            if (soLuong > 1) {
+                alert(`TUYỆT VỜI! Đã hoàn tất cấp quyền hàng loạt cho ${thanhCong}/${soLuong} cán bộ!`);
+            }
+        } else {
+            alert("Sự cố hệ thống: Không thể đồng bộ! Vui lòng kiểm tra lại cấu hình Web App.");
+        }
     }
 
     function goBoQuyen(tsb) {
