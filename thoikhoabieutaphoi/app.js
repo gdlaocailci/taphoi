@@ -582,8 +582,8 @@ function xuatMaTranBang(danhSachTiet) {
                     } else { bgLop = 'bg-gray-100/50'; }
 
                     let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`; let idGv = `gv_${thu}_${buoi}_${tiet}_${lop}`;
-                    let dropdownMon = taoTuyChonDong(thongSoHocVu.DANH_SACH_MON_HOC, monGoc, textClass, idMon, isTarget, 'mon');
-                    let dropdownGV = taoTuyChonDong(thongSoHocVu.DANH_SACH_GIAO_VIEN, gvGoc, textClass, idGv, isTarget, 'gv');
+                    let dropdownMon = taoTuyChonDong(thongSoHocVu.DANH_SACH_MON_HOC, monGoc, textClass, idMon, isTarget, 'mon', lop);
+                    let dropdownGV = taoTuyChonDong(thongSoHocVu.DANH_SACH_GIAO_VIEN, gvGoc, textClass, idGv, isTarget, 'gv', lop);
 
                     tbodyHTML += `<td class="text-center p-0 align-middle ${bgLop} border-b border-r border-slate-300 transition-all duration-300">${dropdownMon}</td>`;
                     tbodyHTML += `<td class="text-center p-0 align-middle ${bgLop} border-b border-r border-slate-300 transition-all duration-300">${dropdownGV}</td>`;
@@ -631,23 +631,17 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         
-        // Dùng querySelectorAll gom toàn bộ ô Môn học trong 1 lần quét DOM (Bỏ 4 vòng lặp lồng nhau)
-        // Hệ thống sẽ chỉ quét những ô Môn học đang thực sự có trên lưới
         let cacOMon = document.querySelectorAll('input[id^="mon_"]');
         
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
-            // Kỹ thuật Fast-Fail: Chỉ xử lý nếu ô môn học có dữ liệu
             if (valMon !== "") {
-                // Tách ID (Ví dụ: mon_Thứ 2_Sáng_1_1A1) thành các tham số
                 let parts = oMon.id.split('_'); 
                 let thu = parts[1];
                 let buoi = parts[2];
                 let tiet = parts[3];
-                // Dùng slice để ghép lại tên lớp nếu tên lớp có chứa dấu gạch dưới
                 let lop = parts.slice(4).join('_'); 
                 
-                // Nhặt nhanh dữ liệu Giáo viên tương ứng
                 let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
                 let valGv = oGv ? oGv.value.trim() : "";
                 
@@ -670,7 +664,6 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // Sử dụng hàm fetch cải tiến
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
             method: 'POST', 
             body: JSON.stringify({ thaoTac: 'luuDuLieu', loaiLuu: loaiLuu, tuan: tuanDangXem, duLieu: dsTietLuoi }) 
@@ -688,8 +681,6 @@ async function luuDuLieu(event, loaiLuu) {
                 btnAn.innerHTML = "Auto Save";
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
-                // [ĐÃ SỬA LỖI]: Bỏ lệnh `await taiDuLieuTKB();` để không load lại UI
-                // Thay bằng thông báo hoàn tất nhẹ nhàng để người dùng biết tiến trình đã xong
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
             }
         }
