@@ -1,5 +1,10 @@
 let thongSoHocVu = {};
-let quyenSuaChua = false; 
+let quyenSuaChua = false;
+let quyenChiTiet = {
+    lopDuocSua: [], 
+    nutDuocBam: [], 
+    menuDuocXem: []
+};
 let duLieuTkbHienTai = []; 
 let tuanDangXem = 1; 
 let ngayDauTuanUI = ''; 
@@ -41,25 +46,26 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
     }
 }
 
-// =========================================================================
-// KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
-// =========================================================================
 function kiemSoatGiaoDien() {
     const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
-            if (quyenSuaChua) { nut.style.display = 'flex'; nut.disabled = false; } 
-            else { nut.style.display = 'none'; nut.disabled = true; }
+            // [NÂNG CẤP]: Mở khóa nếu tài khoản có Toàn Quyền HOẶC được cấp quyền mở Nút
+            if (quyenSuaChua || quyenChiTiet.nutDuocBam.includes(idNut)) { 
+                nut.style.display = 'flex'; nut.disabled = false; 
+            } else { 
+                nut.style.display = 'none'; nut.disabled = true; 
+            }
         }
     });
 
-    // [ĐÃ SỬA LỖI]: Chỉ khóa đúng các Menu Quản trị thực sự. Trả lại hiển thị cho Phân phối chương trình.
     const dsMenuQuanTri = ['nhanHeThong', 'menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
     dsMenuQuanTri.forEach(idMenu => {
         let menu = document.getElementById(idMenu);
         if (menu) {
-            menu.style.display = quyenSuaChua ? 'flex' : 'none'; 
+            // [NÂNG CẤP]: Mở khóa nếu tài khoản có Toàn Quyền HOẶC được cấp quyền Menu
+            menu.style.display = (quyenSuaChua || quyenChiTiet.menuDuocXem.includes(idMenu)) ? 'flex' : 'none'; 
         }
     });
 
@@ -67,7 +73,10 @@ function kiemSoatGiaoDien() {
     let btnTuanTiep = document.querySelector('button[onclick="chuyenTuan(1)"]');
     let inputNgay = document.getElementById('chonNgayDauTuan');
 
-    if (quyenSuaChua) {
+    // Chuyển tuần chỉ được khóa khi tài khoản hoàn toàn không có bất cứ quyền nào
+    let duocPhepThaoTacTuan = quyenSuaChua || quyenChiTiet.lopDuocSua.length > 0 || quyenChiTiet.nutDuocBam.length > 0;
+
+    if (duocPhepThaoTacTuan) {
         if (btnTuanTruoc) { btnTuanTruoc.disabled = false; btnTuanTruoc.classList.remove('opacity-50', 'cursor-not-allowed'); }
         if (btnTuanTiep) { btnTuanTiep.disabled = false; btnTuanTiep.classList.remove('opacity-50', 'cursor-not-allowed'); }
         if (inputNgay) { inputNgay.disabled = false; inputNgay.classList.remove('cursor-not-allowed', 'opacity-80'); }
@@ -264,20 +273,19 @@ async function goiThuatToanXepLich() {
 
 function locTheoGiaoVien() { xuatMaTranBang(duLieuTkbHienTai); }
 
-function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '') {
+function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '', lop = '') {
     let idThocTinh = idPhanTu ? `id="${idPhanTu}"` : '';
-    let thuocTinhKhoa = quyenSuaChua ? '' : 'disabled'; 
-    let cssKhoa = quyenSuaChua ? 'cursor-pointer' : 'cursor-not-allowed opacity-80';
+    
+    // [NÂNG CẤP BẢO MẬT]: Xác thực quyền sửa đổi theo từng lớp riêng biệt
+    let coQuyenTrenLop = quyenSuaChua || (lop !== '' && quyenChiTiet.lopDuocSua.includes(lop));
+    
+    let thuocTinhKhoa = coQuyenTrenLop ? '' : 'disabled'; 
+    let cssKhoa = coQuyenTrenLop ? 'cursor-pointer' : 'cursor-not-allowed opacity-80';
     let cssAn = !isTarget ? 'opacity-0 pointer-events-none select-none' : ''; 
     
-    // [NÂNG CẤP TỐC ĐỘ]: Dùng chung Datalist toàn cục (đã được tạo ở xuatMaTranBang)
     let idDatalist = loaiDanhSach === 'mon' ? 'datalistChung_Mon' : 'datalistChung_GV';
-    
-    // [NÂNG CẤP UI]: Bắt trực tiếp sự kiện gõ phím, chọn danh sách và thoát chuột cho cột Giáo viên
     let suKienKiemTra = (idPhanTu && idPhanTu.startsWith('gv_')) ? `oninput="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onchange="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onblur="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()"` : '';
 
-    // Thuộc tính autocomplete="off" để tránh Google chèn gợi ý cá nhân đè lên danh sách của trường
-    // Thêm size="1" và min-w-0 để triệt tiêu độ rộng mặc định của input, giúp cột co về đúng kích thước chuẩn
     let html = `<input type="text" size="1" list="${idDatalist}" ${idThocTinh} ${thuocTinhKhoa} value="${giaTriMacDinh || ''}" placeholder="--" class="w-full h-full min-w-0 bg-transparent outline-none text-center ${cssKhoa} py-1 font-bold ${kieuText} ${cssAn}" style="font-family:'Times New Roman',Times,serif;" autocomplete="off" onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" ${suKienKiemTra}>`; 
     
     return html;
@@ -596,7 +604,17 @@ function xuatMaTranBang(danhSachTiet) {
 // KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (ĐÃ NÂNG CẤP TỐC ĐỘ CAO O(N))
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
-    if (!quyenSuaChua) return;
+    // [NÂNG CẤP]: Bổ sung công tắc chốt chặn luồng theo ma trận phân quyền
+    let coQuyenLuu = quyenSuaChua;
+    if (!coQuyenLuu) {
+        if (loaiLuu === 'tuan' && quyenChiTiet.nutDuocBam.includes('btnLuuTuan')) coQuyenLuu = true;
+        if (loaiLuu === 'codinh' && quyenChiTiet.nutDuocBam.includes('btnLuuCoDinh')) coQuyenLuu = true;
+        if (loaiLuu === 'khoiphuc' && quyenChiTiet.nutDuocBam.includes('btnKhoiPhuc')) coQuyenLuu = true;
+    }
+    if (!coQuyenLuu) {
+        alert("Tài khoản của đồng chí chưa được cấp quyền thực hiện chức năng này.");
+        return;
+    }
     
     if (loaiLuu === 'codinh') { if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; }
     
@@ -841,14 +859,11 @@ function khoiDongDangNhap() {
 async function xuLyLayThongTin(maTokenTruyCap) {
     let nutDangNhap = document.getElementById('nutDangNhapG');
     try {
-        // [NÂNG CẤP ĐỒNG BỘ]: Sử dụng fetchVoiCoCheThuLai thay cho fetch nguyên thủy
-        // Đảm bảo phiên đăng nhập không bị gián đoạn nếu mạng nội bộ chập chờn
         const phanHoi = await fetchVoiCoCheThuLai('https://www.googleapis.com/oauth2/v3/userinfo', { 
             headers: { Authorization: `Bearer ${maTokenTruyCap}` } 
         });
         const duLieuXacThuc = await phanHoi.json();
         
-        // Tuân thủ nguyên tắc bảo mật: Không dùng từ khóa nhạy cảm làm biến trực tiếp
         const tuKhoaDinhDanh = 'em' + 'ail'; 
         const dinhDanhHeThong = duLieuXacThuc[tuKhoaDinhDanh]; 
         const tenHienThi = duLieuXacThuc.name; 
@@ -860,26 +875,33 @@ async function xuLyLayThongTin(maTokenTruyCap) {
             nutDangNhap.classList.replace('bg-slate-700', 'bg-green-700'); 
             nutDangNhap.classList.replace('hover:bg-slate-600', 'hover:bg-green-600');
             nutDangNhap.classList.replace('border-slate-500', 'border-green-500'); 
-            nutDangNhap.onclick = null; // Khóa nút sau khi thành công
+            nutDangNhap.onclick = null; 
         }
 
         const dsQuanTri = thongSoHocVu.DANH_SACH_QUAN_TRI || [];
         const dinhDanhGoc = 'tulieuhopthanh@gmail.com';
+        const maTranPhanQuyen = thongSoHocVu.MA_TRAN_PHAN_QUYEN || {};
 
-        let quyenTruocDo = quyenSuaChua; // Ghi nhớ trạng thái phân quyền cũ
+        let quyenTruocDo = quyenSuaChua; 
+        quyenChiTiet = { lopDuocSua: [], nutDuocBam: [], menuDuocXem: [] }; // Xóa trắng bộ đệm cũ
 
         if (dsQuanTri.includes(dinhDanhHeThong) || dinhDanhHeThong === dinhDanhGoc) { 
             quyenSuaChua = true; 
         } else { 
             quyenSuaChua = false; 
+            // Nội suy ma trận quyền
+            if (maTranPhanQuyen[dinhDanhHeThong]) {
+                let qUser = maTranPhanQuyen[dinhDanhHeThong];
+                quyenChiTiet.lopDuocSua = qUser.lop || [];
+                quyenChiTiet.nutDuocBam = qUser.nut || [];
+                quyenChiTiet.menuDuocXem = qUser.menu || [];
+            }
         }
         
-        // Cập nhật lại giao diện menu
         kiemSoatGiaoDien(); 
 
-        // [TỐI ƯU]: Chỉ gọi API tải lại Thời khóa biểu nếu tài khoản này thực sự có quyền Quản trị 
-        // VÀ trước đó hệ thống đang ở trạng thái Khách (False -> True)
-        if (!quyenTruocDo && quyenSuaChua) {
+        let coQuyenMoi = quyenSuaChua || quyenChiTiet.lopDuocSua.length > 0 || quyenChiTiet.nutDuocBam.length > 0;
+        if (!quyenTruocDo && coQuyenMoi) {
             await taiDuLieuTKB(); 
         }
     } catch (loi) { 
