@@ -61,7 +61,6 @@ function taoKhungGiaoDienPPCT() {
                         Nhập Excel
                     </button>
                     
-                    <!-- [NÂNG CẤP]: Nút bật/tắt trạng thái sửa (Nằm trái nút Xuất) -->
                     <button id="nutSuaDuLieuPPCT" onclick="chuyenDoiTrangThaiSuaPPCT()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 px-3 rounded shadow transition-colors duration-300 flex items-center gap-1.5 text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                         Khóa Sửa
@@ -107,14 +106,14 @@ function taoKhungGiaoDienPPCT() {
                             <th class="py-2.5 px-2 border border-slate-400 w-28">Thứ / Ngày</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-20">Buổi</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-12">Tiết</th>
-                            <th class="py-2.5 px-2 border border-slate-400 w-24">Tiết PPC</th>
                             <th class="py-2.5 px-2 border border-slate-400 w-32">Môn</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[250px]">Tên bài học</th>
-                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[200px]">Điều chỉnh</th>
+                            <th class="py-2.5 px-2 border border-slate-400 w-24">Tiết PPCT</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[250px]">Tên bài dạy</th>
+                            <th class="py-2.5 px-4 border border-slate-400 text-center min-w-[200px]">Điều chỉnh/Bổ sung/Tích hợp</th>
                         </tr>
                     </thead>
                     <tbody id="vungDuLieuLichPPCT">
-                        <tr><td colspan="7" class="text-center py-10 text-slate-500 font-bold italic">Vui lòng chọn Tuần, Lớp, Môn và bấm "Xác nhận"</td></tr>
+                        <tr><td colspan="7" class="text-center py-10 text-slate-500 font-bold italic">Vui lòng chọn Tuần, Lớp và bấm "Xác nhận"</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -243,15 +242,20 @@ function bomDuLieuVaoBoLoc() {
         const inputMon = document.getElementById('locMonPPCT');
 
         if (listLop) listLop.innerHTML = dsLop.map(lop => `<option value="${lop}">`).join('');
-        if (listMon) listMon.innerHTML = dsMon.map(mon => `<option value="${mon}">`).join('');
+        
+        // [NÂNG CẤP]: Đưa tùy chọn "Tất cả" lên đỉnh danh sách đổ xuống
+        if (listMon) {
+            listMon.innerHTML = `<option value="Tất cả"></option>` + dsMon.map(mon => `<option value="${mon}">`).join('');
+        }
 
-        // Tự động gán giá trị mặc định đầu tiên để không bị trống ô
         if (inputLop && inputLop.value === '' && dsLop.length > 0) {
             inputLop.value = dsLop[0];
-            tuDongTinhKhoiLop(); // Ép hệ thống tự tính Khối lớp ngay lập tức
+            tuDongTinhKhoiLop(); 
         }
-        if (inputMon && inputMon.value === '' && dsMon.length > 0) {
-            inputMon.value = dsMon[0];
+        
+        // [NÂNG CẤP]: Mặc định hệ thống sẽ để trống hoặc chọn "Tất cả" để hiển thị toàn bộ thời khóa biểu
+        if (inputMon && inputMon.value === '') {
+            inputMon.value = 'Tất cả';
         }
     }
 }
@@ -310,8 +314,9 @@ async function taiDuLieuTkbVaPpct() {
     const mon = document.getElementById('locMonPPCT').value.trim();
     const tbody = document.getElementById('vungDuLieuLichPPCT');
 
-    if (!tuan || !lop || !khoi || !mon || khoi === 'KX') {
-        alert("Đồng chí vui lòng điền đầy đủ: Tuần, Lớp, Môn học để truy xuất dữ liệu.");
+    // Không ép buộc nhập môn nữa để hỗ trợ chế độ xem toàn lớp
+    if (!tuan || !lop || !khoi || khoi === 'KX') {
+        alert("Đồng chí vui lòng điền đầy đủ: Tuần, Lớp để truy xuất dữ liệu.");
         return;
     }
 
@@ -322,7 +327,9 @@ async function taiDuLieuTkbVaPpct() {
 
     try {
         const tuanHeThong = typeof tuanDangXem !== 'undefined' ? tuanDangXem : 1;
-        const urlAPI = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTkbVaPpct&tuan=${tuan}&lop=${encodeURIComponent(lop)}&khoi=${khoi}&mon=${encodeURIComponent(mon)}&tuanHienTai=${tuanHeThong}`;
+        // Nếu chọn "Tất cả", gửi cờ hiệu 'ALL' về CODE.gs
+        const monGoi = (mon === 'Tất cả' || mon === '') ? 'ALL' : mon;
+        const urlAPI = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTkbVaPpct&tuan=${tuan}&lop=${encodeURIComponent(lop)}&khoi=${khoi}&mon=${encodeURIComponent(monGoi)}&tuanHienTai=${tuanHeThong}`;
         
         const phanHoi = await (typeof fetchVoiCoCheThuLai === 'function' ? fetchVoiCoCheThuLai(urlAPI) : fetch(urlAPI));
         
@@ -330,11 +337,11 @@ async function taiDuLieuTkbVaPpct() {
         const ketQua = await phanHoi.json();
         
         duLieuTkbTuan = ketQua.duLieuTkb || [];
-        duLieuPpctGoc = ketQua.duLieuPpct || [];
+        duLieuPpctGoc = ketQua.duLieuPpct || []; 
         
         veBangKhungLichPPCT(mon);
     } catch (loi) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-600 font-bold">Lỗi truy xuất dữ liệu từ máy chủ.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-600 font-bold">Lỗi truy xuất dữ liệu từ máy chủ. Đảm bảo file CODE.gs đã được phân luồng tham số ALL.</td></tr>`;
     }
 }
 
@@ -346,21 +353,17 @@ function veBangKhungLichPPCT(monDangChon) {
     const cauTrucTiet = { "Sáng": [1,2,3,4,5], "Chiều": [1,2,3,4] };
     
     let maTranTkb = {};
-    let demTietTuanNay = 0; 
-    
     const monChonChuan = monDangChon.trim().replace(/\s+/g, '').toLowerCase();
     
     duLieuTkbTuan.forEach(t => {
         if (!maTranTkb[t.thu]) maTranTkb[t.thu] = {};
         if (!maTranTkb[t.thu][t.buoi]) maTranTkb[t.thu][t.buoi] = {};
         maTranTkb[t.thu][t.buoi][t.tiet] = t;
-        
-        let monTkbChuan = t.monHoc.trim().replace(/\s+/g, '').toLowerCase();
-        if (monTkbChuan === monChonChuan) demTietTuanNay++;
     });
 
     const tuan = parseInt(document.getElementById('locTuanUI').value.trim()) || 1;
     const lop = document.getElementById('locLopPPCT').value.trim();
+    const isXemTatCa = (monChonChuan === 'tấtcả' || monChonChuan === '');
     
     let ngayGocThu2 = null;
     const tuanHienTaiHeThong = (typeof tuanDangXem !== 'undefined') ? parseInt(tuanDangXem) : 1;
@@ -373,73 +376,48 @@ function veBangKhungLichPPCT(monDangChon) {
             let mm = parseInt(parts[1], 10) - 1; 
             let dd = parseInt(parts[2], 10);
             ngayGocThu2 = new Date(yy, mm, dd);
-            
             let lechTuan = tuan - tuanHienTaiHeThong;
-            if (lechTuan !== 0) {
-                ngayGocThu2.setDate(ngayGocThu2.getDate() + (lechTuan * 7));
-            }
+            if (lechTuan !== 0) ngayGocThu2.setDate(ngayGocThu2.getDate() + (lechTuan * 7));
         }
     }
 
     // =========================================================================
-    // [THUẬT TOÁN ĐỘT PHÁ]: NHẬN DIỆN VÀ TÍNH TOÁN THEO NHÓM MÔN CHIA NHỎ
+    // [LÕI NÂNG CẤP]: HỆ TỪ ĐIỂN TỰ ĐỘNG TÍNH TOÁN TIẾT PPCT ĐA MÔN
     // =========================================================================
-    let soTiet1Tuan = 0; 
-    let tongSoTietNhom = 0; 
-    let heSoTiet = 1; 
-    let isSplitSubject = false;
-
-    // Tách base name và suffix (Ví dụ: HĐTN 3 -> Gốc: hdtn, Đuôi: 3)
-    const match = monChonChuan.match(/^(.*?)(\d+)$/);
-    let baseName = monChonChuan;
-    if (match) {
-        baseName = match[1];
-        heSoTiet = parseInt(match[2], 10);
-    }
-
+    let trackerPpct = {};
     if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.KHUNG_CHUONG_TRINH) {
         let dmKhoi = thongSoHocVu.KHUNG_CHUONG_TRINH[lop] || {};
         
         Object.keys(dmKhoi).forEach(m => {
             let tenM = m.trim().replace(/\s+/g, '').toLowerCase();
-            
-            // Tìm số tiết của đích danh môn đang chọn
-            if (tenM === monChonChuan) {
-                soTiet1Tuan = parseInt(dmKhoi[m]) || 0;
-            }
-            
-            // Tính TỔNG số tiết của cả nhóm (HĐTN 1 + 2 + 3)
-            let mMatch = tenM.match(/^(.*?)(\d+)$/);
-            let mBase = mMatch ? mMatch[1] : tenM;
-            
-            if (mBase === baseName) {
-                tongSoTietNhom += (parseInt(dmKhoi[m]) || 0);
-            }
+            let match = tenM.match(/^(.*?)(\d+)$/);
+            let baseName = match ? match[1] : tenM;
+            let heSoTiet = match ? parseInt(match[2], 10) : 1;
+
+            let soTiet1Tuan = parseInt(dmKhoi[m]) || 0;
+            let tongSoTietNhom = 0;
+
+            Object.keys(dmKhoi).forEach(sub => {
+                let subChuan = sub.trim().replace(/\s+/g, '').toLowerCase();
+                let subMatch = subChuan.match(/^(.*?)(\d+)$/);
+                let subBase = subMatch ? subMatch[1] : subChuan;
+                if(subBase === baseName) {
+                    tongSoTietNhom += (parseInt(dmKhoi[sub]) || 0);
+                }
+            });
+
+            let isSplitSubject = (tongSoTietNhom > soTiet1Tuan && match);
+            let tietPpcAuto = isSplitSubject ? ((tuan - 1) * tongSoTietNhom + heSoTiet) : ((tuan - 1) * soTiet1Tuan + 1);
+
+            trackerPpct[tenM] = {
+                tietPpcAuto: tietPpcAuto,
+                chiSoPpctTuDong: (tuan - 1) * soTiet1Tuan,
+                tongSoTietNhom: tongSoTietNhom
+            };
         });
     }
 
-    if (!soTiet1Tuan || isNaN(soTiet1Tuan) || soTiet1Tuan === 0) soTiet1Tuan = demTietTuanNay;
-    if (tongSoTietNhom === 0) tongSoTietNhom = soTiet1Tuan;
-
-    // Xác nhận đây là môn chia nhỏ nếu Tổng nhóm > Tiết cá nhân
-    if (tongSoTietNhom > soTiet1Tuan && match) {
-        isSplitSubject = true;
-    }
-
-    let tietPpcAuto = 1;
-    if (isSplitSubject) {
-        // Công thức đặc biệt cho môn chia nhỏ (VD Tuần 2, HĐTN 3: (2-1)*3 + 3 = 6)
-        tietPpcAuto = (tuan - 1) * tongSoTietNhom + heSoTiet;
-    } else {
-        // Công thức cho môn độc lập (Toán, Tiếng Việt)
-        tietPpcAuto = (tuan - 1) * soTiet1Tuan + 1;
-    }
-
-    // =========================================================================
-
     let mangPpctGocDaSapXep = [...duLieuPpctGoc].filter(b => String(b.tiet).trim() !== '').sort((a, b) => parseInt(a.tiet) - parseInt(b.tiet));
-    let chiSoPpctTuDong = (tuan - 1) * soTiet1Tuan;
-
     let tongSoDongMucTieu = 0;
 
     thuMacDinh.forEach(thu => {
@@ -451,7 +429,8 @@ function veBangKhungLichPPCT(monDangChon) {
                 
                 let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
 
-                if (monTkbChuan === monChonChuan && tenMonTkb !== '') {
+                // Bộ lọc kép: Hiện toàn bộ hoặc chỉ hiện 1 môn
+                if ((isXemTatCa || monTkbChuan === monChonChuan) && tenMonTkb !== '') {
                     dsTietCuaThu.push({ buoi: buoi, tiet: tiet, tietTkb: tietTkb });
                     tongSoDongMucTieu++;
                 }
@@ -484,23 +463,31 @@ function veBangKhungLichPPCT(monDangChon) {
                         let tiet = item.tiet;
                         let tietTkb = item.tietTkb;
                         let tenMonTkb = tietTkb.monHoc;
+                        let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
 
                         let valTietPPC = tietTkb.tietPpc || '';
                         
-                        // Ghép nối tự động
-                        if (valTietPPC === '') { 
-                            if (chiSoPpctTuDong < mangPpctGocDaSapXep.length) {
-                                valTietPPC = mangPpctGocDaSapXep[chiSoPpctTuDong].tiet;
+                        if (valTietPPC === '') {
+                            let track = trackerPpct[monTkbChuan];
+                            if (track) {
+                                if (!isXemTatCa && track.chiSoPpctTuDong < mangPpctGocDaSapXep.length) {
+                                    valTietPPC = mangPpctGocDaSapXep[track.chiSoPpctTuDong].tiet;
+                                } else {
+                                    valTietPPC = track.tietPpcAuto;
+                                }
+                                track.chiSoPpctTuDong++;
+                                track.tietPpcAuto++; 
                             } else {
-                                valTietPPC = tietPpcAuto; // Phát huy tác dụng của toán học
+                                valTietPPC = 1; 
                             }
-                            chiSoPpctTuDong++;
-                            tietPpcAuto++; 
                         }
 
                         let valTenBai = ''; let valDieuChinh = '';
-                        if (valTietPPC !== '') {
+                        if (valTietPPC !== '' && !isXemTatCa) {
                             let baiGoc = duLieuPpctGoc.find(b => String(b.tiet) === String(valTietPPC));
+                            if (baiGoc) { valTenBai = baiGoc.tenBaiHoc || ''; valDieuChinh = baiGoc.dieuChinh || ''; }
+                        } else if (valTietPPC !== '' && isXemTatCa) {
+                            let baiGoc = duLieuPpctGoc.find(b => String(b.tiet) === String(valTietPPC) && (b.monHoc && b.monHoc.replace(/\s+/g, '').toLowerCase() === monTkbChuan));
                             if (baiGoc) { valTenBai = baiGoc.tenBaiHoc || ''; valDieuChinh = baiGoc.dieuChinh || ''; }
                         }
 
@@ -525,8 +512,8 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
-                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
                             <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal">${tenMonTkb}</td>
+                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
 
                           <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
                                 <div class="flex items-start justify-between gap-2">
@@ -552,7 +539,8 @@ function veBangKhungLichPPCT(monDangChon) {
     });
 
     if (tongSoDongMucTieu === 0) {
-        html = `<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold italic">Lịch giảng dạy tuần này không có môn "${monDangChon}".</td></tr>`;
+        let msg = isXemTatCa ? `Lớp ${lop} không có dữ liệu thời khóa biểu trong Tuần ${tuan}.` : `Lịch giảng dạy tuần này không có môn "${monDangChon}".`;
+        html = `<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold italic">${msg}</td></tr>`;
     }
     tbody.innerHTML = html;
 }
