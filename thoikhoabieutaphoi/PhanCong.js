@@ -1,6 +1,7 @@
 let duLieuTongTien = {}; 
 let danhSachGV = [];
 let khungChuongTrinhToanTruong = {}; 
+let gvDangDuocChon = null; 
 
 // =========================================================================
 // KHỐI 1: GIAO TIẾP MÁY CHỦ (API FETCH)
@@ -25,9 +26,6 @@ async function taiDuLieuPhanCongTuMayChu() {
         if (tbody) tbody.innerHTML = `<tr><td colspan="15" class="text-center py-10 text-red-600 font-bold text-lg">Lỗi kết nối hoặc máy chủ từ chối truy cập. Vui lòng thử lại.</td></tr>`;
     }
 }
-
-// Bổ sung thêm biến toàn cục này vào đầu file cùng với các biến khác
-let gvDangDuocChon = null; 
 
 // =========================================================================
 // KHỐI 2: KHỞI TẠO VÀ XỬ LÝ LƯỚI GIAO DIỆN PHÂN CÔNG
@@ -56,7 +54,6 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
   document.getElementById('tieuDeMonHoc').innerHTML = headerHtml;
 
   let bodyHtml = '';
-  
   let datalistHtml = `<datalist id="danhSachGiaoVienPhanCong">`;
   danhSachGV.forEach(gv => {
     let ma = gv.maGv || gv.hoTen;
@@ -81,15 +78,12 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                         <td class="py-1 px-2 border border-gray-400 font-extrabold text-slate-900 bg-white sticky left-0 z-10 group-hover:bg-slate-50">${maLop}</td>`;
         
         let duLieuCuCuaLop = mapPhanCongDaLuu[maLop] || [];
-
-        // [NÂNG CẤP]: Khớp chuẩn mã lớp với dữ liệu để lấy Khung chương trình tương ứng
         let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === String(maLop).trim().toLowerCase());
 
         for (let j = 0; j < duLieuSever.monHoc.length; j++) {
           let tenMon = duLieuSever.monHoc[j];
-          
-          // [NÂNG CẤP]: Kiểm tra xem môn học có tồn tại và có số tiết > 0 trong khung chương trình của lớp này không
           let monHocHopLe = false;
+          
           if (lopKey) {
               let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === String(tenMon).trim().toLowerCase());
               if (monKey && parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) > 0) {
@@ -98,7 +92,6 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
           }
 
           if (monHocHopLe) {
-              // Trường hợp hợp lệ: Hiển thị ô nhập liệu bình thường. Tích hợp gọi hàm lọc thời gian thực.
               let gvHienTai = duLieuCuCuaLop[j + 1] || ''; 
               bodyHtml += `<td class="p-0 border border-gray-400 transition-all duration-300 bg-white group-hover:bg-slate-50">
                               <input type="text" size="1" list="danhSachGiaoVienPhanCong" data-lop="${maLop}" data-mon="${tenMon}" value="${gvHienTai}" 
@@ -109,7 +102,6 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
                               onfocus="this.select(); tinhToanTietDay(this.value);">
                            </td>`;
           } else {
-          // Trường hợp vô hiệu hóa: Môn học không có trong Khung chương trình (Làm mờ và khóa nhập liệu)
               bodyHtml += `<td class="p-0 border border-gray-300 bg-slate-200 opacity-70" title="Môn học không có trong Khung chương trình của lớp ${maLop}">
                               <input type="text" disabled data-lop="${maLop}" data-mon="${tenMon}" value="" 
                               class="w-full h-full min-h-[26px] min-w-0 outline-none text-center bg-transparent cursor-not-allowed text-slate-500 font-bold" 
@@ -124,14 +116,11 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
   document.getElementById('duLieuLopHoc').innerHTML = bodyHtml + datalistHtml;
   tinhToanTietDay();
 
-// [NÂNG CẤP BỔ SUNG]: Khởi tạo thanh lọc khung phân công bên trái
   const nutLuuPhanCong = document.querySelector('#khungPhanCong button[onclick="xuLyLuuTru()"]');
   let oLocLopPhanCong = document.getElementById('locLopPhanCong');
   
   if (nutLuuPhanCong && !oLocLopPhanCong) {
       const thanhCongCuTrai = nutLuuPhanCong.parentElement;
-      
-      // SỬA Ở ĐÂY: Dùng justify-start thay vì justify-between, dùng gap-3 để tạo khoảng cách đều đặn
       thanhCongCuTrai.classList.add('flex', 'justify-start', 'items-center', 'w-full', 'mb-3', 'flex-wrap', 'gap-3');
       thanhCongCuTrai.classList.remove('justify-end', 'justify-between');
 
@@ -157,7 +146,6 @@ function khoiTaoGiaoDienPhanCong(duLieuSever) {
   }
 }
 
-// [NÂNG CẤP BỔ SUNG]: Hàm xử lý logic lọc lưới dữ liệu Phân công
 function locDuLieuPhanCongThoiGianThuc() {
     let oLocLop = document.getElementById('locLopPhanCong');
     let oLocGV = document.getElementById('locGiaoVienPhanCong');
@@ -172,11 +160,8 @@ function locDuLieuPhanCongThoiGianThuc() {
         if (!tdLop) return;
 
         let tenLop = tdLop.innerText.toLowerCase();
-
-        // 1. Kiểm tra khớp mã lớp (Khu vực)
         let thapLop = (tuKhoaLop === "") || tenLop.includes(tuKhoaLop);
 
-        // 2. Kiểm tra khớp mã giáo viên (Tìm trong tất cả các ô nhập liệu của dòng hiện tại)
         let thapGV = false;
         if (tuKhoaGV === "") {
             thapGV = true;
@@ -185,12 +170,11 @@ function locDuLieuPhanCongThoiGianThuc() {
             for (let i = 0; i < cacSelect.length; i++) {
                 if (cacSelect[i].value.trim().toLowerCase().includes(tuKhoaGV)) {
                     thapGV = true;
-                    break; // Giáo viên dạy ít nhất 1 môn là đạt điều kiện hiển thị lớp
+                    break;
                 }
             }
         }
 
-        // Hiển thị nếu khớp đồng thời cả 2 điều kiện
         if (thapLop && thapGV) {
             dong.style.display = '';
         } else {
@@ -199,45 +183,33 @@ function locDuLieuPhanCongThoiGianThuc() {
     });
 }
 
-// [NÂNG CẤP BỔ SUNG]: Hàm xử lý logic đảo cột trong DOM
 function diChuyenCotMonHoc(element, huong) {
     const thHienTai = element.closest('th');
     const trTieuDe = thHienTai.parentElement;
     const danhSachCot = Array.from(trTieuDe.children);
     const viTriHienTai = danhSachCot.indexOf(thHienTai);
     
-    // Cột đầu tiên (index 0) là "Mã Lớp" được cố định, giới hạn ranh giới di chuyển
     const viTriDich = viTriHienTai + huong;
-    if (viTriDich < 1 || viTriDich >= danhSachCot.length) {
-        return; 
-    }
+    if (viTriDich < 1 || viTriDich >= danhSachCot.length) return; 
     
-    // Đảo thẻ <th> trên dòng tiêu đề
-    if (huong === -1) {
-        trTieuDe.insertBefore(danhSachCot[viTriHienTai], danhSachCot[viTriDich]);
-    } else {
-        trTieuDe.insertBefore(danhSachCot[viTriDich], danhSachCot[viTriHienTai]);
-    }
+    if (huong === -1) trTieuDe.insertBefore(danhSachCot[viTriHienTai], danhSachCot[viTriDich]);
+    else trTieuDe.insertBefore(danhSachCot[viTriDich], danhSachCot[viTriHienTai]);
     
-    // Đảo các thẻ <td> tương ứng ở mọi dòng trong lưới dữ liệu
     const tbodyLopHoc = document.getElementById('duLieuLopHoc');
     if (tbodyLopHoc) {
         const danhSachDong = tbodyLopHoc.querySelectorAll('tr');
         danhSachDong.forEach(dong => {
             const cacO = Array.from(dong.children);
             if (cacO.length > Math.max(viTriHienTai, viTriDich)) {
-                if (huong === -1) {
-                    dong.insertBefore(cacO[viTriHienTai], cacO[viTriDich]);
-                } else {
-                    dong.insertBefore(cacO[viTriDich], cacO[viTriHienTai]);
-                }
+                if (huong === -1) dong.insertBefore(cacO[viTriHienTai], cacO[viTriDich]);
+                else dong.insertBefore(cacO[viTriDich], cacO[viTriHienTai]);
             }
         });
     }
 }
 
 // =========================================================================
-// KHỐI 3: THỐNG KÊ ĐỊNH MỨC VÀ KIỂM SOÁT TỔNG HỢP CHI TIẾT
+// KHỐI 3: THỐNG KÊ ĐỊNH MỨC & PHÂN CÔNG NHANH (NÂNG CẤP LÕI)
 // =========================================================================
 function tinhToanTietDay(maGVVuaChon = null) {
   let thongKe = {};
@@ -270,9 +242,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
       let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === tenLop.toLowerCase());
       if (lopKey) {
           let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === tenMon.toLowerCase());
-          if (monKey) {
-              soTiet = parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) || 0;
-          }
+          if (monKey) soTiet = parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) || 0;
       }
       
       thongKe[maGVKhop].thucTe += soTiet; 
@@ -286,35 +256,26 @@ function tinhToanTietDay(maGVVuaChon = null) {
   let oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe');
   
   if (nutXuatExcel && !oTimKiemGiaoVien) {
-      // Tự động đổi tên nút xuất Excel thành "Xuất File" để tiết kiệm diện tích mà không làm mất icon
       nutXuatExcel.innerHTML = nutXuatExcel.innerHTML.replace(/Xuất Bảng Phân Công Chi Tiết/g, 'Xuất File');
-
       const thanhCongCu = nutXuatExcel.parentElement;
       
       thanhCongCu.classList.add('flex', 'justify-between', 'items-center', 'w-full', 'mb-3');
       thanhCongCu.classList.remove('justify-end'); 
       
       const divBoLoc = document.createElement('div');
-      divBoLoc.className = 'flex items-center gap-2'; // Rút gọn khoảng cách 2 ô lọc
+      divBoLoc.className = 'flex items-center gap-2'; 
       
-      // Thu hẹp ô Khu vực và giảm size text
       const htmlKhuVuc = `
-          <div class="flex items-center bg-emerald-50 border border-emerald-400 rounded-md px-2 py-1 shadow-sm focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all" title="Lọc toàn bộ giáo viên theo khu vực (VD: gõ C để lọc C1, C2...)">
+          <div class="flex items-center bg-emerald-50 border border-emerald-400 rounded-md px-2 py-1 shadow-sm focus-within:border-emerald-600 focus-within:ring-1 focus-within:ring-emerald-600 transition-all" title="Lọc toàn bộ giáo viên theo khu vực">
               <svg class="text-emerald-600 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
               <input type="text" id="locKhuVucThongKe" oninput="locDuLieuThongKeThoiGianThuc()" placeholder="Khu (B, C)" autocomplete="off" class="outline-none text-[13px] text-emerald-900 bg-transparent font-semibold w-[90px] placeholder-emerald-500/70">
           </div>
       `;
 
-      // Thu hẹp ô Tìm kiếm và sửa lại chữ gợi ý
       const htmlTimKiem = `
           <div class="flex items-center bg-white border border-blue-400 rounded-md px-2 py-1 shadow-sm focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all">
               <svg class="text-blue-500 mr-1.5" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" 
-                     oninput="locDuLieuThongKeThoiGianThuc()" 
-                     onchange="locDuLieuThongKeThoiGianThuc()"
-                     placeholder="Tên/mã..." 
-                     autocomplete="off"
-                     class="outline-none text-[13px] text-slate-800 bg-transparent w-[110px] min-w-[80px]">
+              <input type="text" id="locGiaoVienThongKe" list="danhSachGiaoVienPhanCong" oninput="locDuLieuThongKeThoiGianThuc()" onchange="locDuLieuThongKeThoiGianThuc()" placeholder="Tên/mã..." autocomplete="off" class="outline-none text-[13px] text-slate-800 bg-transparent w-[110px] min-w-[80px]">
           </div>
       `;
       
@@ -342,88 +303,192 @@ function tinhToanTietDay(maGVVuaChon = null) {
     let textClass = 'text-blue-700 font-bold';
 
     if (soLieu.thucTe > soLieu.dinhMuc) {
-        bgClass = 'bg-red-100'; 
-        textClass = 'text-red-600 font-extrabold';
+        bgClass = 'bg-red-100'; textClass = 'text-red-600 font-extrabold';
     } else if (soLieu.thucTe === soLieu.dinhMuc && soLieu.dinhMuc > 0) {
-        bgClass = 'bg-green-100'; 
-        textClass = 'text-green-700 font-extrabold';
+        bgClass = 'bg-green-100'; textClass = 'text-green-700 font-extrabold';
     }
     
     if (gvDangDuocChon === ma) {
         bgClass = 'bg-yellow-200 border-yellow-400 shadow-inner'; 
     }
 
-    let chiTietHienThi = soLieu.chiTiet.length > 0 ? soLieu.chiTiet.join(' ') : '<span class="text-gray-400 italic text-[11px]">Chưa phân công</span>';
+    // [NÂNG CẤP LÕI]: Biến ô Chi tiết thành nút bấm mở Modal Phân công nhanh
+    let textChuaPhanCong = `<span class="text-slate-400 italic text-[11px] group-hover:text-blue-500 transition-colors">Bấm để gán môn học...</span>`;
+    let chiTietHienThi = soLieu.chiTiet.length > 0 ? soLieu.chiTiet.join(' ') : textChuaPhanCong;
     let hienThiTen = (soLieu.hoTen && soLieu.hoTen !== ma) ? `${soLieu.hoTen} <br><span class="text-[13px] text-gray-500 font-bold italic">(${ma})</span>` : ma;
     let safeId = "tk_gv_" + encodeURIComponent(ma.trim()).replace(/%/g, '_');
-    
     let chuoiTimKiem = `${soLieu.hoTen.toLowerCase()} ${ma.toLowerCase()}`;
+    let tenAnToan = (soLieu.hoTen || ma).replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
     tbodyThongKe += `
-      <tr id="${safeId}" class="${bgClass} hover:bg-gray-50 transition-colors duration-300">
+      <tr id="${safeId}" class="${bgClass} hover:bg-slate-50 transition-colors duration-300">
         <td class="py-1 px-2 font-semibold text-slate-800 text-left pl-3 border-b border-r border-gray-300 whitespace-nowrap sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_#d1d5db]" data-timkiem="${chuoiTimKiem}">${hienThiTen}</td>
         <td class="py-1 px-2 font-bold text-slate-600 border-b border-r border-gray-300 text-center">${soLieu.dinhMuc}</td>
         <td class="py-1 px-2 ${textClass} text-base border-b border-r border-gray-300 text-center">${soLieu.thucTe}</td>
-        <td class="py-1 px-2 text-left leading-tight whitespace-normal border-b border-gray-300">${chiTietHienThi}</td>
+        <td class="py-1 px-2 text-left leading-tight whitespace-normal border-b border-gray-300 cursor-pointer group hover:bg-blue-50 transition-colors" onclick="moKhungPhanCongNhanh('${ma}', '${tenAnToan}')" title="Nhấn để mở bảng gán môn học nhanh">
+            <div class="flex items-start gap-1.5 min-h-[24px]">
+                <svg class="w-4 h-4 text-slate-400 group-hover:text-blue-600 flex-none mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                <div class="flex-1 select-none">${chiTietHienThi}</div>
+            </div>
+        </td>
       </tr>
     `;
   }
   document.getElementById('duLieuThongKe').innerHTML = tbodyThongKe;
-
   locDuLieuThongKeThoiGianThuc();
 
   if (gvDangDuocChon) {
       setTimeout(() => {
           let idTimKiem = "tk_gv_" + encodeURIComponent(gvDangDuocChon).replace(/%/g, '_');
           let dongGiaoVien = document.getElementById(idTimKiem);
-          if (dongGiaoVien) {
-              dongGiaoVien.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
+          if (dongGiaoVien) dongGiaoVien.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 50);
   }
 }
 
-// [NÂNG CẤP LÕI]: Hàm xử lý kết hợp song song 2 điều kiện (Khu vực + Tên/Mã)
-// Đã khắc phục triệt để lỗi Regex \b không tương thích với bộ gõ Tiếng Việt
 function locDuLieuThongKeThoiGianThuc() {
     let oTimKiem = document.getElementById('locGiaoVienThongKe');
     let oKhuVuc = document.getElementById('locKhuVucThongKe');
     
     let tuKhoa = oTimKiem ? oTimKiem.value.trim().toLowerCase() : "";
     let khuVuc = oKhuVuc ? oKhuVuc.value.trim().toLowerCase() : "";
-    
     let cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
     
     cacDongThongKe.forEach(dong => {
         let oGiaoVien = dong.querySelector('td:first-child');
         if (oGiaoVien) {
             let duLieuTimKiem = oGiaoVien.getAttribute('data-timkiem') || oGiaoVien.innerText.toLowerCase();
-            
-            // 1. Kiểm tra khớp từ khóa tên/mã
             let thapTuKhoa = (tuKhoa === "") || duLieuTimKiem.includes(tuKhoa);
-            
-            // 2. Kiểm tra khớp khu vực (Sử dụng khoảng trắng \s thay vì \b để xử lý chuẩn Tiếng Việt)
-            // Cấu trúc (^|\\s) bắt buộc ký tự Khu vực phải đứng ngay đầu chuỗi hoặc sau một dấu cách
             let thapKhuVuc = true;
             if (khuVuc !== "") {
                 try {
                     let regexKhuVuc = new RegExp('(^|\\s)' + khuVuc + '\\d*($|\\s)', 'i');
                     thapKhuVuc = regexKhuVuc.test(duLieuTimKiem);
-                } catch (e) {
-                    // Fallback phòng hờ
-                    thapKhuVuc = duLieuTimKiem.includes(khuVuc);
-                }
+                } catch (e) { thapKhuVuc = duLieuTimKiem.includes(khuVuc); }
             }
             
-            // Dòng chỉ hiển thị khi thỏa mãn ĐỒNG THỜI cả 2 tiêu chí
-            if (thapTuKhoa && thapKhuVuc) {
-                dong.style.display = '';
-            } else {
-                dong.style.display = 'none';
-            }
+            if (thapTuKhoa && thapKhuVuc) dong.style.display = '';
+            else dong.style.display = 'none';
         }
     });
 }
+
+// =========================================================================
+// KHỐI 3B: MODAL PHÂN CÔNG NHANH (ĐỘNG CƠ ĐỒNG BỘ 2 CHIỀU)
+// =========================================================================
+function chenHTMLModalPhanCongNhanh() {
+    let html = `
+    <div id="modalPhanCongNhanh" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[100] font-sans reactbits-fade-in backdrop-blur-sm transition-opacity">
+        <div class="bg-slate-50 rounded-2xl shadow-2xl w-11/12 md:w-5/6 xl:w-[85%] h-[85vh] flex flex-col overflow-hidden border border-slate-300 transform scale-95 transition-transform duration-300">
+            <div class="bg-blue-700 text-white px-5 py-3.5 flex justify-between items-center border-b shadow-md z-10">
+                <h3 id="tieuDePhanCongNhanh" class="text-lg font-bold flex items-center gap-2 uppercase tracking-wide">
+                    Phân công nhanh
+                </h3>
+                <button onclick="dongKhungPhanCongNhanh()" class="text-white hover:text-red-300 text-3xl leading-none transition-colors outline-none">&times;</button>
+            </div>
+            <div id="noiDungPhanCongNhanh" class="p-5 overflow-y-auto flex-1 custom-scrollbar">
+                <!-- Nội dung checkbox render động -->
+            </div>
+            <div class="bg-white p-4 border-t flex justify-end gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <span class="text-sm text-slate-500 italic flex-1 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Thay đổi tự động lưu tạm trên lưới. Nhấn "Lưu Phân Công" ở bảng gốc để ghi vào CSDL.
+                </span>
+                <button onclick="dongKhungPhanCongNhanh()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold px-6 py-2 rounded-lg shadow-md transition-colors">Hoàn tất</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+window.moKhungPhanCongNhanh = function(maGV, tenGV) {
+    if (!document.getElementById('modalPhanCongNhanh')) chenHTMLModalPhanCongNhanh();
+    
+    let mapData = {};
+    let cacSelect = document.querySelectorAll('#duLieuLopHoc input[data-lop]');
+    
+    cacSelect.forEach(sl => {
+        if(sl.disabled) return; 
+        let mon = sl.getAttribute('data-mon');
+        let lop = sl.getAttribute('data-lop');
+        let gvDangDay = sl.value.trim();
+        
+        if(!mapData[mon]) mapData[mon] = [];
+        mapData[mon].push({ lop: lop, gvDangDay: gvDangDay });
+    });
+    
+    let htmlNoidung = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">';
+    
+    Object.keys(mapData).sort().forEach(mon => {
+        htmlNoidung += `<div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+            <h4 class="font-bold text-blue-800 border-b border-slate-200 pb-2 mb-3 flex items-center justify-between">
+                ${mon}
+                <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">${mapData[mon].length} lớp</span>
+            </h4>
+            <div class="flex flex-wrap gap-2">`;
+        
+        mapData[mon].forEach(item => {
+            let isChecked = (item.gvDangDay.toLowerCase() === maGV.toLowerCase());
+            let isConflict = (!isChecked && item.gvDangDay !== ""); 
+            
+            let bgClass = "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200";
+            let checkedClass = "peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 shadow-md";
+            
+            if (isConflict) bgClass = "bg-orange-50 border-orange-300 text-orange-800 hover:bg-orange-100";
+            
+            htmlNoidung += `
+                <label class="cursor-pointer relative group/item" title="${isConflict ? 'Đang được dạy bởi: ' + item.gvDangDay : 'Nhấn để gán môn học'}">
+                    <input type="checkbox" class="peer hidden" ${isChecked ? 'checked' : ''} 
+                           onchange="xuLyTichPhanCongNhanh(this, '${item.lop}', '${mon}', '${maGV}')">
+                    <span class="px-2.5 py-1.5 rounded-lg border ${bgClass} ${checkedClass} text-[13px] font-bold transition-all duration-200 inline-block min-w-[45px] text-center select-none">
+                        ${item.lop}
+                    </span>
+                </label>`;
+        });
+        
+        htmlNoidung += `</div></div>`;
+    });
+    
+    htmlNoidung += '</div>';
+    
+    document.getElementById('tieuDePhanCongNhanh').innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        Phân công: ${tenGV}
+    `;
+    document.getElementById('noiDungPhanCongNhanh').innerHTML = htmlNoidung;
+    
+    let modal = document.getElementById('modalPhanCongNhanh');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.querySelector('div').classList.remove('scale-95');
+        modal.querySelector('div').classList.add('scale-100');
+    }, 10);
+};
+
+window.dongKhungPhanCongNhanh = function() {
+    let modal = document.getElementById('modalPhanCongNhanh');
+    if(modal) {
+        modal.querySelector('div').classList.remove('scale-100');
+        modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+};
+
+window.xuLyTichPhanCongNhanh = function(checkbox, maLop, mon, maGV) {
+    let inputLoi = document.querySelector(`#duLieuLopHoc input[data-lop="${maLop}"][data-mon="${mon}"]`);
+    if (inputLoi) {
+        if (checkbox.checked) inputLoi.value = maGV;
+        else inputLoi.value = "";
+        
+        let tdCha = inputLoi.closest('td');
+        if (tdCha) {
+            tdCha.classList.add('bg-green-200');
+            setTimeout(() => tdCha.classList.remove('bg-green-200'), 500);
+        }
+        
+        tinhToanTietDay(maGV);
+    }
+};
 
 // =========================================================================
 // KHỐI 4: LƯU TRỮ VÀ XỬ LÝ NHẬP/XUẤT EXCEL TỐC ĐỘ CAO
@@ -439,7 +504,6 @@ async function xuLyLuuTru() {
   
   try {
     let mangGhi = [];
-    
     let thead = document.querySelectorAll('#tieuDeMonHoc th');
     let dongTieuDe = [];
     thead.forEach(th => dongTieuDe.push(th.innerText.trim()));
@@ -452,33 +516,22 @@ async function xuLyLuuTru() {
         if (tdLop) {
             dongDuLieu.push(tdLop.innerText.trim());
             let cacSelect = tr.querySelectorAll('input[data-lop]');
-            cacSelect.forEach(sl => {
-                dongDuLieu.push(sl.value.trim());
-            });
+            cacSelect.forEach(sl => dongDuLieu.push(sl.value.trim()));
             mangGhi.push(dongDuLieu);
         }
     });
     
     const payload = { thaoTac: 'luuDuLieuPhanCong', duLieu: mangGhi };
-    const phanHoi = await fetch(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
-        method: 'POST', 
-        body: JSON.stringify(payload) 
-    });
+    const phanHoi = await fetch(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
     const ketQua = await phanHoi.json();
     
-    if (ketQua.trangThai === 'Thành công') {
-        alert("Đã lưu bảng Phân công chuyên môn vào hệ thống thành công!");
-    } else {
-        alert("Lỗi từ máy chủ: " + ketQua.thongBao);
-    }
+    if (ketQua.trangThai === 'Thành công') alert("Đã lưu bảng Phân công chuyên môn vào hệ thống thành công!");
+    else alert("Lỗi từ máy chủ: " + ketQua.thongBao);
   } catch(loi) {
     console.error("Lỗi khi lưu phân công:", loi);
     alert("Lỗi kết nối mạng hoặc máy chủ không phản hồi.");
   } finally {
-    if (btnLuu) {
-        btnLuu.innerHTML = textGoc;
-        btnLuu.disabled = false;
-    }
+    if (btnLuu) { btnLuu.innerHTML = textGoc; btnLuu.disabled = false; }
   }
 }
 
@@ -503,9 +556,7 @@ async function xuatExcelPhanCong() {
         const wsData = workbook.addWorksheet('DM_GV'); 
         
         let dsMaGV = danhSachGV.map(gv => gv.maGv || gv.hoTen).sort((a, b) => a.localeCompare(b, 'vi'));
-        dsMaGV.forEach((ma, idx) => {
-            wsData.getCell(`A${idx + 1}`).value = ma;
-        });
+        dsMaGV.forEach((ma, idx) => wsData.getCell(`A${idx + 1}`).value = ma);
         wsData.state = 'hidden'; 
 
         let thead = document.querySelectorAll('#tieuDeMonHoc th');
@@ -526,14 +577,10 @@ async function xuatExcelPhanCong() {
 
                 for (let c = 2; c <= dongTieuDe.length; c++) {
                     worksheet.getCell(rowCount, c).dataValidation = {
-                        type: 'list',
-                        allowBlank: true,
-                        showErrorMessage: true, 
-                        errorStyle: 'error', 
-                        errorTitle: 'Dữ liệu không hợp lệ',
+                        type: 'list', allowBlank: true, showErrorMessage: true, 
+                        errorStyle: 'error', errorTitle: 'Dữ liệu không hợp lệ',
                         error: 'Vui lòng chọn hoặc gõ chính xác mã giáo viên có trong danh sách!',
-                        showInputMessage: true,
-                        promptTitle: 'Thao tác tìm kiếm',
+                        showInputMessage: true, promptTitle: 'Thao tác tìm kiếm',
                         prompt: 'Nhấn tổ hợp phím [Alt + ↓] để mở danh sách, sau đó gõ ký tự để lọc nhanh.',
                         formulae: [`'DM_GV'!$A$1:$A$${dsMaGV.length}`] 
                     };
@@ -578,10 +625,7 @@ function xuLyTaiLenExcelPhanCong(e) {
             const worksheet = workbook.Sheets[firstSheetName];
             const duLieuExcel = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-            if (duLieuExcel.length < 2) {
-                alert("Tệp Excel không chứa dữ liệu phân công hợp lệ.");
-                return;
-            }
+            if (duLieuExcel.length < 2) { alert("Tệp Excel không chứa dữ liệu phân công hợp lệ."); return; }
 
             let headerExcel = duLieuExcel[0];
             let mapExcel = {};
@@ -600,14 +644,10 @@ function xuLyTaiLenExcelPhanCong(e) {
             }
 
             let cacTheSelect = document.querySelectorAll('#duLieuLopHoc input[data-lop]');
-
             cacTheSelect.forEach(sl => {
                 let lop = sl.getAttribute('data-lop');
                 let mon = sl.getAttribute('data-mon');
-
-                if (mapExcel[lop] && mapExcel[lop][mon] !== undefined) {
-                    sl.value = mapExcel[lop][mon];
-                }
+                if (mapExcel[lop] && mapExcel[lop][mon] !== undefined) sl.value = mapExcel[lop][mon];
             });
 
             tinhToanTietDay();
@@ -622,18 +662,11 @@ function xuLyTaiLenExcelPhanCong(e) {
     reader.readAsArrayBuffer(file);
 }
 
-// =========================================================================
-// HÀM XUẤT EXCEL CHI TIẾT KHUNG BÊN PHẢI (THỐNG KÊ)
-// [NÂNG CẤP LÕI]: Xuất dữ liệu chính xác theo những gì đang hiển thị trên UI (Đã lọc)
-// =========================================================================
 async function xuatExcelThongKePhanCong() {
     const btn = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
     let textGoc = btn ? btn.innerHTML : 'Xuất File';
     
-    if (btn) {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
-        btn.disabled = true;
-    }
+    if (btn) { btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`; btn.disabled = true; }
     
     try {
         if (typeof ExcelJS === 'undefined') {
@@ -662,10 +695,9 @@ async function xuatExcelThongKePhanCong() {
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
         const cacDongThongKe = document.querySelectorAll('#duLieuThongKe tr');
-        let stt = 1; // Khởi tạo biến đếm STT
+        let stt = 1; 
         
         cacDongThongKe.forEach(tr => {
-            // Chỉ trích xuất các dòng không bị ẩn bởi bộ lọc UI
             if (tr.style.display !== 'none') {
                 const cacCot = tr.querySelectorAll('td');
                 if (cacCot.length >= 4) {
@@ -674,22 +706,11 @@ async function xuatExcelThongKePhanCong() {
                     let thucTe = parseInt(cacCot[2].innerText) || 0;
                     let chiTiet = cacCot[3].innerText.replace(/\n/g, ', ').trim();
 
-                    const row = worksheet.addRow({
-                        stt: stt,
-                        gv: tenGV,
-                        dinhMuc: dinhMuc,
-                        thucTe: thucTe,
-                        chiTiet: chiTiet
-                    });
-                    
+                    const row = worksheet.addRow({ stt: stt, gv: tenGV, dinhMuc: dinhMuc, thucTe: thucTe, chiTiet: chiTiet });
                     row.font = { name: 'Times New Roman', size: 12 };
-                    if (thucTe > dinhMuc) {
-                        row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
-                    } else if (thucTe === dinhMuc && dinhMuc > 0) {
-                        row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
-                    }
-                    
-                    stt++; // Tăng STT lên 1 đơn vị cho dòng hiển thị tiếp theo
+                    if (thucTe > dinhMuc) row.getCell('thucTe').font = { color: { argb: 'FFDC2626' }, bold: true, name: 'Times New Roman' }; 
+                    else if (thucTe === dinhMuc && dinhMuc > 0) row.getCell('thucTe').font = { color: { argb: 'FF15803D' }, bold: true, name: 'Times New Roman' }; 
+                    stt++; 
                 }
             }
         });
@@ -713,24 +734,19 @@ async function xuatExcelThongKePhanCong() {
         link.download = `PhanCongChiTiet_${chuoiNgay}.xlsx`;
         
         link.click();
-        
     } catch(loi) {
         console.error("Lỗi khi kết xuất Excel:", loi);
         alert("Có lỗi khi tạo biểu mẫu Excel, vui lòng thử lại!");
     } finally {
-        if (btn) {
-            btn.innerHTML = textGoc;
-            btn.disabled = false;
-        }
+        if (btn) { btn.innerHTML = textGoc; btn.disabled = false; }
     }
 }
 
 // =========================================================================
-// KHỐI 5: ĐIỀU HƯỚNG MÀN HÌNH TỔNG LỰC (ĐÃ TÍCH HỢP TẤT CẢ CÁC TAB)
+// KHỐI 5: ĐIỀU HƯỚNG MÀN HÌNH TỔNG LỰC
 // =========================================================================
 function moTabPhanCong() {
     thietLapMenuActive('menuPhanCong');
-    
     setTimeout(() => {
         let thanhCongCu = document.getElementById('thanhCongCuTKB');
         if (thanhCongCu) { thanhCongCu.classList.remove('flex'); thanhCongCu.classList.add('hidden'); }
@@ -749,7 +765,6 @@ function moTabPhanCong() {
 
 function moTabTKB() {
     thietLapMenuActive('menuTKB');
-    
     setTimeout(() => {
         let thanhCongCu = document.getElementById('thanhCongCuTKB');
         if (thanhCongCu) { thanhCongCu.classList.remove('hidden'); thanhCongCu.classList.add('flex'); }
@@ -766,7 +781,6 @@ function moTabTKB() {
 
 window.moTabThongKe = function() {
     thietLapMenuActive('menuThongKe');
-    
     setTimeout(() => {
         let thanhCongCu = document.getElementById('thanhCongCuTKB');
         if (thanhCongCu) { thanhCongCu.classList.remove('flex'); thanhCongCu.classList.add('hidden'); }
@@ -785,7 +799,6 @@ window.dongTabThongKe = moTabTKB;
 
 function thietLapMenuActive(idKichHoat) {
     const cacMenu = ['menuTKB', 'menuThongKe', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucGV', 'menuCaiDat'];
-    
     cacMenu.forEach(id => {
         let m = document.getElementById(id);
         if (m) {
