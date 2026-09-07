@@ -419,18 +419,17 @@ function ketXuatSoDauBaiLenLuoi() {
             </div>
             <table class="w-full min-w-[950px] border-collapse border border-gray-500 text-sm">
                 <thead class="bg-slate-100 text-center font-bold">
-                  <tr>
+                 <tr>
                         <th class="border border-gray-500 p-2 w-20">THỨ</th>
                         <th class="border border-gray-500 p-2 w-10">TIẾT</th>
-                        <!-- Thay w-15 bằng w-16 (khoảng 64px) để đúng chuẩn Tailwind -->
                         <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
-                        <th class="border border-gray-500 p-2 w-60">MÔN</th>
+                        <th class="border border-gray-500 p-2 min-w-[160px] w-48">MÔN</th>
+                        
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
                         <th class="border border-gray-500 p-2 min-w-[200px] w-1/2">TÊN BÀI DẠY</th>
                         <th class="border border-gray-500 p-2 min-w-[280px] w-1/2">NHẬN XÉT CỦA GV</th>
-                        <!-- Thay w-30 bằng w-32 (khoảng 128px) hoặc min-w-[120px] -->
-                        <th class="border border-gray-500 p-2 min-w-[100px]">XẾP LOẠI</th>
-                        <!-- w-60 (khoảng 240px) hợp lệ, có thể thêm min-w-[200px] để chống ép chữ ký -->
+                        <th class="border border-gray-500 p-2 min-w-[85px] w-20">XẾP LOẠI</th>
+                        
                         <th class="border border-gray-500 p-2 min-w-[200px]">CHỮ KÝ</th>
                     </tr>
                 </thead>
