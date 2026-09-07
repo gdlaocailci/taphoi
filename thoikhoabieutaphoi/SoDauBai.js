@@ -427,8 +427,8 @@ function ketXuatSoDauBaiLenLuoi() {
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
                         <th class="border border-gray-500 p-2 min-w-[200px] w-1/2">TÊN BÀI DẠY</th>
                         <th class="border border-gray-500 p-2 min-w-[280px] w-1/2">NHẬN XÉT CỦA GV</th>
-                        <th class="border border-gray-500 p-2 w-16">XẾP LOẠI</th>
-                        <th class="border border-gray-500 p-2 w-24">CHỮ KÝ</th>
+                        <th class="border border-gray-500 p-2 w-24">XẾP LOẠI</th>
+                        <th class="border border-gray-500 p-2 w-32">CHỮ KÝ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -489,7 +489,20 @@ function ketXuatSoDauBaiLenLuoi() {
 
                         theChuyenCan = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400" placeholder="..." value="${chuyenCan}">`;
                         theNhanXet = `<input type="text" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1" placeholder="Nhận xét..." value="${nhanXet}">`;
-                        theXepLoai = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 placeholder-slate-400" placeholder="XL" value="${xepLoai}">`;
+
+                        let optTot = (xepLoai === 'Tốt') ? 'selected' : '';
+                        let optKha = (xepLoai === 'Khá') ? 'selected' : '';
+                        let optTB = (xepLoai === 'TB') ? 'selected' : '';
+                        let optYeu = (xepLoai === 'Yếu') ? 'selected' : '';
+                        
+                        theXepLoai = `
+                            <select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none">
+                                <option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option>
+                                <option value="Tốt" ${optTot}>Tốt</option>
+                                <option value="Khá" ${optKha}>Khá</option>
+                                <option value="TB" ${optTB}>TB</option>
+                                <option value="Yếu" ${optYeu}>Yếu</option>
+                            </select>`;
                         theChuKy = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300" placeholder="Ký..." value="${chuKy}">`;
                     }
                 }
