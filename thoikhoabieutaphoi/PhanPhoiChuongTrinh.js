@@ -616,46 +616,67 @@ function xuLyNhapExcelPPCT(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (typeof XLSX === 'undefined') { alert("Cảnh báo: Thư viện Excel chưa được tải xong."); return; }
-    
+
     const khoiUI = document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so');
     const monUI = document.getElementById('locMonPPCT').value.trim();
-    
+
     if (!khoiUI || khoiUI === 'KX') {
         alert("Yêu cầu chọn Lớp học hợp lệ trên phễu lọc trước khi tải file.");
         event.target.value = '';
         return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
+            // Sử dụng header: 1 để giữ nguyên cấu trúc ma trận dòng/cột của Excel
             const rowsArr = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            
+
             if (rowsArr.length > 1) {
-                duLieuPpctGoc = []; 
+                // [THUẬT TOÁN ĐỊNH VỊ]: Quét dòng 1 để tìm chính xác tọa độ các cột dựa vào tên tiêu đề
+                let headerRow = rowsArr[0];
+                let colTiet = 1, colMon = 2, colTenBai = 3, colDieuChinh = 4; // Mặc định an toàn
+
+                for (let j = 0; j < headerRow.length; j++) {
+                    let h = String(headerRow[j] || '').toLowerCase().trim();
+                    if (h.includes('tiết ppct') || h.includes('tiết')) colTiet = j;
+                    else if (h.includes('tên môn') || h === 'môn' || h === 'môn học') colMon = j;
+                    else if (h.includes('tên bài') || h.includes('bài học') || h.includes('bài dạy')) colTenBai = j;
+                    else if (h.includes('điều chỉnh') || h.includes('ghi chú')) colDieuChinh = j;
+                }
+
+                duLieuPpctGoc = [];
                 for (let i = 1; i < rowsArr.length; i++) {
                     let r = rowsArr[i];
-                    if (r[1] !== undefined && r[1] !== "") {
-                        // Nâng cấp: Đọc cột C (r[2]) làm Tên môn học
-                        let monExcel = r[2] !== undefined ? r[2].toString().trim() : '';
-                        if (monExcel === '' && monUI !== 'Tất cả') monExcel = monUI;
+                    // Bỏ qua dòng trống
+                    if (!r || r.length === 0) continue;
+
+                    let valTiet = r[colTiet] !== undefined ? r[colTiet].toString().trim() : '';
+
+                    if (valTiet !== "") {
+                        let monExcel = r[colMon] !== undefined ? r[colMon].toString().trim() : '';
                         
+                        // Cơ chế dự phòng: Nếu tải file đơn môn mà để trống cột C, lấy tên môn trên UI đắp vào
+                        if (monExcel === '' && monUI !== 'Tất cả') monExcel = monUI;
+
                         duLieuPpctGoc.push({
-                            tietPpc: r[1].toString().trim(),
-                            tiet: r[1].toString().trim(), 
+                            tietPpc: valTiet,
+                            tiet: valTiet, 
                             mon: monExcel,
-                            monHoc: monExcel,
-                            tenBai: r[3] !== undefined ? r[3].toString().trim() : '',
-                            tenBaiHoc: r[3] !== undefined ? r[3].toString().trim() : '',
-                            dieuChinh: r[4] !== undefined ? r[4].toString().trim() : ''
+                            monHoc: monExcel, // Gắn đa biến để tương thích ngược với các module khác
+                            tenBai: r[colTenBai] !== undefined ? r[colTenBai].toString().trim() : '',
+                            tenBaiHoc: r[colTenBai] !== undefined ? r[colTenBai].toString().trim() : '',
+                            dieuChinh: r[colDieuChinh] !== undefined ? r[colDieuChinh].toString().trim() : ''
                         });
                     }
                 }
 
+                // Gọi lại hàm vẽ để dữ liệu Excel tự động đắp lên lưới TKB
                 veBangKhungLichPPCT(monUI);
 
+                // Mở rộng khu vực xem trước để giáo viên kiểm tra trực quan
                 const tbody = document.getElementById('vungDuLieuLichPPCT');
                 let htmlPreview = `<tr><td colspan="7" class="bg-indigo-100 text-indigo-900 font-extrabold py-3 uppercase tracking-wide border-y-2 border-indigo-300 text-center shadow-inner">🔍 BẢN XEM TRƯỚC TOÀN BỘ DỮ LIỆU EXCEL ĐÃ TẢI LÊN</td></tr>`;
 
@@ -671,14 +692,15 @@ function xuLyNhapExcelPPCT(event) {
                 });
 
                 tbody.insertAdjacentHTML('beforeend', htmlPreview);
-                alert(`✅ Đã nạp thành công ${duLieuPpctGoc.length} tiết từ file Excel! Đồng chí hãy đối chiếu trên lưới và nhấn nút "Lưu PPCT" để ghi đè vào hệ thống.`);
+                alert(`✅ Đã nạp thành công ${duLieuPpctGoc.length} tiết từ file Excel!\n(Hệ thống tự động định vị: Cột Môn học [${colMon+1}], Cột Tiết PPCT [${colTiet+1}])\n\n👉 Đồng chí hãy đối chiếu trên lưới và nhấn "Lưu PPCT".`);
             } else {
                 alert("Lỗi: File Excel trống hoặc không đúng biểu mẫu chuẩn.");
             }
-        } catch (loi) { 
-            alert("Sự cố đọc file Excel: " + loi.message); 
-        } finally { 
-            event.target.value = ''; 
+        } catch (loi) {
+            alert("Sự cố đọc file Excel: " + loi.message);
+        } finally {
+            // Giải phóng bộ nhớ đệm input để cho phép tải lại cùng 1 file nhiều lần
+            event.target.value = '';
         }
     };
     reader.readAsArrayBuffer(file);
