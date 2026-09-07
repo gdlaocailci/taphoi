@@ -1,6 +1,6 @@
 // =========================================================================
 // KHỐI QUẢN LÝ MA TRẬN PHÂN QUYỀN (TẠO ĐỘNG GIAO DIỆN & LOGIC)
-// File: PhanQuyenAdmin.js
+
 // =========================================================================
 let duLieuBangPhanQuyen = [];
 const DANH_SACH_MENU_HE_THONG = [
