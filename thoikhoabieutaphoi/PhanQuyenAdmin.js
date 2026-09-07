@@ -3,7 +3,6 @@
 // File: PhanQuyenAdmin.js
 // =========================================================================
 let duLieuBangPhanQuyen = [];
-
 const DANH_SACH_MENU_HE_THONG = [
     {id: 'menuCaiDat', ten: '1. Cài đặt'}, {id: 'menuDanhMucGV', ten: '2. DM Giáo viên'},
     {id: 'menuDanhMucLop', ten: '3. DM Lớp'}, {id: 'menuKhungChuongTrinh', ten: '4. Khung CT'},
