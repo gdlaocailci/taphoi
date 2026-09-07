@@ -411,7 +411,15 @@ function veBangKhungLichPPCT(monDangChon) {
         });
     }
 
-    let mangPpctGocDaSapXep = [...duLieuPpctGoc].filter(b => String(b.tiet).trim() !== '').sort((a, b) => parseInt(a.tiet) - parseInt(b.tiet));
+    let mangPpctGocDaSapXep = [...duLieuPpctGoc].filter(b => {
+        let t = b.tietPpc || b.tiet || '';
+        return String(t).trim() !== '';
+    }).sort((a, b) => {
+        let tA = parseInt(a.tietPpc || a.tiet || 0);
+        let tB = parseInt(b.tietPpc || b.tiet || 0);
+        return tA - tB;
+    });
+
     let tongSoDongMucTieu = 0;
 
     thuMacDinh.forEach(thu => {
@@ -460,8 +468,10 @@ function veBangKhungLichPPCT(monDangChon) {
                         if (valTietPPC === '') {
                             let track = trackerPpct[monTkbChuan];
                             if (track) {
+                                // Nếu xem đơn môn, tự động lấy số tiết PPCT theo mảng đã lưu.
+                                // Nếu xem "Tất cả", luôn nội suy bằng toán học để tránh loạn khung
                                 if (!isXemTatCa && track.chiSoPpctTuDong < mangPpctGocDaSapXep.length) {
-                                    valTietPPC = mangPpctGocDaSapXep[track.chiSoPpctTuDong].tiet;
+                                    valTietPPC = mangPpctGocDaSapXep[track.chiSoPpctTuDong].tietPpc || mangPpctGocDaSapXep[track.chiSoPpctTuDong].tiet;
                                 } else {
                                     valTietPPC = track.tietPpcAuto;
                                 }
@@ -472,20 +482,24 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         let valTenBai = ''; let valDieuChinh = '';
                         
+                        // [LÕI NÂNG CẤP]: Thuật toán khớp môn đa từ khóa
                         if (valTietPPC !== '') {
                             let baiGoc = duLieuPpctGoc.find(b => {
-                                if (String(b.tiet).trim() !== String(valTietPPC).trim()) return false;
-                                if (!isXemTatCa) return true; 
+                                let tietGoc = b.tietPpc || b.tiet || b.tietPPCT || '';
+                                if (String(tietGoc).trim() !== String(valTietPPC).trim()) return false;
                                 
-                                let monCuaBaiGoc = String(b.monHoc || b.mon || b.tenMon || b["Môn"] || "").normalize('NFC').replace(/\s+/g, '').toLowerCase();
+                                let monCuaBaiGoc = String(b.mon || b.monHoc || b.tenMon || "").normalize('NFC').replace(/\s+/g, '').toLowerCase();
+                                
+                                // Nếu file hoặc CSDL không có tên môn, chỉ chấp nhận nếu đang xem ở chế độ đơn môn
+                                if (monCuaBaiGoc === '') return !isXemTatCa;
+                                
                                 let monGocTrucTiet = monTkbChuan.replace(/\d+$/, ''); 
-                                
-                                return monCuaBaiGoc === monTkbChuan || monCuaBaiGoc === monGocTrucTiet || monCuaBaiGoc === "";
+                                return monCuaBaiGoc === monTkbChuan || monCuaBaiGoc === monGocTrucTiet;
                             });
 
                             if (baiGoc) { 
-                                valTenBai = baiGoc.tenBaiHoc || baiGoc.tenBai || ''; 
-                                valDieuChinh = baiGoc.dieuChinh || ''; 
+                                valTenBai = baiGoc.tenBai || baiGoc.tenBaiHoc || baiGoc.tenBaiDay || ''; 
+                                valDieuChinh = baiGoc.dieuChinh || baiGoc.ghiChu || ''; 
                             }
                         }
 
@@ -508,7 +522,6 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
-                            <!-- BỔ SUNG data-loai="mon" TẠI ĐÂY -->
                             <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal" data-loai="mon">${tenMonTkb}</td>
                             <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
 
