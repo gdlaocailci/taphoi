@@ -1,8 +1,9 @@
 let thongSoHocVu = {};
 let quyenSuaChua = false; 
+let quyenChiTiet = { menu: [], nut: [] }; // [BỔ SUNG]: Biến lưu trữ quyền nhỏ lẻ
 let duLieuTkbHienTai = []; 
 let tuanDangXem = 1; 
-let ngayDauTuanUI = ''; 
+let ngayDauTuanUI = '';
 
 document.addEventListener('DOMContentLoaded', () => { khoiTaoGiaoDien(); });
 
@@ -49,25 +50,43 @@ function kiemSoatGiaoDien() {
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
-            if (quyenSuaChua) { nut.style.display = 'flex'; nut.disabled = false; } 
-            else { nut.style.display = 'none'; nut.disabled = true; }
+            // [NÂNG CẤP]: Hoặc là Admin, Hoặc là có tên trong danh sách Nút được cấp phép
+            let duocPhep = quyenSuaChua || quyenChiTiet.nut.includes(idNut);
+            if (duocPhep) { 
+                nut.style.display = 'flex'; nut.disabled = false; 
+            } else { 
+                nut.style.display = 'none'; nut.disabled = true; 
+            }
         }
     });
 
-    // [ĐÃ SỬA LỖI]: Chỉ khóa đúng các Menu Quản trị thực sự. Trả lại hiển thị cho Phân phối chương trình.
-    const dsMenuQuanTri = ['nhanHeThong', 'menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
+    const dsMenuQuanTri = ['menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
+    let coMenuQuanTriDuocMo = false;
+
     dsMenuQuanTri.forEach(idMenu => {
         let menu = document.getElementById(idMenu);
         if (menu) {
-            menu.style.display = quyenSuaChua ? 'flex' : 'none'; 
+            // [NÂNG CẤP]: Hoặc là Admin, Hoặc là có tên trong danh sách Menu được cấp phép
+            let duocXem = quyenSuaChua || quyenChiTiet.menu.includes(idMenu);
+            menu.style.display = duocXem ? 'flex' : 'none'; 
+            if (duocXem) coMenuQuanTriDuocMo = true;
         }
     });
+
+    // Xử lý tự động ẩn/hiện Nhãn "Hệ thống" nếu có ít nhất 1 menu quản trị được mở
+    let nhanHT = document.getElementById('nhanHeThong');
+    if (nhanHT) {
+        nhanHT.style.display = coMenuQuanTriDuocMo ? 'flex' : 'none';
+    }
 
     let btnTuanTruoc = document.querySelector('button[onclick="chuyenTuan(-1)"]');
     let btnTuanTiep = document.querySelector('button[onclick="chuyenTuan(1)"]');
     let inputNgay = document.getElementById('chonNgayDauTuan');
 
-    if (quyenSuaChua) {
+    // Cấp quyền thao tác Tuần/Ngày nếu có bất kỳ đặc quyền nào
+    let coQuyenThaoTac = quyenSuaChua || quyenChiTiet.nut.length > 0 || quyenChiTiet.menu.length > 0;
+
+    if (coQuyenThaoTac) {
         if (btnTuanTruoc) { btnTuanTruoc.disabled = false; btnTuanTruoc.classList.remove('opacity-50', 'cursor-not-allowed'); }
         if (btnTuanTiep) { btnTuanTiep.disabled = false; btnTuanTiep.classList.remove('opacity-50', 'cursor-not-allowed'); }
         if (inputNgay) { inputNgay.disabled = false; inputNgay.classList.remove('cursor-not-allowed', 'opacity-80'); }
@@ -866,16 +885,24 @@ async function xuLyLayThongTin(maTokenTruyCap) {
         const dsQuanTri = thongSoHocVu.DANH_SACH_QUAN_TRI || [];
         const dinhDanhGoc = 'tulieuhopthanh@gmail.com';
 
-        let quyenTruocDo = quyenSuaChua; // Ghi nhớ trạng thái phân quyền cũ
+        let quyenTruocDo = quyenSuaChua;
 
+        // 1. Phân quyền Admin toàn năng
         if (dsQuanTri.includes(dinhDanhHeThong) || dinhDanhHeThong === dinhDanhGoc) { 
             quyenSuaChua = true; 
         } else { 
             quyenSuaChua = false; 
         }
         
+        // 2. [BỔ SUNG] Nạp phân quyền chi tiết từ CSDL
+        quyenChiTiet = { menu: [], nut: [] };
+        if (thongSoHocVu.MA_TRAN_PHAN_QUYEN && thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong]) {
+            quyenChiTiet.menu = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].menu || [];
+            quyenChiTiet.nut = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].nut || [];
+        }
+        
         // Cập nhật lại giao diện menu
-        kiemSoatGiaoDien(); 
+        kiemSoatGiaoDien();
 
         // [TỐI ƯU]: Chỉ gọi API tải lại Thời khóa biểu nếu tài khoản này thực sự có quyền Quản trị 
         // VÀ trước đó hệ thống đang ở trạng thái Khách (False -> True)
