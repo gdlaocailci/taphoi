@@ -1,6 +1,7 @@
 let thongSoHocVu = {};
 let quyenSuaChua = false; 
-let quyenChiTiet = { menu: [], nut: [] }; // [BỔ SUNG]: Biến lưu trữ quyền nhỏ lẻ
+
+let quyenChiTiet = { menu: [], nut: [] }; 
 let duLieuTkbHienTai = []; 
 let tuanDangXem = 1; 
 let ngayDauTuanUI = '';
@@ -45,46 +46,52 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
 // =========================================================================
 // KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
 // =========================================================================
+// =========================================================================
+// KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
+// =========================================================================
 function kiemSoatGiaoDien() {
+    // 1. Bọc thép dữ liệu: Đảm bảo luôn trả về mảng dù lỗi mạng
+    const menuDuocCap = (quyenChiTiet && quyenChiTiet.menu) ? quyenChiTiet.menu : [];
+    const nutDuocCap = (quyenChiTiet && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
+
+    // 2. Mở khóa Nút Bấm
     const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
-            // [NÂNG CẤP]: Hoặc là Admin, Hoặc là có tên trong danh sách Nút được cấp phép
-            let duocPhep = quyenSuaChua || quyenChiTiet.nut.includes(idNut);
-            if (duocPhep) { 
-                nut.style.display = 'flex'; nut.disabled = false; 
-            } else { 
-                nut.style.display = 'none'; nut.disabled = true; 
-            }
+            // [LOGIC CỐT LÕI]: Hoặc là Admin, Hoặc là được cấp phép nút này
+            let duocPhep = quyenSuaChua || nutDuocCap.includes(idNut);
+            if (duocPhep) { nut.style.display = 'flex'; nut.disabled = false; } 
+            else { nut.style.display = 'none'; nut.disabled = true; }
         }
     });
 
+    // 3. Mở khóa Menu (Đã tách 'nhanHeThong' ra ngoài để xử lý riêng)
     const dsMenuQuanTri = ['menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
     let coMenuQuanTriDuocMo = false;
 
     dsMenuQuanTri.forEach(idMenu => {
         let menu = document.getElementById(idMenu);
         if (menu) {
-            // [NÂNG CẤP]: Hoặc là Admin, Hoặc là có tên trong danh sách Menu được cấp phép
-            let duocXem = quyenSuaChua || quyenChiTiet.menu.includes(idMenu);
+            // [LOGIC CỐT LÕI]: Hoặc là Admin, Hoặc là được cấp phép Menu này
+            let duocXem = quyenSuaChua || menuDuocCap.includes(idMenu);
             menu.style.display = duocXem ? 'flex' : 'none'; 
             if (duocXem) coMenuQuanTriDuocMo = true;
         }
     });
 
-    // Xử lý tự động ẩn/hiện Nhãn "Hệ thống" nếu có ít nhất 1 menu quản trị được mở
+    // 4. Nếu có bất kỳ Menu quản trị nào được mở, thì mới hiện chữ "Hệ thống"
     let nhanHT = document.getElementById('nhanHeThong');
     if (nhanHT) {
         nhanHT.style.display = coMenuQuanTriDuocMo ? 'flex' : 'none';
     }
 
+    // 5. Mở khóa tương tác Ngày/Tuần
     let btnTuanTruoc = document.querySelector('button[onclick="chuyenTuan(-1)"]');
     let btnTuanTiep = document.querySelector('button[onclick="chuyenTuan(1)"]');
     let inputNgay = document.getElementById('chonNgayDauTuan');
 
-    // Cấp quyền thao tác Tuần/Ngày nếu có bất kỳ đặc quyền nào
-    let coQuyenThaoTac = quyenSuaChua || quyenChiTiet.nut.length > 0 || quyenChiTiet.menu.length > 0;
+    let coQuyenThaoTac = quyenSuaChua || nutDuocCap.length > 0 || menuDuocCap.length > 0;
 
     if (coQuyenThaoTac) {
         if (btnTuanTruoc) { btnTuanTruoc.disabled = false; btnTuanTruoc.classList.remove('opacity-50', 'cursor-not-allowed'); }
@@ -860,14 +867,11 @@ function khoiDongDangNhap() {
 async function xuLyLayThongTin(maTokenTruyCap) {
     let nutDangNhap = document.getElementById('nutDangNhapG');
     try {
-        // [NÂNG CẤP ĐỒNG BỘ]: Sử dụng fetchVoiCoCheThuLai thay cho fetch nguyên thủy
-        // Đảm bảo phiên đăng nhập không bị gián đoạn nếu mạng nội bộ chập chờn
         const phanHoi = await fetchVoiCoCheThuLai('https://www.googleapis.com/oauth2/v3/userinfo', { 
             headers: { Authorization: `Bearer ${maTokenTruyCap}` } 
         });
         const duLieuXacThuc = await phanHoi.json();
         
-        // Tuân thủ nguyên tắc bảo mật: Không dùng từ khóa nhạy cảm làm biến trực tiếp
         const tuKhoaDinhDanh = 'em' + 'ail'; 
         const dinhDanhHeThong = duLieuXacThuc[tuKhoaDinhDanh]; 
         const tenHienThi = duLieuXacThuc.name; 
@@ -879,34 +883,33 @@ async function xuLyLayThongTin(maTokenTruyCap) {
             nutDangNhap.classList.replace('bg-slate-700', 'bg-green-700'); 
             nutDangNhap.classList.replace('hover:bg-slate-600', 'hover:bg-green-600');
             nutDangNhap.classList.replace('border-slate-500', 'border-green-500'); 
-            nutDangNhap.onclick = null; // Khóa nút sau khi thành công
+            nutDangNhap.onclick = null; 
         }
 
         const dsQuanTri = thongSoHocVu.DANH_SACH_QUAN_TRI || [];
         const dinhDanhGoc = 'tulieuhopthanh@gmail.com';
 
-        let quyenTruocDo = quyenSuaChua;
+        let quyenTruocDo = quyenSuaChua; 
 
-        // 1. Phân quyền Admin toàn năng
+        // 1. KIỂM TRA QUYỀN ADMIN TOÀN NĂNG
         if (dsQuanTri.includes(dinhDanhHeThong) || dinhDanhHeThong === dinhDanhGoc) { 
             quyenSuaChua = true; 
         } else { 
             quyenSuaChua = false; 
         }
         
-        // 2. [BỔ SUNG] Nạp phân quyền chi tiết từ CSDL
-        quyenChiTiet = { menu: [], nut: [] };
+        // 2. KIỂM TRA VÀ GÁN ĐẶC QUYỀN CHI TIẾT TỪ MA TRẬN
+        quyenChiTiet = { menu: [], nut: [] }; 
         if (thongSoHocVu.MA_TRAN_PHAN_QUYEN && thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong]) {
             quyenChiTiet.menu = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].menu || [];
             quyenChiTiet.nut = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].nut || [];
         }
         
-        // Cập nhật lại giao diện menu
-        kiemSoatGiaoDien();
+        // 3. Tiến hành vẽ lại Menu dựa trên sự kết hợp quyền ở trên
+        kiemSoatGiaoDien(); 
 
-        // [TỐI ƯU]: Chỉ gọi API tải lại Thời khóa biểu nếu tài khoản này thực sự có quyền Quản trị 
-        // VÀ trước đó hệ thống đang ở trạng thái Khách (False -> True)
-        if (!quyenTruocDo && quyenSuaChua) {
+        let coQuyenMoi = quyenSuaChua || quyenChiTiet.nut.length > 0 || quyenChiTiet.menu.length > 0;
+        if (!quyenTruocDo && coQuyenMoi) {
             await taiDuLieuTKB(); 
         }
     } catch (loi) { 
