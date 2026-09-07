@@ -314,7 +314,6 @@ async function taiDuLieuTkbVaPpct() {
     const mon = document.getElementById('locMonPPCT').value.trim();
     const tbody = document.getElementById('vungDuLieuLichPPCT');
 
-    // Không ép buộc nhập môn nữa để hỗ trợ chế độ xem toàn lớp
     if (!tuan || !lop || !khoi || khoi === 'KX') {
         alert("Đồng chí vui lòng điền đầy đủ: Tuần, Lớp để truy xuất dữ liệu.");
         return;
@@ -327,8 +326,8 @@ async function taiDuLieuTkbVaPpct() {
 
     try {
         const tuanHeThong = typeof tuanDangXem !== 'undefined' ? tuanDangXem : 1;
-        // Nếu chọn "Tất cả", gửi cờ hiệu 'ALL' về CODE.gs
-        const monGoi = (mon === 'Tất cả' || mon === '') ? 'ALL' : mon;
+        // [NÂNG CẤP]: Nếu là Tất cả, gửi tham số rỗng để Backend hiểu là truy xuất toàn khối/lớp
+        const monGoi = (mon === 'Tất cả') ? '' : mon;
         const urlAPI = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTkbVaPpct&tuan=${tuan}&lop=${encodeURIComponent(lop)}&khoi=${khoi}&mon=${encodeURIComponent(monGoi)}&tuanHienTai=${tuanHeThong}`;
         
         const phanHoi = await (typeof fetchVoiCoCheThuLai === 'function' ? fetchVoiCoCheThuLai(urlAPI) : fetch(urlAPI));
@@ -341,7 +340,7 @@ async function taiDuLieuTkbVaPpct() {
         
         veBangKhungLichPPCT(mon);
     } catch (loi) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-600 font-bold">Lỗi truy xuất dữ liệu từ máy chủ. Đảm bảo file CODE.gs đã được phân luồng tham số ALL.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-600 font-bold">Lỗi truy xuất dữ liệu từ máy chủ. Đảm bảo file CODE.gs hỗ trợ truy xuất khi tham số mon bị rỗng.</td></tr>`;
     }
 }
 
@@ -411,14 +410,18 @@ function veBangKhungLichPPCT(monDangChon) {
         });
     }
 
-    let mangPpctGocDaSapXep = [...duLieuPpctGoc].filter(b => {
-        let t = b.tietPpc || b.tiet || '';
-        return String(t).trim() !== '';
-    }).sort((a, b) => {
-        let tA = parseInt(a.tietPpc || a.tiet || 0);
-        let tB = parseInt(b.tietPpc || b.tiet || 0);
-        return tA - tB;
-    });
+    // [ĐIỂM NGHẼN ĐÃ ĐƯỢC GIẢI QUYẾT]: Hàm tách riêng mảng PPCT cho từng môn dựa vào CỘT MÔN HỌC
+    let getPpctGocChoMon = (monGrid) => {
+        let monGridChuan = String(monGrid).normalize('NFC').replace(/\s+/g, '').toLowerCase();
+        let monGridGoc = monGridChuan.replace(/\d+$/, '');
+        
+        return duLieuPpctGoc.filter(b => {
+            let m = String(b.mon || b.monHoc || b.tenMon || b["Môn học"] || b["Môn"] || "").normalize('NFC').replace(/\s+/g, '').toLowerCase();
+            // Nếu CSDL bị trống tên môn, chỉ chấp nhận lấy nếu đang ở chế độ xem 1 môn
+            if (m === "") return !isXemTatCa;
+            return m === monGridChuan || m === monGridGoc;
+        }).sort((a, b) => parseInt(a.tietPpc || a.tiet || 0) - parseInt(b.tietPpc || b.tiet || 0));
+    };
 
     let tongSoDongMucTieu = 0;
 
@@ -443,7 +446,6 @@ function veBangKhungLichPPCT(monDangChon) {
                 const doLechThu = {"Thứ 2": 0, "Thứ 3": 1, "Thứ 4": 2, "Thứ 5": 3, "Thứ 6": 4};
                 let ngayCuaThu = new Date(ngayGocThu2.getTime());
                 ngayCuaThu.setDate(ngayCuaThu.getDate() + (doLechThu[thu] || 0));
-                
                 let d = ngayCuaThu.getDate().toString().padStart(2, '0');
                 let m = (ngayCuaThu.getMonth() + 1).toString().padStart(2, '0');
                 let y = ngayCuaThu.getFullYear();
@@ -463,15 +465,16 @@ function veBangKhungLichPPCT(monDangChon) {
                         let tenMonTkb = tietTkb.monHoc;
                         let monTkbChuan = tenMonTkb.normalize('NFC').replace(/\s+/g, '').toLowerCase();
 
+                        // Lấy riêng mảng PPCT của đúng môn học trên cột này
+                        let ppctCuaMon = getPpctGocChoMon(tenMonTkb);
                         let valTietPPC = tietTkb.tietPpc || '';
                         
                         if (valTietPPC === '') {
                             let track = trackerPpct[monTkbChuan];
                             if (track) {
-                                // Nếu xem đơn môn, tự động lấy số tiết PPCT theo mảng đã lưu.
-                                // Nếu xem "Tất cả", luôn nội suy bằng toán học để tránh loạn khung
-                                if (!isXemTatCa && track.chiSoPpctTuDong < mangPpctGocDaSapXep.length) {
-                                    valTietPPC = mangPpctGocDaSapXep[track.chiSoPpctTuDong].tietPpc || mangPpctGocDaSapXep[track.chiSoPpctTuDong].tiet;
+                                // Ánh xạ từ mảng mini của riêng môn đó
+                                if (track.chiSoPpctTuDong < ppctCuaMon.length) {
+                                    valTietPPC = ppctCuaMon[track.chiSoPpctTuDong].tietPpc || ppctCuaMon[track.chiSoPpctTuDong].tiet;
                                 } else {
                                     valTietPPC = track.tietPpcAuto;
                                 }
@@ -482,21 +485,9 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         let valTenBai = ''; let valDieuChinh = '';
                         
-                        // [LÕI NÂNG CẤP]: Thuật toán khớp môn đa từ khóa
                         if (valTietPPC !== '') {
-                            let baiGoc = duLieuPpctGoc.find(b => {
-                                let tietGoc = b.tietPpc || b.tiet || b.tietPPCT || '';
-                                if (String(tietGoc).trim() !== String(valTietPPC).trim()) return false;
-                                
-                                let monCuaBaiGoc = String(b.mon || b.monHoc || b.tenMon || "").normalize('NFC').replace(/\s+/g, '').toLowerCase();
-                                
-                                // Nếu file hoặc CSDL không có tên môn, chỉ chấp nhận nếu đang xem ở chế độ đơn môn
-                                if (monCuaBaiGoc === '') return !isXemTatCa;
-                                
-                                let monGocTrucTiet = monTkbChuan.replace(/\d+$/, ''); 
-                                return monCuaBaiGoc === monTkbChuan || monCuaBaiGoc === monGocTrucTiet;
-                            });
-
+                            // Chỉ tìm Tên bài trong phạm vi dữ liệu của Môn này
+                            let baiGoc = ppctCuaMon.find(b => String(b.tietPpc || b.tiet).trim() === String(valTietPPC).trim());
                             if (baiGoc) { 
                                 valTenBai = baiGoc.tenBai || baiGoc.tenBaiHoc || baiGoc.tenBaiDay || ''; 
                                 valDieuChinh = baiGoc.dieuChinh || baiGoc.ghiChu || ''; 
