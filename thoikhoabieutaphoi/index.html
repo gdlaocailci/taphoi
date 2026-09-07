@@ -120,11 +120,6 @@
                 <svg class="w-5 h-5 flex-none opacity-70 group-hover:opacity-100 transition-opacity text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px] whitespace-nowrap">6. Danh mục SGK</span>
             </a>
-
-            <a id="menuPhanQuyen" onclick="kichHoatTab('menuPhanQuyen', 'khungPhanQuyen', false);" style="display: none;" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group">
-                <svg class="w-5 h-5 flex-none opacity-70 group-hover:opacity-100 transition-opacity text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M8 11l3 3 5-5"></path></svg>
-                <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px] whitespace-nowrap">7. Phân quyền Hệ thống</span>
-            </a>
         </nav>
 
         
@@ -527,41 +522,6 @@
                                 </tr>
                             </thead>
                             <tbody id="danhSachDongDuLieuSGK">
-                                <tr><td colspan="5" class="text-center py-10 text-slate-500 font-bold">Vui lòng chờ, đang tải dữ liệu...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- KHUNG 9: PHÂN QUYỀN HỆ THỐNG -->
-                <div id="khungPhanQuyen" class="hidden p-4 w-full h-full flex-col font-sans">
-                    <div class="flex justify-between items-center mb-4 flex-none">
-                        <h2 class="text-xl font-extrabold text-blue-900 uppercase">MA TRẬN PHÂN QUYỀN HỆ THỐNG</h2>
-                        <div class="flex items-center gap-2">
-                            <button onclick="taiDuLieuPhanQuyenTuMayChu()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 text-sm shadow transition duration-200 rounded flex items-center gap-1.5">
-                                Tải lại
-                            </button>
-                            <button onclick="themDongPhanQuyenMoi()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm shadow transition duration-200 rounded flex items-center gap-1.5">
-                                + Cấp quyền mới
-                            </button>
-                            <button onclick="luuDuLieuPhanQuyenSangMayChu()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold px-5 py-2 text-sm shadow transition duration-200 rounded flex items-center gap-1.5">
-                                Lưu Hệ Thống
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="overflow-auto border border-gray-400 shadow-sm bg-white relative flex-1">
-                        <table class="bang-excel w-full min-w-[1000px]">
-                            <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm text-center">
-                                <tr>
-                                    <th class="py-2 w-56">Tài khoản (Định danh)</th>
-                                    <th class="py-2">Phân quyền Lớp học</th>
-                                    <th class="py-2">Phân quyền Menu</th>
-                                    <th class="py-2">Phân quyền Nút chức năng</th>
-                                    <th class="py-2 w-16 text-red-600">Xóa</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vungDuLieuPhanQuyen">
                                 <tr><td colspan="5" class="text-center py-10 text-slate-500 font-bold">Vui lòng chờ, đang tải dữ liệu...</td></tr>
                             </tbody>
                         </table>
