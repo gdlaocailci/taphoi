@@ -820,6 +820,10 @@
                 <div class="window-title" id="folder-view-title" style="color: #ffffff;"><span class="material-icons" style="color: #ffffff;">folder_open</span> Đang trích xuất dữ liệu thư mục...</div>
                 <button class="window-close" style="color: #ffffff;" onclick="dongCuaSoThuMuc()">✕</button>
             </div>
+            <!-- BỔ SUNG Ô TÌM KIẾM NHANH HỒ SƠ -->
+            <div style="padding: 15px 25px 0 25px; background: rgba(30, 30, 30, 0.45);">
+                <input type="text" id="folder-search-filter" onkeyup="locDanhSachTrongThuMuc()" placeholder="🔍 Gõ từ khóa để lọc nhanh tên hồ sơ trong thư mục..." style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#1976D2'" onblur="this.style.borderColor='#ccc'">
+            </div>
             <div class="window-content" id="folder-content-area" style="position: relative; background: rgba(30, 30, 30, 0.45); backdrop-filter: blur(20px); padding: 25px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 20px; align-content: flex-start;">
             </div>
         </div>
@@ -1270,8 +1274,13 @@ function renderIconsFromData(data) {
     }
 
 function moCuaSoThuMuc(tenThuMuc) {
+
+    var searchInput = document.getElementById('folder-search-filter');
+        if (searchInput) searchInput.value = '';
+
         document.getElementById('folder-view-title').innerHTML = `<span class="material-icons">folder_open</span> Thư mục phân hệ: ${tenThuMuc}`;
         const folderArea = document.getElementById('folder-content-area');
+    
         folderArea.innerHTML = ''; 
 
         let childItems = globalProfiles.filter(item => item.vitri === tenThuMuc);
@@ -2432,7 +2441,27 @@ function xuLySuaHoSo() {
         if (isLoggedIn) kiemTraCongVanMoi();
     }, 60000);
 
-    
+   // =========================================================================
+    // [NÂNG CẤP] THUẬT TOÁN LỌC TÌM KIẾM HỒ SƠ TRONG THƯ MỤC
+    // =========================================================================
+    function locDanhSachTrongThuMuc() {
+        var input = document.getElementById("folder-search-filter");
+        var filter = input.value.toUpperCase();
+        var container = document.getElementById("folder-content-area");
+        var icons = container.getElementsByClassName("desktop-icon");
+
+        for (var i = 0; i < icons.length; i++) {
+            var textSpan = icons[i].getElementsByClassName("icon-text")[0];
+            if (textSpan) {
+                var txtValue = textSpan.textContent || textSpan.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    icons[i].style.display = "";
+                } else {
+                    icons[i].style.display = "none";
+                }
+            }
+        }
+    } 
 </script>
 </body>
 </html>
