@@ -12,9 +12,13 @@ const DANH_SACH_MENU_HE_THONG = [
 ];
 
 const DANH_SACH_NUT_CHUC_NANG = [
-    {id: 'btnLuuTuan', ten: 'Lưu TKB Tuần'}, {id: 'btnLuuCoDinh', ten: 'Lưu TKB Cố Định'},
-    {id: 'btnKhoiPhuc', ten: 'Khôi phục/Tuần mới'}, {id: 'btnXepTuDong', ten: 'Xếp tự động'},
-    {id: 'btnKiemTra', ten: 'Kiểm tra chuẩn'}
+    {id: 'btnNhapExcelTKB', ten: 'Nhập Excel'},
+    {id: 'btnXuatExcelTKB', ten: 'Xuất Excel'},
+    {id: 'btnKhoiPhuc', ten: 'Tuần mới'},
+    {id: 'btnLuuTuan', ten: 'Lưu TKB Tuần'},
+    {id: 'btnLuuCoDinh', ten: 'TKB Cố Định'},
+    {id: 'btnXepTuDong', ten: 'Xếp Tự Động'},
+    {id: 'btnKiemTra', ten: 'Định Mức tiết'}
 ];
 
 // Khởi tạo và Bơm Giao diện vào index.html lúc tải trang
