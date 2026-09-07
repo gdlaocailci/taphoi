@@ -353,7 +353,7 @@ function veBangKhungLichPPCT(monDangChon) {
     const cauTrucTiet = { "Sáng": [1,2,3,4,5], "Chiều": [1,2,3,4] };
     
     let maTranTkb = {};
-    const monChonChuan = monDangChon.trim().replace(/\s+/g, '').toLowerCase();
+    const monChonChuan = monDangChon.trim().normalize('NFC').replace(/\s+/g, '').toLowerCase();
     
     duLieuTkbTuan.forEach(t => {
         if (!maTranTkb[t.thu]) maTranTkb[t.thu] = {};
@@ -381,15 +381,11 @@ function veBangKhungLichPPCT(monDangChon) {
         }
     }
 
-    // =========================================================================
-    // HỆ TỪ ĐIỂN TỰ ĐỘNG TÍNH TOÁN TIẾT PPCT ĐA MÔN
-    // =========================================================================
     let trackerPpct = {};
     if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.KHUNG_CHUONG_TRINH) {
         let dmKhoi = thongSoHocVu.KHUNG_CHUONG_TRINH[lop] || {};
-        
         Object.keys(dmKhoi).forEach(m => {
-            let tenM = m.trim().replace(/\s+/g, '').toLowerCase();
+            let tenM = m.trim().normalize('NFC').replace(/\s+/g, '').toLowerCase();
             let match = tenM.match(/^(.*?)(\d+)$/);
             let baseName = match ? match[1] : tenM;
             let heSoTiet = match ? parseInt(match[2], 10) : 1;
@@ -398,12 +394,10 @@ function veBangKhungLichPPCT(monDangChon) {
             let tongSoTietNhom = 0;
 
             Object.keys(dmKhoi).forEach(sub => {
-                let subChuan = sub.trim().replace(/\s+/g, '').toLowerCase();
+                let subChuan = sub.trim().normalize('NFC').replace(/\s+/g, '').toLowerCase();
                 let subMatch = subChuan.match(/^(.*?)(\d+)$/);
                 let subBase = subMatch ? subMatch[1] : subChuan;
-                if(subBase === baseName) {
-                    tongSoTietNhom += (parseInt(dmKhoi[sub]) || 0);
-                }
+                if(subBase === baseName) tongSoTietNhom += (parseInt(dmKhoi[sub]) || 0);
             });
 
             let isSplitSubject = (tongSoTietNhom > soTiet1Tuan && match);
@@ -426,8 +420,7 @@ function veBangKhungLichPPCT(monDangChon) {
             cauTrucTiet[buoi].forEach(tiet => {
                 let tietTkb = (maTranTkb[thu] && maTranTkb[thu][buoi] && maTranTkb[thu][buoi][tiet]) ? maTranTkb[thu][buoi][tiet] : null;
                 let tenMonTkb = tietTkb ? tietTkb.monHoc.trim() : '';
-                
-                let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
+                let monTkbChuan = tenMonTkb.normalize('NFC').replace(/\s+/g, '').toLowerCase();
 
                 if ((isXemTatCa || monTkbChuan === monChonChuan) && tenMonTkb !== '') {
                     dsTietCuaThu.push({ buoi: buoi, tiet: tiet, tietTkb: tietTkb });
@@ -451,18 +444,16 @@ function veBangKhungLichPPCT(monDangChon) {
 
             let nhomBuoi = { "Sáng": [], "Chiều": [] };
             dsTietCuaThu.forEach(item => nhomBuoi[item.buoi].push(item));
-
             let daInCotThu = false;
 
             ["Sáng", "Chiều"].forEach(buoi => {
                 if (nhomBuoi[buoi].length > 0) {
                     let daInCotBuoi = false;
-
                     nhomBuoi[buoi].forEach(item => {
                         let tiet = item.tiet;
                         let tietTkb = item.tietTkb;
                         let tenMonTkb = tietTkb.monHoc;
-                        let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
+                        let monTkbChuan = tenMonTkb.normalize('NFC').replace(/\s+/g, '').toLowerCase();
 
                         let valTietPPC = tietTkb.tietPpc || '';
                         
@@ -476,24 +467,19 @@ function veBangKhungLichPPCT(monDangChon) {
                                 }
                                 track.chiSoPpctTuDong++;
                                 track.tietPpcAuto++; 
-                            } else {
-                                valTietPPC = 1; 
-                            }
+                            } else { valTietPPC = 1; }
                         }
 
                         let valTenBai = ''; let valDieuChinh = '';
                         
-                        // [LÕI SỬA LỖI]: Bắt trúng key dữ liệu (mon hoặc monHoc) và xử lý linh hoạt môn nhánh
                         if (valTietPPC !== '') {
                             let baiGoc = duLieuPpctGoc.find(b => {
-                                if (String(b.tiet) !== String(valTietPPC)) return false;
-                                if (!isXemTatCa) return true; // Chế độ xem 1 môn chỉ cần khớp số Tiết
+                                if (String(b.tiet).trim() !== String(valTietPPC).trim()) return false;
+                                if (!isXemTatCa) return true; 
                                 
-                                // Quét cả b.monHoc và b.mon để đảm bảo không lọt dữ liệu
-                                let monCuaBaiGoc = String(b.monHoc || b.mon || "").replace(/\s+/g, '').toLowerCase();
-                                let monGocTrucTiet = monTkbChuan.replace(/\d+$/, ''); // hđtn1 -> hđtn
+                                let monCuaBaiGoc = String(b.monHoc || b.mon || b.tenMon || b["Môn"] || "").normalize('NFC').replace(/\s+/g, '').toLowerCase();
+                                let monGocTrucTiet = monTkbChuan.replace(/\d+$/, ''); 
                                 
-                                // Trả về true nếu khớp tên chính xác, HOẶC khớp tên gốc, HOẶC dữ liệu không gán môn
                                 return monCuaBaiGoc === monTkbChuan || monCuaBaiGoc === monGocTrucTiet || monCuaBaiGoc === "";
                             });
 
@@ -504,7 +490,6 @@ function veBangKhungLichPPCT(monDangChon) {
                         }
 
                         html += `<tr class="bg-white hover:bg-slate-50 transition-colors border-b border-gray-300">`;
-
                         if (!daInCotThu) {
                             let theDuKien = isTuongLai ? `<div class="text-[10px] font-bold text-orange-600 uppercase mb-0.5 tracking-wider">(Dự kiến)</div>` : '';
                             html += `<td rowspan="${dsTietCuaThu.length}" class="border-r border-gray-400 bg-white align-middle text-center">
@@ -514,7 +499,6 @@ function veBangKhungLichPPCT(monDangChon) {
                                      </td>`;
                             daInCotThu = true;
                         }
-
                         if (!daInCotBuoi) {
                             html += `<td rowspan="${nhomBuoi[buoi].length}" class="border-r border-gray-400 bg-white align-middle text-center font-bold text-slate-700">${buoi}</td>`;
                             daInCotBuoi = true;
@@ -524,7 +508,8 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
-                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal">${tenMonTkb}</td>
+                            <!-- BỔ SUNG data-loai="mon" TẠI ĐÂY -->
+                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal" data-loai="mon">${tenMonTkb}</td>
                             <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
 
                           <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
@@ -686,9 +671,6 @@ function xuLyNhapExcelPPCT(event) {
     reader.readAsArrayBuffer(file);
 }
 
-// =========================================================================
-// KHỐI 5: LƯU TRỮ KÉP (PPCT VÀ TKB) LÊN MÁY CHỦ
-// =========================================================================
 async function luuDuLieuPPCTLenMayChu(event) {
     const nutBam = event.currentTarget;
     const noiDungGoc = nutBam.innerHTML;
@@ -698,8 +680,13 @@ async function luuDuLieuPPCTLenMayChu(event) {
     const tuan = document.getElementById('locTuanUI').value.trim();
     const lop = document.getElementById('locLopPPCT').value.trim();
     
-    if (!khoi || !mon || khoi === 'KX' || !tuan || !lop) {
-        alert("Lỗi: Phải xác định rõ Tuần, Lớp, Khối, Môn học trên bộ lọc trước khi Lưu.");
+    if (mon === 'Tất cả' || mon === '') {
+        let phanHoiXacNhan = confirm("Đồng chí đang lưu cấu trúc cho Toàn bộ các môn học của lớp này. Xin lưu ý hệ thống sẽ lưu các thay đổi trên giao diện hiện tại. Tiếp tục?");
+        if (!phanHoiXacNhan) return;
+    }
+    
+    if (!khoi || khoi === 'KX' || !tuan || !lop) {
+        alert("Lỗi: Phải xác định rõ Tuần, Lớp trên bộ lọc trước khi Lưu.");
         return;
     }
     
@@ -708,7 +695,6 @@ async function luuDuLieuPPCTLenMayChu(event) {
     
     cacOInputTiet.forEach(inp => {
         let tr = inp.closest('tr');
-        // [NÂNG CẤP]: Đọc trạng thái cờ từ giao diện
         let laDongDaSua = tr.getAttribute('data-da-sua') === 'true'; 
         
         let valTiet = inp.innerText.trim();
@@ -716,36 +702,41 @@ async function luuDuLieuPPCTLenMayChu(event) {
             let idKhoa = inp.getAttribute('data-ppct-id');
             let parts = idKhoa.split('_'); 
             
+            // [LÕI SỬA LỖI]: Quét chính xác ô chứa tên môn học thông qua data-loai
+            let theMonTrenLuoi = tr.querySelector('[data-loai="mon"]'); 
+            let monTrenLuoi = theMonTrenLuoi ? theMonTrenLuoi.innerText.trim() : mon;
+            if(monTrenLuoi === 'Tất cả') monTrenLuoi = '';
+
             let valTenBai = document.querySelector(`[data-ppct-id="${idKhoa}"][data-loai="tenBai"]`).innerText.trim();
             let valDieuChinh = document.querySelector(`[data-ppct-id="${idKhoa}"][data-loai="dieuChinh"]`).innerText.trim();
             
             mangGhi.push({
                 khoi: khoi, 
                 tietPpc: valTiet, 
-                mon: mon, 
+                mon: monTrenLuoi, 
                 tenBai: valTenBai, 
                 dieuChinh: valDieuChinh,
                 thongTinTkb: { tuan: tuan, lop: lop, thu: parts[0], buoi: parts[1], tietTkb: parts[2] },
-                daSua: laDongDaSua // Truyền tín hiệu "Ghi đè" cho máy chủ
+                daSua: laDongDaSua 
             });
             
-            let idx = duLieuPpctGoc.findIndex(b => String(b.tiet) === valTiet);
+            let idx = duLieuPpctGoc.findIndex(b => String(b.tiet) === valTiet && (b.monHoc === monTrenLuoi || mon === monTrenLuoi));
             if (idx !== -1) {
                 duLieuPpctGoc[idx].tenBaiHoc = valTenBai;
                 duLieuPpctGoc[idx].dieuChinh = valDieuChinh;
             } else {
-                duLieuPpctGoc.push({ tiet: valTiet, tenBaiHoc: valTenBai, dieuChinh: valDieuChinh });
+                duLieuPpctGoc.push({ tiet: valTiet, tenBaiHoc: valTenBai, dieuChinh: valDieuChinh, monHoc: monTrenLuoi });
             }
         }
     });
     
     duLieuPpctGoc.forEach(goc => {
-        let daCoTrenLuoi = mangGhi.some(ghi => String(ghi.tietPpc) === String(goc.tiet));
+        let daCoTrenLuoi = mangGhi.some(ghi => String(ghi.tietPpc) === String(goc.tiet) && (goc.monHoc === undefined || ghi.mon === goc.monHoc));
         if (!daCoTrenLuoi && goc.tiet !== '') {
             mangGhi.push({
-                khoi: khoi, tietPpc: goc.tiet, mon: mon, tenBai: goc.tenBaiHoc || '', dieuChinh: goc.dieuChinh || '',
+                khoi: khoi, tietPpc: goc.tiet, mon: goc.monHoc || mon, tenBai: goc.tenBaiHoc || '', dieuChinh: goc.dieuChinh || '',
                 thongTinTkb: null,
-                daSua: false // Dữ liệu gốc đang bị ẩn không bị tác động nên cờ là false
+                daSua: false 
             });
         }
     });
@@ -762,9 +753,8 @@ async function luuDuLieuPPCTLenMayChu(event) {
         const ketQua = await phanHoi.json();
         
         if (ketQua.trangThai === 'Thành công') {
-            alert(`Đã lưu Phân phối chương trình Môn ${mon} - Khối ${khoi} lên hệ thống thành công!`);
+            alert(`Đã hoàn thành kết xuất dữ liệu phân phối chương trình lên hệ thống gốc!`);
             
-            // [NÂNG CẤP]: Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
             document.querySelectorAll('tr[data-da-sua="true"]').forEach(tr => {
                 tr.removeAttribute('data-da-sua');
                 tr.classList.remove('bg-amber-100', 'hover:bg-amber-200');
