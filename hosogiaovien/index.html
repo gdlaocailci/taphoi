@@ -787,9 +787,11 @@
                     </div>
                     <div class="form-group">
                         <label>Ma trận quyền truy cập thư mục (Dấu x):</label>
+                        <input type="text" id="pq-icon-search-filter" onkeyup="locMaTranQuyen()" placeholder="🔍 Gõ tên hồ sơ/thư mục để lọc..." style="width: 100%; padding: 6px 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#8E24AA'" onblur="this.style.borderColor='#ccc'">
                         <div class="checkbox-group" id="icon-permission-list" style="max-height: 200px; overflow-y: auto;">
                         </div>
                     </div>
+                    
                     <button class="form-native btn-submit" style="background-color: #8E24AA; color: white;" onclick="ghiNhanQuyen()">Ghi Nhận Thay Đổi</button>
                     <button class="form-native btn-submit" style="background-color: #757575; color: white;" onclick="lamMoiBieuMauQuyen()">Làm Mới Biểu Mẫu</button>
                     <div id="pq-status" class="status-text" style="color:#8E24AA;">Đang đồng bộ...</div>
@@ -2083,6 +2085,10 @@ function xuLySuaHoSo() {
     function togglePhanQuyenModal(isShow) {
         document.getElementById('window-phanquyen').style.display = isShow ? 'flex' : 'none';
         if (isShow) { 
+            // [NÂNG CẤP] Xóa trắng ô tìm kiếm ma trận quyền nếu có
+            var searchIconInput = document.getElementById('pq-icon-search-filter');
+            if (searchIconInput) searchIconInput.value = '';
+
             const iconListContainer = document.getElementById('icon-permission-list');
             iconListContainer.innerHTML = '';
             globalProfiles.forEach(profile => {
@@ -2462,6 +2468,29 @@ function xuLySuaHoSo() {
             }
         }
     } 
+
+    // =========================================================================
+    // THUẬT TOÁN LỌC TÌM KIẾM MA TRẬN QUYỀN THƯ MỤC
+    // =========================================================================
+    function locMaTranQuyen() {
+        var input = document.getElementById("pq-icon-search-filter");
+        var filter = input.value.toUpperCase();
+        var container = document.getElementById("icon-permission-list");
+        var labels = container.getElementsByClassName("checkbox-label");
+
+        for (var i = 0; i < labels.length; i++) {
+            // Lấy thẻ span chứa tên hồ sơ bên trong thẻ label
+            var span = labels[i].getElementsByTagName("span")[0];
+            if (span) {
+                var txtValue = span.textContent || span.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    labels[i].style.display = "flex"; // Hiển thị lại bằng flex theo class chuẩn
+                } else {
+                    labels[i].style.display = "none";
+                }
+            }
+        }
+    }
 </script>
 </body>
 </html>
