@@ -425,8 +425,8 @@ function ketXuatSoDauBaiLenLuoi() {
                         <th class="border border-gray-500 p-2 w-12">C.CẦN</th>
                         <th class="border border-gray-500 p-2 w-20">MÔN</th>
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
-                        <th class="border border-gray-500 p-2 min-w-[200px] w-auto">TÊN BÀI DẠY</th>
-                        <th class="border border-gray-500 p-2 min-w-[180px] w-auto">NHẬN XÉT CỦA GV</th>
+                        <th class="border border-gray-500 p-2 min-w-[200px] w-1/2">TÊN BÀI DẠY</th>
+                        <th class="border border-gray-500 p-2 min-w-[280px] w-1/2">NHẬN XÉT CỦA GV</th>
                         <th class="border border-gray-500 p-2 w-16">XẾP LOẠI</th>
                         <th class="border border-gray-500 p-2 w-24">CHỮ KÝ</th>
                     </tr>
