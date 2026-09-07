@@ -425,8 +425,8 @@ function ketXuatSoDauBaiLenLuoi() {
                         <th class="border border-gray-500 p-2 min-w-[80px] w-20">C.CẦN</th>
                         <th class="border border-gray-500 p-2 min-w-[140px] w-40">MÔN</th>
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
-                        <th class="border border-gray-500 p-2 min-w-[200px] w-1/2">TÊN BÀI DẠY</th>
-                        <th class="border border-gray-500 p-2 min-w-[280px] w-1/2">NHẬN XÉT CỦA GV</th>
+                        <th class="border border-gray-500 p-2 min-w-[240px] w-1/2">TÊN BÀI DẠY</th>
+                        <th class="border border-gray-500 p-2 min-w-[240px] w-1/2">NHẬN XÉT CỦA GV</th>
                         <th class="border border-gray-500 p-2 min-w-[85px] w-20">XẾP LOẠI</th>
                         <th class="border border-gray-500 p-2 min-w-[200px]">GIÁO VIÊN DẠY</th>
                     </tr>
@@ -472,7 +472,7 @@ function ketXuatSoDauBaiLenLuoi() {
                         cssTenBai = "text-emerald-700 font-bold";
                         theTenBai = tenBai;
                         theChuyenCan = `<span class="font-bold text-slate-800 block text-center">${chuyenCan}</span>`;
-                        theNhanXet = `<span class="font-normal text-slate-800 break-words block">${nhanXet}</span>`;
+                        theNhanXet = `<span class="font-normal text-slate-800 block">${nhanXet}</span>`;
                         theXepLoai = `<span class="font-bold text-slate-800 block text-center">${xepLoai}</span>`;
                         theChuKy = `<span class="font-bold text-slate-800 uppercase block text-center">${chuKy}</span>`;
                     } else {
@@ -480,16 +480,12 @@ function ketXuatSoDauBaiLenLuoi() {
                         let cssNenKhoa = !quyenNhapThuCong ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
                         let placeholderText = !quyenNhapThuCong ? "Không có quyền" : "Nhập...";
 
-                        if (isEmptyTenBai) {
-                            theTenBai = `<input type="text" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1" placeholder="${placeholderText}" value="">`;
-                        } else {
-                            cssTenBai = !quyenNhapThuCong ? "text-slate-500 font-semibold" : "text-slate-800 font-semibold";
-                            theTenBai = tenBai;
-                        }
+                        theTenBai = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${tenBai}</textarea>`;
 
                         theChuyenCan = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400" placeholder="..." value="${chuyenCan}">`;
-                        theNhanXet = `<input type="text" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1" placeholder="Nhận xét..." value="${nhanXet}">`;
-
+                        
+                        theNhanXet = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="Nhận xét...">${nhanXet}</textarea>`;
+                       
                         let optTot = (xepLoai === 'Tốt') ? 'selected' : '';
                         let optKha = (xepLoai === 'Khá') ? 'selected' : '';
                         let optTB = (xepLoai === 'TB') ? 'selected' : '';
@@ -521,8 +517,11 @@ function ketXuatSoDauBaiLenLuoi() {
                     <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="chuyenCan">${theChuyenCan}</td>
                     <td class="border border-gray-500 p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
                     <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
-                    <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50" data-loai="tenBai" data-islocked="${isLocked}" data-coquyensua="${quyenNhapThuCong}">${theTenBai}</td>
-                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="nhanXet">${theNhanXet}</td>
+                    
+                    <!-- [NÂNG CẤP LÕI]: Gắn style="white-space: normal" để vô hiệu hóa lệnh cấm xuống dòng -->
+                    <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50 align-middle" style="white-space: normal; word-wrap: break-word;" data-loai="tenBai" data-islocked="${isLocked}" data-coquyensua="${quyenNhapThuCong}">${theTenBai}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle" style="white-space: normal; word-wrap: break-word;" data-loai="nhanXet">${theNhanXet}</td>
+                    
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center" data-loai="xepLoai">${theXepLoai}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center" data-loai="chuKy">${theChuKy}</td>
                 </tr>`;
@@ -532,6 +531,13 @@ function ketXuatSoDauBaiLenLuoi() {
 
     htmlBang += `</tbody></table></div>`;
     vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + theHienThiQuyen + htmlBang;
+    setTimeout(() => {
+        let cacOVanBan = vungHienThi.querySelectorAll('textarea');
+        cacOVanBan.forEach(ta => {
+            ta.style.height = 'auto';
+            ta.style.height = (ta.scrollHeight) + 'px';
+        });
+    }, 50);
 }
 
 // =========================================================================
@@ -570,10 +576,10 @@ async function luuSoDauBaiSangMayChu() {
                 let mon = cellMon ? cellMon.innerText.trim() : '';
 
                 if (mon && mon !== '') {
-                    // Cấu trúc hàm con quét thẳng vào lõi thẻ td, bắt input, select hoặc innerText an toàn
+                    // Cấu trúc hàm con quét thẳng vào lõi thẻ td, bắt input, select hoặc textarea an toàn
                     let getVal = (cell) => {
                         if (!cell) return '';
-                        let theNhap = cell.querySelector('input, select');
+                        let theNhap = cell.querySelector('input, select, textarea');
                         return theNhap ? theNhap.value.trim() : cell.innerText.trim();
                     };
 
@@ -665,25 +671,32 @@ function dongBoTenBaiHoc() {
                     
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
-                    if (baiDay !== '') {
-                        oTenBai.innerText = baiDay;
-                        oTenBai.className = "border border-gray-500 p-1 text-slate-800 font-semibold bg-white group-hover:bg-slate-50";
-                    } else {
-                        let trangThaiKhoa = !coQuyenSua ? "disabled" : "";
-                        let cssNenKhoa = !coQuyenSua ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
-                        oTenBai.innerHTML = `<input type="text" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1" placeholder="Nhập tên bài..." value="">`;
-                        oTenBai.className = "border border-gray-500 p-1 bg-white group-hover:bg-slate-50";
+                    // Đúc tên bài vào ô Textarea để giáo viên có thể chỉnh sửa thêm sau khi đồng bộ
+                    let trangThaiKhoa = !coQuyenSua ? "disabled" : "";
+                    let cssNenKhoa = !coQuyenSua ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
+                    let placeholderText = !coQuyenSua ? "Không có quyền" : "Nhập tên bài...";
+                    
+                    oTenBai.innerHTML = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${baiDay}</textarea>`;
+                    oTenBai.className = "border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle";
+                    oTenBai.style.whiteSpace = "normal"; 
+                    oTenBai.style.wordWrap = "break-word";
+                    
+                    // Kích hoạt tự giãn dòng ngay lập tức cho tên bài vừa được đồng bộ
+                    let ta = oTenBai.querySelector('textarea');
+                    if (ta) {
+                        ta.style.height = 'auto';
+                        ta.style.height = (ta.scrollHeight) + 'px';
                     }
-                }
-            }
-        });
+                } // Đóng if (mon && tiet)
+            } // Đóng if (oMon && oTiet && oTenBai)
+        }); // Đóng forEach
         
         if (btn) { 
             btn.innerHTML = textGoc; 
             btn.disabled = false; 
         }
     }, 100); 
-}
+} // Đóng hàm dongBoTenBaiHoc
 
 
 function xuatWordSoDauBai() {
