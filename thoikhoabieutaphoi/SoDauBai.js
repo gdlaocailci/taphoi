@@ -422,8 +422,8 @@ function ketXuatSoDauBaiLenLuoi() {
                  <tr>
                         <th class="border border-gray-500 p-2 w-20">THỨ</th>
                         <th class="border border-gray-500 p-2 w-10">TIẾT</th>
-                        <th class="border border-gray-500 p-2 w-16">C.CẦN</th>
-                        <th class="border border-gray-500 p-2 min-w-[160px] w-48">MÔN</th>
+                        <th class="border border-gray-500 p-2 w-20">C.CẦN</th>
+                        <th class="border border-gray-500 p-2 min-w-[150px] w-48">MÔN</th>
                         
                         <th class="border border-gray-500 p-2 w-12">TIẾT PPCT</th>
                         <th class="border border-gray-500 p-2 min-w-[200px] w-1/2">TÊN BÀI DẠY</th>
