@@ -348,11 +348,15 @@ function veBangKhungLichPPCT(monDangChon) {
     let maTranTkb = {};
     let demTietTuanNay = 0; 
     
+    const monChonChuan = monDangChon.trim().replace(/\s+/g, '').toLowerCase();
+    
     duLieuTkbTuan.forEach(t => {
         if (!maTranTkb[t.thu]) maTranTkb[t.thu] = {};
         if (!maTranTkb[t.thu][t.buoi]) maTranTkb[t.thu][t.buoi] = {};
         maTranTkb[t.thu][t.buoi][t.tiet] = t;
-        if (t.monHoc.trim().toLowerCase() === monDangChon.trim().toLowerCase()) demTietTuanNay++;
+        
+        let monTkbChuan = t.monHoc.trim().replace(/\s+/g, '').toLowerCase();
+        if (monTkbChuan === monChonChuan) demTietTuanNay++;
     });
 
     const tuan = parseInt(document.getElementById('locTuanUI').value.trim()) || 1;
@@ -377,15 +381,65 @@ function veBangKhungLichPPCT(monDangChon) {
         }
     }
 
+    // =========================================================================
+    // [THUẬT TOÁN ĐỘT PHÁ]: NHẬN DIỆN VÀ TÍNH TOÁN THEO NHÓM MÔN CHIA NHỎ
+    // =========================================================================
     let soTiet1Tuan = 0; 
+    let tongSoTietNhom = 0; 
+    let heSoTiet = 1; 
+    let isSplitSubject = false;
+
+    // Tách base name và suffix (Ví dụ: HĐTN 3 -> Gốc: hdtn, Đuôi: 3)
+    const match = monChonChuan.match(/^(.*?)(\d+)$/);
+    let baseName = monChonChuan;
+    if (match) {
+        baseName = match[1];
+        heSoTiet = parseInt(match[2], 10);
+    }
+
     if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.KHUNG_CHUONG_TRINH) {
         let dmKhoi = thongSoHocVu.KHUNG_CHUONG_TRINH[lop] || {};
-        let monMatch = Object.keys(dmKhoi).find(m => m.trim().toLowerCase() === monDangChon.trim().toLowerCase());
-        if (monMatch) soTiet1Tuan = parseInt(dmKhoi[monMatch]);
+        
+        Object.keys(dmKhoi).forEach(m => {
+            let tenM = m.trim().replace(/\s+/g, '').toLowerCase();
+            
+            // Tìm số tiết của đích danh môn đang chọn
+            if (tenM === monChonChuan) {
+                soTiet1Tuan = parseInt(dmKhoi[m]) || 0;
+            }
+            
+            // Tính TỔNG số tiết của cả nhóm (HĐTN 1 + 2 + 3)
+            let mMatch = tenM.match(/^(.*?)(\d+)$/);
+            let mBase = mMatch ? mMatch[1] : tenM;
+            
+            if (mBase === baseName) {
+                tongSoTietNhom += (parseInt(dmKhoi[m]) || 0);
+            }
+        });
     }
-    if (!soTiet1Tuan || isNaN(soTiet1Tuan) || soTiet1Tuan === 0) soTiet1Tuan = demTietTuanNay;
 
-    let tietPpcAuto = (tuan - 1) * soTiet1Tuan + 1;
+    if (!soTiet1Tuan || isNaN(soTiet1Tuan) || soTiet1Tuan === 0) soTiet1Tuan = demTietTuanNay;
+    if (tongSoTietNhom === 0) tongSoTietNhom = soTiet1Tuan;
+
+    // Xác nhận đây là môn chia nhỏ nếu Tổng nhóm > Tiết cá nhân
+    if (tongSoTietNhom > soTiet1Tuan && match) {
+        isSplitSubject = true;
+    }
+
+    let tietPpcAuto = 1;
+    if (isSplitSubject) {
+        // Công thức đặc biệt cho môn chia nhỏ (VD Tuần 2, HĐTN 3: (2-1)*3 + 3 = 6)
+        tietPpcAuto = (tuan - 1) * tongSoTietNhom + heSoTiet;
+    } else {
+        // Công thức cho môn độc lập (Toán, Tiếng Việt)
+        tietPpcAuto = (tuan - 1) * soTiet1Tuan + 1;
+    }
+
+    // =========================================================================
+
+    let mangPpctGocDaSapXep = [...duLieuPpctGoc].filter(b => String(b.tiet).trim() !== '').sort((a, b) => parseInt(a.tiet) - parseInt(b.tiet));
+    let chiSoPpctTuDong = (tuan - 1) * soTiet1Tuan;
+
     let tongSoDongMucTieu = 0;
 
     thuMacDinh.forEach(thu => {
@@ -394,8 +448,10 @@ function veBangKhungLichPPCT(monDangChon) {
             cauTrucTiet[buoi].forEach(tiet => {
                 let tietTkb = (maTranTkb[thu] && maTranTkb[thu][buoi] && maTranTkb[thu][buoi][tiet]) ? maTranTkb[thu][buoi][tiet] : null;
                 let tenMonTkb = tietTkb ? tietTkb.monHoc.trim() : '';
+                
+                let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
 
-                if (tenMonTkb.toLowerCase() === monDangChon.trim().toLowerCase() && tenMonTkb !== '') {
+                if (monTkbChuan === monChonChuan && tenMonTkb !== '') {
                     dsTietCuaThu.push({ buoi: buoi, tiet: tiet, tietTkb: tietTkb });
                     tongSoDongMucTieu++;
                 }
@@ -430,7 +486,17 @@ function veBangKhungLichPPCT(monDangChon) {
                         let tenMonTkb = tietTkb.monHoc;
 
                         let valTietPPC = tietTkb.tietPpc || '';
-                        if (valTietPPC === '') { valTietPPC = tietPpcAuto; tietPpcAuto++; }
+                        
+                        // Ghép nối tự động
+                        if (valTietPPC === '') { 
+                            if (chiSoPpctTuDong < mangPpctGocDaSapXep.length) {
+                                valTietPPC = mangPpctGocDaSapXep[chiSoPpctTuDong].tiet;
+                            } else {
+                                valTietPPC = tietPpcAuto; // Phát huy tác dụng của toán học
+                            }
+                            chiSoPpctTuDong++;
+                            tietPpcAuto++; 
+                        }
 
                         let valTenBai = ''; let valDieuChinh = '';
                         if (valTietPPC !== '') {
@@ -459,15 +525,15 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
-                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 break-words whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
-                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 break-words whitespace-normal">${tenMonTkb}</td>
+                            <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
+                            <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal">${tenMonTkb}</td>
 
-                            <td class="border-r border-gray-300 align-middle text-left p-3 break-words whitespace-normal leading-relaxed" style="white-space: normal !important; max-width: 400px; word-break: break-word;">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="font-semibold text-slate-900 flex-1" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
+                          <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
+                                <div class="flex items-start justify-between gap-2">
+                                    <span class="font-semibold text-slate-900 flex-1 whitespace-normal break-words" style="word-break: break-word;" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
                                     
                                     <button onclick="kichHoatXemTruocSGK(document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so'), '${tenMonTkb}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText)" 
-                                            class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200" 
+                                            class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200 mt-0.5" 
                                             title="Xem và tải trang SGK bài học này">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -477,7 +543,7 @@ function veBangKhungLichPPCT(monDangChon) {
                                 </div>
                             </td>                     
 
-                            <td class="align-middle text-left p-3 italic text-gray-700 break-words whitespace-normal leading-relaxed" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: normal !important; max-width: 300px; word-break: break-word;">${valDieuChinh}</td>
+                            <td class="align-middle text-left p-3 italic text-gray-700 leading-relaxed whitespace-normal break-words" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: normal !important; min-width: 250px; max-width: 450px; word-wrap: break-word; word-break: break-word;">${valDieuChinh}</td>
                         </tr>`;
                     });
                 }
@@ -489,9 +555,6 @@ function veBangKhungLichPPCT(monDangChon) {
         html = `<tr><td colspan="7" class="text-center py-10 text-red-500 font-bold italic">Lịch giảng dạy tuần này không có môn "${monDangChon}".</td></tr>`;
     }
     tbody.innerHTML = html;
-    
-    // [NÂNG CẤP]: Phục hồi trạng thái hiển thị (Khoá/Mở Sửa) cho toàn bộ ô vừa tạo
-    capNhatTrangThaiCacO();
 }
 
 // =========================================================================
