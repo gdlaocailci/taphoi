@@ -382,7 +382,7 @@ function veBangKhungLichPPCT(monDangChon) {
     }
 
     // =========================================================================
-    // [LÕI NÂNG CẤP]: HỆ TỪ ĐIỂN TỰ ĐỘNG TÍNH TOÁN TIẾT PPCT ĐA MÔN
+    // HỆ TỪ ĐIỂN TỰ ĐỘNG TÍNH TOÁN TIẾT PPCT ĐA MÔN
     // =========================================================================
     let trackerPpct = {};
     if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.KHUNG_CHUONG_TRINH) {
@@ -429,7 +429,6 @@ function veBangKhungLichPPCT(monDangChon) {
                 
                 let monTkbChuan = tenMonTkb.replace(/\s+/g, '').toLowerCase();
 
-                // Bộ lọc kép: Hiện toàn bộ hoặc chỉ hiện 1 môn
                 if ((isXemTatCa || monTkbChuan === monChonChuan) && tenMonTkb !== '') {
                     dsTietCuaThu.push({ buoi: buoi, tiet: tiet, tietTkb: tietTkb });
                     tongSoDongMucTieu++;
@@ -483,12 +482,25 @@ function veBangKhungLichPPCT(monDangChon) {
                         }
 
                         let valTenBai = ''; let valDieuChinh = '';
-                        if (valTietPPC !== '' && !isXemTatCa) {
-                            let baiGoc = duLieuPpctGoc.find(b => String(b.tiet) === String(valTietPPC));
-                            if (baiGoc) { valTenBai = baiGoc.tenBaiHoc || ''; valDieuChinh = baiGoc.dieuChinh || ''; }
-                        } else if (valTietPPC !== '' && isXemTatCa) {
-                            let baiGoc = duLieuPpctGoc.find(b => String(b.tiet) === String(valTietPPC) && (b.monHoc && b.monHoc.replace(/\s+/g, '').toLowerCase() === monTkbChuan));
-                            if (baiGoc) { valTenBai = baiGoc.tenBaiHoc || ''; valDieuChinh = baiGoc.dieuChinh || ''; }
+                        
+                        // [LÕI SỬA LỖI]: Bắt trúng key dữ liệu (mon hoặc monHoc) và xử lý linh hoạt môn nhánh
+                        if (valTietPPC !== '') {
+                            let baiGoc = duLieuPpctGoc.find(b => {
+                                if (String(b.tiet) !== String(valTietPPC)) return false;
+                                if (!isXemTatCa) return true; // Chế độ xem 1 môn chỉ cần khớp số Tiết
+                                
+                                // Quét cả b.monHoc và b.mon để đảm bảo không lọt dữ liệu
+                                let monCuaBaiGoc = String(b.monHoc || b.mon || "").replace(/\s+/g, '').toLowerCase();
+                                let monGocTrucTiet = monTkbChuan.replace(/\d+$/, ''); // hđtn1 -> hđtn
+                                
+                                // Trả về true nếu khớp tên chính xác, HOẶC khớp tên gốc, HOẶC dữ liệu không gán môn
+                                return monCuaBaiGoc === monTkbChuan || monCuaBaiGoc === monGocTrucTiet || monCuaBaiGoc === "";
+                            });
+
+                            if (baiGoc) { 
+                                valTenBai = baiGoc.tenBaiHoc || baiGoc.tenBai || ''; 
+                                valDieuChinh = baiGoc.dieuChinh || ''; 
+                            }
                         }
 
                         html += `<tr class="bg-white hover:bg-slate-50 transition-colors border-b border-gray-300">`;
