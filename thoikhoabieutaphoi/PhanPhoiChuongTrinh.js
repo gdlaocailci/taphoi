@@ -673,27 +673,26 @@ function xuLyNhapExcelPPCT(event) {
                     }
                 }
 
-                // Gọi lại hàm vẽ để dữ liệu Excel tự động đắp lên lưới TKB
-                veBangKhungLichPPCT(monUI);
-
-                // Mở rộng khu vực xem trước để giáo viên kiểm tra trực quan
+                // [LÕI NÂNG CẤP]: Đã gỡ bỏ lệnh veBangKhungLichPPCT(monUI);
+                // Khởi tạo HTML Xem trước
                 const tbody = document.getElementById('vungDuLieuLichPPCT');
-                let htmlPreview = `<tr><td colspan="7" class="bg-indigo-100 text-indigo-900 font-extrabold py-3 uppercase tracking-wide border-y-2 border-indigo-300 text-center shadow-inner">🔍 BẢN XEM TRƯỚC TOÀN BỘ DỮ LIỆU EXCEL ĐÃ TẢI LÊN</td></tr>`;
+                let htmlPreview = `<tr><td colspan="7" class="bg-indigo-100 text-indigo-900 font-extrabold py-3 uppercase tracking-wide border-y-2 border-indigo-300 text-center shadow-inner">🔍 BẢN XEM TRƯỚC TOÀN BỘ DỮ LIỆU EXCEL ĐÃ TẢI LÊN (CHỜ LƯU)</td></tr>`;
 
                 duLieuPpctGoc.forEach(row => {
                     htmlPreview += `
                     <tr class="bg-indigo-50/40 hover:bg-indigo-100 transition-colors border-b border-indigo-200">
-                        <td colspan="3" class="text-center italic text-indigo-600/70 text-[13px] align-middle font-semibold border-r border-indigo-200">⚡ Chờ đồng bộ...</td>
+                        <td colspan="3" class="text-center italic text-indigo-600/70 text-[13px] align-middle font-semibold border-r border-indigo-200">⚡ Chờ lưu vào hệ thống...</td>
                         <td class="border-r border-indigo-200 align-middle text-center font-bold text-indigo-800">${row.mon}</td>
                         <td class="border-r border-indigo-200 align-middle text-center p-2 font-extrabold text-red-600">${row.tietPpc}</td>
-                        <!-- [ĐÃ SỬA]: Ép CSS xuống dòng tự động cho ô Tên bài và Điều chỉnh -->
                         <td class="border-r border-indigo-200 align-middle text-left p-3 font-semibold text-slate-900 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">${row.tenBai}</td>
                         <td class="align-middle text-left p-3 italic text-gray-700 leading-relaxed" style="white-space: normal !important; min-width: 250px; max-width: 450px; word-wrap: break-word; word-break: break-word;">${row.dieuChinh}</td>
                     </tr>`;
                 });
 
-                tbody.insertAdjacentHTML('beforeend', htmlPreview);
-                alert(`✅ Đã nạp thành công ${duLieuPpctGoc.length} tiết từ file Excel!\n(Hệ thống tự động định vị: Cột Môn học [${colMon+1}], Cột Tiết PPCT [${colTiet+1}])\n\n👉 Đồng chí hãy đối chiếu trên lưới và nhấn "Lưu PPCT".`);
+                // [LÕI NÂNG CẤP]: Ghi đè toàn bộ khung hiển thị thay vì gắn thêm vào dưới cùng
+                tbody.innerHTML = htmlPreview;
+                
+                alert(`✅ Đã nạp thành công ${duLieuPpctGoc.length} tiết từ file Excel!\n(Hệ thống tự động định vị: Cột Môn học [${colMon+1}], Cột Tiết PPCT [${colTiet+1}])\n\n👉 Đồng chí hãy đối chiếu danh sách xem trước và nhấn "Lưu PPCT".`);
             } else {
                 alert("Lỗi: File Excel trống hoặc không đúng biểu mẫu chuẩn.");
             }
