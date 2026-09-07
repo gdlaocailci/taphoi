@@ -570,8 +570,12 @@ async function luuSoDauBaiSangMayChu() {
                 let mon = cellMon ? cellMon.innerText.trim() : '';
 
                 if (mon && mon !== '') {
-                    // Cấu trúc hàm con quét thẳng vào lõi thẻ td, bắt input hoặc innerText an toàn
-                    let getVal = (cell) => cell ? (cell.querySelector('input') ? cell.querySelector('input').value.trim() : cell.innerText.trim()) : '';
+                    // Cấu trúc hàm con quét thẳng vào lõi thẻ td, bắt input, select hoặc innerText an toàn
+                    let getVal = (cell) => {
+                        if (!cell) return '';
+                        let theNhap = cell.querySelector('input, select');
+                        return theNhap ? theNhap.value.trim() : cell.innerText.trim();
+                    };
 
                     let tiet = getVal(dong.querySelector('td[data-loai="tietSDB"]'));
                     let chuyenCan = getVal(dong.querySelector('td[data-loai="chuyenCan"]'));
