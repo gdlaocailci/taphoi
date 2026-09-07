@@ -99,8 +99,21 @@ async function taiDuLieuPhanQuyenTuMayChu() {
     
     try {
         const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layPhanQuyenHethong`);
-        duLieuBangPhanQuyen = await phanHoi.json();
-        if (duLieuBangPhanQuyen.trangThai === 'loi_he_thong') throw new Error(duLieuBangPhanQuyen.thongBao);
+        let ketQua = await phanHoi.json();
+        
+        if (ketQua && ketQua.trangThai === 'loi_he_thong') {
+            throw new Error(ketQua.thongBao);
+        }
+        
+        // [CHỐT CHẶN AN TOÀN]: Đảm bảo dữ liệu nhận được phải là một mảng
+        if (Array.isArray(ketQua)) {
+            duLieuBangPhanQuyen = ketQua;
+        } else if (ketQua && ketQua.trangThai === 'thanh_cong') {
+            // Cảnh báo khi người dùng quên Deploy mã Google Apps Script
+            throw new Error("Mã máy chủ chưa được đồng bộ. Đồng chí vui lòng chọn Manage Deployments -> New version trên Google Apps Script.");
+        } else {
+            duLieuBangPhanQuyen = [];
+        }
         
         hienThiBangPhanQuyen();
     } catch (loi) {
