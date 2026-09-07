@@ -73,14 +73,16 @@ document.addEventListener('DOMContentLoaded', () => {
         vungChinh.insertAdjacentHTML('beforeend', khungHtml);
     }
     
-    // 3. Gắn nối vào hệ thống phân quyền của app.js
+// 3. Gắn nối vào hệ thống phân quyền của app.js
     if (typeof kiemSoatGiaoDien === 'function') {
         const kiemSoatGoc = kiemSoatGiaoDien;
         window.kiemSoatGiaoDien = function() {
             kiemSoatGoc();
             let menuPQ = document.getElementById('menuPhanQuyen');
             if (menuPQ) {
-                let duocXem = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menuDuocXem.includes('menuPhanQuyen'));
+                // [ĐÃ SỬA]: Đồng bộ gọi đúng tên biến quyenChiTiet.menu và thêm lớp bảo vệ an toàn
+                let duocXem = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || 
+                              (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanQuyen'));
                 menuPQ.style.display = duocXem ? 'flex' : 'none';
             }
         };
