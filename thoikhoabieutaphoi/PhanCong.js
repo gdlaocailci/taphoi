@@ -221,49 +221,37 @@ function tinhToanTietDay(maGVVuaChon = null) {
   });
 
   if (maGVVuaChon !== null) {
-      // [BỔ SUNG]: Tách chuỗi nếu click vào ô có nhiều GV, lấy GV đầu tiên để highlight
-      let idChon = maGVVuaChon.split(',')[0].trim().toLowerCase();
+      let idChon = maGVVuaChon.trim().toLowerCase();
       let idKhop = Object.keys(thongKe).find(k => k.toLowerCase() === idChon);
-      gvDangDuocChon = idKhop ? idKhop : idChon;
+      gvDangDuocChon = idKhop ? idKhop : maGVVuaChon.trim();
   }
 
   const cacTheSelect = document.querySelectorAll('input[data-lop]');
   
   cacTheSelect.forEach(sl => {
-    let chuoiGV = sl.value.trim();
-    if (!chuoiGV) return;
-    
-    // [NÂNG CẤP LÕI]: Tách mảng để xử lý nhiều giáo viên dạy chung 1 môn
-    let mangGV = chuoiGV.split(',').map(g => g.trim()).filter(g => g !== "");
-    let soGVDangDay = mangGV.length;
+    let maGV_nhap = sl.value.trim();
+    if (!maGV_nhap) return;
 
-    mangGV.forEach(maGV_nhap => {
-        let maGVKhop = Object.keys(thongKe).find(k => k.toLowerCase() === maGV_nhap.toLowerCase());
-        
-        if (maGVKhop) {
-          let tenLop = sl.getAttribute('data-lop').trim();
-          let tenMon = sl.getAttribute('data-mon').trim();
-          let soTietKCT = 0;
-          
-          let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === tenLop.toLowerCase());
-          if (lopKey) {
-              let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === tenMon.toLowerCase());
-              if (monKey) soTietKCT = parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) || 0;
-          }
-          
-          // [BẢO TOÀN KHUNG CHƯƠNG TRÌNH]: Chia đều số tiết cho các GV dạy chung
-          let tietThucNhan = soGVDangDay > 1 ? (soTietKCT / soGVDangDay) : soTietKCT;
-          tietThucNhan = Math.round(tietThucNhan * 10) / 10; // Làm tròn 1 chữ số thập phân
-          
-          thongKe[maGVKhop].thucTe += tietThucNhan; 
-          if (tietThucNhan > 0) {
-              thongKe[maGVKhop].chiTiet.push(`<span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 rounded px-1.5 py-0.5 m-0.5 text-[11px] whitespace-nowrap shadow-sm">${tenMon} ${tenLop} (${tietThucNhan})</span>`);
-          }
-        }
-    });
+    let maGVKhop = Object.keys(thongKe).find(k => k.toLowerCase() === maGV_nhap.toLowerCase());
+    
+    if (maGVKhop) {
+      let tenLop = sl.getAttribute('data-lop').trim();
+      let tenMon = sl.getAttribute('data-mon').trim();
+      let soTiet = 0;
+      
+      let lopKey = Object.keys(khungChuongTrinhToanTruong).find(k => k.trim().toLowerCase() === tenLop.toLowerCase());
+      if (lopKey) {
+          let monKey = Object.keys(khungChuongTrinhToanTruong[lopKey]).find(k => k.trim().toLowerCase() === tenMon.toLowerCase());
+          if (monKey) soTiet = parseInt(khungChuongTrinhToanTruong[lopKey][monKey]) || 0;
+      }
+      
+      thongKe[maGVKhop].thucTe += soTiet; 
+      if (soTiet > 0) {
+          thongKe[maGVKhop].chiTiet.push(`<span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 rounded px-1.5 py-0.5 m-0.5 text-[11px] whitespace-nowrap shadow-sm">${tenMon} ${tenLop} (${soTiet})</span>`);
+      }
+    }
   });
 
-  // ========== PHẦN VẼ LẠI GIAO DIỆN (GIỮ NGUYÊN) ==========
   const nutXuatExcel = document.querySelector('button[onclick="xuatExcelThongKePhanCong()"]');
   let oTimKiemGiaoVien = document.getElementById('locGiaoVienThongKe');
   
@@ -324,6 +312,7 @@ function tinhToanTietDay(maGVVuaChon = null) {
         bgClass = 'bg-yellow-200 border-yellow-400 shadow-inner'; 
     }
 
+    // [NÂNG CẤP LÕI]: Biến ô Chi tiết thành nút bấm mở Modal Phân công nhanh
     let textChuaPhanCong = `<span class="text-slate-400 italic text-[11px] group-hover:text-blue-500 transition-colors">Bấm để gán môn học...</span>`;
     let chiTietHienThi = soLieu.chiTiet.length > 0 ? soLieu.chiTiet.join(' ') : textChuaPhanCong;
     let hienThiTen = (soLieu.hoTen && soLieu.hoTen !== ma) ? `${soLieu.hoTen} <br><span class="text-[13px] text-gray-500 font-bold italic">(${ma})</span>` : ma;
