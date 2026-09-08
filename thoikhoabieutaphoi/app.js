@@ -7,7 +7,6 @@ let ngayDauTuanUI = '';
 
 document.addEventListener('DOMContentLoaded', () => { khoiTaoGiaoDien(); });
 
-
 async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
     for (let i = 0; i < soLanThu; i++) {
         try {
@@ -17,17 +16,14 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
                 throw new Error(`Máy chủ từ chối kết nối (Mã lỗi HTTP: ${phanHoi.status})`);
             }
 
-            // [LÕI NÂNG CẤP]: Đọc thẳng văn bản 1 lần duy nhất, KHÔNG dùng clone()
             const noiDungText = await phanHoi.text();
 
-            // Kiểm tra tính hợp lệ của dữ liệu (Chống HTML ảo từ Google)
             try {
                 JSON.parse(noiDungText);
             } catch (loiCuPhap) {
                 throw new Error("Dữ liệu trả về bị nhiễu định dạng (Google Apps Script đang bận).");
             }
 
-            // Đóng gói lại thành đối tượng Response chuẩn để các hàm khác gọi .json() mượt mà
             return new Response(noiDungText, {
                 status: phanHoi.status,
                 statusText: phanHoi.statusText,
@@ -35,9 +31,9 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
             });
 
         } catch (loi) {
-            if (i === soLanThu - 1) throw loi; // Văng lỗi ra giao diện nếu đã thử hết giới hạn
+            if (i === soLanThu - 1) throw loi; 
             console.warn(`Đường truyền bị nghẽn, tự động kết nối lại lần ${i + 1}...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Lùi bước 1s, 2s
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); 
         }
     }
 }
