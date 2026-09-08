@@ -629,11 +629,10 @@ async function luuDuLieu(event, loaiLuu) {
     
     if (loaiLuu === 'khoiphuc') { if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; }
 
-    
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
     if(btn.disabled === undefined) { } else {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; 
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang xử lý...`; 
         btn.disabled = true;
     }
 
@@ -641,23 +640,17 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         
-        // Dùng querySelectorAll gom toàn bộ ô Môn học trong 1 lần quét DOM (Bỏ 4 vòng lặp lồng nhau)
-        // Hệ thống sẽ chỉ quét những ô Môn học đang thực sự có trên lưới
         let cacOMon = document.querySelectorAll('input[id^="mon_"]');
         
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
-            // Kỹ thuật Fast-Fail: Chỉ xử lý nếu ô môn học có dữ liệu
             if (valMon !== "") {
-                // Tách ID (Ví dụ: mon_Thứ 2_Sáng_1_1A1) thành các tham số
                 let parts = oMon.id.split('_'); 
                 let thu = parts[1];
                 let buoi = parts[2];
                 let tiet = parts[3];
-                // Dùng slice để ghép lại tên lớp nếu tên lớp có chứa dấu gạch dưới
                 let lop = parts.slice(4).join('_'); 
                 
-                // Nhặt nhanh dữ liệu Giáo viên tương ứng
                 let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
                 let valGv = oGv ? oGv.value.trim() : "";
                 
@@ -680,7 +673,6 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // Sử dụng hàm fetch cải tiến
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
             method: 'POST', 
             body: JSON.stringify({ thaoTac: 'luuDuLieu', loaiLuu: loaiLuu, tuan: tuanDangXem, duLieu: dsTietLuoi }) 
@@ -698,8 +690,6 @@ async function luuDuLieu(event, loaiLuu) {
                 btnAn.innerHTML = "Auto Save";
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
-                // [ĐÃ SỬA LỖI]: Bỏ lệnh `await taiDuLieuTKB();` để không load lại UI
-                // Thay bằng thông báo hoàn tất nhẹ nhàng để người dùng biết tiến trình đã xong
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
             }
         }
@@ -711,6 +701,98 @@ async function luuDuLieu(event, loaiLuu) {
             btn.innerHTML = textGoc; 
             btn.disabled = false; 
         }
+    }
+}
+
+// =========================================================================
+// HÀM BỔ SUNG: ĐỒNG BỘ TRỰC TIẾP LƯỚI TKB LÊN SHEET PHAN_CONG (XỬ LÝ DẠY CHUNG MÔN)
+// =========================================================================
+async function dongBoTkbSangPhanCongMayChu(event) {
+    let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnDongBoPhanCong'));
+    if (!coQuyenThaoTac) return;
+    
+    if (!confirm("XÁC NHẬN: Bạn sắp lấy toàn bộ dữ liệu trên lưới TKB này để ghi đè làm Bảng Phân công chuyên môn gốc. Tiếp tục?")) return;
+
+    const btn = event.currentTarget; 
+    const textGoc = btn.innerHTML;
+    btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang quét...`; 
+    btn.disabled = true;
+
+    try {
+        let maTranTKB = {};
+        let danhSachLopTrenUI = new Set();
+        let danhSachMonTrenUI = new Set(thongSoHocVu.DANH_SACH_MON_HOC || []); 
+
+        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        
+        cacOMon.forEach(oMon => {
+            let valMon = oMon.value.trim();
+            let parts = oMon.id.split('_'); 
+            let lop = parts.slice(4).join('_'); 
+            
+            if (lop) danhSachLopTrenUI.add(lop);
+
+            if (valMon !== "" && !valMon.includes('CẤN LỊCH')) {
+                danhSachMonTrenUI.add(valMon);
+
+                let thu = parts[1], buoi = parts[2], tiet = parts[3];
+                let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
+                let valGv = oGv ? oGv.value.trim() : "";
+                
+                if (valGv !== "" && valGv !== "--") {
+                    if (!maTranTKB[lop]) maTranTKB[lop] = {};
+                    if (!maTranTKB[lop][valMon]) maTranTKB[lop][valMon] = new Set();
+                    maTranTKB[lop][valMon].add(valGv); 
+                }
+            }
+        });
+
+        let mangGhi = [];
+        let dsLop = Array.from(danhSachLopTrenUI).sort();
+        let dsMon = Array.from(danhSachMonTrenUI);
+        
+        if (dsLop.length === 0) throw new Error("Không quét được dữ liệu Lớp trên giao diện.");
+
+        mangGhi.push(['Mã Lớp', ...dsMon]);
+
+        dsLop.forEach(lop => {
+            let dongDuLieu = [lop]; 
+            dsMon.forEach(mon => {
+                let gv = (maTranTKB[lop] && maTranTKB[lop][mon]) ? Array.from(maTranTKB[lop][mon]).join(', ') : "";
+                dongDuLieu.push(gv);
+            });
+            mangGhi.push(dongDuLieu);
+        });
+
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang ghi CSDL...`;
+        
+        const payload = { thaoTac: 'luuDuLieuPhanCong', duLieu: mangGhi };
+        
+        const tuyChonFetch = { 
+            method: 'POST', 
+            redirect: 'follow', 
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8", 
+            },
+            body: JSON.stringify(payload) 
+        };
+
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, tuyChonFetch);
+        const ketQua = await phanHoi.json();
+        
+        if(ketQua.trangThai === 'Thành công') { 
+            alert("Đã kết xuất dữ liệu và Ghi đè thành công lên hệ thống Phân công chuyên môn!");
+            if (typeof danhSachGV !== 'undefined') danhSachGV = []; 
+        } else { 
+            console.error("Lỗi từ máy chủ:", ketQua);
+            alert("Đồng bộ thất bại: " + (ketQua.thongBao || "Lỗi máy chủ"));
+        }
+    } catch (loi) { 
+        console.error("Sự cố đồng bộ:", loi); 
+        alert(`Sự cố xử lý dữ liệu: ${loi.message}`);
+    } finally { 
+        btn.innerHTML = textGoc; 
+        btn.disabled = false; 
     }
 }
 
