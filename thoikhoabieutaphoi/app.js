@@ -54,7 +54,7 @@ function kiemSoatGiaoDien() {
     const nutDuocCap = (quyenChiTiet && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
 
     // 2. Mở khóa Nút Bấm
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB'];
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoPhanCong'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
@@ -1315,5 +1315,98 @@ async function nhapExcelTKB(event) {
     } finally {
         // Reset bộ đệm input để cho phép tải lại cùng một tệp
         event.target.value = "";
+    }
+}
+
+// =========================================================================
+// HÀM BỔ SUNG: ĐỒNG BỘ TRỰC TIẾP LƯỚI TKB LÊN SHEET PHAN_CONG
+// =========================================================================
+async function dongBoTkbSangPhanCongMayChu(event) {
+    // 1. Kiểm tra quyền hạn
+    let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && quyenChiTiet.nut.includes('btnDongBoPhanCong'));
+    if (!coQuyenThaoTac) return;
+    
+    if (!confirm("XÁC NHẬN: Bạn sắp lấy toàn bộ dữ liệu Giáo viên - Môn học trên lưới TKB này để ghi đè làm Bảng Phân công chuyên môn gốc. Tiếp tục?")) return;
+
+    const btn = event.currentTarget; 
+    const textGoc = btn.innerHTML;
+    btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang xử lý...`; 
+    btn.disabled = true;
+
+    try {
+        // Bước 1: Quét toàn bộ lưới TKB hiện hành để gom dữ liệu (Độ phức tạp O(N))
+        let maTranTKB = {};
+        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        
+        cacOMon.forEach(oMon => {
+            let valMon = oMon.value.trim();
+            if (valMon !== "" && !valMon.includes('CẤN LỊCH')) {
+                let parts = oMon.id.split('_'); 
+                // ID cấu trúc: mon_Thứ_Buổi_Tiết_Lớp
+                let thu = parts[1], buoi = parts[2], tiet = parts[3];
+                let lop = parts.slice(4).join('_'); 
+                
+                let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
+                let valGv = oGv ? oGv.value.trim() : "";
+                
+                if (valGv !== "" && valGv !== "--") {
+                    if (!maTranTKB[lop]) maTranTKB[lop] = {};
+                    // Nếu một lớp có nhiều giáo viên dạy cùng 1 môn (chia tiết), thuật toán sẽ ưu tiên lấy GV xuất hiện sau cùng trên lưới
+                    maTranTKB[lop][valMon] = valGv; 
+                }
+            }
+        });
+
+        // Bước 2: Trải phẳng dữ liệu thành mảng 2D đúng biểu mẫu của CSDL PHAN_CONG
+        let mangGhi = [];
+        let dsMon = thongSoHocVu.DANH_SACH_MON_HOC || [];
+        let dsLop = thongSoHocVu.DANH_SACH_LOP || [];
+        
+        if (dsMon.length === 0 || dsLop.length === 0) {
+            throw new Error("Dữ liệu cấu trúc hệ thống (Danh mục Môn/Lớp) chưa sẵn sàng.");
+        }
+
+        // Tạo dòng tiêu đề (Dòng 1: Mã Lớp, Toán, Tiếng Việt...)
+        mangGhi.push(['Mã Lớp', ...dsMon]);
+
+        // Tạo các dòng dữ liệu cho từng Lớp
+        dsLop.forEach(lop => {
+            let dongDuLieu = [lop]; // Cột đầu tiên là Mã Lớp
+            
+            dsMon.forEach(mon => {
+                let gv = (maTranTKB[lop] && maTranTKB[lop][mon]) ? maTranTKB[lop][mon] : "";
+                dongDuLieu.push(gv);
+            });
+            
+            mangGhi.push(dongDuLieu);
+        });
+
+        // Bước 3: Gửi payload lên máy chủ, tái sử dụng cổng API của phân hệ Phân Công
+        const payload = { 
+            thaoTac: 'luuDuLieuPhanCong', 
+            duLieu: mangGhi 
+        };
+        
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+        
+        const ketQua = await phanHoi.json();
+        
+        if(ketQua.trangThai === 'Thành công') { 
+            alert("Đã kết xuất dữ liệu và Ghi đè thành công lên hệ thống Phân công chuyên môn!");
+            // Đặt lại cờ để khi sang Tab Phân công hệ thống sẽ tự động tải lại dữ liệu mới nhất
+            if (typeof danhSachGV !== 'undefined') danhSachGV = []; 
+        } else { 
+            console.error("Lỗi từ máy chủ:", ketQua);
+            alert("Đồng bộ thất bại: " + (ketQua.thongBao || "Lỗi máy chủ"));
+        }
+    } catch (loi) { 
+        console.error("Sự cố đồng bộ:", loi); 
+        alert(`Sự cố mạng hoặc lỗi xử lý: ${loi.message}`);
+    } finally { 
+        btn.innerHTML = textGoc; 
+        btn.disabled = false; 
     }
 }
