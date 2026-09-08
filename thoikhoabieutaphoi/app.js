@@ -1319,14 +1319,13 @@ async function nhapExcelTKB(event) {
 }
 
 // =========================================================================
-// HÀM BỔ SUNG: ĐỒNG BỘ TRỰC TIẾP LƯỚI TKB LÊN SHEET PHAN_CONG (VÁ LỖI VÙNG QUÉT)
+// HÀM BỔ SUNG: ĐỒNG BỘ TRỰC TIẾP LƯỚI TKB LÊN SHEET PHAN_CONG (XỬ LÝ DẠY CHUNG MÔN)
 // =========================================================================
 async function dongBoTkbSangPhanCongMayChu(event) {
-    // 1. Kiểm tra quyền hạn
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnDongBoPhanCong'));
     if (!coQuyenThaoTac) return;
     
-    if (!confirm("XÁC NHẬN: Bạn sắp lấy toàn bộ dữ liệu Giáo viên - Môn học trên lưới TKB này để ghi đè làm Bảng Phân công chuyên môn gốc. Tiếp tục?")) return;
+    if (!confirm("XÁC NHẬN: Bạn sắp lấy toàn bộ dữ liệu trên lưới TKB này để ghi đè làm Bảng Phân công chuyên môn gốc. Tiếp tục?")) return;
 
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
@@ -1335,25 +1334,21 @@ async function dongBoTkbSangPhanCongMayChu(event) {
 
     try {
         let maTranTKB = {};
-        
-        // [NÂNG CẤP LÕI]: Dùng Set() để tự động thu thập chính xác 100% các cột Lớp và Môn đang có thực tế trên UI
         let danhSachLopTrenUI = new Set();
         let danhSachMonTrenUI = new Set(thongSoHocVu.DANH_SACH_MON_HOC || []); 
 
         let cacOMon = document.querySelectorAll('input[id^="mon_"]');
         
-        // Bước 1: Quét vét cạn toàn bộ lưới UI
+        // Bước 1: Quét vét cạn toàn bộ lưới UI (Tích lũy giáo viên dạy chung)
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
             let parts = oMon.id.split('_'); 
-            
-            // Cấu trúc ID: mon_Thứ_Buổi_Tiết_Lớp -> Cắt từ vị trí số 4 trở đi để lấy đúng tên Lớp
             let lop = parts.slice(4).join('_'); 
-            if (lop) danhSachLopTrenUI.add(lop); // Bắt dính mọi lớp đang hiển thị
+            
+            if (lop) danhSachLopTrenUI.add(lop);
 
-            // Chỉ lấy dữ liệu phân công hợp lệ (bỏ qua ô trống hoặc ô đang bị lỗi cấn lịch)
             if (valMon !== "" && !valMon.includes('CẤN LỊCH')) {
-                danhSachMonTrenUI.add(valMon); // Cập nhật thêm môn học nếu có môn mới xuất hiện
+                danhSachMonTrenUI.add(valMon);
 
                 let thu = parts[1], buoi = parts[2], tiet = parts[3];
                 let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
@@ -1361,27 +1356,27 @@ async function dongBoTkbSangPhanCongMayChu(event) {
                 
                 if (valGv !== "" && valGv !== "--") {
                     if (!maTranTKB[lop]) maTranTKB[lop] = {};
-                    // Nếu một lớp có 2 GV cùng dạy 1 môn (chia tiết), thuật toán ưu tiên ghi GV xuất hiện sau cùng trên UI
-                    maTranTKB[lop][valMon] = valGv; 
+                    // [NÂNG CẤP LÕI]: Dùng Set() để không ghi đè, chứa tất cả GV cùng dạy 1 môn
+                    if (!maTranTKB[lop][valMon]) maTranTKB[lop][valMon] = new Set();
+                    maTranTKB[lop][valMon].add(valGv); 
                 }
             }
         });
 
-        // Bước 2: Trải phẳng ma trận 2D dựa trên danh sách quét thực tế
+        // Bước 2: Trải phẳng ma trận 2D
         let mangGhi = [];
-        let dsLop = Array.from(danhSachLopTrenUI).sort(); // Đảm bảo lớp ở cột cuối không bao giờ bị rớt
+        let dsLop = Array.from(danhSachLopTrenUI).sort();
         let dsMon = Array.from(danhSachMonTrenUI);
         
         if (dsLop.length === 0) throw new Error("Không quét được dữ liệu Lớp trên giao diện.");
 
-        // Dòng 1: Tiêu đề (Mã Lớp, Toán, Tiếng Việt...)
         mangGhi.push(['Mã Lớp', ...dsMon]);
 
-        // Các dòng tiếp theo: Ánh xạ dữ liệu
         dsLop.forEach(lop => {
             let dongDuLieu = [lop]; 
             dsMon.forEach(mon => {
-                let gv = (maTranTKB[lop] && maTranTKB[lop][mon]) ? maTranTKB[lop][mon] : "";
+                // [NÂNG CẤP LÕI]: Ghép tên các giáo viên dạy chung bằng dấu phẩy (VD: Sửu A1, Nga B1)
+                let gv = (maTranTKB[lop] && maTranTKB[lop][mon]) ? Array.from(maTranTKB[lop][mon]).join(', ') : "";
                 dongDuLieu.push(gv);
             });
             mangGhi.push(dongDuLieu);
@@ -1390,21 +1385,12 @@ async function dongBoTkbSangPhanCongMayChu(event) {
         // Bước 3: Gửi mảng 2D hoàn chỉnh lên máy chủ
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang ghi CSDL...`;
         
-        const payload = { 
-            thaoTac: 'luuDuLieuPhanCong', 
-            duLieu: mangGhi 
-        };
-        
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
-            method: 'POST', 
-            body: JSON.stringify(payload) 
-        });
-        
+        const payload = { thaoTac: 'luuDuLieuPhanCong', duLieu: mangGhi };
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
         const ketQua = await phanHoi.json();
         
         if(ketQua.trangThai === 'Thành công') { 
             alert("Đã kết xuất dữ liệu và Ghi đè thành công lên hệ thống Phân công chuyên môn!");
-            // Xóa bộ đệm để Tab Phân công buộc phải tải lại dữ liệu mới nhất
             if (typeof danhSachGV !== 'undefined') danhSachGV = []; 
         } else { 
             console.error("Lỗi từ máy chủ:", ketQua);
