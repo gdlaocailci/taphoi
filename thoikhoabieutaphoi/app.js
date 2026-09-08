@@ -41,9 +41,6 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
 // =========================================================================
 // KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
 // =========================================================================
-// =========================================================================
-// KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
-// =========================================================================
 function kiemSoatGiaoDien() {
     // 1. Bọc thép dữ liệu: Đảm bảo luôn trả về mảng dù lỗi mạng
     const menuDuocCap = (quyenChiTiet && quyenChiTiet.menu) ? quyenChiTiet.menu : [];
