@@ -626,9 +626,6 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (ĐÃ NÂNG CẤP TỐC ĐỘ CAO O(N))
-// =========================================================================
-// =========================================================================
 // KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
@@ -1382,11 +1379,22 @@ async function dongBoTkbSangPhanCongMayChu(event) {
             mangGhi.push(dongDuLieu);
         });
 
-        // Bước 3: Gửi mảng 2D hoàn chỉnh lên máy chủ
+// Bước 3: Gửi mảng 2D hoàn chỉnh lên máy chủ
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle"></div> Đang ghi CSDL...`;
         
         const payload = { thaoTac: 'luuDuLieuPhanCong', duLieu: mangGhi };
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
+        
+        // [CẬP NHẬT LÕI]: Cấu hình Header chống lỗi CORS và buộc theo dõi chuyển hướng 302 của Google Apps Script
+        const tuyChonFetch = { 
+            method: 'POST', 
+            redirect: 'follow', 
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8", 
+            },
+            body: JSON.stringify(payload) 
+        };
+
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, tuyChonFetch);
         const ketQua = await phanHoi.json();
         
         if(ketQua.trangThai === 'Thành công') { 
@@ -1396,11 +1404,3 @@ async function dongBoTkbSangPhanCongMayChu(event) {
             console.error("Lỗi từ máy chủ:", ketQua);
             alert("Đồng bộ thất bại: " + (ketQua.thongBao || "Lỗi máy chủ"));
         }
-    } catch (loi) { 
-        console.error("Sự cố đồng bộ:", loi); 
-        alert(`Sự cố xử lý dữ liệu: ${loi.message}`);
-    } finally { 
-        btn.innerHTML = textGoc; 
-        btn.disabled = false; 
-    }
-}
