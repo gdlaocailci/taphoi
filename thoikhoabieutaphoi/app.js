@@ -82,22 +82,15 @@ function kiemSoatGiaoDien() {
         nhanHT.style.display = coMenuQuanTriDuocMo ? 'flex' : 'none';
     }
 
-    // 5. Mở khóa tương tác Ngày/Tuần
+ // 5. Mở khóa tương tác Ngày/Tuần (Đã mở công khai cho toàn trường)
     let btnTuanTruoc = document.querySelector('button[onclick="chuyenTuan(-1)"]');
     let btnTuanTiep = document.querySelector('button[onclick="chuyenTuan(1)"]');
     let inputNgay = document.getElementById('chonNgayDauTuan');
 
-    let coQuyenThaoTac = quyenSuaChua || nutDuocCap.length > 0 || menuDuocCap.length > 0;
-
-    if (coQuyenThaoTac) {
-        if (btnTuanTruoc) { btnTuanTruoc.disabled = false; btnTuanTruoc.classList.remove('opacity-50', 'cursor-not-allowed'); }
-        if (btnTuanTiep) { btnTuanTiep.disabled = false; btnTuanTiep.classList.remove('opacity-50', 'cursor-not-allowed'); }
-        if (inputNgay) { inputNgay.disabled = false; inputNgay.classList.remove('cursor-not-allowed', 'opacity-80'); }
-    } else {
-        if (btnTuanTruoc) { btnTuanTruoc.disabled = true; btnTuanTruoc.classList.add('opacity-50', 'cursor-not-allowed'); }
-        if (btnTuanTiep) { btnTuanTiep.disabled = true; btnTuanTiep.classList.add('opacity-50', 'cursor-not-allowed'); }
-        if (inputNgay) { inputNgay.disabled = true; inputNgay.classList.add('cursor-not-allowed', 'opacity-80'); }
-    }
+    // Luôn luôn kích hoạt các nút này, không phụ thuộc vào quyền đăng nhập
+    if (btnTuanTruoc) { btnTuanTruoc.disabled = false; btnTuanTruoc.classList.remove('opacity-50', 'cursor-not-allowed'); }
+    if (btnTuanTiep) { btnTuanTiep.disabled = false; btnTuanTiep.classList.remove('opacity-50', 'cursor-not-allowed'); }
+    if (inputNgay) { inputNgay.disabled = false; inputNgay.classList.remove('cursor-not-allowed', 'opacity-80'); }
 }
 
 // =========================================================================
