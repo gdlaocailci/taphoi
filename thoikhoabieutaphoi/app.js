@@ -911,7 +911,7 @@ function khoiDongDangNhap() {
 }
 
 // =========================================================================
-// THAY THẾ TOÀN BỘ HÀM NÀY TRONG KHỐI 6: XÁC THỰC DANH TÍNH
+// THAY THẾ TOÀN BỘ HÀM NÀY TRONG KHỐI 6: XÁC THỰC DANH TÍNH (FILE app.js)
 // =========================================================================
 async function xuLyLayThongTin(maTokenTruyCap) {
     let nutDangNhap = document.getElementById('nutDangNhapG');
@@ -938,8 +938,6 @@ async function xuLyLayThongTin(maTokenTruyCap) {
         const dsQuanTri = thongSoHocVu.DANH_SACH_QUAN_TRI || [];
         const dinhDanhGoc = 'tulieuhopthanh@gmail.com';
 
-        let quyenTruocDo = quyenSuaChua; 
-
         // 1. KIỂM TRA QUYỀN ADMIN TOÀN NĂNG
         if (dsQuanTri.includes(dinhDanhHeThong) || dinhDanhHeThong === dinhDanhGoc) { 
             quyenSuaChua = true; 
@@ -955,11 +953,14 @@ async function xuLyLayThongTin(maTokenTruyCap) {
             quyenChiTiet.lop = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].lop || [];
         }
         
-        // 3. Tiến hành vẽ lại Menu dựa trên sự kết hợp quyền ở trên
+        // 3. Tiến hành kiểm soát Menu và Nút bấm dựa trên quyền
         kiemSoatGiaoDien(); 
 
-        let coQuyenMoi = quyenSuaChua || quyenChiTiet.nut.length > 0 || quyenChiTiet.menu.length > 0;
-        if (!quyenTruocDo && coQuyenMoi) {
+        // [LÕI KHẮC PHỤC]: Không gọi API máy chủ nếu dữ liệu TKB đã có trong RAM
+        // Trình duyệt sẽ tái tạo lại lưới tức thời bằng động cơ O(1)
+        if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
+            xuatMaTranBang(duLieuTkbHienTai); 
+        } else {
             await taiDuLieuTKB(); 
         }
     } catch (loi) { 
