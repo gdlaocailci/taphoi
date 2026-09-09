@@ -444,6 +444,9 @@ function tinhNgayDocLap(ngayDauTuanStr, tenThu) {
     return { hienThi: `${d}/${m}/${y}`, thang: m, nam: y.toString(), ngayDayDu: `${d}/${m}/${y}` };
 }
 
+// =========================================================================
+// KHỐI 3: VẼ LƯỚI MA TRẬN VÀ LỌC CÁ NHÂN (ĐÃ NÂNG CẤP LỌC QUYỀN LỚP)
+// =========================================================================
 function xuatMaTranBang(danhSachTiet) {
     const thead = document.getElementById('tieuDeBang'); 
     const tbody = document.getElementById('vungHienThiDuLieu');
@@ -455,7 +458,6 @@ function xuatMaTranBang(danhSachTiet) {
         tableEl.style.borderSpacing = '0';
     }
 
-    // [TỐI ƯU HIỆU NĂNG CAO]: Chèn Datalist tổng vào thân tài liệu 1 lần duy nhất
     if (!document.getElementById('datalistChung_Mon')) {
         let dlMon = document.createElement('datalist'); 
         dlMon.id = 'datalistChung_Mon';
@@ -470,13 +472,20 @@ function xuatMaTranBang(danhSachTiet) {
     }
 
     const duLieuTiet = danhSachTiet || [];
-    const mangLop = (thongSoHocVu.DANH_SACH_LOP && thongSoHocVu.DANH_SACH_LOP.length > 0) ? thongSoHocVu.DANH_SACH_LOP : [...new Set(duLieuTiet.map(t => t.maLop))].sort();
+    const mangLopGoc = (thongSoHocVu.DANH_SACH_LOP && thongSoHocVu.DANH_SACH_LOP.length > 0) ? thongSoHocVu.DANH_SACH_LOP : [...new Set(duLieuTiet.map(t => t.maLop))].sort();
     
-    if (mangLop.length === 0) {
-        thead.innerHTML = '<tr><th class="text-center text-slate-500 py-3 font-bold" style="font-family:\'Times New Roman\',Times,serif;">Chưa có dữ liệu Lớp học</th></tr>';
+    // [LÕI NÂNG CẤP]: Lọc danh sách lớp hiển thị dựa trên ma trận phân quyền
+    let mangLopHienThi = mangLopGoc;
+    if (!quyenSuaChua) { // Nếu không phải admin
+        let cacLopDuocQuyen = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
+        mangLopHienThi = mangLopGoc.filter(lop => cacLopDuocQuyen.includes(lop));
+    }
+
+    if (mangLopHienThi.length === 0) {
+        thead.innerHTML = '<tr><th class="text-center text-slate-500 py-3 font-bold" style="font-family:\'Times New Roman\',Times,serif;">Chưa có dữ liệu Lớp học / Không có quyền</th></tr>';
         tbody.innerHTML = `<tr><td class="text-center py-10" style="font-family:\'Times New Roman\',Times,serif;">
-            <p class="text-red-500 font-bold text-lg mb-2">Hệ thống chưa tìm thấy dữ liệu Danh mục Lớp.</p>
-            <p class="text-sm font-normal text-slate-600">Vui lòng chọn tab <b>"Danh mục Lớp"</b> để thêm lớp, sau đó bấm <b>"Lưu Hệ Thống"</b> và nhấn F5 tải lại trang.</p>
+            <p class="text-red-500 font-bold text-lg mb-2">Hệ thống không tìm thấy lớp hoặc bạn chưa được phân quyền xem bất kỳ lớp nào.</p>
+            <p class="text-sm font-normal text-slate-600">Vui lòng liên hệ Admin để cấp quyền trong tab <b>"Phân quyền Hệ thống"</b>, sau đó tải lại trang.</p>
         </td></tr>`;
         return;
     }
@@ -503,12 +512,11 @@ function xuatMaTranBang(danhSachTiet) {
         <th rowspan="2" class="hidden">Năm học</th>
         <th rowspan="2" class="text-center font-bold align-middle border-t border-b border-r border-slate-400" style="position: sticky; top: 0; left: 145px; z-index: 60; background-color: #f1f5f9; width: 50px; min-width: 50px; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.15); font-family:'Times New Roman',Times,serif;">Tiết</th>`;
     
-    mangLop.forEach(lop => { 
+    mangLopHienThi.forEach(lop => { 
         theadHTML += `<th colspan="2" class="text-center font-extrabold text-slate-900 tracking-widest border-t border-b border-r border-slate-400" style="position: sticky; top: 0; z-index: 50; background-color: #f1f5f9; font-family:'Times New Roman',Times,serif;">${lop}</th>`; 
     });
     theadHTML += `</tr><tr style="height: 40px;">`;
-    mangLop.forEach(() => { 
-        // Đã giảm min-width từ 120px -> 90px (Cột Môn) và 105px -> 85px (Cột N dạy)
+    mangLopHienThi.forEach(() => { 
         theadHTML += `<th class="text-center font-bold text-slate-800 border-b border-r border-slate-400" style="position: sticky; top: 45px; z-index: 50; background-color: #f8fafc; min-width: 130px; font-family:'Times New Roman',Times,serif;">Môn</th>
                       <th class="text-center font-bold text-slate-800 border-b border-r border-slate-400" style="position: sticky; top: 45px; z-index: 50; background-color: #f8fafc; min-width: 110px; font-family:'Times New Roman',Times,serif;">N dạy</th>`; 
     });
@@ -538,7 +546,7 @@ function xuatMaTranBang(danhSachTiet) {
     const bangMauGV = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200', 'bg-teal-200', 'bg-orange-200', 'bg-cyan-200', 'bg-lime-200', 'bg-fuchsia-200', 'bg-rose-200'];
     let mauGiaoVien = {}; if (thongSoHocVu.DANH_SACH_GIAO_VIEN) { thongSoHocVu.DANH_SACH_GIAO_VIEN.forEach((gv, idx) => { mauGiaoVien[gv] = bangMauGV[idx % bangMauGV.length]; }); }
     let gvcnLop = {};
-    mangLop.forEach(lop => {
+    mangLopHienThi.forEach(lop => {
         let demTietGV = {};
         duLieuTiet.forEach(t => { if (t.maLop === lop && t.maGv) demTietGV[t.maGv] = (demTietGV[t.maGv] || 0) + 1; });
         let maxTiet = 0, gvcn = ""; for (let gv in demTietGV) { if (demTietGV[gv] > maxTiet) { maxTiet = demTietGV[gv]; gvcn = gv; } } gvcnLop[lop] = gvcn;
@@ -574,9 +582,9 @@ function xuatMaTranBang(danhSachTiet) {
                 }
 
                 let duLieuDong = null;
-                for (let l = 0; l < mangLop.length; l++) {
-                    if (luoiDuLieu[thu][buoi][tiet] && luoiDuLieu[thu][buoi][tiet][mangLop[l]]) {
-                        duLieuDong = luoiDuLieu[thu][buoi][tiet][mangLop[l]]; break;
+                for (let l = 0; l < mangLopHienThi.length; l++) {
+                    if (luoiDuLieu[thu][buoi][tiet] && luoiDuLieu[thu][buoi][tiet][mangLopHienThi[l]]) {
+                        duLieuDong = luoiDuLieu[thu][buoi][tiet][mangLopHienThi[l]]; break;
                     }
                 }
 
@@ -588,13 +596,12 @@ function xuatMaTranBang(danhSachTiet) {
                 tbodyHTML += `<td id="uiThang_${thu}_${buoi}_${tiet}" data-ngay="${thongTinNgay.ngayDayDu}" class="hidden text-center font-bold text-red-600 align-middle">${valThang}</td>`;
                 tbodyHTML += `<td id="uiNam_${thu}_${buoi}_${tiet}" class="hidden text-center font-bold text-red-600 align-middle">${valNam}</td>`;
                 
-                // [NÂNG CẤP UI]: Định vị ô Tiết và tạo vùng chứa cảnh báo giáo viên trùng lịch
                 tbodyHTML += `<td id="oTiet_${thu}_${buoi}_${tiet}" class="text-center font-bold text-slate-800 align-middle border-b border-r border-slate-300" style="position: sticky; left: 145px; z-index: 40; background-color: #ffffff; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.15);">
                                 <div class="text-base leading-none mt-1">${tiet}</div>
                                 <div class="vung-canh-bao-gv mt-0.5"></div>
                               </td>`;
 
-                mangLop.forEach(lop => {
+                mangLopHienThi.forEach(lop => {
                     const duLieuO = luoiDuLieu[thu][buoi][tiet] ? luoiDuLieu[thu][buoi][tiet][lop] : null;
                     
                     let monGoc = duLieuO ? duLieuO.monHoc : ""; let gvGoc = duLieuO ? duLieuO.maGv : "";
@@ -619,17 +626,13 @@ function xuatMaTranBang(danhSachTiet) {
     });
     tbody.innerHTML = tbodyHTML;
     
-    // [NÂNG CẤP UI]: Gọi hàm kiểm tra ngay sau khi vẽ bảng
     if (typeof kiemTraTrungGiaoVienToanBang === 'function') {
         kiemTraTrungGiaoVienToanBang();
     }
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (ĐÃ NÂNG CẤP TỐC ĐỘ CAO O(N))
-// =========================================================================
-// =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (BẢO TOÀN LỚP ẨN)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -639,7 +642,6 @@ async function luuDuLieu(event, loaiLuu) {
     
     if (loaiLuu === 'khoiphuc') { if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; }
 
-    
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
     if(btn.disabled === undefined) { } else {
@@ -651,23 +653,21 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         
-        // Dùng querySelectorAll gom toàn bộ ô Môn học trong 1 lần quét DOM (Bỏ 4 vòng lặp lồng nhau)
-        // Hệ thống sẽ chỉ quét những ô Môn học đang thực sự có trên lưới
         let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        let setLopDangHienThi = new Set();
         
+        // 1. Quét thu thập dữ liệu của các lớp ĐANG ĐƯỢC HIỂN THỊ trên DOM
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
-            // Kỹ thuật Fast-Fail: Chỉ xử lý nếu ô môn học có dữ liệu
             if (valMon !== "") {
-                // Tách ID (Ví dụ: mon_Thứ 2_Sáng_1_1A1) thành các tham số
                 let parts = oMon.id.split('_'); 
                 let thu = parts[1];
                 let buoi = parts[2];
                 let tiet = parts[3];
-                // Dùng slice để ghép lại tên lớp nếu tên lớp có chứa dấu gạch dưới
                 let lop = parts.slice(4).join('_'); 
                 
-                // Nhặt nhanh dữ liệu Giáo viên tương ứng
+                setLopDangHienThi.add(lop); // Ghi nhận danh sách lớp đang có mặt trên lưới
+                
                 let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
                 let valGv = oGv ? oGv.value.trim() : "";
                 
@@ -690,7 +690,17 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // Sử dụng hàm fetch cải tiến
+        // 2. [LÕI NÂNG CẤP BẢO TOÀN]: Bù đắp dữ liệu của các lớp BỊ ẨN
+        let mangLopDangHienThi = Array.from(setLopDangHienThi);
+        if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
+            duLieuTkbHienTai.forEach(tietGoc => {
+                // Nếu tiết này thuộc về lớp không hiển thị trên DOM, giữ nguyên trạng đẩy vào Payload
+                if (!mangLopDangHienThi.includes(tietGoc.maLop)) {
+                    dsTietLuoi.push(tietGoc);
+                }
+            });
+        }
+
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
             method: 'POST', 
             body: JSON.stringify({ thaoTac: 'luuDuLieu', loaiLuu: loaiLuu, tuan: tuanDangXem, duLieu: dsTietLuoi }) 
@@ -708,9 +718,9 @@ async function luuDuLieu(event, loaiLuu) {
                 btnAn.innerHTML = "Auto Save";
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
-                // [ĐÃ SỬA LỖI]: Bỏ lệnh `await taiDuLieuTKB();` để không load lại UI
-                // Thay bằng thông báo hoàn tất nhẹ nhàng để người dùng biết tiến trình đã xong
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
+                // Cập nhật lại bộ nhớ đệm nội bộ để đảm bảo đồng bộ mới nhất sau khi lưu
+                duLieuTkbHienTai = dsTietLuoi;
             }
         }
     } catch (loi) { 
