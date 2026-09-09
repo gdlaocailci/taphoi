@@ -289,21 +289,10 @@ async function goiThuatToanXepLich() {
 
 function locTheoGiaoVien() { xuatMaTranBang(duLieuTkbHienTai); }
 
-function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '') {
+function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '', duocSuaLop = false) {
     let idThocTinh = idPhanTu ? `id="${idPhanTu}"` : '';
     
-    // [NÂNG CẤP LÕI]: Bóc tách tên Lớp học từ idPhanTu để đối chiếu phân quyền
-    let lopCuaO = "";
-    if (idPhanTu) {
-        let parts = idPhanTu.split('_');
-        if (parts.length > 4) {
-            lopCuaO = parts.slice(4).join('_'); // Lấy tên lớp ở cuối chuỗi
-        }
-    }
-    
-    // Cho phép sửa nếu là Admin HOẶC lớp này nằm trong danh sách được cấp quyền
-    let duocSuaLop = quyenSuaChua || (quyenChiTiet && quyenChiTiet.lop && quyenChiTiet.lop.includes(lopCuaO));
-    
+    // [THUẬT TOÁN]: Quyền đã được tính toán 1 lần duy nhất ở vòng ngoài, chỉ việc nhận biến duocSuaLop
     let thuocTinhKhoa = duocSuaLop ? '' : 'disabled'; 
     let cssKhoa = duocSuaLop ? 'cursor-pointer' : 'cursor-not-allowed opacity-80';
     let cssAn = !isTarget ? 'opacity-0 pointer-events-none select-none' : ''; 
@@ -311,9 +300,7 @@ function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = 
     let idDatalist = loaiDanhSach === 'mon' ? 'datalistChung_Mon' : 'datalistChung_GV';
     let suKienKiemTra = (idPhanTu && idPhanTu.startsWith('gv_')) ? `oninput="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onchange="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onblur="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()"` : '';
 
-    let html = `<input type="text" size="1" list="${idDatalist}" ${idThocTinh} ${thuocTinhKhoa} value="${giaTriMacDinh || ''}" placeholder="--" class="w-full h-full min-w-0 bg-transparent outline-none text-center ${cssKhoa} py-1 font-bold ${kieuText} ${cssAn}" style="font-family:'Times New Roman',Times,serif;" autocomplete="off" onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" ${suKienKiemTra}>`; 
-    
-    return html;
+    return `<input type="text" size="1" list="${idDatalist}" ${idThocTinh} ${thuocTinhKhoa} value="${giaTriMacDinh || ''}" placeholder="--" class="w-full h-full min-w-0 bg-transparent outline-none text-center ${cssKhoa} py-1 font-bold ${kieuText} ${cssAn}" style="font-family:'Times New Roman',Times,serif;" autocomplete="off" onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" ${suKienKiemTra}>`; 
 }
 
 // =========================================================================
