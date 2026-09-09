@@ -445,7 +445,7 @@ function tinhNgayDocLap(ngayDauTuanStr, tenThu) {
 }
 
 // =========================================================================
-// KHỐI 3: VẼ LƯỚI MA TRẬN VÀ LỌC CÁ NHÂN (ĐÃ NÂNG CẤP LỌC QUYỀN LỚP)
+// KHỐI 3.1: VẼ LƯỚI MA TRẬN VÀ LỌC CÁ NHÂN (CẬP NHẬT: HIỂN THỊ CÔNG KHAI)
 // =========================================================================
 function xuatMaTranBang(danhSachTiet) {
     const thead = document.getElementById('tieuDeBang'); 
@@ -474,18 +474,23 @@ function xuatMaTranBang(danhSachTiet) {
     const duLieuTiet = danhSachTiet || [];
     const mangLopGoc = (thongSoHocVu.DANH_SACH_LOP && thongSoHocVu.DANH_SACH_LOP.length > 0) ? thongSoHocVu.DANH_SACH_LOP : [...new Set(duLieuTiet.map(t => t.maLop))].sort();
     
-    // [LÕI NÂNG CẤP]: Lọc danh sách lớp hiển thị dựa trên ma trận phân quyền
+    // [LÕI NÂNG CẤP LẦN 2]: Thuật toán hiển thị đa luồng (Công khai / Phân quyền / Quản trị)
     let mangLopHienThi = mangLopGoc;
-    if (!quyenSuaChua) { // Nếu không phải admin
-        let cacLopDuocQuyen = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
+    let cacLopDuocQuyen = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
+
+    if (!quyenSuaChua && cacLopDuocQuyen.length > 0) {
+        // Trường hợp 1: Có đăng nhập và có phân quyền cụ thể -> Cắt giảm giao diện, chỉ hiện lớp được phân công
         mangLopHienThi = mangLopGoc.filter(lop => cacLopDuocQuyen.includes(lop));
     }
+    // Trường hợp 2 & 3: Khách/Chưa phân quyền (cacLopDuocQuyen.length === 0) HOẶC Admin (quyenSuaChua === true)
+    // -> Giữ nguyên mangLopHienThi = mangLopGoc để hiển thị TKB toàn trường. 
+    // Hàm taoTuyChonDong sẽ tự động kiểm tra và khoá form đối với Khách.
 
     if (mangLopHienThi.length === 0) {
-        thead.innerHTML = '<tr><th class="text-center text-slate-500 py-3 font-bold" style="font-family:\'Times New Roman\',Times,serif;">Chưa có dữ liệu Lớp học / Không có quyền</th></tr>';
+        thead.innerHTML = '<tr><th class="text-center text-slate-500 py-3 font-bold" style="font-family:\'Times New Roman\',Times,serif;">Chưa có dữ liệu Lớp học</th></tr>';
         tbody.innerHTML = `<tr><td class="text-center py-10" style="font-family:\'Times New Roman\',Times,serif;">
-            <p class="text-red-500 font-bold text-lg mb-2">Hệ thống không tìm thấy lớp hoặc bạn chưa được phân quyền xem bất kỳ lớp nào.</p>
-            <p class="text-sm font-normal text-slate-600">Vui lòng liên hệ Admin để cấp quyền trong tab <b>"Phân quyền Hệ thống"</b>, sau đó tải lại trang.</p>
+            <p class="text-red-500 font-bold text-lg mb-2">Hệ thống chưa tìm thấy dữ liệu Danh mục Lớp.</p>
+            <p class="text-sm font-normal text-slate-600">Vui lòng cấu hình dữ liệu tại phần Danh mục Lớp.</p>
         </td></tr>`;
         return;
     }
