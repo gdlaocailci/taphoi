@@ -285,19 +285,63 @@ async function goiThuatToanXepLich() {
 }
 
 // =========================================================================
-// THUẬT TOÁN LỌC GIÁO VIÊN SIÊU TỐC (CHỈ THAO TÁC DOM CSS)
+// THUẬT TOÁN LỌC GIÁO VIÊN SIÊU TỐC (CẬP NHẬT TÌM KIẾM THÔNG MINH V2.5)
 // =========================================================================
 function locTheoGiaoVien() {
     let gvLoc = document.getElementById('locGiaoVien') ? document.getElementById('locGiaoVien').value.trim() : '';
-    
+    let gvLocLC = gvLoc.toLowerCase(); 
+
     let tapHopLopCuaGV = new Set();
-    if (gvLoc !== "" && gvLoc !== "Toàn trường" && duLieuTkbHienTai) {
+    let coTietNaoKhong = false;
+
+    // 1. Quét tìm lớp của giáo viên với thuật toán bóc tách mảng (hỗ trợ dạy ghép)
+    if (gvLoc !== "" && gvLoc !== "Toàn trường" && typeof duLieuTkbHienTai !== 'undefined') {
         duLieuTkbHienTai.forEach(t => {
-            if (t.maGv === gvLoc) tapHopLopCuaGV.add(t.maLop);
+            if (t.maGv) {
+                let gvTkb = t.maGv.trim().toLowerCase();
+                let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+                
+                if (tapHopGvTkb.includes(gvLocLC)) {
+                    tapHopLopCuaGV.add(t.maLop);
+                    coTietNaoKhong = true;
+                }
+            }
         });
     }
 
-    // 1. Quét DOM ẩn hiện Cột Lớp ngay lập tức
+    let tbody = document.getElementById('vungHienThiDuLieu');
+    let thead = document.getElementById('tieuDeBang');
+    
+    // 2. Khôi phục lại trạng thái bảng nếu đang bị cảnh báo trống lịch trước đó
+    if (tbody && tbody.querySelector('.canh-bao-trong-lich')) {
+        let cacDong = tbody.querySelectorAll('tr:not(.canh-bao-trong-lich)');
+        cacDong.forEach(dong => dong.style.display = '');
+        let dongCanhBao = tbody.querySelector('.canh-bao-trong-lich');
+        if (dongCanhBao) dongCanhBao.remove();
+        if (thead) thead.style.display = '';
+    }
+
+    // 3. Xử lý UI báo trống lịch nếu giáo viên hoàn toàn không có tiết
+    if (gvLoc !== "" && gvLoc !== "Toàn trường" && !coTietNaoKhong) {
+        if (thead) thead.style.display = 'none';
+
+        if (tbody) {
+            let cacDong = tbody.querySelectorAll('tr');
+            cacDong.forEach(dong => dong.style.display = 'none'); 
+            
+            let trCanhBao = document.createElement('tr');
+            trCanhBao.className = 'canh-bao-trong-lich bg-orange-50/50';
+            trCanhBao.innerHTML = `<td colspan="3" class="text-center py-12">
+                <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>
+                <p class="text-orange-600 font-bold text-lg mb-1">Đồng chí ${gvLoc} không có lịch lên lớp trong tuần này.</p>
+                <p class="text-sm text-slate-500 font-medium">Vui lòng xóa ô tìm kiếm hoặc chọn "Toàn trường" để hiển thị lại lưới TKB.</p>
+            </td>`;
+            tbody.appendChild(trCanhBao);
+        }
+        return;
+    }
+
+    // 4. Quét DOM ẩn/hiện Cột Lớp theo danh sách đã tìm được
     let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
     tatCaCacCot.forEach(cot => {
         let lopCuaCot = cot.getAttribute('data-cotlop');
@@ -308,13 +352,17 @@ function locTheoGiaoVien() {
         }
     });
 
-    // 2. Làm mờ các ô không phải của GV này để dễ nhìn
+    // 5. Làm mờ các ô không phải của GV này để làm nổi bật lịch dạy
     let cacOGiaoVien = document.querySelectorAll('input[id^="gv_"]');
     cacOGiaoVien.forEach(oGv => {
-        let gvGoc = oGv.value.trim();
+        let gvGoc = oGv.value.trim().toLowerCase();
         let isTarget = true;
-        if (gvLoc !== "" && gvLoc !== "Toàn trường" && gvGoc !== gvLoc) {
-            isTarget = false;
+        
+        if (gvLoc !== "" && gvLoc !== "Toàn trường") {
+            let tapHopGvGoc = gvGoc.split(/[,;&-]/).map(g => g.trim());
+            if (!tapHopGvGoc.includes(gvLocLC)) {
+                isTarget = false;
+            }
         }
         
         let tdGv = oGv.closest('td');
@@ -478,7 +526,7 @@ function tinhNgayDocLap(ngayDauTuanStr, tenThu) {
 }
 
 // =========================================================================
-// KHỐI 3: ENGINE VẼ LƯỚI MA TRẬN (ALGORITHM V2.3 - FIX PHÂN QUYỀN CỘT)
+// KHỐI 3: ENGINE VẼ LƯỚI MA TRẬN (ALGORITHM V2.4 - HOÀN THIỆN PHÂN QUYỀN)
 // =========================================================================
 function xuatMaTranBang(danhSachTiet) {
     const thead = document.getElementById('tieuDeBang'); 
@@ -503,23 +551,30 @@ function xuatMaTranBang(danhSachTiet) {
     }
 
     const duLieuTiet = danhSachTiet || [];
+    const mangLopGoc = (thongSoHocVu.DANH_SACH_LOP && thongSoHocVu.DANH_SACH_LOP.length > 0) ? thongSoHocVu.DANH_SACH_LOP : [...new Set(duLieuTiet.map(t => t.maLop))].sort();
     
-    // [KHẮC PHỤC LỖI]: Trả lại toàn vẹn danh sách lớp để in ra đầy đủ cột cho toàn trường
-    const mangLop = (thongSoHocVu.DANH_SACH_LOP && thongSoHocVu.DANH_SACH_LOP.length > 0) ? thongSoHocVu.DANH_SACH_LOP : [...new Set(duLieuTiet.map(t => t.maLop))].sort();
-    
-    // Khởi tạo bản đồ Quyền sửa O(1) để truyền vào lệnh khóa ô (disabled) thay vì xóa cột
+    // -------------------------------------------------------------------------
+    // [PHỤC HỒI LÕI]: THUẬT TOÁN VẼ CỘT THEO ĐÚNG PHÂN QUYỀN
+    // -------------------------------------------------------------------------
     const dsLopDuocQuyen = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
     const tapLopDuocQuyen = new Set(dsLopDuocQuyen);
+    
+    let mangLopHienThi = mangLopGoc;
+    // Nếu KHÔNG phải Admin VÀ có danh sách lớp được phân quyền -> Chỉ vẽ các lớp được cấp quyền
+    if (!quyenSuaChua && tapLopDuocQuyen.size > 0) {
+        mangLopHienThi = mangLopGoc.filter(lop => tapLopDuocQuyen.has(lop));
+    }
+
     const mapQuyenSuaLop = new Map();
-    mangLop.forEach(lop => {
+    mangLopHienThi.forEach(lop => {
         let duocSua = quyenSuaChua || tapLopDuocQuyen.has(lop);
         mapQuyenSuaLop.set(lop, duocSua);
     });
 
-    if (mangLop.length === 0) {
+    if (mangLopHienThi.length === 0) {
         thead.innerHTML = '<tr><th class="text-center text-slate-500 py-3 font-bold" style="font-family:\'Times New Roman\',Times,serif;">Chưa có dữ liệu Lớp học</th></tr>';
         tbody.innerHTML = `<tr><td class="text-center py-10" style="font-family:\'Times New Roman\',Times,serif;">
-            <p class="text-red-500 font-bold text-lg mb-2">Hệ thống chưa tìm thấy dữ liệu Danh mục Lớp.</p>
+            <p class="text-red-500 font-bold text-lg mb-2">Tài khoản chưa được cấp quyền quản lý lớp nào.</p>
         </td></tr>`;
         return;
     }
@@ -536,18 +591,17 @@ function xuatMaTranBang(danhSachTiet) {
         }
     }
 
-    // Đính kèm thẻ data-cotlop="${lop}" vào tiêu đề để thao tác DOM lọc giáo viên
     let theadHTML = `<tr style="height: 45px;">
         <th rowspan="2" class="text-center font-bold align-middle border-t border-b border-l border-r border-slate-400" style="position: sticky; top: 0; left: 0; z-index: 60; background-color: #f1f5f9; width: 85px; min-width: 85px; font-family:'Times New Roman',Times,serif;">Thứ / Ngày</th>
         <th rowspan="2" class="text-center font-bold align-middle border-t border-b border-r border-slate-400" style="position: sticky; top: 0; left: 85px; z-index: 60; background-color: #f1f5f9; width: 60px; min-width: 60px; font-family:'Times New Roman',Times,serif;">Buổi</th>
         <th rowspan="2" class="hidden">Tuần</th><th rowspan="2" class="hidden">Tháng</th><th rowspan="2" class="hidden">Năm học</th>
         <th rowspan="2" class="text-center font-bold align-middle border-t border-b border-r border-slate-400" style="position: sticky; top: 0; left: 145px; z-index: 60; background-color: #f1f5f9; width: 50px; min-width: 50px; box-shadow: 3px 0 5px -2px rgba(0,0,0,0.15); font-family:'Times New Roman',Times,serif;">Tiết</th>`;
     
-    mangLop.forEach(lop => { 
+    mangLopHienThi.forEach(lop => { 
         theadHTML += `<th colspan="2" data-cotlop="${lop}" class="text-center font-extrabold text-slate-900 tracking-widest border-t border-b border-r border-slate-400" style="position: sticky; top: 0; z-index: 50; background-color: #f1f5f9; font-family:'Times New Roman',Times,serif;">${lop}</th>`; 
     });
     theadHTML += `</tr><tr style="height: 40px;">`;
-    mangLop.forEach(lop => { 
+    mangLopHienThi.forEach(lop => { 
         theadHTML += `<th data-cotlop="${lop}" class="text-center font-bold text-slate-800 border-b border-r border-slate-400" style="position: sticky; top: 45px; z-index: 50; background-color: #f8fafc; min-width: 130px; font-family:'Times New Roman',Times,serif;">Môn</th>
                       <th data-cotlop="${lop}" class="text-center font-bold text-slate-800 border-b border-r border-slate-400" style="position: sticky; top: 45px; z-index: 50; background-color: #f8fafc; min-width: 110px; font-family:'Times New Roman',Times,serif;">N dạy</th>`; 
     });
@@ -562,7 +616,7 @@ function xuatMaTranBang(danhSachTiet) {
         const key = `${thu}_${buoi}_${t.tiet}_${t.maLop}`;
         mapDuLieu.set(key, t);
         
-        if (t.maGv && mangLop.includes(t.maLop)) {
+        if (t.maGv && mangLopHienThi.includes(t.maLop)) {
             const gvKey = `${t.maLop}_${t.maGv}`;
             demTietGV[gvKey] = (demTietGV[gvKey] || 0) + 1;
         }
@@ -573,7 +627,7 @@ function xuatMaTranBang(danhSachTiet) {
     if (thongSoHocVu.DANH_SACH_GIAO_VIEN) { thongSoHocVu.DANH_SACH_GIAO_VIEN.forEach((gv, idx) => { mauGiaoVien[gv] = bangMauGV[idx % bangMauGV.length]; }); }
     
     let gvcnLop = {};
-    mangLop.forEach(lop => {
+    mangLopHienThi.forEach(lop => {
         let maxTiet = 0, gvcn = ""; 
         (thongSoHocVu.DANH_SACH_GIAO_VIEN || []).forEach(gv => {
             let soTiet = demTietGV[`${lop}_${gv}`] || 0;
@@ -619,8 +673,8 @@ function xuatMaTranBang(danhSachTiet) {
                 }
 
                 let duLieuDong = null;
-                for (let l = 0; l < mangLop.length; l++) {
-                    const checkKey = `${thu}_${buoi}_${tiet}_${mangLop[l]}`;
+                for (let l = 0; l < mangLopHienThi.length; l++) {
+                    const checkKey = `${thu}_${buoi}_${tiet}_${mangLopHienThi[l]}`;
                     if (mapDuLieu.has(checkKey)) { duLieuDong = mapDuLieu.get(checkKey); break; }
                 }
 
@@ -637,11 +691,9 @@ function xuatMaTranBang(danhSachTiet) {
                                 <div class="vung-canh-bao-gv mt-0.5"></div>
                               </td>`);
 
-                mangLop.forEach(lop => {
+                mangLopHienThi.forEach(lop => {
                     const cellKey = `${thu}_${buoi}_${tiet}_${lop}`;
                     const duLieuO = mapDuLieu.get(cellKey); 
-                    
-                    // [ĐÃ KHẮC PHỤC]: Nạp đúng quyền khóa ổ (disabled) từ Bản đồ Quyền
                     const duocSuaLopNay = mapQuyenSuaLop.get(lop); 
                     
                     let monGoc = duLieuO ? duLieuO.monHoc : ""; let gvGoc = duLieuO ? duLieuO.maGv : "";
@@ -667,8 +719,8 @@ function xuatMaTranBang(danhSachTiet) {
     
     if (typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang();
     
-    // Tự động gọi hàm lọc DOM ngay sau khi kết xuất để áp dụng trạng thái ô tìm kiếm (nếu có)
-    locTheoGiaoVien();
+    // Gọi hàm lọc DOM để áp dụng ẩn cột dựa theo ô tìm kiếm
+    if (typeof locTheoGiaoVien === 'function') locTheoGiaoVien();
 }
 
 // =========================================================================
