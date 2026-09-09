@@ -377,7 +377,6 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    // [LÕI NÂNG CẤP]: Thay đổi thông báo cơ sở cấp quyền trên giao diện
     let theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-pulse-once">
         <div><span class="font-bold text-blue-800">Định danh:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
         <div><span class="font-bold text-blue-800">Cơ sở cấp quyền:</span> <span class="text-blue-700 font-semibold italic">Dựa trên tên Giáo viên tại TKB</span></div>
@@ -449,8 +448,23 @@ function ketXuatSoDauBaiLenLuoi() {
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase() : '';
                 let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
 
-                // [LÕI NÂNG CẤP]: Cấp quyền ký sổ ĐỘC LẬP HOÀN TOÀN TỪ TKB HOẶC TÀI KHOẢN ADMIN
-                let quyenNhapThuCong = quyenQuanTri || (maGvDangNhapLC !== '' && gvTkb === maGvDangNhapLC);
+                // =====================================================================
+                // THUẬT TOÁN ĐỐI CHIẾU MA TRẬN 1:1 TỪ LƯỚI TKB_HIENTAI
+                // =====================================================================
+                let quyenNhapThuCong = false;
+                
+                if (quyenQuanTri) {
+                    quyenNhapThuCong = true;
+                } else if (monHoc !== '' && maGvDangNhapLC !== '') {
+                    // Tách mảng phòng trường hợp ô TKB có nhiều giáo viên dạy ghép
+                    let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+                    if (tapHopGvTkb.includes(maGvDangNhapLC)) {
+                        quyenNhapThuCong = true;
+                    }
+                }
+                
+                // Gắn cờ sở hữu ô chữ ký cho giáo viên để hàm lưu kích hoạt cảnh báo quên ký
+                let thuocVeGvHienTai = quyenNhapThuCong && !quyenQuanTri;
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
                 let cssTenBai = ""; let theTenBai = "";
@@ -488,7 +502,9 @@ function ketXuatSoDauBaiLenLuoi() {
                                 <option value="TB" ${optTB}>TB</option>
                                 <option value="Yếu" ${optYeu}>Yếu</option>
                             </select>`;
-                        theChuKy = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300" placeholder="Ghi rõ họ tên..." value="${chuKy}">`;
+                            
+                        // Đã chèn thuộc tính data-thuocve
+                        theChuKy = `<input type="text" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300" placeholder="Ghi rõ họ tên..." value="${chuKy}">`;
                     }
                 }
 
