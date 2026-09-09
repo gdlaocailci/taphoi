@@ -288,19 +288,63 @@ async function goiThuatToanXepLich() {
 }
 
 // =========================================================================
-// THUẬT TOÁN LỌC GIÁO VIÊN SIÊU TỐC (CHỈ THAO TÁC DOM CSS)
+// THUẬT TOÁN LỌC GIÁO VIÊN SIÊU TỐC (CẬP NHẬT TÌM KIẾM THÔNG MINH V2.2)
 // =========================================================================
 function locTheoGiaoVien() {
     let gvLoc = document.getElementById('locGiaoVien') ? document.getElementById('locGiaoVien').value.trim() : '';
-    
+    let gvLocLC = gvLoc.toLowerCase(); // Chuyển về chữ thường để so sánh chuẩn
+
     let tapHopLopCuaGV = new Set();
-    if (gvLoc !== "" && gvLoc !== "Toàn trường" && duLieuTkbHienTai) {
+    let coTietNaoKhong = false;
+
+    // 1. Quét tìm lớp của giáo viên với thuật toán bóc tách mảng (hỗ trợ dạy ghép)
+    if (gvLoc !== "" && gvLoc !== "Toàn trường" && typeof duLieuTkbHienTai !== 'undefined') {
         duLieuTkbHienTai.forEach(t => {
-            if (t.maGv === gvLoc) tapHopLopCuaGV.add(t.maLop);
+            if (t.maGv) {
+                let gvTkb = t.maGv.trim().toLowerCase();
+                // Bóc tách mảng phòng trường hợp ô TKB có nhiều giáo viên (VD: "Chẳn A1, Nga B1")
+                let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+                
+                if (tapHopGvTkb.includes(gvLocLC)) {
+                    tapHopLopCuaGV.add(t.maLop);
+                    coTietNaoKhong = true;
+                }
+            }
         });
     }
 
-    // 1. Quét DOM ẩn hiện Cột Lớp ngay lập tức
+    let tbody = document.getElementById('vungHienThiDuLieu');
+    
+    // 2. Khôi phục lại trạng thái bảng nếu đang bị cảnh báo trống lịch trước đó
+    if (tbody && tbody.querySelector('.canh-bao-trong-lich')) {
+        let cacDong = tbody.querySelectorAll('tr:not(.canh-bao-trong-lich)');
+        cacDong.forEach(dong => dong.style.display = '');
+        let dongCanhBao = tbody.querySelector('.canh-bao-trong-lich');
+        if (dongCanhBao) dongCanhBao.remove();
+    }
+
+    // 3. Xử lý UI báo trống lịch nếu giáo viên hoàn toàn không có tiết
+    if (gvLoc !== "" && gvLoc !== "Toàn trường" && !coTietNaoKhong) {
+        let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
+        tatCaCacCot.forEach(cot => cot.classList.add('hidden'));
+
+        if (tbody) {
+            let cacDong = tbody.querySelectorAll('tr');
+            cacDong.forEach(dong => dong.style.display = 'none'); 
+            
+            let trCanhBao = document.createElement('tr');
+            trCanhBao.className = 'canh-bao-trong-lich bg-orange-50/50';
+            trCanhBao.innerHTML = `<td colspan="3" class="text-center py-12">
+                <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-3"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>
+                <p class="text-orange-600 font-bold text-lg mb-1">Đồng chí ${gvLoc} không có lịch lên lớp trong tuần này.</p>
+                <p class="text-sm text-slate-500 font-medium">Vui lòng xóa ô tìm kiếm hoặc chọn "Toàn trường" để hiển thị lại lưới TKB.</p>
+            </td>`;
+            tbody.appendChild(trCanhBao);
+        }
+        return;
+    }
+
+    // 4. Quét DOM ẩn/hiện Cột Lớp theo danh sách đã tìm được
     let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
     tatCaCacCot.forEach(cot => {
         let lopCuaCot = cot.getAttribute('data-cotlop');
@@ -311,13 +355,17 @@ function locTheoGiaoVien() {
         }
     });
 
-    // 2. Làm mờ các ô không phải của GV này để dễ nhìn
+    // 5. Làm mờ các ô không phải của GV này để làm nổi bật lịch dạy
     let cacOGiaoVien = document.querySelectorAll('input[id^="gv_"]');
     cacOGiaoVien.forEach(oGv => {
-        let gvGoc = oGv.value.trim();
+        let gvGoc = oGv.value.trim().toLowerCase();
         let isTarget = true;
-        if (gvLoc !== "" && gvLoc !== "Toàn trường" && gvGoc !== gvLoc) {
-            isTarget = false;
+        
+        if (gvLoc !== "" && gvLoc !== "Toàn trường") {
+            let tapHopGvGoc = gvGoc.split(/[,;&-]/).map(g => g.trim());
+            if (!tapHopGvGoc.includes(gvLocLC)) {
+                isTarget = false;
+            }
         }
         
         let tdGv = oGv.closest('td');
