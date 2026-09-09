@@ -377,9 +377,31 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
+    // =====================================================================
+    // LÕI NÂNG CẤP: Quét danh sách môn dạy thực tế của GV trên TKB tuần này
+    // =====================================================================
+    let tapHopMonDay = new Set();
+    let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
+    
+    tkbTuanNay.forEach(dong => {
+        let gvTkb = String(dong['Mã GV']).trim().toLowerCase();
+        let monHoc = String(dong['Môn Học']).trim();
+        
+        if (monHoc !== '') {
+            let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+            if (quyenQuanTri || tapHopGvTkb.includes(maGvDangNhapLC)) {
+                tapHopMonDay.add(monHoc);
+            }
+        }
+    });
+
+    let chuoiMonDay = tapHopMonDay.size > 0 
+        ? Array.from(tapHopMonDay).join(', ') 
+        : '<span class="text-red-500 font-normal">Không có tiết dạy tại lớp này</span>';
+
     let theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-pulse-once">
-        <div><span class="font-bold text-blue-800">Định danh:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
-        <div><span class="font-bold text-blue-800">Cơ sở cấp quyền:</span> <span class="text-blue-700 font-semibold italic">Dựa trên tên Giáo viên tại TKB</span></div>
+        <div><span class="font-bold text-blue-800">Giáo viên:</span> <span class="text-blue-700 font-extrabold">${maGvDangNhapHeThong || 'Chưa nhận diện'}</span></div>
+        <div class="text-left sm:text-right sm:max-w-[70%]"><span class="font-bold text-blue-800">Được phân công dạy:</span> <span class="text-blue-700 font-semibold italic">${chuoiMonDay}</span></div>
     </div>`;
 
     let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
@@ -446,7 +468,6 @@ function ketXuatSoDauBaiLenLuoi() {
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase() : '';
-                let maGvDangNhapLC = maGvDangNhapHeThong.trim().toLowerCase();
 
                 // =====================================================================
                 // THUẬT TOÁN ĐỐI CHIẾU MA TRẬN 1:1 TỪ LƯỚI TKB_HIENTAI
@@ -456,14 +477,13 @@ function ketXuatSoDauBaiLenLuoi() {
                 if (quyenQuanTri) {
                     quyenNhapThuCong = true;
                 } else if (monHoc !== '' && maGvDangNhapLC !== '') {
-                    // Tách mảng phòng trường hợp ô TKB có nhiều giáo viên dạy ghép
                     let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
                     if (tapHopGvTkb.includes(maGvDangNhapLC)) {
                         quyenNhapThuCong = true;
                     }
                 }
                 
-                // Gắn cờ sở hữu ô chữ ký cho giáo viên để hàm lưu kích hoạt cảnh báo quên ký
+                // Gắn cờ sở hữu để cảnh báo quên ký
                 let thuocVeGvHienTai = quyenNhapThuCong && !quyenQuanTri;
 
                 let isEmptyTenBai = tenBai.trim() === '' || tenBai.includes('Chưa có dữ liệu PPCT');
@@ -503,7 +523,6 @@ function ketXuatSoDauBaiLenLuoi() {
                                 <option value="Yếu" ${optYeu}>Yếu</option>
                             </select>`;
                             
-                        // Đã chèn thuộc tính data-thuocve
                         theChuKy = `<input type="text" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300" placeholder="Ghi rõ họ tên..." value="${chuKy}">`;
                     }
                 }
@@ -535,6 +554,8 @@ function ketXuatSoDauBaiLenLuoi() {
 
     htmlBang += `</tbody></table></div>`;
     vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + theHienThiQuyen + htmlBang;
+    
+    // Tự động giãn dòng cho textarea
     setTimeout(() => {
         let cacOVanBan = vungHienThi.querySelectorAll('textarea');
         cacOVanBan.forEach(ta => {
