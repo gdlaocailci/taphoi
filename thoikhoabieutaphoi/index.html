@@ -562,6 +562,20 @@
                 </h3>
                 <button onclick="dongModalThongKeGV()" class="text-white hover:text-red-200 text-3xl leading-none transition-colors">&times;</button>
             </div>
+            
+            <!-- [NÂNG CẤP UI]: THANH TÌM KIẾM TỨC THÌ (REAL-TIME FILTER) -->
+            <div class="bg-slate-100 p-3 border-b border-slate-300 flex items-center">
+                <div class="relative flex-1">
+                    <input type="text" id="locThongKeGV" list="danhSachGvList" 
+                           oninput="locBangThongKeGV()" onchange="locBangThongKeGV()" 
+                           onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" 
+                           placeholder="Bấm để chọn hoặc gõ tên giáo viên để tìm nhanh..." 
+                           autocomplete="off" 
+                           class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-800 shadow-inner transition-all cursor-pointer">
+                    <img src="https://www.svgrepo.com/show/521826/search.svg" class="w-5 h-5 absolute left-3 top-2.5 opacity-50" alt="Lọc">
+                </div>
+            </div>
+
             <div class="p-0 overflow-y-auto custom-scrollbar flex-1 bg-slate-50">
                 <table class="w-full text-sm text-center border-collapse" style="font-family:'Times New Roman',Times,serif;">
                     <thead class="bg-slate-200 text-slate-800 font-bold sticky top-0 shadow-sm z-10">
