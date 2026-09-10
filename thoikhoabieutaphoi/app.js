@@ -1459,25 +1459,20 @@ async function nhapExcelTKB(event) {
 
 // =========================================================================
 // [NÂNG CẤP UI]: KHỐI THỐNG KÊ SỐ TIẾT DẠY THỰC TẾ TRÊN LƯỚI
+// Bao gồm: Động cơ lọc Real-time theo ID giáo viên
 // =========================================================================
 window.hienThiThongKeSoTietGiaoVien = function() {
-    // 1. Quét toàn bộ lưới UI hiện tại để đếm số tiết thực tế đang được chọn (Chống lỗi sai số do chưa Lưu)
     let thongKeThucTe = {};
     const cacOGiaoVien = document.querySelectorAll('input[id^="gv_"]');
     
     cacOGiaoVien.forEach(oGv => {
         let tenGv = oGv.value.trim();
-        // Bỏ qua các ô trống hoặc ký tự mặc định
         if (tenGv !== "" && tenGv !== "--") {
             thongKeThucTe[tenGv] = (thongKeThucTe[tenGv] || 0) + 1;
         }
     });
 
-    // 2. Tải danh sách giáo viên chuẩn và Định mức từ máy chủ
     const danhSachGV = thongSoHocVu.DANH_SACH_GIAO_VIEN || [];
-    
-    // Yêu cầu bắt buộc: Máy chủ cần cấp dữ liệu Object vào biến DINH_MUC_GIAO_VIEN
-    // Ví dụ cấu trúc từ máy chủ: { "Lâm": 23, "Mai": 18, ... }
     const dinhMucGV = thongSoHocVu.DINH_MUC_GIAO_VIEN || {}; 
 
     let htmlKetQua = '';
@@ -1506,34 +1501,33 @@ window.hienThiThongKeSoTietGiaoVien = function() {
                 badge = `<span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-green-200 text-green-800">Khớp chuẩn</span>`;
             }
         } else {
-            // Khi chưa cấp định mức, chỉ hiện con số
             trangThaiCSS = thucTe > 0 ? "text-blue-700 font-bold bg-blue-50" : "text-slate-700";
             dinhMuc = "--"; 
         }
 
+        // Đã bổ sung class "dong-gv" và "ten-gv" để động cơ lọc dễ dàng bóc tách dữ liệu
         htmlKetQua += `
-        <tr class="hover:bg-slate-100 transition-colors border-b border-slate-300">
-            <td class="border-r border-slate-300 p-2 text-left font-bold text-slate-800 pl-4">${gv}</td>
+        <tr class="dong-gv hover:bg-slate-100 transition-colors border-b border-slate-300">
+            <td class="ten-gv border-r border-slate-300 p-2 text-left font-bold text-slate-800 pl-4">${gv}</td>
             <td class="border-r border-slate-300 p-2 font-bold text-slate-600 text-lg">${dinhMuc}</td>
             <td class="p-2 text-lg ${trangThaiCSS}">${thucTe} ${badge}</td>
         </tr>`;
     });
 
-    // 3. Xử lý ngoại lệ: Phát hiện Giáo viên nằm ngoài danh mục nhưng vô tình bị xếp lịch
     Object.keys(thongKeThucTe).forEach(gvNgoai => {
         if (!danhSachGV.includes(gvNgoai)) {
             htmlKetQua += `
-            <tr class="bg-red-50 hover:bg-red-100 border-b border-slate-300">
-                <td class="border-r border-slate-300 p-2 text-left font-bold text-red-700 pl-4">${gvNgoai} <span class="text-[10px] bg-red-200 text-red-800 px-1 rounded ml-1">Ngoài danh sách</span></td>
+            <tr class="dong-gv bg-red-50 hover:bg-red-100 border-b border-slate-300">
+                <td class="ten-gv border-r border-slate-300 p-2 text-left font-bold text-red-700 pl-4">${gvNgoai} <span class="text-[10px] bg-red-200 text-red-800 px-1 rounded ml-1">Ngoài danh sách</span></td>
                 <td class="border-r border-slate-300 p-2 font-bold text-slate-500">--</td>
                 <td class="p-2 text-lg font-extrabold text-red-600">${thongKeThucTe[gvNgoai]}</td>
             </tr>`;
         }
     });
 
-    // 4. Tổng hợp
+    // Dòng tổng cộng được bọc lớp "dong-tong" để miễn nhiễm với bộ lọc tìm kiếm
     htmlKetQua += `
-    <tr class="bg-slate-200 text-slate-900 font-black border-t-2 border-slate-500 uppercase">
+    <tr class="dong-tong bg-slate-200 text-slate-900 font-black border-t-2 border-slate-500 uppercase">
         <td class="border-r border-slate-400 p-3 text-right">TỔNG TOÀN TRƯỜNG:</td>
         <td class="border-r border-slate-400 p-3 text-lg text-slate-700">${tongDinhMuc > 0 ? tongDinhMuc : '--'}</td>
         <td class="p-3 text-xl text-indigo-700">${tongThucTe}</td>
@@ -1541,10 +1535,31 @@ window.hienThiThongKeSoTietGiaoVien = function() {
 
     document.getElementById('noiDungThongKeGV').innerHTML = htmlKetQua;
     
-    // Kích hoạt Modal hiển thị
+    // Tự động xóa nội dung ô tìm kiếm khi mở lại hộp thoại (reset UI)
+    let boLoc = document.getElementById('locThongKeGV');
+    if (boLoc) boLoc.value = '';
+
     const modal = document.getElementById('modalThongKeGV');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+};
+
+// [HÀM ĐỘNG CƠ]: Xử lý sự kiện gõ phím trực tiếp để lọc lưới
+window.locBangThongKeGV = function() {
+    const tuKhoa = document.getElementById('locThongKeGV').value.toLowerCase().trim();
+    const cacDongGV = document.querySelectorAll('#noiDungThongKeGV .dong-gv');
+    
+    cacDongGV.forEach(dong => {
+        const theTen = dong.querySelector('.ten-gv');
+        if (theTen) {
+            const tenGiaoVien = theTen.textContent.toLowerCase();
+            if (tenGiaoVien.includes(tuKhoa)) {
+                dong.style.display = ''; // Khôi phục hiển thị
+            } else {
+                dong.style.display = 'none'; // Ẩn dòng không khớp
+            }
+        }
+    });
 };
 
 window.dongModalThongKeGV = function() {
