@@ -49,8 +49,8 @@ function kiemSoatGiaoDien() {
     const menuDuocCap = (quyenChiTiet && quyenChiTiet.menu) ? quyenChiTiet.menu : [];
     const nutDuocCap = (quyenChiTiet && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
 
-    // 2. Mở khóa Nút Bấm
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB'];
+    // 2. Mở khóa Nút Bấm (Đã bổ sung btnDongBoChuan)
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoChuan'];
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
@@ -81,7 +81,7 @@ function kiemSoatGiaoDien() {
         nhanHT.style.display = coMenuQuanTriDuocMo ? 'flex' : 'none';
     }
 
- // 5. Mở khóa tương tác Ngày/Tuần (Đã mở công khai cho toàn trường)
+    // 5. Mở khóa tương tác Ngày/Tuần (Đã mở công khai cho toàn trường)
     let btnTuanTruoc = document.querySelector('button[onclick="chuyenTuan(-1)"]');
     let btnTuanTiep = document.querySelector('button[onclick="chuyenTuan(1)"]');
     let inputNgay = document.getElementById('chonNgayDauTuan');
