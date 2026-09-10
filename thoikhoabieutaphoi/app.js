@@ -1574,25 +1574,22 @@ window.dongModalThongKeGV = function() {
 };
 // =========================================================================
 // [NÂNG CẤP TỐC ĐỘ CAO]: ĐỘNG CƠ ĐỒNG BỘ VÀ NẮN CHỈNH DỮ LIỆU TỰ ĐỘNG (AUTO-CORRECT)
-// BẢN V2: Đã bổ sung lõi đồng nhất bảng mã tiếng Việt (Unicode NFC)
+// BẢN V3: Bổ sung Trích xuất Tọa độ báo lỗi trực tiếp lên màn hình
 // =========================================================================
 window.dongBoChuanHoaDuLieuUI = function() {
     const dsMonGoc = thongSoHocVu.DANH_SACH_MON_HOC || [];
     const dsGvGoc = thongSoHocVu.DANH_SACH_GIAO_VIEN || [];
 
-    // 1. Chốt chặn an toàn: Báo lỗi nếu Danh mục chưa kịp tải từ máy chủ
     if (dsMonGoc.length === 0 && dsGvGoc.length === 0) {
         alert("⚠️ Lỗi hệ thống: Chưa nạp được Danh mục Môn học và Giáo viên. Vui lòng tải lại trang (F5)!");
         return;
     }
 
-    // 2. Hàm hỗ trợ chuẩn hóa (Ép chuẩn Unicode NFC + Chữ thường + Cắt khoảng trắng)
     const chuanHoaChuoi = (chuoi) => {
         if (!chuoi) return '';
         return String(chuoi).normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
     };
 
-    // 3. Khởi tạo Từ điển đối chiếu tốc độ cao
     const tuDienMon = {};
     dsMonGoc.forEach(mon => { tuDienMon[chuanHoaChuoi(mon)] = String(mon).trim(); });
 
@@ -1600,12 +1597,12 @@ window.dongBoChuanHoaDuLieuUI = function() {
     dsGvGoc.forEach(gv => { tuDienGV[chuanHoaChuoi(gv)] = String(gv).trim(); });
 
     let demSuaLoi = 0;
-    let demLoiRac = 0;
+    let danhSachLoiChiTiet = []; // Mảng lưu tọa độ các ô bị sai
 
     const cacOMon = document.querySelectorAll('input[id^="mon_"]');
     const cacOGv = document.querySelectorAll('input[id^="gv_"]');
 
-    // 4. Quét và nắn chỉnh cột Môn học
+    // 1. Quét cột Môn học
     cacOMon.forEach(oMon => {
         let giaTriUI = oMon.value;
         if (giaTriUI !== "" && giaTriUI !== "--") {
@@ -1613,7 +1610,6 @@ window.dongBoChuanHoaDuLieuUI = function() {
             let giaTriChuan = tuDienMon[keyTruyVan];
 
             if (giaTriChuan) {
-                // Khớp Khóa -> Nắn chỉnh hiển thị về chuẩn
                 if (giaTriUI !== giaTriChuan) {
                     oMon.value = giaTriChuan;
                     oMon.classList.add('bg-teal-100', 'text-teal-900', 'transition-colors');
@@ -1622,15 +1618,16 @@ window.dongBoChuanHoaDuLieuUI = function() {
                     oMon.classList.remove('bg-teal-100', 'text-teal-900', 'bg-red-200', 'text-red-900');
                 }
             } else {
-                // Không khớp -> Đánh dấu rác
                 oMon.classList.add('bg-red-200', 'text-red-900', 'font-extrabold', 'transition-colors');
-                console.warn(`⚠️ Môn không khớp Danh mục: "${giaTriUI}" (Khóa băm: ${keyTruyVan})`);
-                demLoiRac++;
+                // Bóc tách ID để lấy tọa độ: mon_Thứ 2_Sáng_1_1A
+                let parts = oMon.id.split('_'); 
+                let viTri = parts.length === 5 ? `Lớp ${parts[4]} (${parts[1]}, ${parts[2]}, Tiết ${parts[3]})` : 'Không rõ vị trí';
+                danhSachLoiChiTiet.push(`- Môn "${giaTriUI}" tại ${viTri}`);
             }
         }
     });
 
-    // 5. Quét và nắn chỉnh cột Giáo viên
+    // 2. Quét cột Giáo viên
     cacOGv.forEach(oGv => {
         let giaTriUI = oGv.value;
         if (giaTriUI !== "" && giaTriUI !== "--") {
@@ -1647,20 +1644,27 @@ window.dongBoChuanHoaDuLieuUI = function() {
                 }
             } else {
                 oGv.classList.add('bg-red-200', 'text-red-900', 'font-extrabold', 'transition-colors');
-                console.warn(`⚠️ GV không khớp Danh mục: "${giaTriUI}" (Khóa băm: ${keyTruyVan})`);
-                demLoiRac++;
+                let parts = oGv.id.split('_'); 
+                let viTri = parts.length === 5 ? `Lớp ${parts[4]} (${parts[1]}, ${parts[2]}, Tiết ${parts[3]})` : 'Không rõ vị trí';
+                danhSachLoiChiTiet.push(`- GV "${giaTriUI}" tại ${viTri}`);
             }
         }
     });
     
-    // 6. Đánh thức các module liên quan
     if (typeof kiemTraTrungGiaoVienToanBang === 'function') {
         kiemTraTrungGiaoVienToanBang();
     }
 
-    // 7. Tổng kết
-    if (demSuaLoi > 0 || demLoiRac > 0) {
-        alert(`Báo cáo Đồng bộ:\n- Đã nắn chỉnh thành công: ${demSuaLoi} ô (Màu xanh).\n- Cảnh báo dữ liệu rác/sai tên: ${demLoiRac} ô (Màu đỏ).`);
+    // 3. Tổng hợp thông báo thông minh
+    if (demSuaLoi > 0 || danhSachLoiChiTiet.length > 0) {
+        let thongBao = `Báo cáo Đồng bộ:\n- Đã nắn chỉnh: ${demSuaLoi} ô (Xanh).\n- Cảnh báo rác: ${danhSachLoiChiTiet.length} ô (Đỏ).\n`;
+        
+        if (danhSachLoiChiTiet.length > 0) {
+            // Giới hạn hiển thị tối đa 15 lỗi để popup không bị tràn màn hình
+            thongBao += `\n📍 CHI TIẾT VỊ TRÍ LỖI:\n` + danhSachLoiChiTiet.slice(0, 15).join('\n');
+            if (danhSachLoiChiTiet.length > 15) thongBao += `\n... và ${danhSachLoiChiTiet.length - 15} lỗi khác.`;
+        }
+        alert(thongBao);
     } else {
         alert("Tuyệt vời! Toàn bộ dữ liệu trên lưới Thời khóa biểu đã khớp chuẩn 100% với danh mục máy chủ.");
     }
