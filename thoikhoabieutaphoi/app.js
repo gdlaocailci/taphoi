@@ -1546,14 +1546,19 @@ window.hienThiThongKeSoTietGiaoVien = function() {
 
 // [HÀM ĐỘNG CƠ]: Xử lý sự kiện gõ phím trực tiếp để lọc lưới
 window.locBangThongKeGV = function() {
-    const tuKhoa = document.getElementById('locThongKeGV').value.toLowerCase().trim();
+    const inputLoc = document.getElementById('locThongKeGV');
+    if (!inputLoc) return;
+    
+    const tuKhoa = inputLoc.value.toLowerCase().trim();
     const cacDongGV = document.querySelectorAll('#noiDungThongKeGV .dong-gv');
     
     cacDongGV.forEach(dong => {
         const theTen = dong.querySelector('.ten-gv');
         if (theTen) {
             const tenGiaoVien = theTen.textContent.toLowerCase();
-            if (tenGiaoVien.includes(tuKhoa)) {
+            
+            // Xử lý logic: Nếu ô tìm kiếm rỗng, hoặc chọn "toàn trường", thì hiển thị tất cả
+            if (tuKhoa === '' || tuKhoa === 'toàn trường' || tenGiaoVien.includes(tuKhoa)) {
                 dong.style.display = ''; // Khôi phục hiển thị
             } else {
                 dong.style.display = 'none'; // Ẩn dòng không khớp
