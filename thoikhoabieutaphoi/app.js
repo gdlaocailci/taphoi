@@ -419,19 +419,70 @@ function locTheoGiaoVien() {
     });
 }
 
-function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '', duocSuaLop = false) {
+function taoTuyChonDong(danhSach, giaTriMacDinh, kieuText, idPhanTu, isTarget = true, loaiDanhSach = '') {
     let idThocTinh = idPhanTu ? `id="${idPhanTu}"` : '';
-    
-    // [THUẬT TOÁN]: Quyền đã được tính toán 1 lần duy nhất ở vòng ngoài, chỉ việc nhận biến duocSuaLop
-    let thuocTinhKhoa = duocSuaLop ? '' : 'disabled'; 
-    let cssKhoa = duocSuaLop ? 'cursor-pointer' : 'cursor-not-allowed opacity-80';
+    let thuocTinhKhoa = quyenSuaChua ? '' : 'disabled'; 
+    let cssKhoa = quyenSuaChua ? 'cursor-pointer' : 'cursor-not-allowed opacity-80';
     let cssAn = !isTarget ? 'opacity-0 pointer-events-none select-none' : ''; 
     
     let idDatalist = loaiDanhSach === 'mon' ? 'datalistChung_Mon' : 'datalistChung_GV';
-    let suKienKiemTra = (idPhanTu && idPhanTu.startsWith('gv_')) ? `oninput="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onchange="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()" onblur="if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang()"` : '';
+    
+    // [LÕI NÂNG CẤP]: Tích hợp hàm Xác thực Giá trị hợp lệ vào sự kiện onchange và onblur
+    let kieuKiemTraGV = (idPhanTu && idPhanTu.startsWith('gv_')) ? `if(typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang();` : '';
+    let suKienMoi = `oninput="${kieuKiemTraGV}" onchange="xacThucGiaTriHopLe(this, '${loaiDanhSach}'); ${kieuKiemTraGV}" onblur="xacThucGiaTriHopLe(this, '${loaiDanhSach}'); ${kieuKiemTraGV}"`;
 
-    return `<input type="text" size="1" list="${idDatalist}" ${idThocTinh} ${thuocTinhKhoa} value="${giaTriMacDinh || ''}" placeholder="--" class="w-full h-full min-w-0 bg-transparent outline-none text-center ${cssKhoa} py-1 font-bold ${kieuText} ${cssAn}" style="font-family:'Times New Roman',Times,serif;" autocomplete="off" onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" ${suKienKiemTra}>`; 
+    let html = `<input type="text" size="1" list="${idDatalist}" ${idThocTinh} ${thuocTinhKhoa} value="${giaTriMacDinh || ''}" placeholder="--" class="w-full h-full min-w-0 bg-transparent outline-none text-center ${cssKhoa} py-1 font-bold ${kieuText} ${cssAn}" style="font-family:'Times New Roman',Times,serif;" autocomplete="off" onclick="if(this.showPicker) this.showPicker();" onfocus="this.select()" ${suKienMoi}>`; 
+    
+    return html;
 }
+
+// HÀM BỔ SUNG: Bức tường lửa ngăn chặn dữ liệu rác trên lưới UI (Auto-Revert & Validation)
+window.xacThucGiaTriHopLe = function(inputEl, loaiDanhSach) {
+    if (!inputEl) return;
+    let giaTri = inputEl.value.trim();
+
+    // 1. Cho phép xóa trắng hoặc để nguyên gạch ngang
+    if (giaTri === '' || giaTri === '--') {
+        inputEl.value = '';
+        return;
+    }
+
+    // 2. Lấy hệ quy chiếu chuẩn
+    let danhSachChuan = (loaiDanhSach === 'mon') ? (thongSoHocVu.DANH_SACH_MON_HOC || []) : (thongSoHocVu.DANH_SACH_GIAO_VIEN || []);
+
+    // 3. Khớp tuyệt đối -> Bỏ qua
+    if (danhSachChuan.includes(giaTri)) {
+        inputEl.value = giaTri;
+        return;
+    }
+
+    // 4. Khớp tương đối (Auto-correct): Bỏ qua lỗi hoa/thường, Unicode, khoảng trắng
+    let giaTriChuanHoa = giaTri.normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+    let giaTriDung = null;
+
+    for (let i = 0; i < danhSachChuan.length; i++) {
+        let itemChuanHoa = danhSachChuan[i].normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+        if (giaTriChuanHoa === itemChuanHoa) {
+            giaTriDung = danhSachChuan[i];
+            break;
+        }
+    }
+
+    if (giaTriDung) {
+        // Tự động nắn thẳng lại giá trị đúng chuẩn cho người dùng
+        inputEl.value = giaTriDung;
+    } else {
+        // 5. Khước từ dữ liệu: Xóa trắng và nháy cảnh báo nền Đỏ
+        inputEl.value = '';
+        if (inputEl.parentElement && inputEl.parentElement.tagName === 'TD') {
+            let theTd = inputEl.parentElement;
+            theTd.classList.add('bg-red-300', 'transition-colors', 'duration-300');
+            setTimeout(() => {
+                theTd.classList.remove('bg-red-300');
+            }, 800);
+        }
+    }
+};
 
 // =========================================================================
 // KHỐI 2: ĐỐI CHIẾU ĐỊNH MỨC VÀ KIỂM TRA
