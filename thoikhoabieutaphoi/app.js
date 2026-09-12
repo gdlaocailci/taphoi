@@ -86,8 +86,8 @@ function kiemSoatGiaoDien() {
     let btnTuanTiep = document.getElementById('btnTuanTiep');
     let inputNgay = document.getElementById('chonNgayDauTuan');
 
-    // Điều kiện mở khóa: Là Admin HOẶC được phân quyền thao tác
-    let coQuyenChuyenTuan = quyenSuaChua || lopDuocCap.length > 0 || nutDuocCap.length > 0 || menuDuocCap.length > 0;
+    // ĐÃ SỬA: Điều kiện mở khóa giờ đây chỉ phụ thuộc vào Admin HOẶC được tick đúng hộp "Mũi tên Chuyển tuần"
+    let coQuyenChuyenTuan = quyenSuaChua || nutDuocCap.includes('btnChuyenTuan');
 
     if (coQuyenChuyenTuan) {
         // Hiện lại mũi tên và mở khóa ô chọn ngày cho người có quyền
