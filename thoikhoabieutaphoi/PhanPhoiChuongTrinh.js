@@ -795,7 +795,9 @@ async function luuDuLieuPPCTLenMayChu(event) {
 
     try {
         const payload = { thaoTac: 'luuPPCT', duLieu: mangGhi };
-        const phanHoi = await fetch(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+        
+        // [LÕI NÂNG CẤP]: Thay thế fetch bằng fetchVoiCoCheThuLai để xử lý chuyển hướng 302 của Google
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -804,7 +806,7 @@ async function luuDuLieuPPCTLenMayChu(event) {
         if (ketQua.trangThai === 'Thành công') {
             alert(`Đã lưu Phân phối chương trình Môn ${mon} - Khối ${khoi} lên hệ thống thành công!`);
             
-            // [NÂNG CẤP]: Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
+            // Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
             document.querySelectorAll('tr[data-da-sua="true"]').forEach(tr => {
                 tr.removeAttribute('data-da-sua');
                 tr.classList.remove('bg-amber-100', 'hover:bg-amber-200');
@@ -813,19 +815,19 @@ async function luuDuLieuPPCTLenMayChu(event) {
                 if (badge) badge.remove();
             });
 
-            // [TÍNH NĂNG MỚI]: Tự động dọn dẹp bảng lưới xem trước Excel sau khi chốt dữ liệu
+            // Tự động dọn dẹp bảng lưới xem trước Excel sau khi chốt dữ liệu
             document.querySelectorAll('.dong-xem-truoc-excel').forEach(dong => dong.remove());
             
         } else {
             alert(`Sự cố lưu trữ: ${ketQua.thongBao}`);
         }
     } catch (loi) {
-        alert('Lỗi kết nối máy chủ.');
+        // Bắt và in ra lỗi chi tiết thay vì báo lỗi chung chung
+        alert('Lỗi kết nối máy chủ: ' + loi.message);
     } finally {
         nutBam.innerHTML = noiDungGoc;
         nutBam.disabled = false;
     }
-}
 
 // =========================================================================
 // KHỐI 6: XỬ LÝ XOÁ DỮ LIỆU TRA CỨU TRÊN UI
