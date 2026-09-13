@@ -402,19 +402,32 @@ function veBangKhungLichPPCT(monDangChon) {
             };
         });
     }
+//*****************************************************************************************************************************************************************
+    // [TỐI ƯU HIỆU NĂNG SIÊU TỐC]: Chuẩn hóa mảng PPCT gốc một lần duy nhất trước khi vào vòng lặp
+    let duLieuPpctDaChuanHoa = duLieuPpctGoc.map(b => {
+        let m = String(b.mon || b.monHoc || b.tenMon || b["Môn học"] || b["Môn"] || "").normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+        let mGoc = m.replace(/[0-9\(\)]/g, '').trim();
+        return { ...b, mChuan: m, mGoc: mGoc };
+    });
 
-    // Lọc mảng PPCT tương thích kép (Khớp môn hiển thị trên TKB hoặc môn gốc)
+    // Tạo bộ đệm (Cache) lưu kết quả. Môn nào đã lọc và sắp xếp rồi thì các tiết sau chỉ việc lấy ra dùng, không tính lại.
+    let cachePpctTheoMon = {};
+
     let getPpctGocChoMon = (monGrid) => {
         let monGridChuan = String(monGrid).normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
         let monGridGoc = monGridChuan.replace(/[0-9\(\)]/g, '').trim();
         
-        return duLieuPpctGoc.filter(b => {
-            let m = String(b.mon || b.monHoc || b.tenMon || b["Môn học"] || b["Môn"] || "").normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
-            let mGoc = m.replace(/[0-9\(\)]/g, '').trim();
-            
-            if (m === "") return !isXemTatCa;
-            return m === monGridChuan || m === monGridGoc || mGoc === monGridGoc;
+        // Truy xuất Cache siêu tốc O(1)
+        if (cachePpctTheoMon[monGridChuan]) return cachePpctTheoMon[monGridChuan];
+        
+        let ketQuaLoc = duLieuPpctDaChuanHoa.filter(b => {
+            if (b.mChuan === "") return !isXemTatCa;
+            return b.mChuan === monGridChuan || b.mChuan === monGridGoc || b.mGoc === monGridGoc;
         }).sort((a, b) => parseInt(a.tietPpc || a.tiet || 0) - parseInt(b.tietPpc || b.tiet || 0));
+        
+        // Đóng băng kết quả vào Cache cho các vòng lặp sau
+        cachePpctTheoMon[monGridChuan] = ketQuaLoc; 
+        return ketQuaLoc;
     };
 
     let tongSoDongMucTieu = 0;
