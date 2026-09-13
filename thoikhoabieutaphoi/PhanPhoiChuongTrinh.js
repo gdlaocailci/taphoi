@@ -1,15 +1,16 @@
+// =========================================================================
 // KHỐI 1: KHỞI TẠO BIẾN TOÀN CỤC VÀ GẮN GIAO DIỆN VÀO DOM
 // =========================================================================
 let duLieuPpctGoc = []; 
 let duLieuTkbTuan = [];
 let trangThaiDaTaiGiaoDienPPCT = false;
-let trangThaiChoPhepSua = false; // [NÂNG CẤP]: Biến lưu trạng thái khoá/mở sửa bảng
+let trangThaiChoPhepSua = false; 
 
 document.addEventListener('DOMContentLoaded', () => {
     taoMenuPhanPhoiChuongTrinh();
     taoKhungGiaoDienPPCT();
     
-    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin
+    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin hiển thị nút công cụ
     setInterval(() => {
         if (typeof quyenSuaChua !== 'undefined') {
             let nhomNut = document.getElementById('nhomNutCongCuPPCT');
@@ -36,6 +37,7 @@ function taoMenuPhanPhoiChuongTrinh() {
             </svg>
             <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px]">Phân phối Chương trình</span>
         `;
+        // Neo chính xác vị trí ngay sau menu Thống kê
         menuThongKe.insertAdjacentElement('afterend', menuPPCT);
     }
 }
