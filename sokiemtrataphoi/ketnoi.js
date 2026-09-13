@@ -1,5 +1,5 @@
 /* KHỐI CÁC BIẾN CỐ ĐỊNH TÒAN HỆ THỐNG */
-const SKT_GAS_URL = "https://script.google.com/macros/s/AKfycbwBaprkj2LUrToDh21ZFxLYYT9Yv95STNjZwi2St3rQIkKW7TqTdyF6BPEK9qP0xaBN/exec";
+const SKT_GAS_URL = "https://script.google.com/macros/s/AKfycbx87A1TRWstWBIwDL1gCTT4Y1KnQrn3nR1UfQt7UE639MDQRb9lYHhWaT24vT3nq-Zz/exec";
 const SKT_GOOGLE_CLIENT_ID = "1097384743947-1jdc5rhhmbu0s9jp5vgt814g4f4id7lu.apps.googleusercontent.com";
 const SKT_LINK_YOUTUBE = "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q"; 
 const SKT_TEN_PM = "Hồ sơ Kiểm Tra Nội Bộ";
