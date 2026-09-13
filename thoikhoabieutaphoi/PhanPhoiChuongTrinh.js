@@ -4,13 +4,13 @@
 let duLieuPpctGoc = []; 
 let duLieuTkbTuan = [];
 let trangThaiDaTaiGiaoDienPPCT = false;
-let trangThaiChoPhepSua = false; 
+let trangThaiChoPhepSua = false; // [NÂNG CẤP]: Biến lưu trạng thái khoá/mở sửa bảng
 
 document.addEventListener('DOMContentLoaded', () => {
     taoMenuPhanPhoiChuongTrinh();
     taoKhungGiaoDienPPCT();
     
-    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin hiển thị nút công cụ
+    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin
     setInterval(() => {
         if (typeof quyenSuaChua !== 'undefined') {
             let nhomNut = document.getElementById('nhomNutCongCuPPCT');
@@ -37,7 +37,6 @@ function taoMenuPhanPhoiChuongTrinh() {
             </svg>
             <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px]">Phân phối Chương trình</span>
         `;
-        // Neo chính xác vị trí ngay sau menu Thống kê
         menuThongKe.insertAdjacentElement('afterend', menuPPCT);
     }
 }
@@ -797,9 +796,7 @@ async function luuDuLieuPPCTLenMayChu(event) {
 
     try {
         const payload = { thaoTac: 'luuPPCT', duLieu: mangGhi };
-        
-        // [LÕI NÂNG CẤP]: Thay thế fetch bằng fetchVoiCoCheThuLai để xử lý chuyển hướng 302 của Google
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+        const phanHoi = await fetch(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -808,7 +805,7 @@ async function luuDuLieuPPCTLenMayChu(event) {
         if (ketQua.trangThai === 'Thành công') {
             alert(`Đã lưu Phân phối chương trình Môn ${mon} - Khối ${khoi} lên hệ thống thành công!`);
             
-            // Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
+            // [NÂNG CẤP]: Xóa bỏ cờ và trả lại giao diện sạch sẽ ngay sau khi Lưu thành công
             document.querySelectorAll('tr[data-da-sua="true"]').forEach(tr => {
                 tr.removeAttribute('data-da-sua');
                 tr.classList.remove('bg-amber-100', 'hover:bg-amber-200');
@@ -817,19 +814,19 @@ async function luuDuLieuPPCTLenMayChu(event) {
                 if (badge) badge.remove();
             });
 
-            // Tự động dọn dẹp bảng lưới xem trước Excel sau khi chốt dữ liệu
+            // [TÍNH NĂNG MỚI]: Tự động dọn dẹp bảng lưới xem trước Excel sau khi chốt dữ liệu
             document.querySelectorAll('.dong-xem-truoc-excel').forEach(dong => dong.remove());
             
         } else {
             alert(`Sự cố lưu trữ: ${ketQua.thongBao}`);
         }
     } catch (loi) {
-        // Bắt và in ra lỗi chi tiết thay vì báo lỗi chung chung
-        alert('Lỗi kết nối máy chủ: ' + loi.message);
+        alert('Lỗi kết nối máy chủ.');
     } finally {
         nutBam.innerHTML = noiDungGoc;
         nutBam.disabled = false;
     }
+}
 
 // =========================================================================
 // KHỐI 6: XỬ LÝ XOÁ DỮ LIỆU TRA CỨU TRÊN UI
