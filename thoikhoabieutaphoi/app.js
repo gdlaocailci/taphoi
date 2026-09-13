@@ -6,7 +6,6 @@ let tuanDangXem = 1;
 let ngayDauTuanUI = '';
 
 document.addEventListener('DOMContentLoaded', () => { khoiTaoGiaoDien(); });
-
 async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
     for (let i = 0; i < soLanThu; i++) {
         try {
@@ -25,7 +24,6 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3) {
             } catch (loiCuPhap) {
                 throw new Error("Dữ liệu trả về bị nhiễu định dạng (Google Apps Script đang bận).");
             }
-
             // Đóng gói lại thành đối tượng Response chuẩn để các hàm khác gọi .json() mượt mà
             return new Response(noiDungText, {
                 status: phanHoi.status,
