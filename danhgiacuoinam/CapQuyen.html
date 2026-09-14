@@ -98,7 +98,17 @@ function cq_HienThiBang() {
 }
 
 function cq_TaoDHTMLDong(index, id_sheet, email, ho_ten, quyen) {
-    let opts = ["--Chọn quyền--", "Giáo viên cấp 1","Giáo viên cấp 2", "Tổ phó cấp 1", "Tổ phó cấp 2","Tổ trưởng cấp 1", "Tổ trưởng cấp 2", "Tổ trưởng VP", "Tổ phó VP", "Nhân viên", "Tổng phụ trách cấp 1", "Tổng phụ trách cấp 2", "Admin", "Admin VIP"];
+    // Đã bổ sung toàn bộ hệ thống chức danh Vùng cao (Giáo viên, Tổ phó, Tổ trưởng, Tổng phụ trách)
+    let opts = [
+        "--Chọn quyền--", 
+        "Giáo viên cấp 1", "Giáo viên cấp 2", "Giáo viên C1 VC", "Giáo viên C2 VC",
+        "Tổ phó cấp 1", "Tổ phó cấp 2", "Tổ phó C1 VC", "Tổ phó C2 VC",
+        "Tổ trưởng cấp 1", "Tổ trưởng cấp 2", "Tổ trưởng C1 VC", "Tổ trưởng C2 VC",
+        "Tổng phụ trách cấp 1", "Tổng phụ trách cấp 2", "Tổng phụ trách C1 VC", "Tổng phụ trách C2 VC",
+        "Tổ trưởng VP", "Tổ phó VP", "Nhân viên", 
+        "Admin", "Admin VIP"
+    ];
+    
     let selHTML = `<select class="cq-quyen">`;
     let found = false;
     let quyenChuan = quyen ? quyen.toString().trim() : ""; 
@@ -111,6 +121,7 @@ function cq_TaoDHTMLDong(index, id_sheet, email, ho_ten, quyen) {
     });
     if (!found && quyenChuan !== "") selHTML += `<option value="${quyenChuan}" selected>${quyenChuan}</option>`;
     selHTML += `</select>`;
+    
     return `<tr><td><button class="btn-xoa-dong" onclick="cq_XoaDong(this)">Xóa</button></td><td class="cq-stt">${index+1}</td><td><input type="text" class="cq-id" value="${id_sheet}" onblur="cq_KiemTraTrungID(this)" oninput="cq_ResetBorder(this)"></td><td><input type="text" class="cq-email" value="${email}"></td><td><input type="text" class="cq-hoten" value="${ho_ten}"><td>${selHTML}</td>`;
 }
 
