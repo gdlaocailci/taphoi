@@ -3,28 +3,44 @@ const TIEU_DE_DM_GV = ['Mã GV', 'Họ Tên', 'Tổ Chuyên Môn', 'Định Mứ
 
 async function taiDuLieuDanhMucGV() {
     const tbody = document.getElementById('vungDuLieuDanhMucGV');
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-500 font-bold"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải Danh mục Giáo viên...</td></tr>`;
+    const cacheKey = "CACHE_DM_GIAO_VIEN";
+    const duLieuDem = localStorage.getItem(cacheKey);
+
+    if (duLieuDem) {
+        try {
+            duLieuDanhMucGV = JSON.parse(duLieuDem);
+            veBangDanhMucGV();
+        } catch(e) { console.warn("Lỗi đọc đệm DMGV"); }
+    } else {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-500 font-bold"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải Danh mục Giáo viên...</td></tr>`;
+    }
     
     try {
         const phanHoi = await fetch(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDanhMucGV`);
         const duLieuS = await phanHoi.json();
         
-        duLieuDanhMucGV = [];
+        let dataMoi = [];
         if (duLieuS && duLieuS.length > 1) {
             for (let i = 1; i < duLieuS.length; i++) {
-                duLieuDanhMucGV.push({
+                dataMoi.push({
                     maGv: duLieuS[i][0] || '',
                     hoTen: duLieuS[i][1] || '',
                     toChuyenMon: duLieuS[i][2] || '',
                     dinhMuc: duLieuS[i][3] || '',
                     trangThai: duLieuS[i][4] || 'Đang công tác',
-                    hopThu: duLieuS[i][5] || '' // [NÂNG CẤP]: Đọc dữ liệu Hộp thư từ Cột F (index 5)
+                    hopThu: duLieuS[i][5] || '' 
                 });
             }
         }
-        veBangDanhMucGV();
+        
+        const hashMoi = JSON.stringify(dataMoi);
+        if (duLieuDem !== hashMoi) {
+            duLieuDanhMucGV = dataMoi;
+            localStorage.setItem(cacheKey, hashMoi);
+            veBangDanhMucGV(); // Chỉ vẽ lại lưới nếu máy chủ có thay đổi
+        }
     } catch (loi) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-red-600 font-bold">Lỗi kết nối máy chủ dữ liệu.</td></tr>`;
+        if (!duLieuDem) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-red-600 font-bold">Lỗi kết nối máy chủ dữ liệu.</td></tr>`;
     }
 }
 
