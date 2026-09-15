@@ -346,7 +346,7 @@ async function taiDuLieuTkbVaPpct() {
         // 3. KỊCH BẢN 2: LẦN ĐẦU TIÊN TRUY CẬP -> HIỂN THỊ LOADING TOÀN MÀN HÌNH
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-blue-600 font-bold reactbits-fade-in">
             <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            Đang trích xuất Lịch giảng dạy và Phân phối chương trình...
+            Đang trích xuất Thời khoá biểu và Phân phối chương trình...
         </td></tr>`;
         nutXacNhan.disabled = true;
     }
