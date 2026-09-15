@@ -6,30 +6,42 @@ const TIEU_DE_DM_LOP = ['MaLop', 'TenLop'];
 
 async function taiDuLieuDanhMucLop() {
     const tbody = document.getElementById('vungDuLieuDanhMucLop');
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-slate-500 font-bold"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải Danh mục Lớp...</td></tr>`;
+    const cacheKey = "CACHE_DM_LOP";
+    const duLieuDem = localStorage.getItem(cacheKey);
+
+    if (duLieuDem) {
+        try {
+            duLieuDanhMucLop = JSON.parse(duLieuDem);
+            veBangDanhMucLop();
+        } catch(e) { console.warn("Lỗi đọc đệm DMLOP"); }
+    } else {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-slate-500 font-bold"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải Danh mục Lớp...</td></tr>`;
+    }
     
     try {
         const urlAPI = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDanhMucLop`;
         const phanHoi = await (typeof fetchVoiCoCheThuLai === 'function' ? fetchVoiCoCheThuLai(urlAPI) : fetch(urlAPI));
-        
         if (!phanHoi.ok) throw new Error("Từ chối kết nối");
         const duLieuS = await phanHoi.json();
         
-        duLieuDanhMucLop = [];
+        let dataMoi = [];
         if (duLieuS && duLieuS.length > 1) {
             for (let i = 1; i < duLieuS.length; i++) {
-                duLieuDanhMucLop.push({
+                dataMoi.push({
                     maLop: duLieuS[i][0] !== undefined ? String(duLieuS[i][0]).trim() : '',
                     tenLop: duLieuS[i][1] !== undefined ? String(duLieuS[i][1]).trim() : ''
                 });
             }
         }
-        veBangDanhMucLop();
+        
+        const hashMoi = JSON.stringify(dataMoi);
+        if (duLieuDem !== hashMoi) {
+            duLieuDanhMucLop = dataMoi;
+            localStorage.setItem(cacheKey, hashMoi);
+            veBangDanhMucLop();
+        }
     } catch (loi) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-red-600 font-bold">
-            ⚠️ Lỗi kết nối máy chủ dữ liệu.<br>
-            <span class="text-sm font-normal text-slate-500">Hệ thống đang bận hoặc gián đoạn mạng. Vui lòng chuyển qua tab khác và quay lại để tải lại.</span>
-        </td></tr>`;
+        if (!duLieuDem) tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-red-600 font-bold">⚠️ Lỗi kết nối máy chủ dữ liệu.</td></tr>`;
     }
 }
 
