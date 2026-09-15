@@ -739,6 +739,7 @@ function xuLyNhapExcelPPCT(event) {
                     // [LOGIC XEM TRƯỚC CHUẨN]: Chọn Tất cả -> Lấy môn Excel. Chọn môn cụ thể -> Lấy môn ô lọc.
                     let tenMonHienThi = (monUI === 'Tất cả' || monUI === '') ? (row.mon || row.monHoc) : monUI;
 
+                    // [NÂNG CẤP CSS]: Bổ sung whitespace-normal, break-words và style inline để tự động xuống dòng an toàn
                     htmlPreview += `
                     <tr class="dong-xem-truoc-excel bg-indigo-50/40 hover:bg-indigo-100 transition-colors border-b border-indigo-200">
                         <td colspan="3" class="text-center italic text-indigo-600/70 text-[13px] align-middle font-semibold border-r border-indigo-200">
@@ -746,8 +747,8 @@ function xuLyNhapExcelPPCT(event) {
                         </td>
                         <td class="border-r border-indigo-200 align-middle text-center p-2 font-extrabold text-red-600">${row.tiet}</td>
                         <td class="border-r border-indigo-200 align-middle text-center font-bold text-indigo-800" data-loai="mon">${tenMonHienThi}</td>
-                        <td class="border-r border-indigo-200 align-middle text-left p-2 font-semibold text-slate-900">${row.tenBaiHoc}</td>
-                        <td class="align-middle text-left p-2 italic text-gray-700">${row.dieuChinh}</td>
+                        <td class="border-r border-indigo-200 align-middle text-left p-2 font-semibold text-slate-900 whitespace-normal break-words" style="white-space: normal !important; min-width: 200px; max-width: 400px; word-wrap: break-word; word-break: break-word;">${row.tenBaiHoc}</td>
+                        <td class="align-middle text-left p-2 italic text-gray-700 whitespace-normal break-words" style="white-space: normal !important; min-width: 200px; max-width: 350px; word-wrap: break-word; word-break: break-word;">${row.dieuChinh}</td>
                     </tr>`;
                 });
 
