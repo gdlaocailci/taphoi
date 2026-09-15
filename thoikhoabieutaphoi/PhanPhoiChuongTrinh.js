@@ -380,17 +380,20 @@ function veBangKhungLichPPCT(monDangChon) {
         }
     }
 
+    // [ÁP DỤNG LOGIC SỔ ĐẦU BÀI]: Gom nhóm phân môn bằng Regex loại bỏ số và ngoặc đơn
     let trackerPpct = {};
     if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.KHUNG_CHUONG_TRINH) {
         let dmKhoi = thongSoHocVu.KHUNG_CHUONG_TRINH[lop] || {};
         let tongTietNhom = {};
         
+        // Bóc tách hậu tố số và cộng dồn số tiết về 1 Môn Gốc duy nhất
         Object.keys(dmKhoi).forEach(m => {
             let tenM = m.trim().normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
             let baseName = tenM.replace(/[0-9\(\)]/g, '').trim(); 
             tongTietNhom[baseName] = (tongTietNhom[baseName] || 0) + (parseInt(dmKhoi[m]) || 0);
         });
 
+        // Thiết lập bộ đếm tịnh tiến dùng chung
         Object.keys(tongTietNhom).forEach(baseName => {
             let soTiet1Tuan = tongTietNhom[baseName];
             trackerPpct[baseName] = {
@@ -399,19 +402,22 @@ function veBangKhungLichPPCT(monDangChon) {
             };
         });
     }
-
+//*****************************************************************************************************************************************************************
+    // [TỐI ƯU HIỆU NĂNG SIÊU TỐC]: Chuẩn hóa mảng PPCT gốc một lần duy nhất trước khi vào vòng lặp
     let duLieuPpctDaChuanHoa = duLieuPpctGoc.map(b => {
         let m = String(b.mon || b.monHoc || b.tenMon || b["Môn học"] || b["Môn"] || "").normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
         let mGoc = m.replace(/[0-9\(\)]/g, '').trim();
         return { ...b, mChuan: m, mGoc: mGoc };
     });
 
+    // Tạo bộ đệm (Cache) lưu kết quả. Môn nào đã lọc và sắp xếp rồi thì các tiết sau chỉ việc lấy ra dùng, không tính lại.
     let cachePpctTheoMon = {};
 
     let getPpctGocChoMon = (monGrid) => {
         let monGridChuan = String(monGrid).normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
         let monGridGoc = monGridChuan.replace(/[0-9\(\)]/g, '').trim();
         
+        // Truy xuất Cache siêu tốc O(1)
         if (cachePpctTheoMon[monGridChuan]) return cachePpctTheoMon[monGridChuan];
         
         let ketQuaLoc = duLieuPpctDaChuanHoa.filter(b => {
@@ -419,6 +425,7 @@ function veBangKhungLichPPCT(monDangChon) {
             return b.mChuan === monGridChuan || b.mChuan === monGridGoc || b.mGoc === monGridGoc;
         }).sort((a, b) => parseInt(a.tietPpc || a.tiet || 0) - parseInt(b.tietPpc || b.tiet || 0));
         
+        // Đóng băng kết quả vào Cache cho các vòng lặp sau
         cachePpctTheoMon[monGridChuan] = ketQuaLoc; 
         return ketQuaLoc;
     };
@@ -434,6 +441,7 @@ function veBangKhungLichPPCT(monDangChon) {
                 let monTkbChuan = tenMonTkb.normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
                 let monTkbGoc = monTkbChuan.replace(/[0-9\(\)]/g, '').trim();
 
+                // Quét qua phễu lọc bằng cả 2 điều kiện (Môn chuẩn hoặc Môn gốc)
                 if ((isXemTatCa || monTkbChuan === monChonChuan || monTkbGoc === monChonGoc) && tenMonTkb !== '') {
                     dsTietCuaThu.push({ buoi: buoi, tiet: tiet, tietTkb: tietTkb });
                     tongSoDongMucTieu++;
@@ -468,10 +476,12 @@ function veBangKhungLichPPCT(monDangChon) {
                         let monTkbChuan = tenMonTkb.normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
                         let monTkbGoc = monTkbChuan.replace(/[0-9\(\)]/g, '').trim();
 
+                        // Lấy riêng mảng PPCT của đúng môn học trên cột này
                         let ppctCuaMon = getPpctGocChoMon(tenMonTkb);
                         let valTietPPC = tietTkb.tietPpc || '';
                         
                         if (valTietPPC === '') {
+                            // Gọi bộ đếm bằng Môn Gốc để các phân môn dùng chung một số tịnh tiến
                             let track = trackerPpct[monTkbGoc];
                             if (track) {
                                 if (track.chiSoPpctTuDong < ppctCuaMon.length) {
@@ -487,6 +497,7 @@ function veBangKhungLichPPCT(monDangChon) {
                         let valTenBai = ''; let valDieuChinh = '';
                         
                         if (valTietPPC !== '') {
+                            // Chỉ tìm Tên bài trong phạm vi dữ liệu của Môn này
                             let baiGoc = ppctCuaMon.find(b => String(b.tietPpc || b.tiet).trim() === String(valTietPPC).trim());
                             if (baiGoc) { 
                                 valTenBai = baiGoc.tenBai || baiGoc.tenBaiHoc || baiGoc.tenBaiDay || ''; 
@@ -511,15 +522,14 @@ function veBangKhungLichPPCT(monDangChon) {
 
                         let idKhoa = `${thu}_${buoi}_${tiet}`;
 
-                        // [ĐÃ SỬA CSS TẠI 2 CỘT TÊN BÀI VÀ ĐIỀU CHỈNH ĐỂ HỖ TRỢ XUỐNG DÒNG (ENTER) VÀ ÉP NGẮT TỪ]
                         html += `
                             <td class="border-r border-gray-400 align-middle font-extrabold text-slate-800 text-center">${tiet}</td>
                             <td class="border-r border-gray-300 align-middle text-center font-bold text-blue-800 whitespace-normal" data-loai="mon">${tenMonTkb}</td>
                             <td class="border-r border-gray-300 align-middle text-center p-3 font-extrabold text-red-600 whitespace-normal" data-ppct-id="${idKhoa}" data-loai="tietPpc">${valTietPPC}</td>
 
-                          <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: pre-wrap !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
-                                <div class="flex items-start justify-between gap-2 h-full">
-                                    <span class="font-semibold text-slate-900 flex-1 break-words outline-none" style="white-space: pre-wrap; word-break: break-word; min-width: 0;" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
+                          <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed" style="white-space: normal !important; min-width: 200px; max-width: 300px; word-wrap: break-word; word-break: break-word;">
+                                <div class="flex items-start justify-between gap-2">
+                                    <span class="font-semibold text-slate-900 flex-1 whitespace-normal break-words" style="word-break: break-word;" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
                                     
                                     <button onclick="kichHoatXemTruocSGK(document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so'), '${tenMonTkb}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText)" 
                                             class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200 mt-0.5" 
@@ -532,7 +542,7 @@ function veBangKhungLichPPCT(monDangChon) {
                                 </div>
                             </td>                     
 
-                            <td class="align-middle text-left p-3 italic text-gray-700 leading-relaxed break-words outline-none" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: pre-wrap !important; min-width: 250px; max-width: 450px; word-wrap: break-word; word-break: break-word;">${valDieuChinh}</td>
+                            <td class="align-middle text-left p-3 italic text-gray-700 leading-relaxed whitespace-normal break-words" data-ppct-id="${idKhoa}" data-loai="dieuChinh" style="white-space: normal !important; min-width: 250px; max-width: 450px; word-wrap: break-word; word-break: break-word;">${valDieuChinh}</td>
                         </tr>`;
                     });
                 }
