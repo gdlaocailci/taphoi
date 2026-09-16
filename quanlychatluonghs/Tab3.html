@@ -83,7 +83,7 @@
             <tr>
               <th rowspan="2" style="width:40px">STT</th><th rowspan="2" style="min-width:80px">Lớp</th>
               <th rowspan="2" class="col-compact">TS</th>
-              <th rowspan="2" class="col-compact">DT</th><th rowspan="2" class="col-compact">Nữ</th>
+              <th rowspan="2" class="col-compact">DT</th><th rowspan="2" class="col-compact">Tôn<br>giáo</th><th rowspan="2" class="col-compact">Nữ</th>
               <th rowspan="2" class="col-compact">Nữ<br>DT</th><th rowspan="2" class="col-compact">K.<br>Tật</th><th rowspan="2" class="col-compact">Nữ<br>KT</th>
               <th rowspan="2" class="col-compact">Hộ<br>Nghèo</th><th rowspan="2" class="col-compact">Cận<br>Nghèo</th><th rowspan="2" class="col-compact">Chính<br>Sách</th><th rowspan="2" class="col-compact" style="white-space: normal; font-size: 12px; line-height: 1.2;">HS<br>ngoại<br>tuyến</th><th rowspan="2" class="col-compact">BH<br>YT</th>
               <th colspan="2" class="col-age">6 tuổi</th><th colspan="2" class="col-age">7 tuổi</th><th colspan="2" class="col-age">8 tuổi</th>
@@ -116,7 +116,7 @@
             <tr>
               <th rowspan="2" style="width:40px">STT</th><th rowspan="2" style="min-width:80px">Lớp</th>
               <th rowspan="2" class="col-compact">TS</th>
-              <th rowspan="2" class="col-compact">DT</th><th rowspan="2" class="col-compact">Nữ</th>
+              <th rowspan="2" class="col-compact">DT</th><th rowspan="2" class="col-compact">Tôn<br>giáo</th><th rowspan="2" class="col-compact">Nữ</th>
               <th rowspan="2" class="col-compact">Nữ DT</th><th rowspan="2" class="col-compact">K.Tật</th><th rowspan="2" class="col-compact">Nữ KT</th>
               <th rowspan="2" class="col-compact">Nghèo</th><th rowspan="2" class="col-compact">Cận N</th><th rowspan="2" class="col-compact">C.Sách</th><th rowspan="2" class="col-compact" style="white-space: normal; font-size: 12px; line-height: 1.2;">HS ngoại<br>tuyến</th><th rowspan="2" class="col-compact">BHYT</th>
               <th colspan="2" class="col-age">11 tuổi</th><th colspan="2" class="col-age">12 tuổi</th><th colspan="2" class="col-age">13 tuổi</th>
@@ -216,7 +216,7 @@
       let hks_namHienTai_str = String(new Date().getFullYear()); 
 
       let hks_thongKe_obj = {};
-      let hks_tongBangMot_obj = { tongSo: 0, danToc: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0, ngheo: 0, canNgheo: 0, chinhSach: 0, hsNgoaiTuyen: 0, bhyt: 0, tuoi: {} };
+      let hks_tongBangMot_obj = { tongSo: 0, danToc: 0, tonGiao: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0, ngheo: 0, canNgheo: 0, chinhSach: 0, hsNgoaiTuyen: 0, bhyt: 0, tuoi: {} };
       for(let i=6; i<=19; i++) hks_tongBangMot_obj.tuoi[i] = {ts: 0, nu: 0};
       
       let hks_tongBangHai_obj = { 
@@ -230,7 +230,7 @@
         if (!hks_thongKe_obj[hks_phomHienTai_str]) {
           let hks_doiTuongTuoi_obj = {}; for(let i=6; i<=19; i++) hks_doiTuongTuoi_obj[i] = {ts: 0, nu: 0};
           hks_thongKe_obj[hks_phomHienTai_str] = {
-            lop: hks_phomHienTai_str, tongSo: 0, danToc: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0, ngheo: 0, canNgheo: 0, chinhSach: 0, hsNgoaiTuyen: 0, bhyt: 0, tuoi: hks_doiTuongTuoi_obj, 
+            lop: hks_phomHienTai_str, tongSo: 0, danToc: 0, tonGiao: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0, ngheo: 0, canNgheo: 0, chinhSach: 0, hsNgoaiTuyen: 0, bhyt: 0, tuoi: hks_doiTuongTuoi_obj,
             htxs: 0, htt: 0, ht: 0, cht: 0,
             thanhTich: { xa: hks_khoiTaoMauThanhTich_fn(), huyen: hks_khoiTaoMauThanhTich_fn(), tinh: hks_khoiTaoMauThanhTich_fn(), qg: hks_khoiTaoMauThanhTich_fn(), qt: hks_khoiTaoMauThanhTich_fn() }
           };
@@ -248,6 +248,11 @@
         let hks_laNu_bol = (hks_nhomHinhThai_str === 'nữ');
         
         if (hks_laDanToc_bol) { objTKLop.danToc++; hks_tongBangMot_obj.danToc++; }
+        
+        let hks_tonGiao_str = String(r[49] || "").trim(); // Chỉ số mảng nội suy 49
+        if (hks_tonGiao_str !== "" && hks_tonGiao_str.toLowerCase() !== "không" && hks_tonGiao_str.toLowerCase() !== "khong") { 
+            objTKLop.tonGiao++; hks_tongBangMot_obj.tonGiao++; 
+        }
         
         if (hks_laNu_bol) { 
             objTKLop.nu++; hks_tongBangMot_obj.nu++; 
@@ -329,7 +334,7 @@
       if (hks_ketQuaCuoi_arr.length > 0) {
           let hks_dongTongCong_obj = {
             lop: "TỔNG", 
-            tongSo: hks_tongBangMot_obj.tongSo, danToc: hks_tongBangMot_obj.danToc, nu: hks_tongBangMot_obj.nu, nuDanToc: hks_tongBangMot_obj.nuDanToc, khuyetTat: hks_tongBangMot_obj.khuyetTat, nuKhuyetTat: hks_tongBangMot_obj.nuKhuyetTat, 
+            tongSo: hks_tongBangMot_obj.tongSo, danToc: hks_tongBangMot_obj.danToc, tonGiao: hks_tongBangMot_obj.tonGiao, nu: hks_tongBangMot_obj.nu, nuDanToc: hks_tongBangMot_obj.nuDanToc, khuyetTat: hks_tongBangMot_obj.khuyetTat, nuKhuyetTat: hks_tongBangMot_obj.nuKhuyetTat,
             ngheo: hks_tongBangMot_obj.ngheo, canNgheo: hks_tongBangMot_obj.canNgheo, chinhSach: hks_tongBangMot_obj.chinhSach, hsNgoaiTuyen: hks_tongBangMot_obj.hsNgoaiTuyen, bhyt: hks_tongBangMot_obj.bhyt, tuoi: hks_tongBangMot_obj.tuoi, 
             htxs: hks_tongBangHai_obj.htxs, htt: hks_tongBangHai_obj.htt, ht: hks_tongBangHai_obj.ht, cht: hks_tongBangHai_obj.cht,
             thanhTich: { xa: hks_tongBangHai_obj.xa, huyen: hks_tongBangHai_obj.huyen, tinh: hks_tongBangHai_obj.tinh, qg: hks_tongBangHai_obj.qg, qt: hks_tongBangHai_obj.qt }
@@ -355,7 +360,7 @@
 
   function hks_khoiTaoDoiTuong_fn(tenLop) {
       let obj = {
-          lop: tenLop, tongSo: 0, danToc: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0,
+          lop: tenLop, tongSo: 0, danToc: 0, tonGiao: 0, nu: 0, nuDanToc: 0, khuyetTat: 0, nuKhuyetTat: 0,
           ngheo: 0, canNgheo: 0, chinhSach: 0, hsNgoaiTuyen: 0, bhyt: 0, htxs: 0, htt: 0, ht: 0, cht: 0,
           tuoi: {}, thanhTich: { xa: hks_khoiTaoMauThanhTich_fn(), huyen: hks_khoiTaoMauThanhTich_fn(), tinh: hks_khoiTaoMauThanhTich_fn(), qg: hks_khoiTaoMauThanhTich_fn(), qt: hks_khoiTaoMauThanhTich_fn() }
       };
@@ -364,7 +369,7 @@
   }
 
   function hks_tinhTongGop_fn(goc, them) {
-      goc.tongSo += them.tongSo || 0; goc.danToc += them.danToc || 0; goc.nu += them.nu || 0; goc.nuDanToc += them.nuDanToc || 0;
+      goc.tongSo += them.tongSo || 0; goc.danToc += them.danToc || 0; goc.tonGiao += them.tonGiao || 0; goc.nu += them.nu || 0; goc.nuDanToc += them.nuDanToc || 0;
       goc.khuyetTat += them.khuyetTat || 0; goc.nuKhuyetTat += them.nuKhuyetTat || 0; goc.ngheo += them.ngheo || 0; goc.canNgheo += them.canNgheo || 0;
       goc.chinhSach += them.chinhSach || 0; goc.hsNgoaiTuyen += them.hsNgoaiTuyen || 0; goc.bhyt += them.bhyt || 0;
       goc.htxs += them.htxs || 0; goc.htt += them.htt || 0; goc.ht += them.ht || 0; goc.cht += them.cht || 0;
@@ -393,7 +398,7 @@
       
       return `<tr class="${cssClass}">
         <td>${stt}</td><td class="text-start px-2">${hks_lopHienThi_str}</td>
-        <td class="col-compact">${hks_dinhDangOChua_fn(item.tongSo)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.danToc)}</td>
+        <td class="col-compact">${hks_dinhDangOChua_fn(item.tongSo)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.danToc)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.tonGiao)}</td>
         <td class="col-compact">${hks_dinhDangOChua_fn(item.nu)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.nuDanToc)}</td>
         <td class="col-compact">${hks_dinhDangOChua_fn(item.khuyetTat)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.nuKhuyetTat)}</td>
         <td class="col-compact">${hks_dinhDangOChua_fn(item.ngheo)}</td><td class="col-compact">${hks_dinhDangOChua_fn(item.canNgheo)}</td> 
