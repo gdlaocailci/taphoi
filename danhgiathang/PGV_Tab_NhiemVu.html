@@ -612,14 +612,27 @@ function xulyLuuTam(ath = false, xltc = null) {
 
     let qth = $('#chuKqHthi'); let chukq = qth.is('input, select, textarea') ? qth.val() : qth.text(); chukq = chukq ? chukq.trim() : "";
     
-    const ht = { ttrg: maTrangDich, snnghi: $('#nhapSngayNghi').val() || 0, dthuong: $('#nhapDiemThuong').val() || 0, ldo: $('#nhapLdoNghi').val() || "", kienn: $('#nhapYkien').val() || "", bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), dlbang: dlbg, kq: chukq, khoa: trangThaiKhoa };
+    // Bóc tách tên gốc và ghép ID bằng ký tự xuống dòng (\n) để ghi vào Sheet
+    let tenDayDu = String(canbHientai.tde.tenn).split('\n')[0].split('|')[0].trim() + "\nID: " + maTrangDich;
+
+    const ht = { 
+        ttrg: maTrangDich, 
+        tenn: tenDayDu, // Gửi kèm tên đã ghép ID
+        snnghi: $('#nhapSngayNghi').val() || 0, 
+        dthuong: $('#nhapDiemThuong').val() || 0, 
+        ldo: $('#nhapLdoNghi').val() || "", 
+        kienn: $('#nhapYkien').val() || "", 
+        bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), 
+        dlbang: dlbg, 
+        kq: chukq, 
+        khoa: trangThaiKhoa 
+    };
 
     khachApi.luuTam(ht, function(kq) {
         if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if(typeof mokBcao === 'function') mokBcao();
         if (kq && kq.ttai === 'tcong') { if (!ath) { if (typeof hienThongb === 'function') hienThongb('tcong', "Đã ghi nhớ kết quả thành công!"); } if(xltc) xltc(); } 
         else { let ltc = kq ? kq.tbao : "Lỗi"; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi lưu: " + ltc); }
     }, function(loi) { if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi Server: " + loi.message); });
-}
 
 function nopBcaoChinh() {
     var isBGH = kiemTraLaBGH();
@@ -666,7 +679,24 @@ function nopBcaoChinh() {
       xulyLuuTam(true, function() {
           hienTaiDl("🚀 Bước 2: Đang ghi vào dữ liệu tổng...");
           let ht = $('#chuKqHthi'); let chukq = ht.is('input, select, textarea') ? ht.val() : ht.text(); chukq = chukq ? chukq.trim() : "";
-          const cnb = { ttrg: maTrangDich, tenn: canbHientai.tde.tenn, snnghi: $('#nhapSngayNghi').val(), nhoc: canbHientai.tde.nhoc, tgian: canbHientai.tde.tgian, kq: chukq, dthuong: $('#nhapDiemThuong').val(), kienn: $('#nhapYkien').val(), bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), ldo: $('#nhapLdoNghi').val(), taik: window.PGV_ID_TC };
+          
+          // Bóc tách tên gốc và ghép ID bằng ký tự xuống dòng (\n) để ghi vào Sheet DATAGV
+          let tenDayDu = String(canbHientai.tde.tenn).split('\n')[0].split('|')[0].trim() + "\nID: " + maTrangDich;
+
+          const cnb = { 
+              ttrg: maTrangDich, 
+              tenn: tenDayDu, // Gửi tên đã ghép ID cho tệp tổng hợp
+              snnghi: $('#nhapSngayNghi').val(), 
+              nhoc: canbHientai.tde.nhoc, 
+              tgian: canbHientai.tde.tgian, 
+              kq: chukq, 
+              dthuong: $('#nhapDiemThuong').val(), 
+              kienn: $('#nhapYkien').val(), 
+              bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), 
+              ldo: $('#nhapLdoNghi').val(), 
+              taik: window.PGV_ID_TC 
+          };
+          
           khachApi.nopBcao(cnb, function(kq) {
             anTaiDl(); if(ntn) ntn.disabled = false; 
             if (kq && kq.ttai === 'tcong') { $('#chuTrangThai').text("Đã nộp báo cáo"); let tc = (kq.lacn === true) ? "Đã nộp lại kết quả mới nhất" : "Đã nộp xong kết quả"; hienThongb('tcong', tc); if(typeof taiDlBdau === 'function') taiDlBdau(); if(typeof khaBcao === 'function') khaBcao(); } 
