@@ -1849,9 +1849,46 @@ function selectOption(val, text) {
         input.select();
     });
 
+    // CHỐT CHẶN: Ép buộc giá trị phải khớp với danh sách khi rời khỏi ô nhập liệu
     input.addEventListener("blur", () => {
-        const selectedOpt = Array.from(originalSelect.options).find(o => o.value === originalSelect.value);
-        input.value = (selectedOpt && selectedOpt.value !== "") ? selectedOpt.textContent : "";
+        const typedVal = input.value.trim().toLowerCase();
+        
+        // Nếu người dùng chủ động xóa trắng
+        if (typedVal === "") {
+            selectOption("", "-- Lựa chọn giáo viên --");
+            dropdown.style.display = "none";
+            return;
+        }
+
+        // Loại bỏ dấu tiếng Việt để so sánh linh hoạt hơn
+        const textNormTyped = typedVal.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+        
+        let matchedOpt = null;
+        
+        // Duyệt qua toàn bộ option thực tế đang ẩn để tìm người khớp lệnh
+        Array.from(originalSelect.options).forEach(opt => {
+            if(opt.value !== "") {
+                const optText = opt.textContent.toLowerCase();
+                const optNorm = optText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+                
+                // Khớp theo tên hiển thị có dấu, không dấu, hoặc khớp thẳng theo ID hồ sơ
+                if (optText === typedVal || optNorm === textNormTyped || opt.value.toLowerCase() === typedVal) {
+                    matchedOpt = opt;
+                }
+            }
+        });
+
+        if (matchedOpt) {
+            // Có tồn tại -> Xác nhận chọn người này
+            selectOption(matchedOpt.value, matchedOpt.textContent);
+        } else {
+            // Không tồn tại -> Xóa ngay, khôi phục lại trang của chính mình
+            input.value = "";
+            selectOption("", "-- Lựa chọn giáo viên --");
+            if (typeof hienThongb === 'function') {
+                hienThongb('cbh', "⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
+            }
+        }
         dropdown.style.display = "none";
     });
 
