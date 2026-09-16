@@ -1763,7 +1763,7 @@ $(document).ready(function() {
         defaultDiv.onmouseout = () => defaultDiv.style.background = "#f8f9fa";
         defaultDiv.onmousedown = (e) => { 
             e.preventDefault(); 
-            selectOption("", "-- Lựa chọn giáo viên --"); // Không truyền boQuaLoading nên sẽ hiện màn hình tải
+            selectOption("", "-- Lựa chọn giáo viên --"); 
         };
         dropdown.appendChild(defaultDiv);
 
@@ -1837,13 +1837,17 @@ $(document).ready(function() {
         }
     }
 
-    // Bổ sung cờ boQuaLoading (mặc định false)
     function selectOption(val, text, boQuaLoading = false) {
+       if (originalSelect.value === val) {
+            input.value = val === "" ? "" : text;
+            dropdown.style.display = "none";
+            return; 
+        }
+
         originalSelect.value = val;
         input.value = val === "" ? "" : text;
         dropdown.style.display = "none";
         
-        // Kích hoạt sự kiện tương thích mạnh
         if (typeof jQuery !== 'undefined') {
             $(originalSelect).trigger("change");
         } else {
@@ -1851,7 +1855,6 @@ $(document).ready(function() {
             originalSelect.dispatchEvent(event);
         }
         
-        // Phục hồi logic gọi dữ liệu nhưng kiểm soát Màn hình tải
         if (val === "") {
             if (!boQuaLoading && typeof hienTaiDl === 'function') {
                 hienTaiDl("⏳ Đang tải dữ liệu cá nhân...");
@@ -1873,29 +1876,24 @@ $(document).ready(function() {
         input.select();
     });
 
-    // CHỐT CHẶN: Ép buộc giá trị phải khớp với danh sách khi rời khỏi ô nhập liệu
     input.addEventListener("blur", () => {
         const typedVal = input.value.trim().toLowerCase();
         
-        // Nếu người dùng chủ động xóa trắng
         if (typedVal === "") {
             selectOption("", "-- Lựa chọn giáo viên --");
             dropdown.style.display = "none";
             return;
         }
 
-        // Loại bỏ dấu tiếng Việt để so sánh linh hoạt hơn
         const textNormTyped = typedVal.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
         
         let matchedOpt = null;
         
-        // Duyệt qua toàn bộ option thực tế đang ẩn để tìm người khớp lệnh
         Array.from(originalSelect.options).forEach(opt => {
             if(opt.value !== "") {
                 const optText = opt.textContent.toLowerCase();
                 const optNorm = optText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
                 
-                // Khớp theo tên hiển thị có dấu, không dấu, hoặc khớp thẳng theo ID hồ sơ
                 if (optText === typedVal || optNorm === textNormTyped || opt.value.toLowerCase() === typedVal) {
                     matchedOpt = opt;
                 }
@@ -1903,14 +1901,11 @@ $(document).ready(function() {
         });
 
         if (matchedOpt) {
-            // Có tồn tại -> Xác nhận chọn người này
             selectOption(matchedOpt.value, matchedOpt.textContent);
         } else {
-            // Không tồn tại -> Xóa ngay, khôi phục lại trang của chính mình (truyền cờ true để không hiện Loading che cảnh báo)
             input.value = "";
             selectOption("", "-- Lựa chọn giáo viên --", true);
             
-            // Hiện cảnh báo ngay lập tức, sử dụng setTimeout nhẹ để đảm bảo UI kịp phản hồi
             setTimeout(() => {
                 if (typeof hienThongb === 'function') {
                     hienThongb('cbh', "⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
