@@ -776,24 +776,17 @@ function veBangNviec(db) {
         let tGiao = (dong[3] !== undefined && dong[3] !== null) ? String(dong[3]) : "";
         let tHt   = (dong[5] !== undefined && dong[5] !== null) ? String(dong[5]) : "";
         let lTdo = dong[4] || ""; 
-        
         let nTH = dong[6] || ""; 
         
-        let rawH = (dong[7] !== undefined && dong[7] !== null) ? String(dong[7]) : ""; 
+        // NÂNG CẤP 1: Ép kiểu chuỗi (String) tuyệt đối để chống lỗi khi dữ liệu Sheets trả về là Number thuần
+        let rawH = dong[7] !== undefined && dong[7] !== null ? String(dong[7]) : ""; 
         let gc = dong[8] || "";
         
         let j_val = dong[9] || ""; let k_val = dong[10] || ""; let l_val = dong[11] || ""; let m_val = dong[12] || "";
         
         let valChon = ""; let valConfig = rawH;
-        if(rawH.includes("@@@")) { 
-            let p = rawH.split("@@@"); 
-            valChon = p[0].trim(); 
-            valConfig = p[1]; 
-        } 
-        else if(!rawH.includes("|") && !rawH.includes(";") && !rawH.includes("\n") && rawH !== "") { 
-            valChon = rawH.trim(); 
-            valConfig = rawH; 
-        }
+        if(rawH.includes("@@@")) { let p = rawH.split("@@@"); valChon = p[0]; valConfig = p[1]; } 
+        else if(!rawH.includes("|") && !rawH.includes(";") && !rawH.includes("\n") && rawH !== "") { valChon = rawH; valConfig = rawH; }
         
         let safeConfig = valConfig.replace(/"/g, '&quot;');
         let isTitle = ndc.trim().startsWith('*');
@@ -811,23 +804,16 @@ function veBangNviec(db) {
             if (valConfig.includes(";")) {
                 optsArray = valConfig.split(";");
             } else if (valConfig.includes("\n")) {
-                // CHỐT CHẶN 2: Giải quyết triệt để lỗi gộp dòng
-                if (valConfig.includes("|")) {
-                    // Nếu người dùng cố tình dùng dấu | kết hợp \n (chuẩn cũ)
-                    let lines = valConfig.split("\n");
-                    let currentOpt = "";
-                    for (let i = 0; i < lines.length; i++) {
-                        let line = lines[i].trim();
-                        if (line === "") continue; 
-                        currentOpt = currentOpt === "" ? line : currentOpt + " " + line;
-                        if (line.includes("|") || i === lines.length - 1) {
-                            optsArray.push(currentOpt);
-                            currentOpt = "";
-                        }
+                let lines = valConfig.split("\n");
+                let currentOpt = "";
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (line === "") continue; 
+                    currentOpt = currentOpt === "" ? line : currentOpt + " " + line;
+                    if (line.includes("|") || i === lines.length - 1) {
+                        optsArray.push(currentOpt);
+                        currentOpt = "";
                     }
-                } else {
-                    // Cấp tiến: Nếu chỉ xuống dòng bình thường (10\n8\n6), tách ngay thành các lựa chọn độc lập
-                    optsArray = valConfig.split("\n").filter(l => l.trim() !== "");
                 }
             } else {
                 optsArray = valConfig.split("|");
@@ -839,14 +825,14 @@ function veBangNviec(db) {
                 let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); 
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 if(txt !== "") {
-                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
+                    // NÂNG CẤP 2: Đổi \.? thành [.,]? để nhận diện điểm có chứa cả dấu chấm và dấu phẩy
+                    let matchNum = txt.match(/[-+]?\d*[.,]?\d+/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
-                    mangGiaTriDiem.push(String(val).trim()); // Chuẩn hóa về chuỗi để so sánh chính xác
+                    mangGiaTriDiem.push(val);
                 }
             });
 
-            // So khớp an toàn tuyệt đối
-            if (valChon !== "" && !mangGiaTriDiem.includes(String(valChon).trim())) {
+            if (valChon !== "" && !mangGiaTriDiem.includes(valChon)) {
                 valChon = ""; 
             }
 
@@ -860,7 +846,8 @@ function veBangNviec(db) {
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 
                 if(txt !== "") {
-                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
+                    // NÂNG CẤP 3: Đồng bộ RegEx nhận diện dấu phẩy/chấm
+                    let matchNum = txt.match(/[-+]?\d*[.,]?\d+/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
                     let isSel = (val === valChon);
                     danhSachHtml += `<div class="muc-chon p-2 border-bottom text-dark ${isSel ? 'bg-light fw-bold text-primary' : ''}" style="cursor:pointer; text-align:justify; word-wrap:break-word; white-space:normal; line-height:1.4; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#cfe2ff'" onmouseout="this.style.backgroundColor='transparent'" onclick="chonGiaTriDiem(this, '${val}')">${txt}</div>`;
