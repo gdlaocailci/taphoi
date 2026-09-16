@@ -605,7 +605,7 @@ function xulyPhienDn(phanho) {
         }
         
         $('#chuTrangThai').text(kq.tde?.tthai || 'CHƯA NỘP BÁO CÁO'); 
-        $('#chuKqHthi').text(kq.tde?.kq || '');
+        $('#chuKqHthi, .ketQuaMenuDoc, #oKetQuaMenuDoc').text(kq.tde?.kq || '');
         if(typeof khoiTaoBoDemDiem === 'function') khoiTaoBoDemDiem(kq.tde?.kq, kq.tde?.dthuong);
         
         window.PGV_SHOW_DELETE_COLUMN = canShowDeleteButton;
@@ -645,71 +645,61 @@ function xulyPhienDn(phanho) {
     }
 
 function taiDsTrang() { 
-        window.khachApi.layDsTrang(function(dlt) { 
-            const hs = $('#hopChonGv'); hs.empty(); 
-            if (!dlt || dlt.length === 0) { hs.append('<option value="">Không có dữ liệu</option>'); return; } 
-            hs.append('<option value="">-- Lựa chọn Giáo viên --</option>'); 
-            
-            // Tạo mảng hứng ID để phục vụ tải ngầm
-            let dsIdTainNgam = [];
+    // Dùng API gvLaydsCanb để lấy danh sách FULL toàn trường
+    window.khachApi.gvLaydsCanb(function(dlt) { 
+        const hs = $('#hopChonGv'); hs.empty(); 
+        let danhSachBo = Array.isArray(dlt) ? dlt : (dlt && dlt.dliu ? dlt.dliu : []);
+        if (danhSachBo.length === 0) { hs.append('<option value="">Không có dữ liệu</option>'); return; } 
+        hs.append('<option value="">-- Lựa chọn Giáo viên --</option>'); 
+        
+        let dsIdTainNgam = [];
+        window.PGV_MAP_TEN_ID = {}; // TẠO BỘ TỪ ĐIỂN ID TOÀN CỤC TRÊN RAM
 
-            dlt.forEach(pt => {
-                hs.append(`<option value="${pt.gtri}">${pt.tenn}</option>`);
-                dsIdTainNgam.push(pt.gtri); // Gom ID giáo viên
-            }); 
-            
-            hs.off('change').on('change', function() { 
-                const tcd = $(this).val(); 
-                if (tcd) { 
-                    if (cacheCanb[tcd]) {
-                        // [SIÊU TỐC] Dữ liệu đã có trong RAM, bật ra ngay lập tức
-                        khiTaiDlXong(cacheCanb[tcd]);
-                        
-                        // Lặng lẽ gọi ngầm API để kiểm tra xem có ai vừa sửa dữ liệu mới không
-                        window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
-                            if (!kq.koxd) cacheCanb[tcd] = kq;
-                        }, function(){});
-                    } else {
-                        // Trường hợp mạng chậm, Robot chưa tải ngầm tới người này thì hiện Loading bình thường
-                        datTaiDl(true, "Đang truy xuất hồ sơ..."); 
-                        window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
-                            if (!kq.koxd) cacheCanb[tcd] = kq; // Nhớ lưu vào RAM
-                            khiTaiDlXong(kq);
-                        }, khiLoiMayChu); 
-                    }
-                } 
-            }); 
-
-            // =========================================================================
-            // [CẢI TIẾN 2]: TIẾN TRÌNH TẢI TRƯỚC NGẦM (BACKGROUND PREFETCHING)
-            // =========================================================================
-            let indexTai = 0;
-            function taiNgamTiepTheo() {
-                if (indexTai >= dsIdTainNgam.length) return; // Đã tải xong toàn trường
-                let idNgam = dsIdTainNgam[indexTai];
-                
-                // Nếu hồ sơ chưa có trong RAM thì gọi Server tải ngầm
-                if (!cacheCanb[idNgam]) {
-                    window.khachApi.layDlCanb(idNgam, window.PGV_ID_TC, function(kq) {
-                        if (!kq.koxd) cacheCanb[idNgam] = kq; // Nạp vào RAM
-                        indexTai++;
-                        // Dãn cách 1.5 giây tải 1 người để không bị Google báo lỗi quá tải (Too many invocations)
-                        setTimeout(taiNgamTiepTheo, 1500); 
-                    }, function() { 
-                        // Nếu lỗi ngầm (do mạng giật), bỏ qua và thử tải người tiếp theo
-                        indexTai++; setTimeout(taiNgamTiepTheo, 1500); 
-                    });
-                } else {
-                    indexTai++;
-                    taiNgamTiepTheo();
-                }
+        danhSachBo.forEach(pt => {
+            if (pt.tenn) { window.PGV_MAP_TEN_ID[pt.tenn.trim().toLowerCase()] = pt.ttrg; }
+            let qy = String(pt.quyen || "").trim().toLowerCase();
+            if (qy === "" || qy === "x" || qy === "xx") {
+                hs.append(`<option value="${pt.ttrg}">${pt.tenn}</option>`);
             }
-            
-            // Kích hoạt Robot tải ngầm sau 3 giây (khi người dùng đã yên vị trên giao diện)
-            setTimeout(taiNgamTiepTheo, 3000);
+            dsIdTainNgam.push(pt.ttrg); 
+        }); 
+        
+        // Ép bảng vẽ lại ngay khi có ID
+        if (typeof veBangThop === 'function') veBangThop();
+        if (typeof veBangNghi === 'function') veBangNghi();
+        if (typeof veBangYkien === 'function') veBangYkien();
+        if (typeof veBangBcao === 'function') veBangBcao();
 
-        }, khiLoiMayChu); 
-    }
+        hs.off('change').on('change', function() { 
+            const tcd = $(this).val(); 
+            if (tcd) { 
+                if (cacheCanb[tcd]) {
+                    khiTaiDlXong(cacheCanb[tcd]);
+                    window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) { if (!kq.koxd) cacheCanb[tcd] = kq; }, function(){});
+                } else {
+                    datTaiDl(true, "Đang truy xuất hồ sơ..."); 
+                    window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
+                        if (!kq.koxd) cacheCanb[tcd] = kq; 
+                        khiTaiDlXong(kq);
+                    }, khiLoiMayChu); 
+                }
+            } 
+        }); 
+
+        let indexTai = 0;
+        function taiNgamTiepTheo() {
+            if (indexTai >= dsIdTainNgam.length) return; 
+            let idNgam = dsIdTainNgam[indexTai];
+            if (!cacheCanb[idNgam]) {
+                window.khachApi.layDlCanb(idNgam, window.PGV_ID_TC, function(kq) {
+                    if (!kq.koxd) cacheCanb[idNgam] = kq; 
+                    indexTai++; setTimeout(taiNgamTiepTheo, 1500); 
+                }, function() { indexTai++; setTimeout(taiNgamTiepTheo, 1500); });
+            } else { indexTai++; taiNgamTiepTheo(); }
+        }
+        setTimeout(taiNgamTiepTheo, 3000);
+    }, khiLoiMayChu); 
+}
     
     function taiDlThop(amtham = false) { 
         if (!amtham && dataiThop) return; 
