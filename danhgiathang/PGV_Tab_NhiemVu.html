@@ -1784,11 +1784,10 @@ $(document).ready(function() {
 
     function addOptionToDropdown(val, text) {
         const optDiv = document.createElement("div");
-        optDiv.className = "muc-gv px-3 py-2 border-bottom text-dark"; // Tăng độ rộng padding (py-2) để hiển thị 2 dòng
+        optDiv.className = "muc-gv px-3 py-2 border-bottom text-dark"; 
         optDiv.style.cursor = "pointer";
         optDiv.dataset.val = val;
         
-        // NÂNG CẤP: Chèn thêm ID (Mã hồ sơ từ cột B) xuống bên dưới Tên giáo viên
         optDiv.innerHTML = `
             <div class="fw-bold" style="font-size: 13px;">${text}</div>
             <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
@@ -1800,7 +1799,6 @@ $(document).ready(function() {
         optDiv.onmouseout = () => optDiv.style.background = "transparent";
         optDiv.onmousedown = (e) => { 
             e.preventDefault(); 
-            // Khi nhấn chọn, vẫn chỉ đẩy giá trị 'text' (Tên) lên ô input hiển thị cho gọn
             selectOption(val, text); 
         };
         dropdown.appendChild(optDiv);
@@ -1836,7 +1834,7 @@ $(document).ready(function() {
         }
     }
 
-function selectOption(val, text) {
+    function selectOption(val, text) {
         originalSelect.value = val;
         input.value = val === "" ? "" : text;
         dropdown.style.display = "none";
@@ -1849,13 +1847,7 @@ function selectOption(val, text) {
             originalSelect.dispatchEvent(event);
         }
         
-        // 2. KHẮC PHỤC LỖI: Chủ động gọi hàm tải dữ liệu gốc khi người dùng chọn về chính mình (val === "")
-        if (val === "") {
-            if (typeof hienTaiDl === 'function') hienTaiDl("⏳ Đang tải dữ liệu cá nhân...");
-            if (typeof taiDlBdau === 'function') {
-                taiDlBdau(); // Hàm tải lại dữ liệu bản thân có sẵn trong hệ thống của đồng chí
-            }
-        }
+        // Đã lược bỏ hoàn toàn lệnh hienTaiDl() và taiDlBdau() tại đây để không chặn thông báo cảnh báo và không load lại trang.
     }
 
     input.addEventListener("keyup", (e) => {
@@ -1902,11 +1894,15 @@ function selectOption(val, text) {
             // Có tồn tại -> Xác nhận chọn người này
             selectOption(matchedOpt.value, matchedOpt.textContent);
         } else {
-            // Không tồn tại -> Xóa ngay, khôi phục lại trang của chính mình
+            // Không tồn tại -> Xóa ngay, khôi phục lại trạng thái ban đầu và Cảnh báo ngay lập tức
             input.value = "";
             selectOption("", "-- Lựa chọn giáo viên --");
+            
+            // Hàm cảnh báo sẽ hiển thị chớp nhoáng vì không còn bị khối loading che khuất
             if (typeof hienThongb === 'function') {
                 hienThongb('cbh', "⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
+            } else {
+                alert("⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
             }
         }
         dropdown.style.display = "none";
