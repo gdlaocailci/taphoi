@@ -596,7 +596,6 @@ function xulyLuuTam(ath = false, xltc = null) {
         let tHt = $(this).find('.nhapTgHt').val() || "";
         let nTH = $(this).find('.anNguoiTH').val() || "";
         let gc = $(this).find('.anGhiChu').val() || "";
-        
         let j_val = $(this).find('.oColJ').val() || "";
         let k_val = $(this).find('.oColK').val() || "";
         let l_val = $(this).find('.oColL').val() || "";
@@ -605,14 +604,20 @@ function xulyLuuTam(ath = false, xltc = null) {
         let inpH = $(this).find('.chonKq');
         let valChon = inpH.val() || "";
         let cfgGoc = inpH.attr('data-config') || "";
-        let diemLuu = cfgGoc.includes("|") ? (valChon + "@@@" + cfgGoc) : valChon;
+        
+        // SỬA LỖI: Hỗ trợ dấu chấm phẩy và xuống dòng trong cấu hình điểm
+        let diemLuu = (cfgGoc.includes("|") || cfgGoc.includes(";") || cfgGoc.includes("\n")) ? (valChon + "@@@" + cfgGoc) : valChon;
         
         dlbg.push([ntt, ndc, dMax, tGiao, lTdo, tHt, nTH, diemLuu, gc, j_val, k_val, l_val, m_val]);
     });
 
     let qth = $('#chuKqHthi'); let chukq = qth.is('input, select, textarea') ? qth.val() : qth.text(); chukq = chukq ? chukq.trim() : "";
     
-    const ht = { ttrg: maTrangDich, snnghi: $('#nhapSngayNghi').val() || 0, dthuong: $('#nhapDiemThuong').val() || 0, ldo: $('#nhapLdoNghi').val() || "", kienn: $('#nhapYkien').val() || "", bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), dlbang: dlbg, kq: chukq, khoa: trangThaiKhoa };
+    // NÂNG CẤP: Lọc tên sạch và ghép cố định ID vào cấu trúc gửi đi
+    let tenGoc = String(canbHientai.tde.tenn || "").split('\n')[0].split('|')[0].replace('ID:', '').trim();
+    let tenDayDu = tenGoc + "\nID: " + maTrangDich;
+
+    const ht = { ttrg: maTrangDich, tenn: tenDayDu, snnghi: $('#nhapSngayNghi').val() || 0, dthuong: $('#nhapDiemThuong').val() || 0, ldo: $('#nhapLdoNghi').val() || "", kienn: $('#nhapYkien').val() || "", bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), dlbang: dlbg, kq: chukq, khoa: trangThaiKhoa };
 
     khachApi.luuTam(ht, function(kq) {
         if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if(typeof mokBcao === 'function') mokBcao();
@@ -823,9 +828,9 @@ function veBangNviec(db) {
                 let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); 
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 if(txt !== "") {
-                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
-                    if (matchNum && kv.length === 1) { val = matchNum[0]; }
-                    mangGiaTriDiem.push(val);
+                    let matchNum = txt.match(/[-+]?\d*[\.,]?\d+/);
+                if (matchNum && kv.length === 1) { val = matchNum[0]; }
+                mangGiaTriDiem.push(val);
                 }
             });
 
