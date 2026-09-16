@@ -1772,13 +1772,25 @@ $(document).ready(function() {
 
     function addOptionToDropdown(val, text) {
         const optDiv = document.createElement("div");
-        optDiv.className = "muc-gv px-3 py-1 border-bottom text-dark";
+        optDiv.className = "muc-gv px-3 py-2 border-bottom text-dark"; // Tăng độ rộng padding (py-2) để hiển thị 2 dòng
         optDiv.style.cursor = "pointer";
-        optDiv.textContent = text;
         optDiv.dataset.val = val;
+        
+        // NÂNG CẤP: Chèn thêm ID (Mã hồ sơ từ cột B) xuống bên dưới Tên giáo viên
+        optDiv.innerHTML = `
+            <div class="fw-bold" style="font-size: 13px;">${text}</div>
+            <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
+                <i class="bi bi-person-vcard me-1"></i>ID: ${val}
+            </div>
+        `;
+        
         optDiv.onmouseover = () => optDiv.style.background = "#cfe2ff";
         optDiv.onmouseout = () => optDiv.style.background = "transparent";
-        optDiv.onmousedown = (e) => { e.preventDefault(); selectOption(val, text); };
+        optDiv.onmousedown = (e) => { 
+            e.preventDefault(); 
+            // Khi nhấn chọn, vẫn chỉ đẩy giá trị 'text' (Tên) lên ô input hiển thị cho gọn
+            selectOption(val, text); 
+        };
         dropdown.appendChild(optDiv);
     }
 
