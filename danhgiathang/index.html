@@ -645,71 +645,185 @@ function xulyPhienDn(phanho) {
     }
 
 function taiDsTrang() { 
-        window.khachApi.layDsTrang(function(dlt) { 
-            const hs = $('#hopChonGv'); hs.empty(); 
-            if (!dlt || dlt.length === 0) { hs.append('<option value="">Không có dữ liệu</option>'); return; } 
-            hs.append('<option value="">-- Lựa chọn Giáo viên --</option>'); 
-            
-            // Tạo mảng hứng ID để phục vụ tải ngầm
-            let dsIdTainNgam = [];
+    window.khachApi.layDsTrang(function(dlt) { 
+        const hs = $('#hopChonGv'); hs.empty(); 
+        if (!dlt || dlt.length === 0) { hs.append('<option value="">Không có dữ liệu</option>'); return; } 
+        hs.append('<option value="">-- Lựa chọn Giáo viên --</option>'); 
+        
+        let dsIdTainNgam = [];
+        window.PGV_MAP_TEN_ID = {}; // TẠO BỘ TỪ ĐIỂN ID TOÀN CỤC
 
-            dlt.forEach(pt => {
-                hs.append(`<option value="${pt.gtri}">${pt.tenn}</option>`);
-                dsIdTainNgam.push(pt.gtri); // Gom ID giáo viên
-            }); 
-            
-            hs.off('change').on('change', function() { 
-                const tcd = $(this).val(); 
-                if (tcd) { 
-                    if (cacheCanb[tcd]) {
-                        // [SIÊU TỐC] Dữ liệu đã có trong RAM, bật ra ngay lập tức
-                        khiTaiDlXong(cacheCanb[tcd]);
-                        
-                        // Lặng lẽ gọi ngầm API để kiểm tra xem có ai vừa sửa dữ liệu mới không
-                        window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
-                            if (!kq.koxd) cacheCanb[tcd] = kq;
-                        }, function(){});
-                    } else {
-                        // Trường hợp mạng chậm, Robot chưa tải ngầm tới người này thì hiện Loading bình thường
-                        datTaiDl(true, "Đang truy xuất hồ sơ..."); 
-                        window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
-                            if (!kq.koxd) cacheCanb[tcd] = kq; // Nhớ lưu vào RAM
-                            khiTaiDlXong(kq);
-                        }, khiLoiMayChu); 
-                    }
-                } 
-            }); 
+        dlt.forEach(pt => {
+            hs.append(`<option value="${pt.gtri}">${pt.tenn}</option>`);
+            dsIdTainNgam.push(pt.gtri);
+            window.PGV_MAP_TEN_ID[pt.tenn.trim()] = pt.gtri; // Ghi nhớ ID theo tên
+        }); 
+        
+        // Vẽ lại các bảng ngay khi từ điển ID đã sẵn sàng
+        if (typeof veBangThop === 'function') veBangThop();
+        if (typeof veBangNghi === 'function') veBangNghi();
+        if (typeof veBangYkien === 'function') veBangYkien();
 
-            // =========================================================================
-            // [CẢI TIẾN 2]: TIẾN TRÌNH TẢI TRƯỚC NGẦM (BACKGROUND PREFETCHING)
-            // =========================================================================
-            let indexTai = 0;
-            function taiNgamTiepTheo() {
-                if (indexTai >= dsIdTainNgam.length) return; // Đã tải xong toàn trường
-                let idNgam = dsIdTainNgam[indexTai];
-                
-                // Nếu hồ sơ chưa có trong RAM thì gọi Server tải ngầm
-                if (!cacheCanb[idNgam]) {
-                    window.khachApi.layDlCanb(idNgam, window.PGV_ID_TC, function(kq) {
-                        if (!kq.koxd) cacheCanb[idNgam] = kq; // Nạp vào RAM
-                        indexTai++;
-                        // Dãn cách 1.5 giây tải 1 người để không bị Google báo lỗi quá tải (Too many invocations)
-                        setTimeout(taiNgamTiepTheo, 1500); 
-                    }, function() { 
-                        // Nếu lỗi ngầm (do mạng giật), bỏ qua và thử tải người tiếp theo
-                        indexTai++; setTimeout(taiNgamTiepTheo, 1500); 
-                    });
+        hs.off('change').on('change', function() { 
+            const tcd = $(this).val(); 
+            if (tcd) { 
+                if (cacheCanb[tcd]) {
+                    khiTaiDlXong(cacheCanb[tcd]);
+                    window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
+                        if (!kq.koxd) cacheCanb[tcd] = kq;
+                    }, function(){});
                 } else {
-                    indexTai++;
-                    taiNgamTiepTheo();
+                    datTaiDl(true, "Đang truy xuất hồ sơ..."); 
+                    window.khachApi.layDlCanb(tcd, window.PGV_ID_TC, function(kq) {
+                        if (!kq.koxd) cacheCanb[tcd] = kq; 
+                        khiTaiDlXong(kq);
+                    }, khiLoiMayChu); 
                 }
-            }
-            
-            // Kích hoạt Robot tải ngầm sau 3 giây (khi người dùng đã yên vị trên giao diện)
-            setTimeout(taiNgamTiepTheo, 3000);
+            } 
+        }); 
 
-        }, khiLoiMayChu); 
-    }
+        let indexTai = 0;
+        function taiNgamTiepTheo() {
+            if (indexTai >= dsIdTainNgam.length) return; 
+            let idNgam = dsIdTainNgam[indexTai];
+            
+            if (!cacheCanb[idNgam]) {
+                window.khachApi.layDlCanb(idNgam, window.PGV_ID_TC, function(kq) {
+                    if (!kq.koxd) cacheCanb[idNgam] = kq; 
+                    indexTai++;
+                    setTimeout(taiNgamTiepTheo, 1500); 
+                }, function() { 
+                    indexTai++; setTimeout(taiNgamTiepTheo, 1500); 
+                });
+            } else {
+                indexTai++;
+                taiNgamTiepTheo();
+            }
+        }
+        setTimeout(taiNgamTiepTheo, 3000);
+
+    }, khiLoiMayChu); 
+}
+
+function veBangThop() { 
+    if (!Array.isArray(dlThopGoc)) dlThopGoc = [];
+    const nchon = $('#locNamThop').val(), tb = $('#bangThop tbody').empty(); 
+    if (!nchon) { 
+        tb.append('<tr><td colspan="15" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
+        return; 
+    } 
+
+    let bc = {}; 
+    dlThopGoc.forEach(r => { 
+        if (String(r[2]) !== nchon || !r[0]) return; 
+        if (!bc[r[0]]) bc[r[0]] = { tenn: r[0], thangs: {} }; 
+        let mt = parseInt(String(r[3]).match(/(\d{1,2})/)?.[0]); 
+        if (mt) bc[r[0]].thangs[mt] = r[4]; 
+    }); 
+    
+    let stth = 1; 
+    const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
+    let chuoi_html = "";
+    
+    for (const k in bc) { 
+        const gr = bc[k]; 
+        let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[gr.tenn.trim()]) ? window.PGV_MAP_TEN_ID[gr.tenn.trim()] : "Chưa xác định";
+        
+        let dr = `<tr>
+            <td class="text-center align-middle">${stth++}</td>
+            <td class="ps-3 align-middle">
+                <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
+                <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
+                    <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                </div>
+            </td>
+            <td class="align-middle"><input type="text" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold text-danger" disabled placeholder="..."></td>`; 
+        tho.forEach(m => dr += `<td class="text-center small align-middle ${gr.thangs[m] ? 'bg-light' : ''}">${gr.thangs[m] || '-'}</td>`); 
+        chuoi_html += dr + '</tr>'; 
+    } 
+    tb.html(chuoi_html); 
+}
+
+function veBangYkien() { 
+    if (!Array.isArray(dlYkienGoc)) dlYkienGoc = [];
+    const nchon = $('#locNamYkien').val(), tb = $('#bangYkien tbody').empty(); 
+    if (!nchon) return; 
+
+    let bc = {}; 
+    dlYkienGoc.forEach(r => { 
+        if (String(r.nam) !== nchon || !r.tenn) return; 
+        if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
+        let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
+        if (mt) bc[r.tenn].thangs[mt] = r.ndung; 
+    }); 
+    
+    let stth = 1; 
+    const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
+    
+    for (const k in bc) { 
+        const gr = bc[k]; 
+        let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[gr.tenn.trim()]) ? window.PGV_MAP_TEN_ID[gr.tenn.trim()] : "Chưa xác định";
+        
+        let dr = `<tr>
+            <td class="text-center align-middle">${stth++}</td>
+            <td class="ps-3 align-middle">
+                <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
+                <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
+                    <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                </div>
+            </td>`; 
+        tho.forEach(m => { 
+            let v = gr.thangs[m], chuh = '-'; 
+            if (v && String(v).trim() !== "") chuh = `<div class="voBocYk"><div class="ndYk">${v}</div></div>`; 
+            dr += `<td class="p-2 align-middle">${chuh}</td>`; 
+        }); 
+        tb.append(dr + '</tr>'); 
+    } 
+}
+
+function veBangNghi() { 
+    if (!Array.isArray(dlNghiGoc)) dlNghiGoc = [];
+    const nchon = $('#locNamNghi').val(), tb = $('#bangNghi tbody').empty(); 
+    if (!nchon) { 
+        tb.append('<tr><td colspan="14" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
+        return; 
+    } 
+
+    let bc = {}; 
+    dlNghiGoc.forEach(r => { 
+        if (String(r.nam) !== nchon || !r.tenn) return; 
+        if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
+        let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
+        if (mt) bc[r.tenn].thangs[mt] = { gtri: r.snnghi, gchu: r.ldo }; 
+    }); 
+    
+    let stth = 1; 
+    const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
+    
+    for (const k in bc) { 
+        const gr = bc[k]; 
+        let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[gr.tenn.trim()]) ? window.PGV_MAP_TEN_ID[gr.tenn.trim()] : "Chưa xác định";
+
+        let dr = `<tr>
+            <td class="text-center align-middle">${stth++}</td>
+            <td class="ps-3 align-middle">
+                <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
+                <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
+                    <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                </div>
+            </td>`; 
+            
+        tho.forEach(m => { 
+            let dtb = gr.thangs[m], chuh = '-'; 
+            if (dtb && (dtb.gtri > 0 || (dtb.gtri !== "" && dtb.gtri != null))) { 
+                let gc = (dtb.gchu) ? ` <span class="text-muted small fst-italic">(${dtb.gchu})</span>` : ""; 
+                chuh = `<div class="voBocYk"><div class="ndYk text-center"><span class="fw-bold text-danger">${dtb.gtri}</span>${gc}</div></div>`; 
+            } 
+            dr += `<td class="p-1 align-middle">${chuh}</td>`; 
+        }); 
+        tb.append(dr + '</tr>'); 
+    } 
+}
     
     function taiDlThop(amtham = false) { 
         if (!amtham && dataiThop) return; 
@@ -762,157 +876,7 @@ function taiDsTrang() {
         }, function(l) { if(!amtham) khiLoiMayChu(l); }); 
     }
     
-   function veBangThop() { 
-        if (!Array.isArray(dlThopGoc)) dlThopGoc = [];
-        const nchon = $('#locNamThop').val(), tb = $('#bangThop tbody').empty(); 
-        if (!nchon) { 
-            tb.append('<tr><td colspan="15" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
-            return; 
-        } 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
-
-        let bc = {}; 
-        dlThopGoc.forEach(r => { 
-            if (String(r[2]) !== nchon || !r[0]) return; 
-            if (!bc[r[0]]) bc[r[0]] = { tenn: r[0], thangs: {} }; 
-            let mt = parseInt(String(r[3]).match(/(\d{1,2})/)?.[0]); 
-            if (mt) bc[r[0]].thangs[mt] = r[4]; 
-        }); 
-        let stth = 1; 
-        const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
-        let chuoi_html = "";
-        for (const k in bc) { 
-            const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
-            
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
-            let dr = `<tr>
-                <td class="text-center align-middle">${stth++}</td>
-                <td class="ps-3 align-middle">
-                    <div class="fw-bold text-primary" style="font-size: 13px;">${gr.tenn}</div>
-                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
-                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
-                    </div>
-                </td>
-                <td class="align-middle"><input type="text" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold text-danger" disabled placeholder="..."></td>`; 
-            tho.forEach(m => dr += `<td class="text-center small align-middle ${gr.thangs[m] ? 'bg-light' : ''}">${gr.thangs[m] || '-'}</td>`); 
-            chuoi_html += dr + '</tr>'; 
-        } 
-        tb.html(chuoi_html); 
-    }
-    
-    function veBangYkien() { 
-        if (!Array.isArray(dlYkienGoc)) dlYkienGoc = [];
-        const nchon = $('#locNamYkien').val(), tb = $('#bangYkien tbody').empty(); 
-        if (!nchon) return; 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
-
-        let bc = {}; 
-        dlYkienGoc.forEach(r => { 
-            if (String(r.nam) !== nchon || !r.tenn) return; 
-            if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
-            let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
-            if (mt) bc[r.tenn].thangs[mt] = r.ndung; 
-        }); 
-        let stth = 1; 
-        const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
-        for (const k in bc) { 
-            const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
-            
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
-            let dr = `<tr>
-                <td class="text-center align-middle">${stth++}</td>
-                <td class="ps-3 align-middle">
-                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
-                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
-                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
-                    </div>
-                </td>`; 
-            tho.forEach(m => { 
-                let v = gr.thangs[m], chuh = '-'; 
-                if (v && String(v).trim() !== "") chuh = `<div class="voBocYk"><div class="ndYk">${v}</div></div>`; 
-                dr += `<td class="p-2 align-middle">${chuh}</td>`; 
-            }); 
-            tb.append(dr + '</tr>'); 
-        } 
-    }
-    function veBangNghi() { 
-        if (!Array.isArray(dlNghiGoc)) dlNghiGoc = [];
-        const nchon = $('#locNamNghi').val(), tb = $('#bangNghi tbody').empty(); 
-        if (!nchon) { 
-            tb.append('<tr><td colspan="14" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
-            return; 
-        } 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
-
-        let bc = {}; 
-        dlNghiGoc.forEach(r => { 
-            if (String(r.nam) !== nchon || !r.tenn) return; 
-            if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
-            let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
-            if (mt) bc[r.tenn].thangs[mt] = { gtri: r.snnghi, gchu: r.ldo }; 
-        }); 
-        
-        let stth = 1; 
-        const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
-        for (const k in bc) { 
-            const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
-
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
-            let dr = `<tr>
-                <td class="text-center align-middle">${stth++}</td>
-                <td class="ps-3 align-middle">
-                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
-                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
-                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
-                    </div>
-                </td>`; 
-                
-            tho.forEach(m => { 
-                let dtb = gr.thangs[m], chuh = '-'; 
-                if (dtb && (dtb.gtri > 0 || (dtb.gtri !== "" && dtb.gtri != null))) { 
-                    let gc = (dtb.gchu) ? ` <span class="text-muted small fst-italic">(${dtb.gchu})</span>` : ""; 
-                    chuh = `<div class="voBocYk"><div class="ndYk text-center"><span class="fw-bold text-danger">${dtb.gtri}</span>${gc}</div></div>`; 
-                } 
-                dr += `<td class="p-1 align-middle">${chuh}</td>`; 
-            }); 
-            tb.append(dr + '</tr>'); 
-        } 
-    }
-    
-    function htNgayth(nt) { if (!nt) return ""; let dt = new Date(nt); return isNaN(dt) ? nt : dt.toLocaleDateString('vi-VN'); }
+   function htNgayth(nt) { if (!nt) return ""; let dt = new Date(nt); return isNaN(dt) ? nt : dt.toLocaleDateString('vi-VN'); }
     function khoiTaoBoDemDiem(kqc, dth) { if (!kqc || !/\d+/.test(kqc)) { dlgoc.mauc = ""; return; } let dg = parseInt(kqc.match(/-?\d+/)[0]), bt = parseInt(dth) || 0; dlgoc.diemg = dg - bt; dlgoc.mauc = kqc.replace(String(dg), "{0}"); }
 
   /* ========================================================================== */
