@@ -778,7 +778,6 @@ function veBangNviec(db) {
         let lTdo = dong[4] || ""; 
         let nTH = dong[6] || ""; 
         
-        // NÂNG CẤP 1: Ép kiểu chuỗi (String) tuyệt đối để chống lỗi khi dữ liệu Sheets trả về là Number thuần
         let rawH = dong[7] !== undefined && dong[7] !== null ? String(dong[7]) : ""; 
         let gc = dong[8] || "";
         
@@ -825,14 +824,27 @@ function veBangNviec(db) {
                 let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); 
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 if(txt !== "") {
-                    // NÂNG CẤP 2: Đổi \.? thành [.,]? để nhận diện điểm có chứa cả dấu chấm và dấu phẩy
-                    let matchNum = txt.match(/[-+]?\d*[.,]?\d+/);
+                    // Đã xử lý: Nâng cấp regex bắt chính xác số thập phân chứa dấu chấm hoặc phẩy
+                    let matchNum = txt.match(/[-+]?\d+([.,]\d+)?/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
                     mangGiaTriDiem.push(val);
                 }
             });
 
-            if (valChon !== "" && !mangGiaTriDiem.includes(valChon)) {
+            // Đã xử lý: Đồng bộ hóa giá trị thực (float) để đối chiếu, tránh lệch định dạng giữa Sheets (8.5) và cấu hình (8,5)
+            let valChonFloat = isNaN(parseFloat(valChon.replace(/,/g, '.'))) ? null : parseFloat(valChon.replace(/,/g, '.'));
+            let isMatched = false;
+            for (let i = 0; i < mangGiaTriDiem.length; i++) {
+                let v = mangGiaTriDiem[i];
+                let vFloat = isNaN(parseFloat(v.replace(/,/g, '.'))) ? null : parseFloat(v.replace(/,/g, '.'));
+                if (v === valChon || (valChonFloat !== null && vFloat !== null && vFloat === valChonFloat)) {
+                    isMatched = true;
+                    valChon = v; // Đồng bộ lại biến giao diện theo định dạng cấu hình
+                    break;
+                }
+            }
+
+            if (valChon !== "" && !isMatched) {
                 valChon = ""; 
             }
 
@@ -846,10 +858,12 @@ function veBangNviec(db) {
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 
                 if(txt !== "") {
-                    // NÂNG CẤP 3: Đồng bộ RegEx nhận diện dấu phẩy/chấm
-                    let matchNum = txt.match(/[-+]?\d*[.,]?\d+/);
+                    let matchNum = txt.match(/[-+]?\d+([.,]\d+)?/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
-                    let isSel = (val === valChon);
+                    
+                    let valFloat = isNaN(parseFloat(val.replace(/,/g, '.'))) ? null : parseFloat(val.replace(/,/g, '.'));
+                    let isSel = (val === valChon || (valFloat !== null && valChonFloat !== null && valFloat === valChonFloat));
+                    
                     danhSachHtml += `<div class="muc-chon p-2 border-bottom text-dark ${isSel ? 'bg-light fw-bold text-primary' : ''}" style="cursor:pointer; text-align:justify; word-wrap:break-word; white-space:normal; line-height:1.4; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#cfe2ff'" onmouseout="this.style.backgroundColor='transparent'" onclick="chonGiaTriDiem(this, '${val}')">${txt}</div>`;
                 }
             });
@@ -985,7 +999,8 @@ function moDanhSachDiem(suKien, ptu) {
                 if (valClick) {
                     let match = valClick.match(/'([^']*)'/); 
                     if (match && match[1]) {
-                        let num = parseFloat(match[1]);
+                        // Đã xử lý: Thay thế phẩy bằng chấm để parseFloat phân tích chính xác
+                        let num = parseFloat(match[1].replace(/,/g, '.'));
                         if (!isNaN(num) && !dsGiaTriSo.includes(num)) {
                             dsGiaTriSo.push(num);
                         }
@@ -1037,7 +1052,8 @@ function moDanhSachDiem(suKien, ptu) {
                 if (valClick) {
                     let match = valClick.match(/'([^']*)'/);
                     if (match && match[1]) {
-                        let num = parseFloat(match[1]);
+                        // Đã xử lý: Đảm bảo đồng bộ lấy giá trị float xếp hạng chuẩn
+                        let num = parseFloat(match[1].replace(/,/g, '.'));
                         let thuHang = dsGiaTriSo.indexOf(num);
                         
                         if (thuHang > mucToiDaDuocChon) {
