@@ -193,10 +193,6 @@ function runAIAssistant() {
                 let rows = tbody.getElementsByTagName("tr");
                 let updatedCount = 0;
 
-                // ==========================================================================
-                // BỘ QUY ĐỔI ĐỘNG (Xử lý dứt điểm 0.7 thành 70%, 0.5 thành 50%)
-                // ==========================================================================
-                
                 // Hàm 1: Đọc các giá trị cứng (như điểm số, số tháng giới hạn tuyệt đối)
                 function docSo(giaTri) {
                     if (giaTri === undefined || giaTri === null || giaTri === "") return 0;
@@ -213,7 +209,6 @@ function runAIAssistant() {
                     let num = parseFloat(str.replace('%', ''));
                     if (isNaN(num)) return 0;
                     
-                    // NẾU API truyền về giá trị ngầm dạng 0.7 hoặc 0.5 (không có dấu %) -> Đổi lại ra hệ 100
                     if (!isPercentStr && num > 0 && num <= 1) {
                         num = num * 100;
                     }
@@ -232,20 +227,15 @@ function runAIAssistant() {
                     return giaTriMacDinh;
                 }
 
-                // Cấp 1: Đọc ngưỡng tỷ lệ % (Sử dụng hàm đặc nhiệm docTyLe)
                 let nguong_XS = layCauHinh(['TYLE_XS', 'tyle_xs'], 0, true);
                 let nguong_Tot = layCauHinh(['TYLE_TOT', 'tyle_tot'], 0, true);
                 let nguong_HT = layCauHinh(['TYLE_HT', 'tyle_ht'], 0, true);
-                
-                // Mặc định CHT 100% (cũng dùng docTyLe để bắt chính xác số 0.5 thành 50%)
                 let conGiunDat = layCauHinh(['TYLE_CHT_MAX', 'tyle_cht_max', 'SO_CHT_MAX', 'so_cht_max'], 100, true);   
 
-                // Cấp 2: Đọc các giới hạn khống chế tĩnh (Dùng docSo bình thường)
                 let caiKeoCo = layCauHinh(['MAX_HT_XS', 'max_ht_xs'], 0, false);   
                 let vienBiTron = layCauHinh(['MAX_CHT_XS', 'max_cht_xs'], 0, false); 
                 let quaCamNgot = layCauHinh(['MAX_CHT_TOT', 'max_cht_tot'], 0, false); 
                 
-                // Cấp 3: Đọc hệ số điểm
                 let diemBase_XS = layCauHinh(['DIEM_XS', 'diem_xs'], 100, false);
                 let diemBase_Tot = layCauHinh(['DIEM_TOT', 'diem_tot'], 80, false);
                 let diemBase_HT = layCauHinh(['DIEM_HT', 'diem_ht'], 60, false);
@@ -256,42 +246,45 @@ function runAIAssistant() {
                     if (tds.length < 15) continue; 
 
                     let countHTXS = 0, countHTT = 0, countHT = 0, countCHT = 0;
-                    let tongDiemXepLoai = 0, tongDiemSo = 0, validMonths = 0;
+                    let tongDiemSo = 0, validMonths = 0;
 
                     for (let j = cotBatDau; j <= cotKetThuc; j++) {
                         if (!tds[j]) continue; 
                         let cellText = tds[j].innerText.trim();
                         let textLower = cellText.toLowerCase();
                         let diem = 0;
-                        let matchDiem = cellText.match(/(\d+)/);
-                        if (matchDiem) diem = parseFloat(matchDiem[1]);
+                        
+                        // Đã xử lý: Regex bắt được cả dấu phẩy/dấu chấm phần thập phân
+                        let matchDiem = cellText.match(/(\d+([.,]\d+)?)/);
+                        if (matchDiem) {
+                            diem = parseFloat(matchDiem[1].replace(',', '.'));
+                        }
 
                         if (cellText === "" || cellText === "-" || cellText.includes("...") || textLower.includes("chưa có")) {
-                            tongDiemXepLoai += 0;
                             tongDiemSo += 0; 
                             countCHT++; 
                             validMonths++;
                             tds[j].innerHTML = `<span style="color: #dc3545; font-weight: bold;">Chưa hoàn thành</span><br><span style="font-size: 13px;">0 điểm</span>`;
                         } 
+                        // Đã xử lý: Loại bỏ lỗi cộng nhồi (tongDiemXepLoai). Nếu có điểm thập phân thì lấy điểm đó, không có thì lấy điểm Base.
                         else if (textLower.includes("xuất sắc")) {
-                            tongDiemXepLoai += diemBase_XS; tongDiemSo += diem; countHTXS++; validMonths++;
+                            tongDiemSo += (diem > 0 ? diem : diemBase_XS); countHTXS++; validMonths++;
                         } else if (textLower.includes("chưa hoàn thành")) {
-                            tongDiemXepLoai += 0; tongDiemSo += diem; countCHT++; validMonths++;
+                            tongDiemSo += diem; countCHT++; validMonths++;
                         } else if (textLower.includes("tốt")) {
-                            tongDiemXepLoai += diemBase_Tot; tongDiemSo += diem; countHTT++; validMonths++;
+                            tongDiemSo += (diem > 0 ? diem : diemBase_Tot); countHTT++; validMonths++;
                         } else if (textLower.includes("hoàn thành")) {
-                            tongDiemXepLoai += diemBase_HT; tongDiemSo += diem; countHT++; validMonths++;
+                            tongDiemSo += (diem > 0 ? diem : diemBase_HT); countHT++; validMonths++;
                         } else {
-                            tongDiemXepLoai += 0; tongDiemSo += diem; countCHT++; validMonths++;
+                            tongDiemSo += diem; countCHT++; validMonths++;
                         }
                     }
 
                     if (validMonths === 0) continue; 
 
                     let D = tongSoThangYeuCau; 
-                    let diemTBXepLoai = tongDiemXepLoai / D;
-                    let diemTBSo = tongDiemSo / D;
-                    let avgScore = (diemTBXepLoai + diemTBSo).toFixed(1);
+                    // Chuyển đổi trung bình và làm tròn 1 chữ số thập phân
+                    let avgScore = (tongDiemSo / D).toFixed(1);
 
                     let tyLeXS_thucTe = Math.round((countHTXS / D) * 100);
                     let tyLeTot_thucTe = Math.round(((countHTXS + countHTT) / D) * 100);
@@ -299,7 +292,6 @@ function runAIAssistant() {
                     let tyLeCHT_thucTe = Math.round((countCHT / D) * 100); 
 
                     let xepLoai = "Chưa hoàn thành";
-                    // Tooltip minh bạch rõ ràng không còn số thập phân
                     let thongDiepKiemDuyet = `Thực tế: HT(${tyLeHT_thucTe}%), CHT(${tyLeCHT_thucTe}%)\nYêu cầu: HT(>=${nguong_HT}%), CHT(<=${conGiunDat}%)`;
 
                     let caiBanBonChan = (countHT <= caiKeoCo && countCHT <= vienBiTron); 
@@ -343,6 +335,7 @@ function runAIAssistant() {
     }
 }
 
+// Cập nhật hàm xeDapNhaiBongDung để lấy phần thập phân chuẩn khi sắp xếp mảng
 function xeDapNhaiBongDung() {
     let caiAoKhoacMuaHe = document.getElementById("bangThop");
     if (!caiAoKhoacMuaHe) return;
@@ -365,10 +358,11 @@ function xeDapNhaiBongDung() {
         if (mucDoTrai !== mucDoPhai) return mucDoPhai - mucDoTrai; 
         
         let diemTrai = 0, diemPhai = 0;
-        let timDiemTrai = chuoiHoaHong.match(/([\d\.]+)\s*điểm/);
-        let timDiemPhai = chuoiHoaCuc.match(/([\d\.]+)\s*điểm/);
-        if (timDiemTrai) diemTrai = parseFloat(timDiemTrai[1]);
-        if (timDiemPhai) diemPhai = parseFloat(timDiemPhai[1]);
+        let timDiemTrai = chuoiHoaHong.match(/([\d.,]+)\s*điểm/);
+        let timDiemPhai = chuoiHoaCuc.match(/([\d.,]+)\s*điểm/);
+        
+        if (timDiemTrai) diemTrai = parseFloat(timDiemTrai[1].replace(',', '.'));
+        if (timDiemPhai) diemPhai = parseFloat(timDiemPhai[1].replace(',', '.'));
         return diemPhai - diemTrai; 
     });
 
