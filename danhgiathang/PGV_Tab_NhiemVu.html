@@ -634,7 +634,7 @@ function xulyLuuTam(ath = false, xltc = null) {
         else { let ltc = kq ? kq.tbao : "Lỗi"; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi lưu: " + ltc); }
     }, function(loi) { if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi Server: " + loi.message); });
 }
-function nopBcaoChinh() {
+  function nopBcaoChinh() {
     var isBGH = kiemTraLaBGH();
     let maTrangDich = (typeof canbHientai !== 'undefined' && canbHientai && canbHientai.canb) ? canbHientai.canb.ttrg : "";
 
