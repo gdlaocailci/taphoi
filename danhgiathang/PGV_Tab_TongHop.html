@@ -393,10 +393,7 @@ function ghiKetQuaAI() {
         let tds = rows[i].getElementsByTagName("td");
         if (tds.length < 15) continue; 
         
-        // KHẮC PHỤC: Bóc tách để chỉ lấy phần Tên gốc, loại bỏ phần "ID: ..." bị dính kèm do lệnh innerText
-        let hoTenRaw = tds[1].innerText.trim();
-        let hoTen = hoTenRaw.split('\n')[0].trim();
-        
+        let hoTen = tds[1].innerText.trim();
         let htmlKq = tds[2];
         let xepLoai = "";
         
