@@ -24,7 +24,7 @@
           <th style="min-width:100px">Năm học cũ</th><th style="min-width:60px">Lớp cũ</th><th style="min-width:110px">CCCD</th>
           <th style="min-width:110px">Họ đệm</th><th style="min-width:60px">Tên</th>
           <th style="min-width:100px">Ngày sinh</th><th style="min-width:60px">Nam/nữ</th><th style="min-width:95px">Nơi ở (Thôn)</th><th style="min-width:200px">Thường trú (Xã/tỉnh)</th>
-          <th style="min-width:80px">Dân tộc</th><th style="min-width:80px">C.Sách</th><th style="min-width:80px">K.Tật</th><th style="min-width:60px">Nghèo</th><th style="min-width:60px">Cận N</th><th style="min-width:60px">BHYT</th>
+          <th style="min-width:80px">Dân tộc</th><th style="min-width:80px">Tôn giáo</th><th style="min-width:80px">C.Sách</th><th style="min-width:80px">K.Tật</th><th style="min-width:60px">Nghèo</th><th style="min-width:60px">Cận N</th><th style="min-width:60px">BHYT</th>
           <th style="min-width:130px">Tên Bố</th><th style="min-width:130px">Tên Mẹ</th><th style="min-width:100px">SĐT</th><th style="min-width:50px">Khẩu nơi khác</th>
           <th class="bg-warning text-dark" style="min-width:250px">Thông tin chuyển (Ngày - Nơi đến)</th>
         </tr>
@@ -103,18 +103,23 @@
       hks_thanBang_el.innerHTML = '';
       
       if (!hks_duLieuBang_arr || hks_duLieuBang_arr.length === 0) {
-          hks_thanBang_el.innerHTML = '<tr><td colspan="21" class="text-center text-muted fw-bold py-3">Không có dữ liệu học sinh chuyển trường khớp với bộ lọc.</td></tr>';
+          // [BẢN NÂNG CẤP]: Đổi colspan thành 22 do có thêm Tôn giáo
+          hks_thanBang_el.innerHTML = '<tr><td colspan="22" class="text-center text-muted fw-bold py-3">Không có dữ liệu học sinh chuyển trường khớp với bộ lọc.</td></tr>';
           return;
       }
       
+      // [BẢN NÂNG CẤP]: Sử dụng ma trận nội suy để gọi đúng chỉ số 49 (Tôn giáo)
+      const hks_thuTuCotDB_arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 49, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
       hks_duLieuBang_arr.forEach((hks_dongDuLieu_arr, index) => {
           const hks_theDong_el = document.createElement('tr');
           
           let hks_chuoiHtml_str = `<td class="text-center text-muted fw-bold">${index + 1}</td>`;
           
-          // Nạp 19 cột thông tin cơ bản
-          for (let i = 0; i < 19; i++) {
-              let hks_giaTri_str = hks_dongDuLieu_arr[i] !== undefined && hks_dongDuLieu_arr[i] !== null ? hks_dongDuLieu_arr[i] : "";
+          // Nạp 20 cột thông tin cơ bản
+          for (let i = 0; i < hks_thuTuCotDB_arr.length; i++) {
+              let hks_chiSoMang_num = hks_thuTuCotDB_arr[i];
+              let hks_giaTri_str = hks_dongDuLieu_arr[hks_chiSoMang_num] !== undefined && hks_dongDuLieu_arr[hks_chiSoMang_num] !== null ? hks_dongDuLieu_arr[hks_chiSoMang_num] : "";
               hks_chuoiHtml_str += `<td><div class="px-2 py-1">${hks_giaTri_str}</div></td>`;
           }
           
@@ -134,13 +139,14 @@
       const hks_thanBang_el = document.querySelector('#bang5 tbody');
       
       // Kiểm tra nếu bảng trống hoặc chỉ chứa thẻ báo "Không có dữ liệu..."
-      if (!hks_thanBang_el || hks_thanBang_el.rows.length === 0 || hks_thanBang_el.querySelector('.text-muted.fw-bold[colspan="21"]')) {
+      // [BẢN NÂNG CẤP]: Cập nhật kiểm tra colspan 22 và bổ sung Tôn giáo vào mảng tiêu đề xuất Excel
+      if (!hks_thanBang_el || hks_thanBang_el.rows.length === 0 || hks_thanBang_el.querySelector('.text-muted.fw-bold[colspan="22"]')) {
           Swal.fire("Thông báo", "Không có dữ liệu trên giao diện để tải xuống!", "info");
           return;
       }
       
       let hks_duLieuXuat_arr = [
-          ["STT", "Năm học cũ", "Lớp cũ", "CCCD", "Họ đệm", "Tên", "Ngày sinh", "Nam/nữ", "Nơi ở (Thôn)", "Thường trú (Xã/tỉnh)", "Dân tộc", "Chính sách", "Khuyết tật", "Nghèo", "Cận nghèo", "BHYT", "Tên bố", "Tên mẹ", "SĐT", "Khẩu nơi khác", "Thông tin chuyển (Ngày - Nơi đến)"]
+          ["STT", "Năm học cũ", "Lớp cũ", "CCCD", "Họ đệm", "Tên", "Ngày sinh", "Nam/nữ", "Nơi ở (Thôn)", "Thường trú (Xã/tỉnh)", "Dân tộc", "Tôn giáo", "Chính sách", "Khuyết tật", "Nghèo", "Cận nghèo", "BHYT", "Tên bố", "Tên mẹ", "SĐT", "Khẩu nơi khác", "Thông tin chuyển (Ngày - Nơi đến)"]
       ];
       
       for (let hks_theDong_el of hks_thanBang_el.rows) {
