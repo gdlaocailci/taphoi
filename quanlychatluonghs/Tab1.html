@@ -39,7 +39,7 @@
           <th style="min-width:100px">Năm học</th><th style="min-width:60px">Lớp</th><th style="min-width:110px">CCCD</th>
           <th style="min-width:110px">Họ đệm</th><th style="min-width:60px">Tên</th>
           <th style="min-width:100px">Ngày sinh</th><th style="min-width:60px">Nam/nữ</th><th style="min-width:95px">Nơi ở (Thôn)</th><th style="min-width:200px">Thường trú (Xã/tỉnh)</th>
-          <th style="min-width:80px">Dân tộc</th><th style="min-width:80px">C.Sách</th><th style="min-width:80px">K.Tật</th><th style="min-width:60px">Nghèo</th><th style="min-width:60px">Cận N</th><th style="min-width:60px">BHYT</th>
+          <th style="min-width:80px">Dân tộc</th><th style="min-width:80px">Tôn giáo</th><th style="min-width:80px">C.Sách</th><th style="min-width:80px">K.Tật</th><th style="min-width:60px">Nghèo</th><th style="min-width:60px">Cận N</th><th style="min-width:60px">BHYT</th>
           <th style="min-width:130px">Tên Bố</th><th style="min-width:130px">Tên Mẹ</th><th style="min-width:100px">SĐT</th><th style="min-width:50px">Khẩu nơi khác</th>
         </tr>
       </thead>
@@ -164,14 +164,20 @@
       {k:'sel', o: hks_danhSachChuKy_arr}, {k:'sel', o: hks_danhSachPhanLoai_arr}, 
       {k:'text'}, {k:'text'}, {k:'text'}, {k:'text'}, {k:'sel', o:['Nam','Nữ']},
       {k:'text'}, {k:'text'}, {k:'sel', o: hks_danhSachChiSo_arr},
+      {k:'text'}, // [BẢN NÂNG CẤP]: Cột Tôn giáo 
       {k:'text'}, {k:'text'}, {k:'num'}, {k:'num'}, {k:'num'},
       {k:'text'}, {k:'text'}, {k:'text'}, {k:'check'}
     ];
 
+    // [BẢN NÂNG CẤP]: Ma trận nội suy liên kết cột UI với chỉ số mảng CSDL (49 là chỉ số mảng lưu Tôn giáo)
+    const hks_thuTuCotDB_arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 49, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
     let hks_voHieuHoa_bol = !hks_trangThaiSuaMot_bol;
     hks_cauHinhCot_arr.forEach((hks_thietLapCot_obj, hks_chiSoCot_num) => {
+      let hks_dbIdx_num = hks_thuTuCotDB_arr[hks_chiSoCot_num];
       let hks_theCot_el = document.createElement('td'); 
-      let hks_giaTriCot_str = hks_duLieuBang_arr ? hks_duLieuBang_arr[hks_chiSoCot_num] : (hks_chiSoCot_num === 0 ? hks_dienNamTruoc_str : (hks_chiSoCot_num === 1 ? hks_dienLopTruoc_str : ""));
+      let hks_giaTriCot_str = hks_duLieuBang_arr ? hks_duLieuBang_arr[hks_dbIdx_num] : (hks_chiSoCot_num === 0 ? hks_dienNamTruoc_str : (hks_chiSoCot_num === 1 ? hks_dienLopTruoc_str : ""));
+      
       if(hks_thietLapCot_obj.k === 'sel') {
         let hks_theChon_el = document.createElement('select'); hks_theChon_el.className = 'cell-input'; hks_theChon_el.disabled = hks_voHieuHoa_bol;
         if(hks_thietLapCot_obj.o) { hks_thietLapCot_obj.o.forEach(opt => { let hks_theTuyChon_el = document.createElement('option'); hks_theTuyChon_el.value = opt; hks_theTuyChon_el.text = opt; if(String(opt) === String(hks_giaTriCot_str)) hks_theTuyChon_el.selected = true; hks_theChon_el.add(hks_theTuyChon_el); }); }
@@ -461,7 +467,7 @@ function hks_thucHienChuyenTruong_fn() {
       }
       
       let hks_duLieuXuat_arr = [
-          ["Năm học", "Lớp", "CCCD", "Họ đệm", "Tên", "Ngày sinh", "Nam/nữ", "Nơi ở (Thôn)", "Thường trú (Xã/tỉnh)", "Dân tộc", "Chính sách", "Khuyết tật", "Nghèo", "Cận nghèo", "BHYT", "Tên bố", "Tên mẹ", "SĐT", "Khẩu nơi khác", "UUID (Không sửa)"]
+          ["Năm học", "Lớp", "CCCD", "Họ đệm", "Tên", "Ngày sinh", "Nam/nữ", "Nơi ở (Thôn)", "Thường trú (Xã/tỉnh)", "Dân tộc", "Tôn giáo", "Chính sách", "Khuyết tật", "Nghèo", "Cận nghèo", "BHYT", "Tên bố", "Tên mẹ", "SĐT", "Khẩu nơi khác", "UUID (Không sửa)"]
       ];
       
       for (let hks_theDong_el of hks_thanBang_el.rows) {
@@ -542,11 +548,11 @@ function hks_thucHienChuyenTruong_fn() {
               
               let hks_dongDuLieu_arr = new Array(54).fill("");
               
-              for(let j = 0; j < 19; j++) {
+              for(let j = 0; j < 20; j++) { // Đồng bộ nâng cấp số lượng mốc lặp do thêm Tôn giáo
                   hks_dongDuLieu_arr[j] = hks_dongHienTai_arr[j] !== undefined ? hks_dongHienTai_arr[j] : "";
               }
               
-              hks_dongDuLieu_arr[53] = hks_dongHienTai_arr[19] || "";
+              hks_dongDuLieu_arr[53] = hks_dongHienTai_arr[20] || "";
               
               if(hks_dongDuLieu_arr[0] && hks_dongDuLieu_arr[1]) {
                   hks_duLieuCanLuu_arr.push(hks_dongDuLieu_arr);
