@@ -295,7 +295,11 @@ function gvTaiCanb() {
                 if (!s) return;
                 let qy = String(s.quyen || "").trim().toLowerCase();
                 if (qy === "" || qy === "x" || qy === "xx") {
-                    dlNguoi.appendChild(new Option(s.tenn, s.tenn));
+                    // NÂNG CẤP: Hiển thị 2 thông tin (Tên giáo viên và ID)
+                    let opt = document.createElement('option');
+                    opt.value = s.tenn;         // Giá trị chính được đẩy vào ô input khi chọn
+                    opt.text = "ID: " + s.ttrg; // Giá trị phụ (ID) hiển thị nhạt bên cạnh hoặc bên dưới tên
+                    dlNguoi.appendChild(opt);
                 }
             });
         }
