@@ -1761,7 +1761,10 @@ $(document).ready(function() {
         defaultDiv.innerHTML = '<i class="bi bi-x-circle me-1"></i> Bỏ chọn / Trở về chính mình';
         defaultDiv.onmouseover = () => defaultDiv.style.background = "#e2e6ea";
         defaultDiv.onmouseout = () => defaultDiv.style.background = "#f8f9fa";
-        defaultDiv.onmousedown = (e) => { e.preventDefault(); selectOption("", "-- Lựa chọn giáo viên --"); };
+        defaultDiv.onmousedown = (e) => { 
+            e.preventDefault(); 
+            selectOption("", "-- Lựa chọn giáo viên --"); // Không truyền boQuaLoading nên sẽ hiện màn hình tải
+        };
         dropdown.appendChild(defaultDiv);
 
         Array.from(originalSelect.children).forEach(child => {
@@ -1834,12 +1837,13 @@ $(document).ready(function() {
         }
     }
 
-    function selectOption(val, text) {
+    // Bổ sung cờ boQuaLoading (mặc định false)
+    function selectOption(val, text, boQuaLoading = false) {
         originalSelect.value = val;
         input.value = val === "" ? "" : text;
         dropdown.style.display = "none";
         
-        // 1. Kích hoạt sự kiện tương thích mạnh với jQuery để đánh thức các hàm bắt sự kiện .change() ở ngoài hệ thống
+        // Kích hoạt sự kiện tương thích mạnh
         if (typeof jQuery !== 'undefined') {
             $(originalSelect).trigger("change");
         } else {
@@ -1847,7 +1851,15 @@ $(document).ready(function() {
             originalSelect.dispatchEvent(event);
         }
         
-        // Đã lược bỏ hoàn toàn lệnh hienTaiDl() và taiDlBdau() tại đây để không chặn thông báo cảnh báo và không load lại trang.
+        // Phục hồi logic gọi dữ liệu nhưng kiểm soát Màn hình tải
+        if (val === "") {
+            if (!boQuaLoading && typeof hienTaiDl === 'function') {
+                hienTaiDl("⏳ Đang tải dữ liệu cá nhân...");
+            }
+            if (typeof taiDlBdau === 'function') {
+                taiDlBdau(); 
+            }
+        }
     }
 
     input.addEventListener("keyup", (e) => {
@@ -1894,16 +1906,18 @@ $(document).ready(function() {
             // Có tồn tại -> Xác nhận chọn người này
             selectOption(matchedOpt.value, matchedOpt.textContent);
         } else {
-            // Không tồn tại -> Xóa ngay, khôi phục lại trạng thái ban đầu và Cảnh báo ngay lập tức
+            // Không tồn tại -> Xóa ngay, khôi phục lại trang của chính mình (truyền cờ true để không hiện Loading che cảnh báo)
             input.value = "";
-            selectOption("", "-- Lựa chọn giáo viên --");
+            selectOption("", "-- Lựa chọn giáo viên --", true);
             
-            // Hàm cảnh báo sẽ hiển thị chớp nhoáng vì không còn bị khối loading che khuất
-            if (typeof hienThongb === 'function') {
-                hienThongb('cbh', "⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
-            } else {
-                alert("⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
-            }
+            // Hiện cảnh báo ngay lập tức, sử dụng setTimeout nhẹ để đảm bảo UI kịp phản hồi
+            setTimeout(() => {
+                if (typeof hienThongb === 'function') {
+                    hienThongb('cbh', "⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
+                } else {
+                    alert("⚠️ Thông tin nhân sự vừa nhập không tồn tại. Hệ thống đã hủy lựa chọn.");
+                }
+            }, 100);
         }
         dropdown.style.display = "none";
     });
