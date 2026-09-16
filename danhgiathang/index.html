@@ -763,66 +763,70 @@ function taiDsTrang() {
     }
     
    function veBangThop() { 
-    if (!Array.isArray(dlThopGoc)) dlThopGoc = [];
-    const nchon = $('#locNamThop').val(), tb = $('#bangThop tbody').empty(); 
-    if (!nchon) { 
-        tb.append('<tr><td colspan="15" class="text-center text-muted">Vui lòng chọn Năm học.</td></tr>'); 
-        return; 
-    } 
-    let bc = {}; 
-    dlThopGoc.forEach(r => { 
-        if (String(r[2]) !== nchon || !r[0]) return; 
-        if (!bc[r[0]]) bc[r[0]] = { tenn: r[0], thangs: {} }; 
-        let mt = parseInt(String(r[3]).match(/(\d{1,2})/)?.[0]); 
-        if (mt) bc[r[0]].thangs[mt] = r[4]; 
-    }); 
-    let stth = 1; 
-    const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
-    let chuoi_html = "";
-    for (const k in bc) { 
-        const gr = bc[k]; 
-        let dr = `<tr><td class="text-center">${stth++}</td><td class="fw-bold text-primary" style="font-size: 13px;">${gr.tenn}</td><td><input type="text" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold text-danger" disabled placeholder="..."></td>`; 
-        tho.forEach(m => dr += `<td class="text-center small ${gr.thangs[m] ? 'bg-light' : ''}">${gr.thangs[m] || '-'}</td>`); 
-        chuoi_html += dr + '</tr>'; 
-    } 
-    tb.html(chuoi_html); 
-}
-    
-    function veBangNghi() { 
-        if (!Array.isArray(dlNghiGoc)) dlNghiGoc = [];
-        const nchon = $('#locNamNghi').val(), tb = $('#bangNghi tbody').empty(); 
+        if (!Array.isArray(dlThopGoc)) dlThopGoc = [];
+        const nchon = $('#locNamThop').val(), tb = $('#bangThop tbody').empty(); 
         if (!nchon) { 
-            tb.append('<tr><td colspan="14" class="text-center text-muted">Vui lòng chọn Năm học.</td></tr>'); 
+            tb.append('<tr><td colspan="15" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
             return; 
         } 
+        
+        // Tạo bộ từ điển ánh xạ Tên sang ID
+        let mapIdTheoTen = {};
+        const hopChon = document.getElementById('hopChonGv');
+        if (hopChon) {
+            Array.from(hopChon.options).forEach(opt => {
+                if (opt.value && opt.value !== "") {
+                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
+                }
+            });
+        }
+
         let bc = {}; 
-        dlNghiGoc.forEach(r => { 
-            if (String(r.nam) !== nchon || !r.tenn) return; 
-            if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
-            let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
-            if (mt) bc[r.tenn].thangs[mt] = { gtri: r.snnghi, gchu: r.ldo }; 
+        dlThopGoc.forEach(r => { 
+            if (String(r[2]) !== nchon || !r[0]) return; 
+            if (!bc[r[0]]) bc[r[0]] = { tenn: r[0], thangs: {} }; 
+            let mt = parseInt(String(r[3]).match(/(\d{1,2})/)?.[0]); 
+            if (mt) bc[r[0]].thangs[mt] = r[4]; 
         }); 
         let stth = 1; 
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
+        let chuoi_html = "";
         for (const k in bc) { 
             const gr = bc[k]; 
-            let dr = `<tr><td class="text-center align-middle">${stth++}</td><td class="fw-bold align-middle">${gr.tenn}</td>`; 
-            tho.forEach(m => { 
-                let dtb = gr.thangs[m], chuh = '-'; 
-                if (dtb && (dtb.gtri > 0 || (dtb.gtri !== "" && dtb.gtri != null))) { 
-                    let gc = (dtb.gchu) ? ` <span class="text-muted small fst-italic">(${dtb.gchu})</span>` : ""; 
-                    chuh = `<div class="voBocYk"><div class="ndYk text-center"><span class="fw-bold text-danger">${dtb.gtri}</span>${gc}</div></div>`; 
-                } 
-                dr += `<td class="p-1 align-middle">${chuh}</td>`; 
-            }); 
-            tb.append(dr + '</tr>'); 
+            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
+            
+            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
+            let dr = `<tr>
+                <td class="text-center align-middle">${stth++}</td>
+                <td class="ps-3 align-middle">
+                    <div class="fw-bold text-primary" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
+                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                    </div>
+                </td>
+                <td class="align-middle"><input type="text" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold text-danger" disabled placeholder="..."></td>`; 
+            tho.forEach(m => dr += `<td class="text-center small align-middle ${gr.thangs[m] ? 'bg-light' : ''}">${gr.thangs[m] || '-'}</td>`); 
+            chuoi_html += dr + '</tr>'; 
         } 
+        tb.html(chuoi_html); 
     }
     
     function veBangYkien() { 
         if (!Array.isArray(dlYkienGoc)) dlYkienGoc = [];
         const nchon = $('#locNamYkien').val(), tb = $('#bangYkien tbody').empty(); 
         if (!nchon) return; 
+        
+        // Tạo bộ từ điển ánh xạ Tên sang ID
+        let mapIdTheoTen = {};
+        const hopChon = document.getElementById('hopChonGv');
+        if (hopChon) {
+            Array.from(hopChon.options).forEach(opt => {
+                if (opt.value && opt.value !== "") {
+                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
+                }
+            });
+        }
+
         let bc = {}; 
         dlYkienGoc.forEach(r => { 
             if (String(r.nam) !== nchon || !r.tenn) return; 
@@ -834,11 +838,76 @@ function taiDsTrang() {
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
         for (const k in bc) { 
             const gr = bc[k]; 
-            let dr = `<tr><td class="text-center">${stth++}</td><td class="ps-3">${gr.tenn}</td>`; 
+            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
+            
+            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
+            let dr = `<tr>
+                <td class="text-center align-middle">${stth++}</td>
+                <td class="ps-3 align-middle">
+                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
+                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                    </div>
+                </td>`; 
             tho.forEach(m => { 
                 let v = gr.thangs[m], chuh = '-'; 
                 if (v && String(v).trim() !== "") chuh = `<div class="voBocYk"><div class="ndYk">${v}</div></div>`; 
-                dr += `<td class="p-2">${chuh}</td>`; 
+                dr += `<td class="p-2 align-middle">${chuh}</td>`; 
+            }); 
+            tb.append(dr + '</tr>'); 
+        } 
+    }
+
+    function veBangNghi() { 
+        if (!Array.isArray(dlNghiGoc)) dlNghiGoc = [];
+        const nchon = $('#locNamNghi').val(), tb = $('#bangNghi tbody').empty(); 
+        if (!nchon) { 
+            tb.append('<tr><td colspan="14" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
+            return; 
+        } 
+        
+        // Tạo bộ từ điển ánh xạ Tên sang ID
+        let mapIdTheoTen = {};
+        const hopChon = document.getElementById('hopChonGv');
+        if (hopChon) {
+            Array.from(hopChon.options).forEach(opt => {
+                if (opt.value && opt.value !== "") {
+                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
+                }
+            });
+        }
+
+        let bc = {}; 
+        dlNghiGoc.forEach(r => { 
+            if (String(r.nam) !== nchon || !r.tenn) return; 
+            if (!bc[r.tenn]) bc[r.tenn] = { tenn: r.tenn, thangs: {} }; 
+            let mt = parseInt(String(r.thang).match(/(\d{1,2})/)?.[0]); 
+            if (mt) bc[r.tenn].thangs[mt] = { gtri: r.snnghi, gchu: r.ldo }; 
+        }); 
+        
+        let stth = 1; 
+        const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
+        for (const k in bc) { 
+            const gr = bc[k]; 
+            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
+
+            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
+            let dr = `<tr>
+                <td class="text-center align-middle">${stth++}</td>
+                <td class="ps-3 align-middle">
+                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
+                        <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+                    </div>
+                </td>`; 
+                
+            tho.forEach(m => { 
+                let dtb = gr.thangs[m], chuh = '-'; 
+                if (dtb && (dtb.gtri > 0 || (dtb.gtri !== "" && dtb.gtri != null))) { 
+                    let gc = (dtb.gchu) ? ` <span class="text-muted small fst-italic">(${dtb.gchu})</span>` : ""; 
+                    chuh = `<div class="voBocYk"><div class="ndYk text-center"><span class="fw-bold text-danger">${dtb.gtri}</span>${gc}</div></div>`; 
+                } 
+                dr += `<td class="p-1 align-middle">${chuh}</td>`; 
             }); 
             tb.append(dr + '</tr>'); 
         } 
