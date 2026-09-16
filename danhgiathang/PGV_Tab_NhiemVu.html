@@ -596,6 +596,7 @@ function xulyLuuTam(ath = false, xltc = null) {
         let tHt = $(this).find('.nhapTgHt').val() || "";
         let nTH = $(this).find('.anNguoiTH').val() || "";
         let gc = $(this).find('.anGhiChu').val() || "";
+        
         let j_val = $(this).find('.oColJ').val() || "";
         let k_val = $(this).find('.oColK').val() || "";
         let l_val = $(this).find('.oColL').val() || "";
@@ -604,20 +605,14 @@ function xulyLuuTam(ath = false, xltc = null) {
         let inpH = $(this).find('.chonKq');
         let valChon = inpH.val() || "";
         let cfgGoc = inpH.attr('data-config') || "";
-        
-        // SỬA LỖI: Hỗ trợ dấu chấm phẩy và xuống dòng trong cấu hình điểm
-        let diemLuu = (cfgGoc.includes("|") || cfgGoc.includes(";") || cfgGoc.includes("\n")) ? (valChon + "@@@" + cfgGoc) : valChon;
+        let diemLuu = cfgGoc.includes("|") ? (valChon + "@@@" + cfgGoc) : valChon;
         
         dlbg.push([ntt, ndc, dMax, tGiao, lTdo, tHt, nTH, diemLuu, gc, j_val, k_val, l_val, m_val]);
     });
 
     let qth = $('#chuKqHthi'); let chukq = qth.is('input, select, textarea') ? qth.val() : qth.text(); chukq = chukq ? chukq.trim() : "";
     
-    // NÂNG CẤP: Lọc tên sạch và ghép cố định ID vào cấu trúc gửi đi
-    let tenGoc = String(canbHientai.tde.tenn || "").split('\n')[0].split('|')[0].replace('ID:', '').trim();
-    let tenDayDu = tenGoc + "\nID: " + maTrangDich;
-
-    const ht = { ttrg: maTrangDich, tenn: tenDayDu, snnghi: $('#nhapSngayNghi').val() || 0, dthuong: $('#nhapDiemThuong').val() || 0, ldo: $('#nhapLdoNghi').val() || "", kienn: $('#nhapYkien').val() || "", bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), dlbang: dlbg, kq: chukq, khoa: trangThaiKhoa };
+    const ht = { ttrg: maTrangDich, snnghi: $('#nhapSngayNghi').val() || 0, dthuong: $('#nhapDiemThuong').val() || 0, ldo: $('#nhapLdoNghi').val() || "", kienn: $('#nhapYkien').val() || "", bcao: maHoaBcao($('#nhapBcao').val() || "", window.tepdinhkBcao), dlbang: dlbg, kq: chukq, khoa: trangThaiKhoa };
 
     khachApi.luuTam(ht, function(kq) {
         if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if(typeof mokBcao === 'function') mokBcao();
@@ -828,8 +823,7 @@ function veBangNviec(db) {
                 let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); 
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 if(txt !== "") {
-                    // SỬA LỖI REGEX Ở ĐÂY: Hỗ trợ cả dấu phẩy và dấu chấm thập phân
-                    let matchNum = txt.match(/[-+]?\d*[\.,]?\d+/);
+                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
                     mangGiaTriDiem.push(val);
                 }
@@ -849,7 +843,7 @@ function veBangNviec(db) {
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 
                 if(txt !== "") {
-                    let matchNum = txt.match(/[-+]?\d*[\.,]?\d+/);
+                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
                     let isSel = (val === valChon);
                     danhSachHtml += `<div class="muc-chon p-2 border-bottom text-dark ${isSel ? 'bg-light fw-bold text-primary' : ''}" style="cursor:pointer; text-align:justify; word-wrap:break-word; white-space:normal; line-height:1.4; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#cfe2ff'" onmouseout="this.style.backgroundColor='transparent'" onclick="chonGiaTriDiem(this, '${val}')">${txt}</div>`;
@@ -1778,25 +1772,13 @@ $(document).ready(function() {
 
     function addOptionToDropdown(val, text) {
         const optDiv = document.createElement("div");
-        optDiv.className = "muc-gv px-3 py-2 border-bottom text-dark"; // Tăng độ rộng padding (py-2) để hiển thị 2 dòng
+        optDiv.className = "muc-gv px-3 py-1 border-bottom text-dark";
         optDiv.style.cursor = "pointer";
+        optDiv.textContent = text;
         optDiv.dataset.val = val;
-        
-        // NÂNG CẤP: Chèn thêm ID (Mã hồ sơ từ cột B) xuống bên dưới Tên giáo viên
-        optDiv.innerHTML = `
-            <div class="fw-bold" style="font-size: 13px;">${text}</div>
-            <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
-                <i class="bi bi-person-vcard me-1"></i>ID: ${val}
-            </div>
-        `;
-        
         optDiv.onmouseover = () => optDiv.style.background = "#cfe2ff";
         optDiv.onmouseout = () => optDiv.style.background = "transparent";
-        optDiv.onmousedown = (e) => { 
-            e.preventDefault(); 
-            // Khi nhấn chọn, vẫn chỉ đẩy giá trị 'text' (Tên) lên ô input hiển thị cho gọn
-            selectOption(val, text); 
-        };
+        optDiv.onmousedown = (e) => { e.preventDefault(); selectOption(val, text); };
         dropdown.appendChild(optDiv);
     }
 
