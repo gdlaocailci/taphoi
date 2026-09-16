@@ -244,7 +244,8 @@ function runAIAssistant() {
                     if (tds.length < 15) continue; 
 
                     let countHTXS = 0, countHTT = 0, countHT = 0, countCHT = 0;
-                    let tongDiemSo = 0, validMonths = 0;
+                    // [ĐÃ KHÔI PHỤC]: Trả lại biến tongDiemXepLoai đúng như mã gốc
+                    let tongDiemXepLoai = 0, tongDiemSo = 0, validMonths = 0;
 
                     for (let j = cotBatDau; j <= cotKetThuc; j++) {
                         if (!tds[j]) continue; 
@@ -252,36 +253,41 @@ function runAIAssistant() {
                         let textLower = cellText.toLowerCase();
                         let diem = 0;
                         
-                        // [ĐÃ SỬA]: Quét chính xác số thập phân
+                        // [ĐÃ NÂNG CẤP]: Chỉ thay đổi phần regex quét số thập phân
                         let matchDiem = cellText.match(/(\d+([.,]\d+)?)/);
                         if (matchDiem) {
                             diem = parseFloat(matchDiem[1].replace(',', '.'));
                         }
 
+                        // [ĐÃ KHÔI PHỤC LẠI CÔNG THỨC CỘNG GỐC]
                         if (cellText === "" || cellText === "-" || cellText.includes("...") || textLower.includes("chưa có")) {
+                            tongDiemXepLoai += 0;
                             tongDiemSo += 0; 
                             countCHT++; 
                             validMonths++;
                             tds[j].innerHTML = `<span style="color: #dc3545; font-weight: bold;">Chưa hoàn thành</span><br><span style="font-size: 13px;">0 điểm</span>`;
                         } 
-                        // [ĐÃ SỬA]: Không cộng nhồi điểm. Có điểm thì lấy điểm, không có thì lấy điểm chuẩn (diemBase).
                         else if (textLower.includes("xuất sắc")) {
-                            tongDiemSo += (diem > 0 ? diem : diemBase_XS); countHTXS++; validMonths++;
+                            tongDiemXepLoai += diemBase_XS; tongDiemSo += diem; countHTXS++; validMonths++;
                         } else if (textLower.includes("chưa hoàn thành")) {
-                            tongDiemSo += diem; countCHT++; validMonths++;
+                            tongDiemXepLoai += 0; tongDiemSo += diem; countCHT++; validMonths++;
                         } else if (textLower.includes("tốt")) {
-                            tongDiemSo += (diem > 0 ? diem : diemBase_Tot); countHTT++; validMonths++;
+                            tongDiemXepLoai += diemBase_Tot; tongDiemSo += diem; countHTT++; validMonths++;
                         } else if (textLower.includes("hoàn thành")) {
-                            tongDiemSo += (diem > 0 ? diem : diemBase_HT); countHT++; validMonths++;
+                            tongDiemXepLoai += diemBase_HT; tongDiemSo += diem; countHT++; validMonths++;
                         } else {
-                            tongDiemSo += diem; countCHT++; validMonths++;
+                            tongDiemXepLoai += 0; tongDiemSo += diem; countCHT++; validMonths++;
                         }
                     }
 
                     if (validMonths === 0) continue; 
 
                     let D = tongSoThangYeuCau; 
-                    let avgScore = (tongDiemSo / D).toFixed(1);
+                    
+                    // [ĐÃ KHÔI PHỤC LẠI LOGIC CHUẨN]: Tính riêng 2 loại điểm và cộng vào nhau
+                    let diemTBXepLoai = tongDiemXepLoai / D;
+                    let diemTBSo = tongDiemSo / D;
+                    let avgScore = (diemTBXepLoai + diemTBSo).toFixed(1);
 
                     let tyLeXS_thucTe = Math.round((countHTXS / D) * 100);
                     let tyLeTot_thucTe = Math.round(((countHTXS + countHTT) / D) * 100);
@@ -332,7 +338,6 @@ function runAIAssistant() {
     }
 }
 
-// [ĐÃ SỬA]: Cập nhật mảng sắp xếp lấy cả phần thập phân
 function xeDapNhaiBongDung() {
     let caiAoKhoacMuaHe = document.getElementById("bangThop");
     if (!caiAoKhoacMuaHe) return;
@@ -355,6 +360,8 @@ function xeDapNhaiBongDung() {
         if (mucDoTrai !== mucDoPhai) return mucDoPhai - mucDoTrai; 
         
         let diemTrai = 0, diemPhai = 0;
+        
+        // [ĐÃ NÂNG CẤP]: Cải tiến bắt số thập phân (dấu chấm/phẩy) khi sắp xếp
         let timDiemTrai = chuoiHoaHong.match(/([\d.,]+)\s*điểm/);
         let timDiemPhai = chuoiHoaCuc.match(/([\d.,]+)\s*điểm/);
         
