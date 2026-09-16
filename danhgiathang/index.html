@@ -568,7 +568,7 @@ function xulyPhienDn(phanho) {
         $('#chuNamHoc').text(kq.tde?.nhoc || ''); 
         $('#chuThoiGian').text(kq.tde?.tgian || ''); 
         $('#nhapSngayNghi').val(kq.tde?.snnghi || 0); 
-        $('#nhapDiemThuong').val(parseInt(kq.tde?.dthuong) || 0);
+        $('#nhapDiemThuong').val(parseFloat(String(kq.tde?.dthuong || 0).replace(',', '.')) || 0);
         if(typeof capnhTdong === 'function') capnhTdong();
         $('#nhapLdoNghi').val(kq.tde?.ldo || ""); 
         $('#nhapYkien').val(kq.tde?.kienn || "");
@@ -880,8 +880,36 @@ function taiDsTrang() {
         } 
     }
     
-    function htNgayth(nt) { if (!nt) return ""; let dt = new Date(nt); return isNaN(dt) ? nt : dt.toLocaleDateString('vi-VN'); }
-    function khoiTaoBoDemDiem(kqc, dth) { if (!kqc || !/\d+/.test(kqc)) { dlgoc.mauc = ""; return; } let dg = parseInt(kqc.match(/-?\d+/)[0]), bt = parseInt(dth) || 0; dlgoc.diemg = dg - bt; dlgoc.mauc = kqc.replace(String(dg), "{0}"); }
+    function htNgayth(nt) { 
+      if (!nt) return ""; let dt = new Date(nt); return isNaN(dt) ? nt : dt.toLocaleDateString('vi-VN'); 
+    }
+    function khoiTaoBoDemDiem(kqc, dth) { 
+        if (!kqc || !/\d+/.test(kqc)) { dlgoc.mauc = ""; return; } 
+        
+        // [NÂNG CẤP]: Sử dụng Regex để quét được cả phần số nguyên và thập phân (chứa dấu phẩy hoặc chấm)
+        let match = kqc.match(/-?\d+(?:[\.,]\d+)?/);
+        if (!match) { dlgoc.mauc = ""; return; }
+        
+        let chuoiSo = match[0]; // VD: "73,8"
+        
+        // Chuyển đổi dấu phẩy sang chấm để JavaScript hiểu được số thực (float)
+        let dg = parseFloat(chuoiSo.replace(',', '.')); 
+        let bt = parseFloat(String(dth).replace(',', '.')) || 0; 
+        
+        dlgoc.diemg = dg - bt; 
+        
+        // Xây dựng khuôn mẫu và "bọc" đối tượng String để trả lại dấu phẩy chuẩn VN 
+        // khi hàm capnhTdong (bên tab Nhiệm vụ) gọi lệnh replace.
+        let maucGoc = kqc.replace(chuoiSo, "{0}");
+        dlgoc.mauc = new String(maucGoc);
+        dlgoc.mauc.replace = function(chuoiTim, chuoiThay) {
+            if (chuoiTim === "{0}" && !isNaN(chuoiThay)) {
+                // Nếu giá trị trả về có thập phân, đổi lại dấu chấm thành phẩy cho giao diện
+                chuoiThay = String(chuoiThay).replace('.', ',');
+            }
+            return String.prototype.replace.call(this, chuoiTim, chuoiThay);
+        };
+    }
 
   /* ========================================================================== */
 /* KHỐI XỬ LÝ NHÚNG TÀI LIỆU VÀ TẢI XUỐNG (DỰ ÁN GIAO VIỆC)                   */
