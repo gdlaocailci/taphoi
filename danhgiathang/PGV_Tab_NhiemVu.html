@@ -828,9 +828,10 @@ function veBangNviec(db) {
                 let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim(); 
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 if(txt !== "") {
+                    // SỬA LỖI REGEX Ở ĐÂY: Hỗ trợ cả dấu phẩy và dấu chấm thập phân
                     let matchNum = txt.match(/[-+]?\d*[\.,]?\d+/);
-                if (matchNum && kv.length === 1) { val = matchNum[0]; }
-                mangGiaTriDiem.push(val);
+                    if (matchNum && kv.length === 1) { val = matchNum[0]; }
+                    mangGiaTriDiem.push(val);
                 }
             });
 
@@ -848,7 +849,7 @@ function veBangNviec(db) {
                 let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
                 
                 if(txt !== "") {
-                    let matchNum = txt.match(/[-+]?\d*\.?\d+/);
+                    let matchNum = txt.match(/[-+]?\d*[\.,]?\d+/);
                     if (matchNum && kv.length === 1) { val = matchNum[0]; }
                     let isSel = (val === valChon);
                     danhSachHtml += `<div class="muc-chon p-2 border-bottom text-dark ${isSel ? 'bg-light fw-bold text-primary' : ''}" style="cursor:pointer; text-align:justify; word-wrap:break-word; white-space:normal; line-height:1.4; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#cfe2ff'" onmouseout="this.style.backgroundColor='transparent'" onclick="chonGiaTriDiem(this, '${val}')">${txt}</div>`;
