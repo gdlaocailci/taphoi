@@ -78,6 +78,18 @@
   function veBangBcao() {
     const nchon = $('#locNamBcao').val(), tb = $('#bangBcao tbody').empty();
     if (!nchon) { tb.append('<tr><td colspan="14" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); return; }
+    
+    // NÂNG CẤP: Xây dựng bộ từ điển ánh xạ Tên giáo viên sang ID từ hộp chọn trung tâm
+    let mapIdTheoTen = {};
+    const hopChon = document.getElementById('hopChonGv');
+    if (hopChon) {
+        Array.from(hopChon.options).forEach(opt => {
+            if (opt.value && opt.value !== "") {
+                mapIdTheoTen[opt.text.trim()] = opt.value.trim();
+            }
+        });
+    }
+
     let bc = {};
     dlBcaoGoc.forEach(r => {
       if (String(r.nam) !== nchon || !r.tenn) return;
@@ -88,7 +100,21 @@
 
     let stth = 1; const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
     for (const k in bc) {
-      const gr = bc[k]; let dr = `<tr><td class="text-center align-middle">${stth++}</td><td class="ps-3 fw-bold align-middle">${gr.tenn}</td>`;
+      const gr = bc[k]; 
+      
+      // Truy xuất ID của giáo viên. Nếu là người ngoài hệ thống cũ thì để là "Chưa xác định"
+      let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
+      
+      // NÂNG CẤP: Tách thành 2 dòng (Tên in đậm ở trên, ID in nghiêng ở dưới)
+      let dr = `<tr>
+          <td class="text-center align-middle">${stth++}</td>
+          <td class="ps-3 align-middle">
+              <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
+              <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
+                  <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
+              </div>
+          </td>`;
+          
       tho.forEach(m => {
         let v = gr.thangs[m], chuh = '-';
         if (v && String(v).trim() !== "") {
