@@ -604,8 +604,10 @@ function xulyPhienDn(phanho) {
             $('#nhapSngayNghi, #nhapLdoNghi, #nhapYkien, #nhapBcao').prop('readonly', false);
         }
         
-        $('#chuTrangThai').text(kq.tde?.tthai || 'CHƯA NỘP BÁO CÁO'); 
-        $('#chuKqHthi, .ketQuaMenuDoc, #oKetQuaMenuDoc').text(kq.tde?.kq || '');
+       $('#chuTrangThai').text(kq.tde?.tthai || 'CHƯA NỘP BÁO CÁO'); 
+        let ketQuaC2 = kq.tde?.kq || '';
+        $('#chuKqHthi, .ketQuaMenuDoc, #oKetQuaMenuDoc').html(ketQuaC2.replace(/\n/g, '<br>'));
+        
         if(typeof khoiTaoBoDemDiem === 'function') khoiTaoBoDemDiem(kq.tde?.kq, kq.tde?.dthuong);
         
         window.PGV_SHOW_DELETE_COLUMN = canShowDeleteButton;
@@ -759,17 +761,6 @@ function taiDsTrang() {
             tb.append('<tr><td colspan="15" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
             return; 
         } 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
 
         let bc = {}; 
         dlThopGoc.forEach(r => { 
@@ -778,18 +769,22 @@ function taiDsTrang() {
             let mt = parseInt(String(r[3]).match(/(\d{1,2})/)?.[0]); 
             if (mt) bc[r[0]].thangs[mt] = r[4]; 
         }); 
+        
         let stth = 1; 
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
         let chuoi_html = "";
+        
         for (const k in bc) { 
             const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
             
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
+            // [Nâng cấp] Lấy ID từ bộ từ điển toàn cục (khắc phục độ trễ thẻ select)
+            let keyTimKiem = gr.tenn.trim().toLowerCase();
+            let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[keyTimKiem]) ? window.PGV_MAP_TEN_ID[keyTimKiem] : "Chưa xác định";
+            
             let dr = `<tr>
                 <td class="text-center align-middle">${stth++}</td>
                 <td class="ps-3 align-middle">
-                    <div class="fw-bold text-primary" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
                     <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
                         <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
                     </div>
@@ -805,17 +800,6 @@ function taiDsTrang() {
         if (!Array.isArray(dlYkienGoc)) dlYkienGoc = [];
         const nchon = $('#locNamYkien').val(), tb = $('#bangYkien tbody').empty(); 
         if (!nchon) return; 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
 
         let bc = {}; 
         dlYkienGoc.forEach(r => { 
@@ -828,13 +812,15 @@ function taiDsTrang() {
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
         for (const k in bc) { 
             const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
             
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
+            // [Nâng cấp] Lấy ID từ bộ từ điển toàn cục (khắc phục độ trễ thẻ select)
+            let keyTimKiem = gr.tenn.trim().toLowerCase();
+            let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[keyTimKiem]) ? window.PGV_MAP_TEN_ID[keyTimKiem] : "Chưa xác định";
+            
             let dr = `<tr>
                 <td class="text-center align-middle">${stth++}</td>
                 <td class="ps-3 align-middle">
-                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
                     <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic;">
                         <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
                     </div>
@@ -855,17 +841,6 @@ function taiDsTrang() {
             tb.append('<tr><td colspan="14" class="text-center text-muted py-4">Vui lòng chọn Năm học.</td></tr>'); 
             return; 
         } 
-        
-        // Tạo bộ từ điển ánh xạ Tên sang ID
-        let mapIdTheoTen = {};
-        const hopChon = document.getElementById('hopChonGv');
-        if (hopChon) {
-            Array.from(hopChon.options).forEach(opt => {
-                if (opt.value && opt.value !== "") {
-                    mapIdTheoTen[opt.text.trim()] = opt.value.trim();
-                }
-            });
-        }
 
         let bc = {}; 
         dlNghiGoc.forEach(r => { 
@@ -879,13 +854,15 @@ function taiDsTrang() {
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
         for (const k in bc) { 
             const gr = bc[k]; 
-            let maId = mapIdTheoTen[gr.tenn.trim()] || "Chưa xác định";
+            
+            // [Nâng cấp] Lấy ID từ bộ từ điển toàn cục (khắc phục độ trễ thẻ select)
+            let keyTimKiem = gr.tenn.trim().toLowerCase();
+            let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[keyTimKiem]) ? window.PGV_MAP_TEN_ID[keyTimKiem] : "Chưa xác định";
 
-            // Tách hiển thị 2 dòng: Tên ở trên, ID ở dưới
             let dr = `<tr>
                 <td class="text-center align-middle">${stth++}</td>
                 <td class="ps-3 align-middle">
-                    <div class="fw-bold" style="font-size: 13px;">${gr.tenn}</div>
+                    <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
                     <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
                         <i class="bi bi-person-vcard me-1"></i>ID: ${maId}
                     </div>
