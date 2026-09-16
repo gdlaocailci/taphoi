@@ -568,7 +568,11 @@ function xulyPhienDn(phanho) {
         $('#chuNamHoc').text(kq.tde?.nhoc || ''); 
         $('#chuThoiGian').text(kq.tde?.tgian || ''); 
         $('#nhapSngayNghi').val(kq.tde?.snnghi || 0); 
-        $('#nhapDiemThuong').val(parseFloat(String(kq.tde?.dthuong || 0).replace(',', '.')) || 0);
+        
+        let dThuongRaw = String(kq.tde?.dthuong || 0).replace(',', '.');
+        let diemThuong = parseFloat(dThuongRaw);
+        $('#nhapDiemThuong').val(isNaN(diemThuong) ? 0 : diemThuong);
+        
         if(typeof capnhTdong === 'function') capnhTdong();
         $('#nhapLdoNghi').val(kq.tde?.ldo || ""); 
         $('#nhapYkien').val(kq.tde?.kienn || "");
@@ -883,33 +887,35 @@ function taiDsTrang() {
     function htNgayth(nt) { 
       if (!nt) return ""; let dt = new Date(nt); return isNaN(dt) ? nt : dt.toLocaleDateString('vi-VN'); 
     }
+
     function khoiTaoBoDemDiem(kqc, dth) { 
-        if (!kqc || !/\d+/.test(kqc)) { dlgoc.mauc = ""; return; } 
-        
-        // [NÂNG CẤP]: Sử dụng Regex để quét được cả phần số nguyên và thập phân (chứa dấu phẩy hoặc chấm)
-        let match = kqc.match(/-?\d+(?:[\.,]\d+)?/);
-        if (!match) { dlgoc.mauc = ""; return; }
-        
-        let chuoiSo = match[0]; // VD: "73,8"
-        
-        // Chuyển đổi dấu phẩy sang chấm để JavaScript hiểu được số thực (float)
-        let dg = parseFloat(chuoiSo.replace(',', '.')); 
-        let bt = parseFloat(String(dth).replace(',', '.')) || 0; 
-        
-        dlgoc.diemg = dg - bt; 
-        
-        // Xây dựng khuôn mẫu và "bọc" đối tượng String để trả lại dấu phẩy chuẩn VN 
-        // khi hàm capnhTdong (bên tab Nhiệm vụ) gọi lệnh replace.
-        let maucGoc = kqc.replace(chuoiSo, "{0}");
-        dlgoc.mauc = new String(maucGoc);
-        dlgoc.mauc.replace = function(chuoiTim, chuoiThay) {
-            if (chuoiTim === "{0}" && !isNaN(chuoiThay)) {
-                // Nếu giá trị trả về có thập phân, đổi lại dấu chấm thành phẩy cho giao diện
-                chuoiThay = String(chuoiThay).replace('.', ',');
-            }
-            return String.prototype.replace.call(this, chuoiTim, chuoiThay);
-        };
-    }
+    if (!kqc || !/\d+/.test(kqc)) { dlgoc.mauc = ""; return; } 
+    
+    // [NÂNG CẤP]: Cải thiện Regex để quét chính xác số nguyên và số thập phân đến hàng phần trăm
+    let match = kqc.match(/-?\d+(?:[\.,]\d+)?/);
+    if (!match) { dlgoc.mauc = ""; return; }
+    
+    let chuoiSo = match[0]; // VD: "73,85"
+    
+    // Chuyển đổi dấu phẩy sang chấm để JavaScript hiểu được số thực (float)
+    let dg = parseFloat(chuoiSo.replace(',', '.')); 
+    let bt = parseFloat(String(dth).replace(',', '.')) || 0; 
+    
+    // [NÂNG CẤP]: Khắc phục sai số thực của JavaScript, giữ độ chính xác đến hàng phần trăm
+    dlgoc.diemg = Math.round((dg - bt) * 100) / 100; 
+    
+    // Xây dựng khuôn mẫu và "bọc" đối tượng String để trả lại dấu phẩy chuẩn VN 
+    let maucGoc = kqc.replace(chuoiSo, "{0}");
+    dlgoc.mauc = new String(maucGoc);
+    dlgoc.mauc.replace = function(chuoiTim, chuoiThay) {
+        if (chuoiTim === "{0}" && !isNaN(chuoiThay)) {
+            // [NÂNG CẤP]: Làm tròn số thực trước khi hiển thị để tránh lỗi chuỗi dài, chuyển chấm thành phẩy
+            let gtriThapPhan = Math.round(parseFloat(chuoiThay) * 100) / 100;
+            chuoiThay = String(gtriThapPhan).replace('.', ',');
+        }
+        return String.prototype.replace.call(this, chuoiTim, chuoiThay);
+    };
+}
 
   /* ========================================================================== */
 /* KHỐI XỬ LÝ NHÚNG TÀI LIỆU VÀ TẢI XUỐNG (DỰ ÁN GIAO VIỆC)                   */
