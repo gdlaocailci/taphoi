@@ -380,7 +380,6 @@ function xulyPhienDn(phanho) {
         datTaiDl(true, "✨ ĐANG ĐỒNG BỘ DỮ LIỆU...");
 
         // TỐI ƯU 1: Chạy song song (Parallel Execution)
-        // Vừa tải giao diện HTML, vừa phát lệnh gọi API dữ liệu cùng một lúc
         const pGiaoDien = taiGiaoDienUuTien();
         const pDuLieu = new Promise((resolve, reject) => {
             window.khachApi.layDlCanb(null, window.PGV_ID_TC, resolve, reject);
@@ -400,7 +399,6 @@ function xulyPhienDn(phanho) {
 
     function taiDlBdau() { 
         // Luồng tải đã được tích hợp vào Promise.all bên trên
-        // Giữ lại tên hàm rỗng để không gây lỗi logic ở các module khác nếu có gọi nhầm
     }
 
     async function taiGiaoDienUuTien() {
@@ -1029,6 +1027,117 @@ function taiTepDangXem() {
         });
     }
     khoaTruyCapMaNguon();
+  </script>
+
+  <!-- =========================================================================================
+       [CẬP NHẬT] KHỐI LOGIC: Ý KIẾN GIÁM SÁT (Được nhúng trực tiếp để tránh lỗi Load File JS)
+       ========================================================================================= -->
+  <script>
+  function veKhungBangYkienGiamSat() {
+      let pane = document.getElementById("khuYkienGiamSat");
+      if (pane && pane.innerHTML.trim() === "") {
+          pane.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h4 class="text-danger fw-bold text-uppercase m-0">Tổng hợp ý kiến của Lãnh đạo và ban giám sát</h4>
+                  <button class="btn btn-primary btn-sm fw-bold btn-reactbits-shiny shadow-sm" onclick="taiDlYkienGiamSat()">
+                      <i class="bi bi-arrow-repeat me-1"></i> Làm mới dữ liệu
+                  </button>
+              </div>
+              <div class="table-responsive bg-white rounded shadow-sm border p-2" style="max-height: calc(100vh - 120px); overflow-y: auto;">
+                  <table class="table table-hover table-bordered mb-0" id="bangYkienGiamSat">
+                      <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                          <tr>
+                              <th class="text-center align-middle" style="width: 5%; background-color: #0d6efd; color: white; border: none;">STT</th>
+                              <th class="align-middle" style="width: 25%; background-color: #0d6efd; color: white; border: none;">Họ và tên</th>
+                              <th class="align-middle" style="width: 70%; background-color: #0d6efd; color: white; border: none;">Nội dung ý kiến đánh giá</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr><td colspan="3" class="text-center text-muted py-4 fst-italic">Vui lòng đợi, đang tải dữ liệu...</td></tr>
+                      </tbody>
+                  </table>
+              </div>
+          `;
+      }
+  }
+
+  function taiDlYkienGiamSat() {
+      veKhungBangYkienGiamSat(); 
+      if (typeof datTaiDl === 'function') datTaiDl(true, "Đang tổng hợp ý kiến giám sát...");
+      
+      if (typeof window.khachApi !== 'undefined' && typeof window.khachApi.goiThuCong === 'function') {
+          window.khachApi.goiThuCong({ hdong: "laydlykiengiamsat" }, function(kq) {
+              if (typeof datTaiDl === 'function') datTaiDl(false);
+              if (kq && kq.ttai === 'tcong') {
+                  veBangYkienGiamSat(kq.dliu);
+              } else {
+                  let err = kq ? kq.tbao : "Lỗi xác thực máy chủ";
+                  if (typeof hienThongb === 'function') hienThongb('loi', "Truy xuất thất bại: " + err);
+              }
+          }, function(loi) {
+              if (typeof datTaiDl === 'function') datTaiDl(false);
+              if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi kết nối Server: " + loi.message);
+          });
+      } else {
+          if (typeof datTaiDl === 'function') datTaiDl(false);
+          console.error("API chưa sẵn sàng.");
+      }
+  }
+
+  function veBangYkienGiamSat(duLieu) {
+      let tbody = document.querySelector("#bangYkienGiamSat tbody");
+      if (!tbody) return;
+      
+      tbody.innerHTML = "";
+      
+      if (!duLieu || duLieu.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4 fst-italic">Hệ thống ghi nhận không có ý kiến giám sát nào trong chu kỳ này.</td></tr>';
+          return;
+      }
+
+      let html = "";
+      let stt = 1;
+      
+      duLieu.forEach(item => {
+          let rawYkien = String(item.ykien || "").trim();
+          let arrYkien = rawYkien.split(/\r?\n/);
+          
+          let formattedYkien = '<ul style="margin: 0; padding-left: 1.2rem; list-style-type: square; color: #212529; line-height: 1.6;">';
+          
+          arrYkien.forEach(dong => {
+              let strDong = dong.trim();
+              if (strDong !== "") {
+                  strDong = strDong.replace(/^[-*•+]\s*/, '');
+                  formattedYkien += `<li style="margin-bottom: 6px; word-wrap: break-word; white-space: normal;">${strDong}</li>`;
+              }
+          });
+          formattedYkien += '</ul>';
+
+          html += `
+              <tr>
+                  <td class="text-center align-middle fw-bold">${stt++}</td>
+                  <td class="ps-3 align-middle">
+                      <div class="fw-bold text-primary text-uppercase" style="font-size: 14px;">${item.tenn}</div>
+                      <div class="text-secondary mt-1" style="font-size: 11.5px; font-style: italic; font-weight: normal;">
+                          <i class="bi bi-person-vcard me-1"></i>ID: ${item.maId}
+                      </div>
+                  </td>
+                  <td class="align-middle p-3">
+                      <div style="background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 12px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                          ${formattedYkien}
+                      </div>
+                  </td>
+              </tr>
+          `;
+      });
+      
+      tbody.innerHTML = html;
+  }
+
+  // Bắt sự kiện bấm vào nút Menu (dùng jQuery giống các nút khác của hệ thống)
+  $(document).on('click', '#tabYkienGiamSat', () => { 
+      taiDlYkienGiamSat(); 
+  });
   </script>
 </body>
 </html>
