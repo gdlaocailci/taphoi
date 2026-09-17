@@ -1030,7 +1030,7 @@ function taiTepDangXem() {
   </script>
 
 <!-- =========================================================================================
-       [CẬP NHẬT] KHỐI LOGIC: Ý KIẾN GIÁM SÁT (Thêm cột Điểm tự chấm)
+       [CẬP NHẬT] KHỐI LOGIC: Ý KIẾN GIÁM SÁT (Hiển thị Tháng D6 và Điểm C2)
        ========================================================================================= -->
   <script>
   function veKhungBangYkienGiamSat() {
@@ -1049,7 +1049,7 @@ function taiTepDangXem() {
                           <tr>
                               <th class="text-center align-middle" style="width: 5%; background-color: #0d6efd; color: white; border: none;">STT</th>
                               <th class="text-center align-middle" style="width: 20%; background-color: #0d6efd; color: white; border: none;">Họ và tên</th>
-                              <th class="text-center align-middle" style="width: 15%; background-color: #0d6efd; color: white; border: none;">Điểm tự chấm</th>
+                              <th class="text-center align-middle" style="width: 15%; background-color: #0d6efd; color: white; border: none;">Kết quả tự đánh giá</th>
                               <th class="text-center align-middle" style="width: 60%; background-color: #0d6efd; color: white; border: none;">Nội dung ý kiến đánh giá</th>
                           </tr>
                       </thead>
@@ -1109,8 +1109,9 @@ function taiTepDangXem() {
           });
           formattedYkien += '</ul>';
 
-          // Xử lý hiển thị nếu Điểm tự chấm rỗng
-          let diemHienThi = (item.diemTuCham && item.diemTuCham !== "") ? item.diemTuCham : "-";
+          // NÂNG CẤP: Xử lý hiển thị Tháng và Điểm
+          let thangHienThi = (item.thang && item.thang !== "") ? item.thang : "Chưa rõ tháng";
+          let diemHienThi = (item.diemTuCham && item.diemTuCham !== "") ? item.diemTuCham : "Chưa đánh giá";
 
           html += `
               <tr>
@@ -1122,7 +1123,8 @@ function taiTepDangXem() {
                       </div>
                   </td>
                   <td class="text-center align-middle">
-                      <span class="fw-bold text-danger" style="font-size: 15px;">${diemHienThi}</span>
+                      <div class="fw-bold text-secondary text-uppercase" style="font-size: 11.5px; margin-bottom: 4px;">${thangHienThi}</div>
+                      <div class="fw-bold text-danger" style="font-size: 14.5px;">${diemHienThi}</div>
                   </td>
                   <td class="align-middle p-3">
                       <div style="background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 12px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
