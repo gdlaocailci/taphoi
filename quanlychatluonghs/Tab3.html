@@ -215,14 +215,19 @@ function hks_xuLyThongKeBoNhoDem_fn(hks_chuKyHoatDong_str, hks_tuKhoaLop_str = '
       // KHỐI LỌC DỮ LIỆU ĐẦU VÀO
       let hks_bieuThucChinhQuy_rx = null;
       if (hks_tuKhoa_str !== '') {
+          // Thoát các ký tự đặc biệt trong Regex ngoại trừ dấu *
           let hks_mau_str = hks_tuKhoa_str.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
+          
           if (hks_tuKhoa_str.includes('*')) {
-              // Bỏ chặn ^ và $ để *B có thể khớp với các lớp như 2B1, 3B2
+              // Chuyển dấu * thành .* đại diện cho chuỗi ký tự bất kỳ
               hks_mau_str = hks_mau_str.replace(/\*/g, '.*');
           } else {
+              // Nếu người dùng không nhập *, mặc định tìm kiếm tương đối (chứa từ khóa)
               hks_mau_str = '.*' + hks_mau_str + '.*';
           }
-          hks_bieuThucChinhQuy_rx = new RegExp(hks_mau_str, 'i');
+          
+          // NÂNG CẤP: Bổ sung neo ^ (đầu chuỗi) và $ (cuối chuỗi) để ép khớp chính xác vị trí
+          hks_bieuThucChinhQuy_rx = new RegExp('^' + hks_mau_str + '$', 'i');
       }
 
       const hks_duLieuDaLoc_arr = hks_khoDuLieuTong_arr.filter(r => {
