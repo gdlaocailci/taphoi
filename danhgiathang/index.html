@@ -1029,8 +1029,8 @@ function taiTepDangXem() {
     khoaTruyCapMaNguon();
   </script>
 
-  <!-- =========================================================================================
-       [CẬP NHẬT] KHỐI LOGIC: Ý KIẾN GIÁM SÁT (Được nhúng trực tiếp để tránh lỗi Load File JS)
+ <!-- =========================================================================================
+       [CẬP NHẬT] KHỐI LOGIC: Ý KIẾN GIÁM SÁT (Đã fix lỗi undefined)
        ========================================================================================= -->
   <script>
   function veKhungBangYkienGiamSat() {
@@ -1066,17 +1066,13 @@ function taiTepDangXem() {
       if (typeof datTaiDl === 'function') datTaiDl(true, "Đang tổng hợp ý kiến giám sát...");
       
       if (typeof window.khachApi !== 'undefined' && typeof window.khachApi.goiThuCong === 'function') {
-          window.khachApi.goiThuCong({ hdong: "laydlykiengiamsat" }, function(kq) {
+          window.khachApi.goiThuCong({ hdong: "laydlykiengiamsat" }, function(duLieuTrahVe) {
               if (typeof datTaiDl === 'function') datTaiDl(false);
-              if (kq && kq.ttai === 'tcong') {
-                  veBangYkienGiamSat(kq.dliu);
-              } else {
-                  let err = kq ? kq.tbao : "Lỗi xác thực máy chủ";
-                  if (typeof hienThongb === 'function') hienThongb('loi', "Truy xuất thất bại: " + err);
-              }
+              // Đã fix: yeucauApi trả về thẳng mảng dữ liệu (dliu)
+              veBangYkienGiamSat(duLieuTrahVe);
           }, function(loi) {
               if (typeof datTaiDl === 'function') datTaiDl(false);
-              if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi kết nối Server: " + loi.message);
+              if (typeof hienThongb === 'function') hienThongb('loi', "Truy xuất thất bại: " + loi.message);
           });
       } else {
           if (typeof datTaiDl === 'function') datTaiDl(false);
@@ -1090,7 +1086,8 @@ function taiTepDangXem() {
       
       tbody.innerHTML = "";
       
-      if (!duLieu || duLieu.length === 0) {
+      // Nếu dữ liệu trống hoặc không phải mảng
+      if (!duLieu || !Array.isArray(duLieu) || duLieu.length === 0) {
           tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4 fst-italic">Hệ thống ghi nhận không có ý kiến giám sát nào trong chu kỳ này.</td></tr>';
           return;
       }
