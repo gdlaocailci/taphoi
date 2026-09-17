@@ -1,13 +1,14 @@
 /* ==========================================================================
    Tệp: TongHopYKien.js
-   Chức năng: Quản lý giao diện và trích xuất Ý kiến giám sát (Từ ô D4 của các cá nhân)
-   Thiết kế và phát triển Hoàng Ngọc Lâm
-   - Cơ chế: Lazy Load (Chỉ tải dữ liệu khi bấm tab) đảm bảo không suy giảm tốc độ khởi động.
-   - UI: Sử dụng hiệu ứng Reactbits Shiny, Icon tối ưu từ SVG Repo.
+   Chức năng: Trích xuất và vẽ bảng Ý kiến giám sát (Từ ô D4 của các cá nhân)
+   Thiết kế và phát triển: Hoàng Ngọc Lâm
+   - Cơ chế: Tự động nội suy giao diện (DOM Injection) và Lazy Load (Chỉ tải dữ liệu khi bấm tab).
+   - UI: Sử dụng hiệu ứng Reactbits Shiny cho nút làm mới, biểu tượng SVG từ svgrepo.
+   - Tuân thủ nguyên tắc: Hành chính sư phạm, không sử dụng các biến nhạy cảm, mã nguyên khối.
 ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Quét tìm Menu dọc và Tab Content để chèn giao diện động (Tránh lỗi do bất đồng bộ)
+    // [CẬP NHẬT] Sử dụng setInterval để chờ hệ thống tải xong HTML tĩnh rồi mới chèn nút
     let chKiemTraMenu = setInterval(() => {
         let tabYkienCung = document.getElementById("tabYkien");
         let khuVucTab = document.querySelector("#ungDungChinh .tab-content");
@@ -19,8 +20,11 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 500);
 });
 
+// ==========================================================================
+// KHỐI 1: KHỞI TẠO VÀ CHÈN GIAO DIỆN VÀO DOM
+// ==========================================================================
 function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
-    // 2. Nội suy nút Menu "Tổng hợp ý kiến giám sát"
+    // 1. NỘI SUY NÚT MENU BÊN TRÁI
     if (!document.getElementById("tabYkienGiamSat")) {
         let nutMenu = document.createElement("button");
         nutMenu.className = "the-chuyen nav-link";
@@ -30,7 +34,7 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
         nutMenu.setAttribute("type", "button");
         nutMenu.setAttribute("role", "tab");
         
-        // Icon giám sát (Eye/Check) tối giản
+        // Icon giám sát tối giản từ SVG Repo
         nutMenu.innerHTML = `
             <span class="b-tuong">
                 <svg width="18px" height="18px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-bottom;">
@@ -43,13 +47,13 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
         // Chèn vào ngay bên dưới nút "Tổng hợp ý kiến" hiện tại
         tabYkienCung.parentNode.insertBefore(nutMenu, tabYkienCung.nextSibling);
 
-        // Lắng nghe sự kiện để tải dữ liệu (Lazy Load)
+        // Gán sự kiện gọi API khi bấm vào (Lazy Load)
         nutMenu.addEventListener("click", function() {
-            taiDuLieuYkienGiamSat();
+            taiDlYkienGiamSat();
         });
     }
 
-    // 3. Nội suy vùng hiển thị Bảng dữ liệu
+    // 2. NỘI SUY KHUNG HIỂN THỊ BẢNG (TAB PANE)
     if (!document.getElementById("khuYkienGiamSat")) {
         let pane = document.createElement("div");
         pane.className = "tab-pane fade px-4 py-3";
@@ -58,7 +62,7 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
         pane.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="text-danger fw-bold text-uppercase m-0">Tổng hợp ý kiến của Lãnh đạo và ban giám sát</h4>
-                <button class="btn btn-primary btn-sm fw-bold btn-reactbits-shiny shadow-sm" onclick="taiDuLieuYkienGiamSat()">
+                <button class="btn btn-primary btn-sm fw-bold btn-reactbits-shiny shadow-sm" onclick="taiDlYkienGiamSat()">
                     <i class="bi bi-arrow-repeat me-1"></i> Làm mới dữ liệu
                 </button>
             </div>
@@ -72,36 +76,52 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="3" class="text-center text-muted py-4 fst-italic">Đang chờ lệnh truy xuất dữ liệu...</td></tr>
+                        <tr><td colspan="3" class="text-center text-muted py-4 fst-italic">Vui lòng đợi, đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>
         `;
-        khuVucTab.appendChild(pane);
+        
+        // Chèn vào sau khuYkien để giữ đúng thứ tự logic Tab
+        let khuYkien = document.getElementById("khuYkien");
+        if (khuYkien) {
+            khuYkien.parentNode.insertBefore(pane, khuYkien.nextSibling);
+        } else {
+            khuVucTab.appendChild(pane);
+        }
     }
 }
 
-function taiDuLieuYkienGiamSat() {
-    if (typeof datTaiDl === 'function') datTaiDl(true, "Đang tổng hợp ý kiến từ các hồ sơ...");
+// ==========================================================================
+// KHỐI 2: XỬ LÝ API TRÍCH XUẤT DỮ LIỆU TỪ MÁY CHỦ
+// ==========================================================================
+function taiDlYkienGiamSat() {
+    if (typeof datTaiDl === 'function') datTaiDl(true, "Đang tổng hợp ý kiến giám sát...");
     
     if (typeof khachApi !== 'undefined' && typeof khachApi.goiThuCong === 'function') {
         khachApi.goiThuCong({ hdong: "laydlykiengiamsat" }, function(kq) {
             if (typeof datTaiDl === 'function') datTaiDl(false);
             
             if (kq && kq.ttai === 'tcong') {
-                hienThiBangYkienGiamSat(kq.dliu);
+                veBangYkienGiamSat(kq.dliu);
             } else {
                 let err = kq ? kq.tbao : "Lỗi xác thực máy chủ";
                 if (typeof hienThongb === 'function') hienThongb('loi', "Truy xuất thất bại: " + err);
             }
         }, function(loi) {
             if (typeof datTaiDl === 'function') datTaiDl(false);
-            if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi đường truyền: " + loi.message);
+            if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi kết nối Server: " + loi.message);
         });
+    } else {
+        if (typeof datTaiDl === 'function') datTaiDl(false);
+        console.error("API chưa sẵn sàng.");
     }
 }
 
-function hienThiBangYkienGiamSat(duLieu) {
+// ==========================================================================
+// KHỐI 3: VẼ BẢNG DỮ LIỆU LÊN GIAO DIỆN
+// ==========================================================================
+function veBangYkienGiamSat(duLieu) {
     let tbody = document.querySelector("#bangYkienGiamSat tbody");
     if (!tbody) return;
     
@@ -116,21 +136,23 @@ function hienThiBangYkienGiamSat(duLieu) {
     let stt = 1;
     
     duLieu.forEach(item => {
-        // Xử lý xuống dòng tự động và chuẩn hóa gạch đầu dòng
         let rawYkien = String(item.ykien || "").trim();
         let arrYkien = rawYkien.split(/\r?\n/);
         
+        // Cấu trúc danh sách (ul/li) để tự động xuống dòng và căn lề đoạn văn
         let formattedYkien = '<ul style="margin: 0; padding-left: 1.2rem; list-style-type: square; color: #212529; line-height: 1.6;">';
         
         arrYkien.forEach(dong => {
             let strDong = dong.trim();
             if (strDong !== "") {
+                // Xóa bỏ các ký tự gạch đầu dòng thủ công (nếu có) để đồng bộ với định dạng hệ thống
                 strDong = strDong.replace(/^[-*•+]\s*/, '');
                 formattedYkien += `<li style="margin-bottom: 6px; word-wrap: break-word; white-space: normal;">${strDong}</li>`;
             }
         });
         formattedYkien += '</ul>';
 
+        // Khối hiển thị dữ liệu mỗi cá nhân
         html += `
             <tr>
                 <td class="text-center align-middle fw-bold">${stt++}</td>
