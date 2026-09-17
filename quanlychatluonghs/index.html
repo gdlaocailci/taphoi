@@ -259,76 +259,76 @@
       }).catch(e => { Swal.fire("Sự cố hệ thống", e.message, "warning"); hks_hienThiManHinhTai_fn(false); });
   }
 
-  $(document).ready(function() {
+ $(document).ready(function() {
     hks_hienThiManHinhTai_fn(true);
-    $.get("Tab1.html", function(data1) { $("#khung-chua-tab").append(data1);
-        $.get("Tab2.html", function(data2) { $("#khung-chua-tab").append(data2);
-            $.get("Tab3.html", function(data3) { $("#khung-chua-tab").append(data3);
-                $.get("Tab5.html", function(data5) { $("#khung-chua-tab").append(data5);
+        Promise.all([
+        $.get("Tab1.html"),
+        $.get("Tab2.html"),
+        $.get("Tab3.html"),
+        $.get("Tab5.html")
+    ]).then(function(hks_mangKetQua_arr) {
+        
+        // Gắn cấu trúc DOM đồng loạt sau khi tải xong
+        $("#khung-chua-tab").append(hks_mangKetQua_arr[0]);
+        $("#khung-chua-tab").append(hks_mangKetQua_arr[1]);
+        $("#khung-chua-tab").append(hks_mangKetQua_arr[2]);
+        $("#khung-chua-tab").append(hks_mangKetQua_arr[3]);
+        
+        let hks_duLieuLuuTru_str = sessionStorage.getItem("sys_data_hs");
+        let hks_cauHinhLuuTru_str = sessionStorage.getItem("sys_config_hs");
+        
+        if(hks_duLieuLuuTru_str) {
+            hks_hoSoNguoiDungHienTai_obj = JSON.parse(hks_duLieuLuuTru_str);
+            document.getElementById('gate-overlay').style.display = 'none';
+            document.getElementById('profile-display').innerText = hks_hoSoNguoiDungHienTai_obj.name;
+            document.getElementById('role-badge').innerText = hks_hoSoNguoiDungHienTai_obj.role === 'admin' ? 'Super Admin' : 'Giáo viên';
+            hks_thietLapBoLoc_fn(); 
+            
+            if(hks_cauHinhLuuTru_str) {
+                hks_bienKhungHeThong_obj = JSON.parse(hks_cauHinhLuuTru_str);
+                hks_doDuLieuVaoHopChon_fn();
+                hks_kiemTraQuyenVaNapTabBon_fn();
                 
-                    let hks_duLieuLuuTru_str = sessionStorage.getItem("sys_data_hs");
-                    let hks_cauHinhLuuTru_str = sessionStorage.getItem("sys_config_hs");
-                    
-                    if(hks_duLieuLuuTru_str) {
-                        hks_hoSoNguoiDungHienTai_obj = JSON.parse(hks_duLieuLuuTru_str);
-                        document.getElementById('gate-overlay').style.display = 'none';
-                        document.getElementById('profile-display').innerText = hks_hoSoNguoiDungHienTai_obj.name;
-                        document.getElementById('role-badge').innerText = hks_hoSoNguoiDungHienTai_obj.role === 'admin' ? 'Super Admin' : 'Giáo viên';
-                        hks_thietLapBoLoc_fn(); 
-                        
-                        if(hks_cauHinhLuuTru_str) {
-                            hks_bienKhungHeThong_obj = JSON.parse(hks_cauHinhLuuTru_str);
-                            hks_doDuLieuVaoHopChon_fn();
-                            hks_kiemTraQuyenVaNapTabBon_fn();
-                            
-                            if (typeof hks_kiemTraQuyenXuatNhapExcel_fn === 'function') { hks_kiemTraQuyenXuatNhapExcel_fn(); }
-                            
-                            let hks_ungDungChinh_el = document.getElementById('main-app');
-                            hks_ungDungChinh_el.style.display = 'block'; 
-                            setTimeout(() => { hks_ungDungChinh_el.style.opacity = '1'; }, 50);
+                if (typeof hks_kiemTraQuyenXuatNhapExcel_fn === 'function') { hks_kiemTraQuyenXuatNhapExcel_fn(); }
+                
+                let hks_ungDungChinh_el = document.getElementById('main-app');
+                hks_ungDungChinh_el.style.display = 'block'; 
+                setTimeout(() => { hks_ungDungChinh_el.style.opacity = '1'; }, 50);
 
-                            hks_capNhatBoNhoDem_fn().then(() => {
-                                hks_hienThiManHinhTai_fn(false);
-                            });
-                        } else {
-                            hks_thucThiGiaoTiep_fn('hks_taiCauTrucKhung_api', {hks_dinhTuyenNguon_str: hks_hoSoNguoiDungHienTai_obj.reqId}).then(hks_duLieuTaiVe_obj => {
-                                if(hks_duLieuTaiVe_obj.success === false) { 
-                                    hks_hienThiManHinhTai_fn(false); 
-                                    sessionStorage.removeItem("sys_data_hs"); 
-                                    Swal.fire({
-                                        title: "Từ chối truy cập",
-                                        text: hks_duLieuTaiVe_obj.message || "Định danh chưa được cấp phép hoặc đã bị thu hồi quyền truy cập!",
-                                        icon: "error",
-                                        confirmButtonText: "Quay lại trang chủ",
-                                        allowOutsideClick: false
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                    return; 
-                                }
-                                hks_bienKhungHeThong_obj = hks_duLieuTaiVe_obj;
-                                sessionStorage.setItem("sys_config_hs", JSON.stringify(hks_bienKhungHeThong_obj));
-                                hks_doDuLieuVaoHopChon_fn(); 
-                                hks_kiemTraQuyenVaNapTabBon_fn();
-                                
-                                if (typeof hks_kiemTraQuyenXuatNhapExcel_fn === 'function') { hks_kiemTraQuyenXuatNhapExcel_fn(); }
-                                
-                                let hks_ungDungChinh_el = document.getElementById('main-app');
-                                hks_ungDungChinh_el.style.display = 'block'; 
-                                setTimeout(() => { hks_ungDungChinh_el.style.opacity = '1'; }, 50);
-
-                                hks_capNhatBoNhoDem_fn().then(() => {
-                                    hks_hienThiManHinhTai_fn(false);
-                                });
-                            }).catch(e => { Swal.fire('Sự cố', e.message, 'warning'); hks_hienThiManHinhTai_fn(false); });
-                        }
-                    } else { 
+                hks_capNhatBoNhoDem_fn().then(() => {
+                    hks_hienThiManHinhTai_fn(false);
+                });
+            } else {
+                hks_thucThiGiaoTiep_fn('hks_taiCauTrucKhung_api', {hks_dinhTuyenNguon_str: hks_hoSoNguoiDungHienTai_obj.reqId}).then(hks_duLieuTaiVe_obj => {
+                    if(hks_duLieuTaiVe_obj.success === false) { 
                         hks_hienThiManHinhTai_fn(false); 
-                        document.getElementById('gate-overlay').style.display = 'flex'; 
+                        sessionStorage.removeItem("sys_data_hs"); 
+                        Swal.fire({ title: "Từ chối", text: hks_duLieuTaiVe_obj.message, icon: "error" }).then(() => location.reload());
+                        return; 
                     }
-                }); 
-            });
-        });
+                    hks_bienKhungHeThong_obj = hks_duLieuTaiVe_obj;
+                    sessionStorage.setItem("sys_config_hs", JSON.stringify(hks_bienKhungHeThong_obj));
+                    hks_doDuLieuVaoHopChon_fn(); 
+                    hks_kiemTraQuyenVaNapTabBon_fn();
+                    
+                    if (typeof hks_kiemTraQuyenXuatNhapExcel_fn === 'function') { hks_kiemTraQuyenXuatNhapExcel_fn(); }
+                    
+                    let hks_ungDungChinh_el = document.getElementById('main-app');
+                    hks_ungDungChinh_el.style.display = 'block'; 
+                    setTimeout(() => { hks_ungDungChinh_el.style.opacity = '1'; }, 50);
+
+                    hks_capNhatBoNhoDem_fn().then(() => {
+                        hks_hienThiManHinhTai_fn(false);
+                    });
+                }).catch(e => { Swal.fire('Sự cố', e.message, 'warning'); hks_hienThiManHinhTai_fn(false); });
+            }
+        } else { 
+            hks_hienThiManHinhTai_fn(false); 
+            document.getElementById('gate-overlay').style.display = 'flex'; 
+        }
+    }).catch(function(err) {
+        Swal.fire("Lỗi hệ thống", "Không thể nạp luồng giao diện html. Vui lòng thử tải lại trang!", "error");
+        hks_hienThiManHinhTai_fn(false);
     });
   });
 
