@@ -61,12 +61,20 @@
       <label class="mb-1">Chọn năm học:</label>
       <select id="t3_nam" class="form-select form-select-sm fw-bold text-danger"></select>
     </div>
+    
+    <!-- BẮT ĐẦU: Bổ sung ô lọc theo ký tự đại diện -->
+    <div style="width: 200px">
+      <label class="mb-1">Lọc lớp (Ký tự đại diện *):</label>
+      <input type="text" id="t3_locLop" class="form-control form-control-sm fw-bold text-primary" placeholder="VD: 1*, *A, 5A..." onkeyup="if(event.keyCode === 13) hks_layDuLieuPhanBa_fn()">
+    </div>
+    <!-- KẾT THÚC: Bổ sung ô lọc -->
     <div>
       <button class="btn btn-sm btn-warning fw-bold text-dark shadow-sm" onclick="hks_layDuLieuPhanBa_fn()">📊 XEM BÁO CÁO DỮ LIỆU</button>
     </div>
   </div>
 
-  <ul class="nav nav-pills mb-2" id="tabThongKe">
+  <!-- Phần UL nav-pills phía dưới giữ nguyên không đổi -->
+    <ul class="nav nav-pills mb-2" id="tabThongKe">
     <li class="nav-item"><button class="nav-link active btn-sm" data-bs-toggle="pill" data-bs-target="#tk_soluong_th">1. Số lượng cấp tiểu học</button></li>
     <li class="nav-item"><button class="nav-link btn-sm ms-2" data-bs-toggle="pill" data-bs-target="#tk_soluong_thcs">2. Số lượng học sinh THCS</button></li>
     <li class="nav-item"><button class="nav-link btn-sm ms-2" data-bs-toggle="pill" data-bs-target="#tk_chatluong">3. Chất lượng và thành tích</button></li>
@@ -200,9 +208,33 @@
 </div>
   <script>
   
-  function hks_xuLyThongKeBoNhoDem_fn(hks_chuKyHoatDong_str) {
+  function hks_xuLyThongKeBoNhoDem_fn(hks_chuKyHoatDong_str, hks_tuKhoaLop_str = '') {
       const hks_chuKy_str = String(hks_chuKyHoatDong_str);
-      const hks_duLieuDaLoc_arr = hks_khoDuLieuTong_arr.filter(r => String(r[0]) === hks_chuKy_str);
+      const hks_tuKhoa_str = String(hks_tuKhoaLop_str).toLowerCase();
+      
+      // Khởi tạo Regex nếu có từ khóa (Hỗ trợ ký tự đại diện *)
+      let hks_bieuThucChinhQuy_rx = null;
+      if (hks_tuKhoa_str) {
+          // Thoát các ký tự đặc biệt của Regex ngoại trừ dấu *
+          let hks_mau_str = hks_tuKhoa_str.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
+          if (hks_tuKhoa_str.includes('*')) {
+              hks_mau_str = '^' + hks_mau_str.replace(/\*/g, '.*') + '$';
+          } else {
+              hks_mau_str = '.*' + hks_mau_str + '.*'; // Mặc định là tìm kiếm chứa (includes) nếu không có *
+          }
+          hks_bieuThucChinhQuy_rx = new RegExp(hks_mau_str, 'i');
+      }
+
+      const hks_duLieuDaLoc_arr = hks_khoDuLieuTong_arr.filter(r => {
+          let hks_khopChuKy_bol = String(r[0]) === hks_chuKy_str;
+          if (!hks_khopChuKy_bol) return false;
+          
+          if (hks_bieuThucChinhQuy_rx) {
+              let hks_tenLop_str = String(r[1]).trim().toLowerCase();
+              return hks_bieuThucChinhQuy_rx.test(hks_tenLop_str);
+          }
+          return true;
+      });
 
       let hks_namGoc_num = 0;
       if(hks_chuKyHoatDong_str) {
@@ -571,8 +603,10 @@ function hks_xuatBieuDo_fn() {
         let hks_tapDuLieuMasterMN_arr = [];
         let hks_bangMau_arr = ['#dc3545', '#0d6efd', '#198754', '#ffc107', '#6f42c1', '#fd7e14']; 
 
+        let hks_tuKhoaLop_str = document.getElementById('t3_locLop') ? document.getElementById('t3_locLop').value.trim() : '';
         hks_danhSachNam_arr.forEach((nam, idx) => {
-            let hks_thongKeNam_arr = hks_xuLyThongKeBoNhoDem_fn(nam);
+            let hks_thongKeNam_arr = hks_xuLyThongKeBoNhoDem_fn(nam, hks_tuKhoaLop_str);
+            
             let hks_tongNam_obj = hks_thongKeNam_arr.find(item => item.lop === 'TỔNG');
             
             if (hks_tongNam_obj) {
@@ -694,7 +728,7 @@ function hks_xuatBieuDo_fn() {
             hks_theCard_el.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
         });
 
-        let hks_duLieuThongKe_arr = hks_xuLyThongKeBoNhoDem_fn(hks_chuKy_str);
+        let hks_duLieuThongKe_arr = hks_xuLyThongKeBoNhoDem_fn(hks_chuKy_str, hks_tuKhoaLop_str);
         let hks_dongTong_obj = hks_duLieuThongKe_arr.find(item => item.lop === 'TỔNG');
 
         if (hks_dongTong_obj) {
