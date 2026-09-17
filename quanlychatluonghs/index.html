@@ -191,8 +191,9 @@
           });
           return await hks_phanHoiNhanCung_obj.json();
       } catch (hks_loiNgoaiLe_obj) {
-          throw new Error("Lỗi kết nối Server!");
-      }
+    console.error("Lỗi gốc:", hks_loiNgoaiLe_obj);
+    throw new Error("Lỗi kết nối Server!");
+    }
   }
 
   async function hks_capNhatBoNhoDem_fn() {
