@@ -17,7 +17,7 @@
           <button class="btn btn-sm btn-success px-3" onclick="hks_dayDuLieuPhanMot_fn()"><i class="bi bi-hdd-fill"></i> Cập nhật</button>
           <button class="btn btn-sm btn-secondary px-3 ms-1" onclick="hks_chenDongPhanMot_fn()"><i class="bi bi-plus-lg"></i> Thêm</button>
           <button class="btn btn-sm btn-info px-3 ms-1" id="btnChuyenLop" onclick="hks_thucHienDoiLop_fn()" style="display:none"><i class="bi bi-arrow-left-right"></i> Chuyển lớp</button>
-          <button class="btn btn-sm btn-dark px-3 ms-1" id="btnChuyenTruong" onclick="hks_thucHienChuyenTruong_fn()"><i class="bi bi-box-arrow-right"></i> Chuyển trường</button>
+          <button class="btn btn-sm btn-dark px-3 ms-1" id="btnChuyenTruong" onclick="hks_thucHienChuyenTruong_fn()" style="display:none"><i class="bi bi-box-arrow-right"></i> Chuyển trường</button>
         </span>
 
         <button class="btn btn-sm btn-success fw-bold px-3" id="btnExportExcel" onclick="hks_xuatDuLieuExcel_fn()" style="display:none">
@@ -453,9 +453,14 @@ function hks_thucHienChuyenTruong_fn() {
 
       let hks_nutXuatUI_el = document.getElementById('btnExportExcel');
       let hks_nutNhapUI_el = document.getElementById('btnImportExcel');
+      let hks_nutChuyenTruongUI_el = document.getElementById('btnChuyenTruong');
 
       if (hks_nutXuatUI_el) hks_nutXuatUI_el.style.display = hks_hienThi_bol ? 'inline-block' : 'none';
       if (hks_nutNhapUI_el) hks_nutNhapUI_el.style.display = hks_hienThi_bol ? 'inline-block' : 'none';
+      
+      if (hks_nutChuyenTruongUI_el) {
+          hks_nutChuyenTruongUI_el.style.display = hks_laAdmin_bol ? 'inline-block' : 'none';
+      }
   }
 
   function hks_xuatDuLieuExcel_fn() {
