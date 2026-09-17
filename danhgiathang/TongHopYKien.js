@@ -2,13 +2,11 @@
    Tệp: TongHopYKien.js
    Chức năng: Trích xuất và vẽ bảng Ý kiến giám sát (Từ ô D4 của các cá nhân)
    Thiết kế và phát triển: Hoàng Ngọc Lâm
-   - Cơ chế: Tự động nội suy giao diện (DOM Injection) và Lazy Load (Chỉ tải dữ liệu khi bấm tab).
-   - UI: Sử dụng hiệu ứng Reactbits Shiny cho nút làm mới, biểu tượng SVG từ svgrepo.
-   - Tuân thủ nguyên tắc: Hành chính sư phạm, không sử dụng các biến nhạy cảm, mã nguyên khối.
+   - Cơ chế: Tự động nội suy giao diện (DOM Injection) và Lazy Load.
+   - Fix: Bơm giao diện an toàn kể cả khi thẻ chứa đã tồn tại nhưng rỗng.
 ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
-    // [CẬP NHẬT] Sử dụng setInterval để chờ hệ thống tải xong HTML tĩnh rồi mới chèn nút
     let chKiemTraMenu = setInterval(() => {
         let tabYkienCung = document.getElementById("tabYkien");
         let khuVucTab = document.querySelector("#ungDungChinh .tab-content");
@@ -21,12 +19,14 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // ==========================================================================
-// KHỐI 1: KHỞI TẠO VÀ CHÈN GIAO DIỆN VÀO DOM
+// KHỐI 1: KHỞI TẠO VÀ CHÈN GIAO DIỆN VÀO DOM (AN TOÀN)
 // ==========================================================================
 function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
-    // 1. NỘI SUY NÚT MENU BÊN TRÁI
-    if (!document.getElementById("tabYkienGiamSat")) {
-        let nutMenu = document.createElement("button");
+    let nutMenu = document.getElementById("tabYkienGiamSat");
+    
+    // 1. NỘI SUY NÚT MENU BÊN TRÁI (Nếu chưa có)
+    if (!nutMenu) {
+        nutMenu = document.createElement("button");
         nutMenu.className = "the-chuyen nav-link";
         nutMenu.id = "tabYkienGiamSat";
         nutMenu.setAttribute("data-bs-toggle", "tab");
@@ -34,7 +34,6 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
         nutMenu.setAttribute("type", "button");
         nutMenu.setAttribute("role", "tab");
         
-        // Icon giám sát tối giản từ SVG Repo
         nutMenu.innerHTML = `
             <span class="b-tuong">
                 <svg width="18px" height="18px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-bottom;">
@@ -44,21 +43,31 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
             </span> Tổng hợp ý kiến GS
         `;
         
-        // Chèn vào ngay bên dưới nút "Tổng hợp ý kiến" hiện tại
         tabYkienCung.parentNode.insertBefore(nutMenu, tabYkienCung.nextSibling);
-
-        // Gán sự kiện gọi API khi bấm vào (Lazy Load)
-        nutMenu.addEventListener("click", function() {
-            taiDlYkienGiamSat();
-        });
     }
+    
+    // Đảm bảo không bị gán sự kiện click nhiều lần
+    nutMenu.removeEventListener("click", taiDlYkienGiamSat);
+    nutMenu.addEventListener("click", taiDlYkienGiamSat);
 
-    // 2. NỘI SUY KHUNG HIỂN THỊ BẢNG (TAB PANE)
-    if (!document.getElementById("khuYkienGiamSat")) {
-        let pane = document.createElement("div");
+    // 2. KHUNG HIỂN THỊ BẢNG (TAB PANE)
+    let pane = document.getElementById("khuYkienGiamSat");
+    
+    if (!pane) {
+        pane = document.createElement("div");
         pane.className = "tab-pane fade px-4 py-3";
         pane.id = "khuYkienGiamSat";
         
+        let khuYkien = document.getElementById("khuYkien");
+        if (khuYkien) {
+            khuYkien.parentNode.insertBefore(pane, khuYkien.nextSibling);
+        } else {
+            khuVucTab.appendChild(pane);
+        }
+    }
+    
+    // Bơm cấu trúc bảng nếu thẻ pane đang trống
+    if (pane.innerHTML.trim() === "") {
         pane.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="text-danger fw-bold text-uppercase m-0">Tổng hợp ý kiến của Lãnh đạo và ban giám sát</h4>
@@ -81,14 +90,6 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
                 </table>
             </div>
         `;
-        
-        // Chèn vào sau khuYkien để giữ đúng thứ tự logic Tab
-        let khuYkien = document.getElementById("khuYkien");
-        if (khuYkien) {
-            khuYkien.parentNode.insertBefore(pane, khuYkien.nextSibling);
-        } else {
-            khuVucTab.appendChild(pane);
-        }
     }
 }
 
@@ -96,6 +97,12 @@ function khoiTaoGiaoDienYkienGiamSat(tabYkienCung, khuVucTab) {
 // KHỐI 2: XỬ LÝ API TRÍCH XUẤT DỮ LIỆU TỪ MÁY CHỦ
 // ==========================================================================
 function taiDlYkienGiamSat() {
+    // Kích hoạt lại bước vẽ khung nếu người dùng tải qua lệnh khác
+    let pane = document.getElementById("khuYkienGiamSat");
+    if (pane && pane.innerHTML.trim() === "") {
+        khoiTaoGiaoDienYkienGiamSat(document.getElementById("tabYkien"), document.querySelector("#ungDungChinh .tab-content"));
+    }
+
     if (typeof datTaiDl === 'function') datTaiDl(true, "Đang tổng hợp ý kiến giám sát...");
     
     if (typeof khachApi !== 'undefined' && typeof khachApi.goiThuCong === 'function') {
@@ -139,20 +146,17 @@ function veBangYkienGiamSat(duLieu) {
         let rawYkien = String(item.ykien || "").trim();
         let arrYkien = rawYkien.split(/\r?\n/);
         
-        // Cấu trúc danh sách (ul/li) để tự động xuống dòng và căn lề đoạn văn
         let formattedYkien = '<ul style="margin: 0; padding-left: 1.2rem; list-style-type: square; color: #212529; line-height: 1.6;">';
         
         arrYkien.forEach(dong => {
             let strDong = dong.trim();
             if (strDong !== "") {
-                // Xóa bỏ các ký tự gạch đầu dòng thủ công (nếu có) để đồng bộ với định dạng hệ thống
                 strDong = strDong.replace(/^[-*•+]\s*/, '');
                 formattedYkien += `<li style="margin-bottom: 6px; word-wrap: break-word; white-space: normal;">${strDong}</li>`;
             }
         });
         formattedYkien += '</ul>';
 
-        // Khối hiển thị dữ liệu mỗi cá nhân
         html += `
             <tr>
                 <td class="text-center align-middle fw-bold">${stt++}</td>
