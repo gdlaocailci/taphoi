@@ -1,32 +1,49 @@
 <div class="tab-pane active" id="tab1">
   <div class="text-center"><h4>QUẢN LÝ THÔNG TIN HỌC SINH</h4></div>
   <div class="filter-box">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-1"><label>Năm học</label><select id="t1_nam" class="form-select form-select-sm fw-bold text-primary"></select></div>
-      <div class="col-md-1"><label>Lớp</label><select id="t1_lop" class="form-select form-select-sm fw-bold text-primary"></select></div>
-      <div class="col-md-2"><label>CCCD</label><input id="t1_cccd" class="form-control form-control-sm" placeholder="Nhập..."></div>
-      <div class="col-md-2"><label>Họ đệm</label><input id="t1_hodem" class="form-control form-control-sm"></div>
-      <div class="col-md-1"><label>Tên</label><input id="t1_ten" class="form-control form-control-sm"></div>
+    <!-- KHỐI 1: HÀNG NÚT BẤM CÔNG CỤ (Được đẩy lên trên) -->
+    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-3 pb-3 border-bottom border-light">
+      <button class="btn btn-sm btn-primary px-3 shadow-sm" onclick="hks_layDuLieuPhanMot_fn()"><i class="bi bi-search"></i> Tìm dữ liệu</button>
+      <button class="btn btn-sm btn-warning fw-bold px-3 shadow-sm" id="btnEdit1" onclick="hks_kichHoatChinhSua_fn(1)" style="display:none"><i class="bi bi-pencil-square"></i> Chỉnh sửa</button>
+      <button class="btn btn-sm btn-danger fw-bold px-3 shadow-sm" id="btnLenLop" onclick="hks_nhanBanLenLop_fn()" style="display:none"><i class="bi bi-rocket-takeoff"></i> Nhân bản lên lớp</button>
       
-      <div class="col-md-5 d-flex flex-wrap justify-content-end align-items-center gap-2">
-        <button class="btn btn-sm btn-danger fw-bold px-3" id="btnLenLop" onclick="hks_nhanBanLenLop_fn()" style="display:none"><i class="bi bi-rocket-takeoff"></i> Nhân bản lên lớp</button>
-        <button class="btn btn-sm btn-warning fw-bold px-3" id="btnEdit1" onclick="hks_kichHoatChinhSua_fn(1)" style="display:none"><i class="bi bi-pencil-square"></i> Sửa</button>
-        <button class="btn btn-sm btn-primary px-3" onclick="hks_layDuLieuPhanMot_fn()"><i class="bi bi-search"></i> Tìm</button>
-        
-        <span id="groupEdit1" class="edit-mode-btn" style="display:none;">
-          <button class="btn btn-sm btn-success px-3" onclick="hks_dayDuLieuPhanMot_fn()"><i class="bi bi-hdd-fill"></i> Cập nhật</button>
-          <button class="btn btn-sm btn-secondary px-3 ms-1" onclick="hks_chenDongPhanMot_fn()"><i class="bi bi-plus-lg"></i> Thêm</button>
-          <button class="btn btn-sm btn-info px-3 ms-1" id="btnChuyenLop" onclick="hks_thucHienDoiLop_fn()" style="display:none"><i class="bi bi-arrow-left-right"></i> Chuyển lớp</button>
-          <button class="btn btn-sm btn-dark px-3 ms-1" id="btnChuyenTruong" onclick="hks_thucHienChuyenTruong_fn()" style="display:none"><i class="bi bi-box-arrow-right"></i> Chuyển trường</button>
-        </span>
+      <span id="groupEdit1" class="edit-mode-btn" style="display:none;">
+        <button class="btn btn-sm btn-success px-3 shadow-sm" onclick="hks_dayDuLieuPhanMot_fn()"><i class="bi bi-hdd-fill"></i> Cập nhật</button>
+        <button class="btn btn-sm btn-secondary px-3 ms-1 shadow-sm" onclick="hks_chenDongPhanMot_fn()"><i class="bi bi-plus-lg"></i> Thêm</button>
+        <button class="btn btn-sm btn-info px-3 ms-1 shadow-sm" id="btnChuyenLop" onclick="hks_thucHienDoiLop_fn()" style="display:none"><i class="bi bi-arrow-left-right"></i> Chuyển lớp</button>
+        <button class="btn btn-sm btn-dark px-3 ms-1 shadow-sm" id="btnChuyenTruong" onclick="hks_thucHienChuyenTruong_fn()" style="display:none"><i class="bi bi-box-arrow-right"></i> Chuyển trường</button>
+      </span>
 
-        <button class="btn btn-sm btn-success fw-bold px-3" id="btnExportExcel" onclick="hks_xuatDuLieuExcel_fn()" style="display:none">
-          <i class="bi bi-download"></i> Xuất Excel
-        </button>
-        <button class="btn btn-sm btn-info fw-bold px-3" id="btnImportExcel" onclick="document.getElementById('fileImportExcel').click()" style="display:none">
-          <i class="bi bi-upload"></i> Nhập Excel
-        </button>
-        <input type="file" id="fileImportExcel" accept=".xlsx, .xls" style="display:none" onchange="hks_nhapDuLieuExcel_fn(event)">
+      <button class="btn btn-sm btn-success fw-bold px-3 shadow-sm" id="btnExportExcel" onclick="hks_xuatDuLieuExcel_fn()" style="display:none">
+        <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+      </button>
+      <button class="btn btn-sm btn-info fw-bold px-3 shadow-sm" id="btnImportExcel" onclick="document.getElementById('fileImportExcel').click()" style="display:none">
+        <i class="bi bi-upload"></i> Nhập Excel
+      </button>
+      <input type="file" id="fileImportExcel" accept=".xlsx, .xls" style="display:none" onchange="hks_nhapDuLieuExcel_fn(event)">
+    </div>
+    
+    <!-- KHỐI 2: HÀNG Ô LỌC DỮ LIỆU (Trải đều ra không gian 12 cột) -->
+    <div class="row g-2 align-items-end">
+      <div class="col-md-2 col-sm-6">
+        <label class="fw-bold text-secondary mb-1" style="font-size: 13px;">Năm học</label>
+        <select id="t1_nam" class="form-select form-select-sm fw-bold text-primary"></select>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <label class="fw-bold text-secondary mb-1" style="font-size: 13px;">Lớp</label>
+        <select id="t1_lop" class="form-select form-select-sm fw-bold text-primary"></select>
+      </div>
+      <div class="col-md-3 col-sm-4">
+        <label class="fw-bold text-secondary mb-1" style="font-size: 13px;">CCCD / Định danh</label>
+        <input id="t1_cccd" class="form-control form-control-sm" placeholder="Nhập...">
+      </div>
+      <div class="col-md-3 col-sm-4">
+        <label class="fw-bold text-secondary mb-1" style="font-size: 13px;">Họ đệm</label>
+        <input id="t1_hodem" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-2 col-sm-4">
+        <label class="fw-bold text-secondary mb-1" style="font-size: 13px;">Tên</label>
+        <input id="t1_ten" class="form-control form-control-sm">
       </div>
     </div>
   </div>
