@@ -123,7 +123,7 @@
         document.head.appendChild(metaDesc);
     }
 
-  function kiemTraPhienLamViec() {
+function kiemTraPhienLamViec() {
         const tkluuhd = sessionStorage.getItem("MA_PBAN_HT");
         const tokenluu = sessionStorage.getItem("PGV_TOKEN"); 
         const daGhiLs = sessionStorage.getItem("DA_GHI_LS"); 
@@ -154,11 +154,17 @@
                 hienThongbLoi("Cảnh báo: Tệp ketnoi.js chưa được khai báo Client ID Google.");
                 return;
             }
+            
+           // [NÂNG CẤP] Bổ sung use_fedcm_for_prompt: true để chuyển đổi sang giao thức FedCM.
+           // Việc này giúp bỏ qua cơ chế Cookie chéo (Third-party Cookies), khắc phục triệt để 
+           // tình trạng chặn đăng nhập trên các trình duyệt hiện đại (Chrome, Safari, Edge).
            google.accounts.id.initialize({
                 client_id: PGV_GOOGLE_CLIENT_ID,
                 callback: xulyPhienDn,
-                auto_prompt: false
+                auto_prompt: false,
+                use_fedcm_for_prompt: true 
             });
+            
             google.accounts.id.renderButton(
                 document.getElementById("khu_vuc_nut_dang_nhap"),
                 { theme: "outline", size: "large", type: "standard", text: "continue_with", shape: "rectangular", logo_alignment: "left" }
