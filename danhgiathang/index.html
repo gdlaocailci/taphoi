@@ -11,14 +11,17 @@
   
   <script>
     window.khachApi = {
-        yeucauApi: function(hdong, tdtai, khiTcong, khiLoi) {
+       yeucauApi: function(hdong, tdtai, khiTcong, khiLoi) {
             if (typeof ddungApi === 'undefined' || !ddungApi) {
                 if (khiLoi) khiLoi(new Error("Liên kết API hệ thống chưa sẵn sàng. Vui lòng tải lại trang."));
                 return;
             }
             var dlieu = { hdong: hdong, token: window.PGV_TOKEN || "", ...tdtai };
             
-            fetch(ddungApi, {
+            // NÂNG CẤP: Đính kèm hdong vào URL để chống lỗi mất payload khi GAS redirect 302 sang GET
+            var urlFetch = ddungApi + (ddungApi.includes('?') ? '&' : '?') + 'hdong=' + encodeURIComponent(hdong);
+            
+            fetch(urlFetch, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                 body: JSON.stringify(dlieu),
