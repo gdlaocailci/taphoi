@@ -101,12 +101,13 @@ function cq_TaoDHTMLDong(index, id_sheet, email, ho_ten, quyen) {
     // Đã bổ sung toàn bộ hệ thống chức danh Vùng cao (Giáo viên, Tổ phó, Tổ trưởng, Tổng phụ trách)
     let opts = [
         "--Chọn quyền--", 
-        "Giáo viên cấp 1", "Giáo viên cấp 2", "Giáo viên C1 VC", "Giáo viên C2 VC",
-        "Tổ phó cấp 1", "Tổ phó cấp 2", "Tổ phó C1 VC", "Tổ phó C2 VC",
-        "Tổ trưởng cấp 1", "Tổ trưởng cấp 2", "Tổ trưởng C1 VC", "Tổ trưởng C2 VC",
-        "Tổng phụ trách cấp 1", "Tổng phụ trách cấp 2", "Tổng phụ trách C1 VC", "Tổng phụ trách C2 VC",
-        "Tổ trưởng VP", "Tổ phó VP", "Nhân viên", 
-        "Admin", "Admin VIP"
+        "Giáo viên (Cấp 1 - Vùng thấp)", 
+        "Giáo viên (Cấp 1 - Vùng Cao)", 
+        "Giáo viên (Cấp 2 - Vùng thấp)", 
+        "Giáo viên (Cấp 2 - Vùng cao)",
+        "Nhân viên", 
+        "Admin", 
+        "Admin VIP"
     ];
     
     let selHTML = `<select class="cq-quyen">`;
