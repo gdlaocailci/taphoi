@@ -260,30 +260,42 @@
         <div style="margin-bottom: 25px; padding: 15px 20px; background-color: #f8fbff; border-radius: 8px; border: 1px solid #b8daff; text-align: left;">
             <label for="oChonNhom" style="font-weight: bold; color: var(--mau-c); display: block; margin-bottom: 8px;">1. Chọn đối tượng đánh giá:</label>
             
-            <select id="oChonNhom" onchange="hienThiNutGoogle()" class="o-c-kieu" style="width: 100%; margin-bottom: 20px; box-sizing: border-box; text-align: center;">
+           <select id="oChonNhom" onchange="hienThiNutGoogle()" class="o-c-kieu" style="width: 100%; margin-bottom: 20px; box-sizing: border-box; text-align: center;">
                 <option value="" disabled selected>-- Chọn chức vụ của bạn --</option>
-                <!-- BỔ SUNG ĐỐI TƯỢNG VÙNG THẤP -->
-                <option value="giaovienc1">TỔ TRƯỞNG (CẤP 1 - VÙNG THẤP)</option>
-                <option value="giaovienc1">TỔ PHÓ (CẤP 1 - VÙNG THẤP)</option>
-                <option value="giaovienc1">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG THẤP)</option>
-                <option value="giaovienc1">GIÁO VIÊN (CẤP 1 - VÙNG THẤP)</option>
-                <option value="giaovienc2">TỔ TRƯỞNG (CẤP 2 - VÙNG THẤP)</option>
-                <option value="giaovienc2">TỔ PHÓ (CẤP 2 - VÙNG THẤP)</option>
-                <option value="giaovienc2">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG THẤP)</option>
-                <option value="giaovienc2">GIÁO VIÊN (CẤP 2 - VÙNG THẤP)</option>
-                <!-- BỔ SUNG ĐỐI TƯỢNG VÙNG CAO -->
-                <option value="giaovienc1vc">TỔ TRƯỞNG (CẤP 1 - VÙNG CAO)</option>
-                <option value="giaovienc1vc">TỔ PHÓ (CẤP 1 - VÙNG CAO)</option>
-                <option value="giaovienc1vc">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG CAO)</option>
-                <option value="giaovienc1vc">GIÁO VIÊN (CẤP 1 - VÙNG CAO)</option>
-                <option value="giaovienc2vc">TỔ TRƯỞNG (CẤP 2 - VÙNG CAO)</option>
-                <option value="giaovienc2vc">TỔ PHÓ (CẤP 2 - VÙNG CAO)</option>
-                <option value="giaovienc2vc">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG CAO)</option>
-                <option value="giaovienc2vc">GIÁO VIÊN (CẤP 2 - VÙNG CAO)</option>
-                <!-- CHUNG: NHÂN VIÊN -->
-                <option value="nhanvien">TỔ TRƯỞNG VP</option>
-                <option value="nhanvien">TỔ PHÓ VP</option>
-                <option value="nhanvien">NHÂN VIÊN</option>
+                
+                <optgroup label="CẤP 1 - VÙNG THẤP">
+                    <option value="giaovienc1">TỔ TRƯỞNG (CẤP 1 - VÙNG THẤP)</option>
+                    <option value="giaovienc1">TỔ PHÓ (CẤP 1 - VÙNG THẤP)</option>
+                    <option value="giaovienc1">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG THẤP)</option>
+                    <option value="giaovienc1">GIÁO VIÊN (CẤP 1 - VÙNG THẤP)</option>
+                </optgroup>
+
+                <optgroup label="CẤP 1 - VÙNG CAO">
+                    <option value="giaovienc1vc">TỔ TRƯỞNG (CẤP 1 - VÙNG CAO)</option>
+                    <option value="giaovienc1vc">TỔ PHÓ (CẤP 1 - VÙNG CAO)</option>
+                    <option value="giaovienc1vc">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG CAO)</option>
+                    <option value="giaovienc1vc">GIÁO VIÊN (CẤP 1 - VÙNG CAO)</option>
+                </optgroup>
+
+                <optgroup label="CẤP 2 - VÙNG THẤP">
+                    <option value="giaovienc2">TỔ TRƯỞNG (CẤP 2 - VÙNG THẤP)</option>
+                    <option value="giaovienc2">TỔ PHÓ (CẤP 2 - VÙNG THẤP)</option>
+                    <option value="giaovienc2">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG THẤP)</option>
+                    <option value="giaovienc2">GIÁO VIÊN (CẤP 2 - VÙNG THẤP)</option>
+                </optgroup>
+
+                <optgroup label="CẤP 2 - VÙNG CAO">
+                    <option value="giaovienc2vc">TỔ TRƯỞNG (CẤP 2 - VÙNG CAO)</option>
+                    <option value="giaovienc2vc">TỔ PHÓ (CẤP 2 - VÙNG CAO)</option>
+                    <option value="giaovienc2vc">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG CAO)</option>
+                    <option value="giaovienc2vc">GIÁO VIÊN (CẤP 2 - VÙNG CAO)</option>
+                </optgroup>
+
+                <optgroup label="KHỐI VĂN PHÒNG">
+                    <option value="nhanvien">TỔ TRƯỞNG VP</option>
+                    <option value="nhanvien">TỔ PHÓ VP</option>
+                    <option value="nhanvien">NHÂN VIÊN</option>
+                </optgroup>
             </select>
             
             <div id="vungXacThucGoogle" style="display: none; animation: hienDan 0.4s ease-out; margin-top: 10px;">
