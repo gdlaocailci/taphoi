@@ -55,11 +55,12 @@ _call: function(hdong, tso) {
                     return;
                 }
 
-                // Chèn thêm ma_don_vi vào gói tin gửi đi
-                fetch(endpoint, {
+               fetch(endpoint, {
                     method: 'POST',
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ hdong: hdong, tso: tso, taik: sysId, ma_don_vi: maDonVi })
+                    body: JSON.stringify({ hdong: hdong, tso: tso, taik: sysId, ma_don_vi: maDonVi }),
+                    redirect: 'follow',
+                    credentials: 'omit'
                 })
                 // --- BẮT ĐẦU VỊ TRÍ NÂNG CẤP BẮT LỖI UNEXPECTED TOKEN '<' ---
                 .then(res => {
@@ -331,7 +332,7 @@ _call: function(hdong, tso) {
           <label style="font-size: 13px; font-weight: bold; color: #b91c1c; display: block; margin-bottom: 12px; font-family: 'Times New Roman', serif;">📍 CHỌN ĐƠN VỊ</label>
           <select id="sel_don_vi" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #1e3a8a; font-family: 'Times New Roman', serif; font-size: 16px; font-weight: bold; outline: none; background: #ffffff; color: #1e3a8a; text-align: center; text-align-last: center; cursor: pointer;" onchange="thayDoiDonVi(this.value)">
            <option value="" selected>---CHỌN ĐƠN VỊ---</option>   
-           <option value="TRUONG_1">Trường TH&THCS Tả Phời</option>
+           <option value="TRUONG_1">Trường Tiểu học Lê Văn Tám</option>
            
           </select>
       </div>
@@ -844,16 +845,40 @@ function kiemtqvata(tk_chuyen_den = null) {
         if (dlu.cquy === false) {
             xoaluutrant("SKT_DINHDANH_TAIK");
             window.skttktoanc = null;
-            document.getElementById('MenuContainer').style.display = 'none';
-            document.getElementById('so_wrapper').style.display = 'none';
-            document.getElementById('MinhChungContainer').style.display = 'none';
-            document.getElementById('access_denied_msg').style.display = 'block';
-            document.getElementById('denied_reason').innerText = dlu.tbao || "Tài khoản không được cấp quyền.";
-            
+
             const lder = document.getElementById('instant-loader');
             if (lder) lder.style.display = 'none';
-            document.getElementById('main-wrapper').style.display = 'flex';
-            setTimeout(() => { document.getElementById('main-wrapper').style.opacity = '1'; }, 50);
+
+            // BẢO ĐẢM KHÔNG LOAD VÀO BẤT CỨ ĐÂU - QUAY LẠI MÀN HÌNH ĐĂNG NHẬP
+            document.getElementById('main-wrapper').style.display = 'none';
+            document.getElementById('login-overlay').style.display = 'flex';
+
+            // HIỂN THỊ THÔNG BÁO VÀ ĐỔI NÚT THÀNH "ĐĂNG NHẬP LẠI"
+            hienThongBaoUI("⛔ TỪ CHỐI TRUY CẬP", dlu.tbao || "Tài khoản của bạn chưa được cấp quyền truy cập.", "error");
+
+            setTimeout(() => {
+                const btnDong = document.querySelector('.custom-alert-btn');
+                if (btnDong) {
+                    const onClickGoc = btnDong.getAttribute('onclick');
+                    btnDong.innerText = "ĐĂNG NHẬP LẠI";
+                    btnDong.onclick = function() {
+                        dangxg(); // Gọi hàm reset hệ thống
+                    };
+
+                    // Lắng nghe sự kiện để trả nút về nguyên bản khi đóng (tránh ảnh hưởng thông báo khác)
+                    const overlay = document.getElementById('custom-alert-overlay');
+                    const observer = new MutationObserver((mutations) => {
+                        if (overlay.style.display === 'none') {
+                            btnDong.innerText = "ĐÓNG";
+                            btnDong.setAttribute('onclick', onClickGoc);
+                            btnDong.onclick = null;
+                            observer.disconnect();
+                        }
+                    });
+                    observer.observe(overlay, { attributes: true, attributeFilter: ['style'] });
+                }
+            }, 50);
+
             return;
         }
 
@@ -1129,7 +1154,7 @@ function yeuCauDonDepHeThong() {
 }
 
    function chuyenHuongHeThong() {
-        var urlDich = 'https://gdlaocailci.github.io/taphoi/';
+        var urlDich = 'https://gdlaocailci.github.io/thlevantam/';
         window.open(urlDich, '_top');
     }
    
