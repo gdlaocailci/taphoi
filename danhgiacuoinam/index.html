@@ -219,7 +219,13 @@
 </head>
 <body>
 <div id="khung-xac-thuc">
-    <div class="hop-xac-thuc">
+    <div class="hop-xac-thuc" style="position: relative;">
+        <!-- NÚT XÓA BỘ NHỚ TẠM -->
+        <button class="btn-clear-cache" onclick="f_x_xoa_bo_nho_tam()" title="Làm sạch bộ nhớ đệm (Khắc phục lỗi kẹt dữ liệu)">!</button>
+        
+        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="app-logo" width="80" alt="Logo" style="margin-bottom: 15px;">
+        <h2 class="app-title-name-up" style="color: #b91c1c; margin: 0; text-transform: uppercase; font-size: 20px;">ĐANG TẢI...</h2>
+        
         <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="app-logo" width="80" alt="Logo" style="margin-bottom: 15px;">
         <h2 class="app-title-name-up" style="color: #b91c1c; margin: 0; text-transform: uppercase; font-size: 20px;">ĐANG TẢI...</h2>
         <h3 class="app-school-name" style="color: #0056b3; margin: 10px 0 25px 0;">ĐANG TẢI...</h3>
@@ -1621,6 +1627,25 @@ function f_x_auto_resize_textarea(containerId) {
         });
     });
 }
+
+    // ================= HÀM XÓA BỘ NHỚ TẠM THỦ CÔNG =================
+function f_x_xoa_bo_nho_tam() {
+    if (confirm("Đồng chí có chắc chắn muốn xóa toàn bộ bộ nhớ tạm của hệ thống?\nThao tác này giúp khắc phục lỗi kẹt dữ liệu hoặc không tải được cấu trúc mẫu.")) {
+        // Dọn dẹp bộ nhớ Storage của trình duyệt
+        sessionStorage.clear();
+        localStorage.clear();
+        
+        // Dọn dẹp các biến toàn cục (nếu đang ở phiên làm việc)
+        v_bo_nho_dem_admin = {};
+        v_l_c = {};
+        danhSachVienChucAdmin = [];
+        
+        // Thông báo và tải lại trang sạch
+        alert("Đã làm sạch bộ nhớ hệ thống thành công! Hệ thống sẽ khởi động lại.");
+        window.location.reload(true);
+    }
+}
+// =====================================================================================
 // =====================================================================================
     function khoaTruyCapMaNguon() {
         // 1. Khóa menu chuột phải
