@@ -505,9 +505,12 @@ function ketXuatSoDauBaiLenLuoi() {
                 
                 let thuocVeGvHienTai = quyenNhapThuCong && !quyenQuanTri;
                 let cssTenBai = ""; let theTenBai = "";
-                let theNhanXet = ""; let theXepLoai = ""; let theChuKy = ""; let theChuyenCan = "";
+                let theNhanXet = ""; let theXepLoai = ""; let theChuKy = ""; let theChuyenCan = ""; 
+                let theTietPPCT = ""; 
                 
                 if (monHoc && monHoc !== "") {
+                    let monPPCT = monHoc.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+
                     if (isLocked) {
                         cssTenBai = "text-emerald-700 font-bold";
                         theTenBai = tenBai;
@@ -515,6 +518,7 @@ function ketXuatSoDauBaiLenLuoi() {
                         theNhanXet = `<span class="font-normal text-slate-800 block">${nhanXet}</span>`;
                         theXepLoai = `<span class="font-bold text-slate-800 block text-center">${xepLoai}</span>`;
                         theChuKy = `<span class="font-bold text-slate-800 uppercase block text-center">${chuKy}</span>`;
+                        theTietPPCT = `<span class="font-extrabold text-blue-700 block text-center">${tietPPCT}</span>`; 
                     } else {
                         let trangThaiKhoa = !quyenNhapThuCong ? "disabled" : "";
                         let cssNenKhoa = !quyenNhapThuCong ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
@@ -523,6 +527,25 @@ function ketXuatSoDauBaiLenLuoi() {
                         theTenBai = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${tenBai}</textarea>`;
                         theChuyenCan = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400" placeholder="..." value="${chuyenCan}">`;
                         theNhanXet = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="Nhận xét...">${nhanXet}</textarea>`;
+                        
+                        // [NÂNG CẤP]: Thuật toán sinh danh sách DataList HTML5 gợi ý Tiết PPCT
+                        let datalistId = `list_ppct_${thu.replace(/\s/g,'')}_${buoiObj.id}_${tiet}`;
+                        let optionsHtml = "";
+                        let tietDuKien = parseInt(tietPPCT) || (boDemTietPPCT[monPPCT] || 1);
+                        
+                        // Quét lấy tên bài dạy lùi 2 tiết và tiến 5 tiết để làm danh sách gợi ý
+                        for(let i = Math.max(1, tietDuKien - 2); i <= tietDuKien + 5; i++) {
+                            let baiDay = tuDienPPCTToanCuc[`${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_${i}`] || tuDienPPCTToanCuc[`${khoiChon}_${monPPCT}_${i}`] || '';
+                            if (baiDay) optionsHtml += `<option value="${i}">Bài: ${baiDay}</option>`;
+                            else optionsHtml += `<option value="${i}"></option>`;
+                        }
+                        
+                        let theDatalistPPCT = `<datalist id="${datalistId}">${optionsHtml}</datalist>`;
+                        
+                        // [NÂNG CẤP]: Bổ sung onchange để tự động điền Tên bài sang ô bên cạnh nếu Giáo viên gõ/đổi số Tiết PPCT
+                        let onchangeLogic = `let v=this.value.trim(); let ten=tuDienPPCTToanCuc['${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_'+v] || tuDienPPCTToanCuc['${khoiChon}_${monPPCT}_'+v] || ''; let tr=this.closest('tr'); if(tr){ let ta=tr.querySelector('td[data-loai=\\'tenBai\\'] textarea'); if(ta && ten){ ta.value=ten; ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; } }`;
+                        
+                        theTietPPCT = `<input type="text" list="${datalistId}" onchange="${onchangeLogic}" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-extrabold text-blue-700 placeholder-blue-300" placeholder="..." value="${tietPPCT}">` + theDatalistPPCT;
                        
                         let optTot = (xepLoai === 'Tốt') ? 'selected' : '';
                         let optKha = (xepLoai === 'Khá') ? 'selected' : '';
@@ -547,7 +570,7 @@ function ketXuatSoDauBaiLenLuoi() {
                     <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50" title="Buổi ${buoiObj.dataBuoi}" data-loai="tietSDB">${tiet}</td>
                     <td class="border border-gray-500 text-center p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="chuyenCan">${theChuyenCan}</td>
                     <td class="border border-gray-500 p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" data-loai="mon">${monHoc}</td>
-                    <td class="border border-gray-500 text-center p-1 font-extrabold text-blue-700 bg-white group-hover:bg-slate-50" data-loai="tiet">${tietPPCT}</td>
+                    <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle" data-loai="tiet">${theTietPPCT}</td>
                     <td class="border border-gray-500 p-1 ${cssTenBai} bg-white group-hover:bg-slate-50 align-middle" style="white-space: normal; word-wrap: break-word;" data-loai="tenBai" data-islocked="${isLocked}" data-coquyensua="${quyenNhapThuCong}">${theTenBai}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle" style="white-space: normal; word-wrap: break-word;" data-loai="nhanXet">${theNhanXet}</td>
                     <td class="border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle text-center" data-loai="xepLoai">${theXepLoai}</td>
