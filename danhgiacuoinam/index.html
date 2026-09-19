@@ -215,6 +215,35 @@
                     drop-shadow(2px 2px 0px #450a0a) 
                     drop-shadow(0 0 10px rgba(255, 235, 59, 0.9)); /* Hào quang vàng */
         }
+
+        /* =========================================================
+           NÚT XÓA BỘ NHỚ TẠM (CACHE)
+           ========================================================= */
+        .btn-clear-cache {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .btn-clear-cache:hover {
+            background-color: #dc3545;
+            color: white;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
