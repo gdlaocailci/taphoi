@@ -133,6 +133,18 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     }
 }
 
+// =========================================================================
+// KHỐI 2: VẼ GIAO DIỆN (ĐÃ TỐI ƯU CĂN LỀ & LOGIC KHÓA INPUT BẰNG CHỮ KÝ)
+// =========================================================================
+function tinhNgayTuInputDate(ngayYMD, tenThu) {
+    if (!ngayYMD) return '';
+    let dateObj = new Date(ngayYMD);
+    if (isNaN(dateObj.getTime())) return '';
+    const doLech = { "Thứ 2": 0, "Thứ 3": 1, "Thứ 4": 2, "Thứ 5": 3, "Thứ 6": 4, "Thứ 7": 5, "Chủ nhật": 6 };
+    dateObj.setDate(dateObj.getDate() + (doLech[tenThu] || 0));
+    return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+}
+
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     if (!theChotQuyen) {
@@ -272,21 +284,9 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // Đã chuyển thuật toán tính PPCT sang kết xuất UI để đảm bảo tính tịnh tiến thời gian thực
+    // Trả lại nguyên trạng mảng gộp, đẩy phần tính toán PPCT sang hàm kết xuất UI
     duLieuTKBGopDaMap = tkbGop; 
     napDropdownSoDauBai();
-}
-
-// =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN (ĐÃ TỐI ƯU CĂN LỀ & LOGIC KHÓA INPUT BẰNG CHỮ KÝ)
-// =========================================================================
-function tinhNgayTuInputDate(ngayYMD, tenThu) {
-    if (!ngayYMD) return '';
-    let dateObj = new Date(ngayYMD);
-    if (isNaN(dateObj.getTime())) return '';
-    const doLech = { "Thứ 2": 0, "Thứ 3": 1, "Thứ 4": 2, "Thứ 5": 3, "Thứ 6": 4, "Thứ 7": 5, "Chủ nhật": 6 };
-    dateObj.setDate(dateObj.getDate() + (doLech[tenThu] || 0));
-    return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
 }
 
 function ketXuatSoDauBaiLenLuoi() {
@@ -304,13 +304,13 @@ function ketXuatSoDauBaiLenLuoi() {
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     
     // =================================================================================
-    // [LÕI NÂNG CẤP]: THUẬT TOÁN TỊNH TIẾN PPCT (LẤY DỮ LIỆU ĐÃ LƯU THỰC TẾ LÀM GỐC)
+    // [ĐỘNG CƠ MỚI]: ĐẾM TỊNH TIẾN TUYỆT ĐỐI (DỰA TRÊN SỐ LƯỢNG TIẾT ĐÃ DẠY THỰC TẾ)
     // =================================================================================
     let boDemTietPPCT = {};
     let tuanSoSanh = maxTuanChon > 1 ? maxTuanChon - 1 : 0;
     let demTietThucTe = {}; 
     
-    // 1. Quét mốc lịch sử: Chỉ lấy những tiết ĐÃ KÝ LƯU ở các tuần trước làm mốc xuất phát
+    // 1. Quét lịch sử: Chỉ cộng dồn mốc xuất phát cho những tiết ĐÃ KÝ LƯU thành công
     duLieuTKBGopDaMap.forEach(d => {
         let t = parseInt(String(d['Tuần']).replace(/\D/g, '')) || 0;
         let maLop = String(d['Mã Lớp']).trim().toUpperCase();
@@ -318,13 +318,11 @@ function ketXuatSoDauBaiLenLuoi() {
         if (maLop === lopChon.toUpperCase() && d.DaLuu === true && t <= tuanSoSanh) {
             let mon = String(d['Môn Học']).trim();
             if (mon !== '') {
+                // Bóc tách tên môn (HĐTN1, HĐTN2 -> hđtn) để đếm cộng dồn thành 1 dòng chảy PPCT
                 let monDem = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
-                demTietThucTe[monDem] = (demTietThucTe[monDem] || 0) + 1;
                 
-                let tietNum = parseInt(String(d.TietPPCT_Thuc).replace(/\D/g, '')) || 0;
-                if (tietNum > (boDemTietPPCT[monDem] || 0)) {
-                    boDemTietPPCT[monDem] = tietNum; // Chốt mốc PPCT thực tế cao nhất
-                }
+                demTietThucTe[monDem] = (demTietThucTe[monDem] || 0) + 1;
+                boDemTietPPCT[monDem] = (boDemTietPPCT[monDem] || 0) + 1; // Số lượng thực học là mốc PPCT hiện tại
             }
         }
     });
@@ -360,7 +358,7 @@ function ketXuatSoDauBaiLenLuoi() {
     let dictTKB = {}; let mapNgayChinhXac = {}; 
     let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
-    // 3. Quét gán số liệu tịnh tiến cho Tuần Này
+    // 3. Nối tiếp số PPCT cho các tiết trong tuần hiện hành
     tkbTuanNay.forEach(dong => {
         let thuGoc = String(dong['Thứ']).trim();
         if (thuGoc === 'Thứ 7') coDayBuThu7 = true;
@@ -375,15 +373,16 @@ function ketXuatSoDauBaiLenLuoi() {
 
             if (dong['DaLuu'] === true) {
                 soTietDaLuu++;
-                let tietNum = parseInt(String(dong['TietPPCT_Thuc']).replace(/\D/g, '')) || 0;
-                if (tietNum > (boDemTietPPCT[monDem] || 0)) boDemTietPPCT[monDem] = tietNum;
+                // Nếu tiết trong tuần này đã ký, cập nhật lại biến đếm để duy trì mốc tịnh tiến cho các tiết sau
+                if (!boDemTietPPCT[monDem]) boDemTietPPCT[monDem] = 0;
+                boDemTietPPCT[monDem]++;
             } else {
-                // Nếu chưa lưu -> Kế thừa mốc cũ (Đã được tính lùi nếu có chậm/nghỉ) và cộng thêm 1
+                // Nếu tiết chưa ký -> Nhận số thứ tự tịnh tiến (Tổng số tiết đã thực học + 1)
                 if (!boDemTietPPCT[monDem]) boDemTietPPCT[monDem] = 0;
                 boDemTietPPCT[monDem]++;
                 dong['TietPPCT_Thuc'] = boDemTietPPCT[monDem];
 
-                // Đồng bộ đúng Tên Bài theo số tiết đã được lùi
+                // Móc Tên Bài chuẩn xác từ PPCT tương ứng với số thứ tự mới
                 let khoaChinh = `${khoiChon}_${mon.toLowerCase()}_${dong['TietPPCT_Thuc']}`;
                 let khoaPhu = `${khoiChon}_${monDem}_${dong['TietPPCT_Thuc']}`;
                 dong['TenBai_Thuc'] = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
