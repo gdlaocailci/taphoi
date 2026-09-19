@@ -261,15 +261,12 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-
-    // =========================================================================
-    // KHỐI 5: NẠP KHUNG CHƯƠNG TRÌNH & PHÂN PHỐI
-    // =========================================================================
-    // [NÂNG CẤP] Khởi tạo lại các biến toàn cục một cách rõ ràng để dọn dẹp bộ nhớ cũ
     dinhMucKhungCT = {}; 
     if (duLieuSever.KHUNG_CHUONG_TRINH) {
         duLieuSever.KHUNG_CHUONG_TRINH.forEach(dong => {
-            let mon = String(dong['Môn học'] || dong['Tên môn học'] || dong['Môn Học'] || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            let mon = String(dong['Môn học'] || dong['Tên môn học'] || dong['Môn Học'] || '')
+                        .replace(/[0-9\(\)]/g, '')
+                        .trim().toLowerCase().replace(/\s+/g, ' ');
             if (!mon) return;
             
             Object.keys(dong).forEach(key => {
@@ -349,16 +346,13 @@ function ketXuatSoDauBaiLenLuoi() {
                 let monPPCT = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
 
                 if (t < maxTuanChon) {
-                    // Lịch sử (W1 -> W_N-1): Chỉ đếm những tiết ĐÃ LƯU
-                    if (d.DaLuu === true) {
-                        demTietTienDo[monGocChuan] = (demTietTienDo[monGocChuan] || 0) + 1;
-                        boDemTietPPCT[monPPCT] = (boDemTietPPCT[monPPCT] || 0) + 1; 
+                     if (d.DaLuu === true) {
+                        demTietTienDo[monPPCT] = (demTietTienDo[monPPCT] || 0) + 1;
+                        boDemTietPPCT[monPPCT] = (boDemTietPPCT[monPPCT] || 0) + 1;
                     }
                 } else if (t === maxTuanChon) {
-                    // Tuần hiện hành (W_N): Cộng toàn bộ tiết trên UI vào Tiến Độ để đánh giá thừa/bù/thiếu
-                    demTietTienDo[monGocChuan] = (demTietTienDo[monGocChuan] || 0) + 1;
-                    // (Lưu ý: Không cộng boDemTietPPCT ở đây, sẽ tính trong vòng lặp render bên dưới)
-                }
+                    demTietTienDo[monPPCT] = (demTietTienDo[monPPCT] || 0) + 1;
+              }
             }
         }
     });
