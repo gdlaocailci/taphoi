@@ -134,7 +134,6 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
 }
 
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
-    // 1. CHỐT QUYỀN TRUY CẬP 
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     if (!theChotQuyen) {
         theChotQuyen = document.createElement('div');
@@ -152,14 +151,13 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
 
     let mapDuiLieuHopNhat = {};
 
-    // Động cơ nắn thẳng định dạng Thứ để chống lỗi rác do CSS Uppercase
     const chuanHoaThu = (thuStr) => {
         if (!thuStr) return '';
         let raw = String(thuStr).trim().toLowerCase();
         return raw.charAt(0).toUpperCase() + raw.slice(1);
     };
 
-    // BƯỚC 1: Xây dựng móng từ SỔ ĐẦU BÀI ĐÃ LƯU (Nguyên trạng những gì đã ký)
+    // BƯỚC 1: Xây dựng móng từ SỔ ĐẦU BÀI ĐÃ LƯU
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
             let tuan = String(dong['Tuần']).replace(/\D/g, '');
@@ -171,56 +169,36 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             let khoa = `${tuan}_${lop}_${thuChuan}_${buoi}_${tiet}`;
             
             mapDuiLieuHopNhat[khoa] = {
-                'Tuần': tuan,
-                'Mã Lớp': lop,
-                'Thứ': thuChuan, 
-                'Buổi': buoi,
-                'Tiết': tiet,
+                'Tuần': tuan, 'Mã Lớp': lop, 'Thứ': thuChuan, 'Buổi': buoi, 'Tiết': tiet,
                 'Môn Học': dong['Môn Học'] || dong['Môn học'] || dong['Môn'] || '',
                 'Mã GV': dong['Giáo viên'] || dong['Mã GV'] || dong['Giáo Viên'] || dong['GV'] || '',
                 'Ngày': dong['Ngày'] || '',
-                
                 'TietPPCT_Thuc': dong['Tiết PPCT'] || '',
                 'TenBai_Thuc': dong['Tên Bài Dạy'] || dong['Tên bài dạy'] || dong['Tên Bài'] || dong['Tên bài'] || '',
                 'NhanXet_Thuc': dong['Nhận Xét'] || dong['Nhận xét'] || '',
                 'XepLoai_Thuc': dong['Xếp Loại'] || dong['Xếp loại'] || '',
                 'ChuKy_Thuc': dong['Chữ Ký GV'] || dong['Chữ ký GV'] || dong['Chữ ký'] || '',
                 'ChuyenCan_Thuc': dong['Chuyên Cần'] || dong['Chuyên cần'] || '',
-                'DaLuu': true // Cờ xác nhận đây là dữ liệu đã chốt
+                'DaLuu': true 
             };
         });
     }
 
-    // BƯỚC 2: Gom TKB_HIEN_TAI và DATA_TKB thành một kho Thời khóa biểu Toàn tập
+    // BƯỚC 2: Điền khuyết từ TKB Lịch Sử và Hiện Tại
     let mapTkbToanTap = {};
-    
-    // 2a. Nạp DATA_TKB (Để cứu những tuần quá khứ chưa kịp ký sổ)
     if (duLieuSever.DATA_TKB) {
         duLieuSever.DATA_TKB.forEach(dong => {
-            let tuan = String(dong['Tuần']).replace(/\D/g, '');
-            let lop = String(dong['Mã Lớp']).trim().toUpperCase();
-            let thuChuan = chuanHoaThu(dong['Thứ']);
-            let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
-            let tiet = String(dong['Tiết']).trim();
-            let khoa = `${tuan}_${lop}_${thuChuan}_${buoi}_${tiet}`;
+            let khoa = `${String(dong['Tuần']).replace(/\D/g, '')}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
             mapTkbToanTap[khoa] = dong;
         });
     }
-
-    // 2b. Nạp đè TKB_HIEN_TAI (Đảm bảo tuần hiện tại luôn có dữ liệu mới nhất)
     if (duLieuSever.TKB_HIEN_TAI) {
         duLieuSever.TKB_HIEN_TAI.forEach(dong => {
-            let tuan = String(dong['Tuần']).replace(/\D/g, '');
-            let lop = String(dong['Mã Lớp']).trim().toUpperCase();
-            let thuChuan = chuanHoaThu(dong['Thứ']);
-            let buoi = String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
-            let tiet = String(dong['Tiết']).trim();
-            let khoa = `${tuan}_${lop}_${thuChuan}_${buoi}_${tiet}`;
+            let khoa = `${String(dong['Tuần']).replace(/\D/g, '')}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
             mapTkbToanTap[khoa] = dong;
         });
     }
 
-    // BƯỚC 3: Điền khuyết dữ liệu cho những tiết chưa ký (Lấy từ TKB Toàn tập)
     Object.keys(mapTkbToanTap).forEach(khoa => {
         if (!mapDuiLieuHopNhat[khoa]) {
             let dongTkb = mapTkbToanTap[khoa];
@@ -233,20 +211,17 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 'Môn Học': dongTkb['Môn Học'] || '',
                 'Mã GV': dongTkb['Mã GV'] || dongTkb['Giáo viên'] || '',
                 'Ngày': dongTkb['Ngày'] || '',
-                
                 'TietPPCT_Thuc': '', 'TenBai_Thuc': '', 'NhanXet_Thuc': '', 
                 'XepLoai_Thuc': '', 'ChuKy_Thuc': '', 'ChuyenCan_Thuc': '',
-                'DaLuu': false // Cờ xác nhận đây là dữ liệu cần ký
+                'DaLuu': false 
             };
         }
     });
 
     let tkbGop = Object.values(mapDuiLieuHopNhat);
-
     const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
     const thuTuBuoi = { "sáng": 1, "chiều": 2, "tối": 3 };
     
-    // Sắp xếp lại luồng thời gian chuẩn xác
     tkbGop.sort((a, b) => {
         let tuanA = parseInt(a['Tuần']) || 0; let tuanB = parseInt(b['Tuần']) || 0;
         if (tuanA !== tuanB) return tuanA - tuanB;
@@ -286,7 +261,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
             
             let monGoc = String(dong['Tên môn học'] || dong['Môn học'] || dong['Môn Học'] || '').trim().toLowerCase();
             if (monGoc !== '') boNhoMon = monGoc; else monGoc = boNhoMon; 
-            
             let monRutGon = monGoc.replace(/[0-9\(\)]/g, '').trim().replace(/\s+/g, ' ');
             let tietPPCT_Goc = String(dong['Tiết PPCT'] || dong['Tiết'] || '').trim();
             let baiDay = dong['Tên bài học'] || dong['Tên bài'] || dong['Tên bài dạy'] || dong['Nội dung'] || '';
@@ -298,40 +272,8 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // 3. TÍNH TOÁN TIẾN ĐỘ TIẾT PPCT & ĐỒNG BỘ TÊN BÀI TỰ ĐỘNG
-    let boDemTietCuaLop = {}; 
-    duLieuTKBGopDaMap = tkbGop.map(dong => {
-        let maLop = dong['Mã Lớp'];
-        let mon = String(dong['Môn Học'] || '').trim(); 
-        
-        if (mon !== '') {
-            let monDem = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
-            let khoaDem = `${maLop}_${monDem}`;
-            
-            if (dong.DaLuu && dong.TietPPCT_Thuc !== '') {
-                // Đã lưu -> Cộng dồn số tiết theo lịch sử
-                let tietNum = parseInt(String(dong.TietPPCT_Thuc).replace(/\D/g, '')) || 0;
-                if (tietNum > (boDemTietCuaLop[khoaDem] || 0)) boDemTietCuaLop[khoaDem] = tietNum; 
-            } else {
-                // Chưa lưu (thuộc TKB Toàn tập) -> Tính tịnh tiến và móc dữ liệu PPCT
-                if (!boDemTietCuaLop[khoaDem]) boDemTietCuaLop[khoaDem] = 0;
-                boDemTietCuaLop[khoaDem]++; 
-                let tietNumMoi = boDemTietCuaLop[khoaDem];
-                dong.TietPPCT_Thuc = tietNumMoi;
-
-                // [ĐỘNG CƠ MỚI] Tự động đồng bộ tên bài từ danh mục PPCT
-                let matchKhoi = maLop.match(/\d+/);
-                let khoi = matchKhoi ? matchKhoi[0] : '';
-                let khoaChinh = `${khoi}_${mon.toLowerCase()}_${tietNumMoi}`;
-                let khoaPhu = `${khoi}_${monDem}_${tietNumMoi}`;
-                
-                let tenBaiTuDong = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
-                dong.TenBai_Thuc = tenBaiTuDong;
-            }
-        }
-        return dong;
-    });
-
+    // Đã chuyển thuật toán tính PPCT sang kết xuất UI để đảm bảo tính tịnh tiến thời gian thực
+    duLieuTKBGopDaMap = tkbGop; 
     napDropdownSoDauBai();
 }
 
