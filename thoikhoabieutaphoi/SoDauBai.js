@@ -98,16 +98,22 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-12 text-slate-500 font-bold">
             <div class="w-9 h-9 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-            <p class="text-base text-blue-900 font-extrabold">Đang tối ưu hóa phân quyền & trích xuất dữ liệu...</p>
-            <span class="text-xs text-slate-400 font-normal mt-1 block">Tự động cấu hình theo thời gian thực</span>
+            <p class="text-base text-blue-900 font-extrabold">Đang kết nối kho dữ liệu Sổ Đầu Bài...</p>
+            <span class="text-xs text-slate-500 font-normal mt-1 block">Khối lượng dữ liệu lớn đang được đồng bộ, quá trình này có thể mất khoảng 30 - 45 giây. Đồng chí vui lòng không chuyển trang...</span>
         </div>`;
     }
 
     try {
         let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
         
-        // Gọi API nén dữ liệu
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`);
+        // [VÁ LỖI TIMEOUT]: Bơm trực tiếp tham số: {}, 3 (lần thử), 60000 (thời gian chờ 60 giây) vào luồng gọi mạng
+        const phanHoi = await fetchVoiCoCheThuLai(
+            `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`,
+            {},
+            3,
+            60000
+        );
+        
         const phanHoiText = await phanHoi.text();
         
         let duLieuSever;
