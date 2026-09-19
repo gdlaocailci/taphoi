@@ -545,32 +545,21 @@ window.xacThucGiaTriHopLe = function(inputEl, loaiDanhSach) {
 };
 
 // =========================================================================
-// KHỐI 2: THUẬT TOÁN KIỂM TRA ĐỊNH MỨC TÍCH LŨY TOÀN DIỆN (NÂNG CẤP)
+// KHỐI 2: ĐỐI CHIẾU ĐỊNH MỨC VÀ KIỂM TRA
 // =========================================================================
-async function kiemTraDinhMuc() {
-    // 1. Hiển thị thông báo đang tính toán (Tránh bị đơ màn hình khi gọi API)
-    document.getElementById('noiDungKiemTra').innerHTML = `<div class="text-center py-12"><div class="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-3"></div><p class="font-bold text-purple-700 text-lg">Đang tổng hợp tiến độ từ Tuần 1 đến Tuần ${tuanDangXem}...</p></div>`;
-    document.getElementById('modalKiemTra').classList.remove('hidden');
-
-    // 2. Giao tiếp với máy chủ để lấy CSDL các tuần trước đó
-    let thongKeLichSu = {};
-    if (tuanDangXem > 1) {
-        try {
-            const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTienDoTichLuy&tuan=${tuanDangXem}`);
-            thongKeLichSu = await phanHoi.json();
-        } catch (e) {
-            console.error("Lỗi lấy tiến độ:", e);
-        }
-    }
-
-    // 3. Quét TKB thực tế đang nằm trên giao diện (Của tuần hiện tại)
+function kiemTraDinhMuc() {
     let mangLop = [];
     const mangLopGoc = thongSoHocVu.DANH_SACH_LOP || [];
+    
     mangLopGoc.forEach(lop => {
-        if (document.querySelector(`[id$="_${lop}"]`)) mangLop.push(lop);
+        // [CẬP NHẬT]: Dùng CSS Selector linh hoạt, không khóa cứng tên thẻ (select -> mọi thẻ)
+        if (document.querySelector(`[id$="_${lop}"]`)) {
+            mangLop.push(lop);
+        }
     });
 
     if (mangLop.length === 0) {
+        // [CẬP NHẬT]: Truy vấn thẻ input thay vì select
         const cacSelect = document.querySelectorAll('input[id^="mon_"]');
         let setLop = new Set();
         cacSelect.forEach(sl => {
@@ -600,78 +589,60 @@ async function kiemTraDinhMuc() {
         });
     });
 
-    // 4. Kết xuất Giao diện Đối chiếu Tích lũy
-    let htmlKetQua = `<div class="overflow-x-auto"><table class="w-full text-sm text-center border-collapse border border-gray-400" style="font-family:'Times New Roman',Times,serif;"><thead class="bg-purple-100 text-purple-900 font-bold"><tr><th class="border border-gray-400 p-2 min-w-[60px]">Lớp</th><th class="border border-gray-400 p-2 min-w-[140px]">Môn học</th><th class="border border-gray-400 p-2 min-w-[100px]">Chuẩn Tích Lũy<br><span class="text-xs font-normal">(Đến tuần ${tuanDangXem})</span></th><th class="border border-gray-400 p-2 min-w-[100px]">Thực tế Tích Lũy<br><span class="text-xs font-normal">(Cộng dồn)</span></th><th class="border border-gray-400 p-2 min-w-[140px]">Tiến độ</th><th class="border border-gray-400 p-2 min-w-[120px] bg-green-100 text-green-900">Tổng Tiết / Lớp</th></tr></thead><tbody>`;
+    let htmlKetQua = `<div class="overflow-x-auto"><table class="w-full text-sm text-center border-collapse border border-gray-400" style="font-family:'Times New Roman',Times,serif;"><thead class="bg-purple-100 text-purple-900 font-bold"><tr><th class="border border-gray-400 p-2 min-w-[60px]">Lớp</th><th class="border border-gray-400 p-2 min-w-[140px]">Môn học</th><th class="border border-gray-400 p-2 min-w-[100px]">Khung chuẩn</th><th class="border border-gray-400 p-2 min-w-[100px]">Đang xếp (UI)</th><th class="border border-gray-400 p-2 min-w-[140px]">Trạng thái</th><th class="border border-gray-400 p-2 min-w-[120px] bg-green-100 text-green-900">Tổng Tiết / Lớp</th></tr></thead><tbody>`;
     
     let tongTatCaTietChuan = 0;
     let tongTatCaTietUI = 0;
 
     mangLop.forEach(lop => {
         let dmKhoi = khungCT[lop] || {};
-        let keysLichSu = thongKeLichSu[lop] ? Object.keys(thongKeLichSu[lop]) : [];
-        let dsMonArr = Array.from(new Set([...Object.keys(dmKhoi), ...Object.keys(thongKeUI[lop]), ...keysLichSu]));
+        let dsMonArr = Array.from(new Set([...Object.keys(dmKhoi), ...Object.keys(thongKeUI[lop])]));
         
         let tongChuanLopNay = 0;
         let tongUiLopNay = 0; 
         
-        // Tính toán tổng Khung chuẩn cho Lớp này
         dsMonArr.forEach(mon => { 
-            let chuan1Tuan = (parseInt(dmKhoi[mon]) || 0);
-            tongChuanLopNay += (chuan1Tuan * tuanDangXem);
-            
-            let uiHienTai = thongKeUI[lop][mon] || 0;
-            let lichSu = (thongKeLichSu[lop] && thongKeLichSu[lop][mon]) ? thongKeLichSu[lop][mon] : 0;
-            tongUiLopNay += (uiHienTai + lichSu); 
+            tongChuanLopNay += (parseInt(dmKhoi[mon]) || 0);
+            tongUiLopNay += (thongKeUI[lop][mon] || 0); 
         });
 
         tongTatCaTietChuan += tongChuanLopNay;
         tongTatCaTietUI += tongUiLopNay;
 
         dsMonArr.forEach((mon, index) => {
-            let chuan1Tuan = parseInt(dmKhoi[mon]) || 0; 
-            let chuanTichLuy = chuan1Tuan * tuanDangXem;
+            let chuan = parseInt(dmKhoi[mon]) || 0; 
+            let ui = thongKeUI[lop][mon] || 0; 
             
-            let uiHienTai = thongKeUI[lop][mon] || 0;
-            let lichSu = (thongKeLichSu[lop] && thongKeLichSu[lop][mon]) ? thongKeLichSu[lop][mon] : 0;
-            let thucTeTichLuy = uiHienTai + lichSu;
-            
-            let trangThai = `<span class="text-green-700 font-bold">✔ Khớp tiến độ</span>`; 
-            let cssRow = "";
-            
-            if (thucTeTichLuy < chuanTichLuy) { 
-                trangThai = `<span class="text-red-600 font-bold">⚠ Chậm ${chuanTichLuy - thucTeTichLuy} tiết</span>`; 
-                cssRow = "bg-red-50/50"; 
-            } 
-            else if (thucTeTichLuy > chuanTichLuy) { 
-                trangThai = `<span class="text-orange-600 font-bold">⚠ Vượt ${thucTeTichLuy - chuanTichLuy} tiết</span>`; 
-                cssRow = "bg-orange-50/50"; 
-            }
+            let trangThai = `<span class="text-green-700 font-bold">✔ Khớp</span>`; let cssRow = "";
+            if (ui < chuan) { trangThai = `<span class="text-red-600 font-bold">⚠ Thiếu ${chuan - ui} tiết</span>`; cssRow = "bg-red-50/50"; } 
+            else if (ui > chuan) { trangThai = `<span class="text-orange-600 font-bold">⚠ Thừa ${ui - chuan} tiết</span>`; cssRow = "bg-orange-50/50"; }
             
             htmlKetQua += `<tr class="${cssRow} hover:bg-gray-50 border-b border-gray-300">`;
             if (index === 0) htmlKetQua += `<td rowspan="${dsMonArr.length}" class="border-r border-gray-400 p-2 font-extrabold bg-gray-50 align-middle">${lop}</td>`;
             
             htmlKetQua += `<td class="border-r border-gray-300 p-2 font-semibold text-blue-900 text-left pl-4">${mon}</td>
-                           <td class="border-r border-gray-300 p-2 font-bold text-gray-700">${chuanTichLuy}</td>
-                           <td class="border-r border-gray-300 p-2 font-extrabold text-blue-700 text-lg cursor-help" title="Lịch sử (Từ Tuần 1 đến Tuần ${tuanDangXem - 1}): ${lichSu} tiết&#10;Tuần ${tuanDangXem} trên UI: ${uiHienTai} tiết">${thucTeTichLuy}</td>
+                           <td class="border-r border-gray-300 p-2 font-bold text-gray-700">${chuan}</td>
+                           <td class="border-r border-gray-300 p-2 font-extrabold text-blue-700 text-lg">${ui}</td>
                            <td class="border-r border-gray-300 p-2">${trangThai}</td>`;
             
             if (index === 0) htmlKetQua += `<td rowspan="${dsMonArr.length}" class="p-2 font-extrabold text-green-900 bg-green-50 align-middle leading-tight whitespace-nowrap">
                 <div class="text-xs text-gray-600 font-semibold mb-1.5">Chuẩn: <span class="text-blue-700 text-lg font-bold ml-1">${tongChuanLopNay}</span></div>
-                <div class="text-xs text-gray-600 font-semibold">Thực tế: <span class="text-red-600 text-lg font-bold ml-1">${tongUiLopNay}</span></div>
+                <div class="text-xs text-gray-600 font-semibold">Đã xếp: <span class="text-red-600 text-lg font-bold ml-1">${tongUiLopNay}</span></div>
             </td>`;
             htmlKetQua += `</tr>`;
         });
     });
     
     htmlKetQua += `<tr class="bg-gray-200 text-gray-900 font-extrabold border-t-2 border-gray-500">
-        <td colspan="5" class="border-r border-gray-400 p-3 text-right uppercase">Tổng cộng tích lũy toàn trường:</td>
+        <td colspan="5" class="border-r border-gray-400 p-3 text-right uppercase">Tổng số tiết toàn trường trong tuần:</td>
         <td class="p-3 leading-tight whitespace-nowrap text-left pl-4">
             <div class="text-sm text-gray-700 mb-1">Chuẩn: <span class="text-2xl text-blue-700 ml-2">${tongTatCaTietChuan}</span></div>
-            <div class="text-sm text-gray-700">Thực tế: <span class="text-2xl text-red-600 ml-2">${tongTatCaTietUI}</span></div>
+            <div class="text-sm text-gray-700">Đã xếp: <span class="text-2xl text-red-600 ml-2">${tongTatCaTietUI}</span></div>
         </td>
     </tr></tbody></table></div>`;
     
     document.getElementById('noiDungKiemTra').innerHTML = htmlKetQua; 
+    document.getElementById('modalKiemTra').classList.remove('hidden');
 }
 
 function dongModal() { 
