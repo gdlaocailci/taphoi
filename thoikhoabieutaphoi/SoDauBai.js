@@ -310,48 +310,58 @@ function ketXuatSoDauBaiLenLuoi() {
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     
     // =================================================================================
-    // [ĐỘNG CƠ MỚI]: ĐẾM TỊNH TIẾN TUYỆT ĐỐI (DỰA TRÊN SỐ LƯỢNG TIẾT ĐÃ DẠY THỰC TẾ)
+    // [THUẬT TOÁN ĐỐI SÁNH TÍCH LŨY]: THỪA BÙ THIẾU TỰ ĐỘNG TRIỆT TIÊU CẢNH BÁO
     // =================================================================================
-    let boDemTietPPCT = {};
-    let tuanSoSanh = maxTuanChon > 1 ? maxTuanChon - 1 : 0;
-    let demTietThucTe = {}; 
+    let boDemTietPPCT = {}; 
+    let demTietTienDo = {}; 
     
-    // 1. Quét lịch sử: Chỉ cộng dồn mốc xuất phát cho những tiết ĐÃ KÝ LƯU thành công
+    // 1. Quét dữ liệu từ Tuần 1 đến Tuần đang chọn
     duLieuTKBGopDaMap.forEach(d => {
         let t = parseInt(String(d['Tuần']).replace(/\D/g, '')) || 0;
         let maLop = String(d['Mã Lớp']).trim().toUpperCase();
 
-        if (maLop === lopChon.toUpperCase() && d.DaLuu === true && t <= tuanSoSanh) {
+        if (maLop === lopChon.toUpperCase() && t <= maxTuanChon) {
             let mon = String(d['Môn Học']).trim();
             if (mon !== '') {
-                // Bóc tách tên môn (HĐTN1, HĐTN2 -> hđtn) để đếm cộng dồn thành 1 dòng chảy PPCT
-                let monDem = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
-                
-                demTietThucTe[monDem] = (demTietThucTe[monDem] || 0) + 1;
-                boDemTietPPCT[monDem] = (boDemTietPPCT[monDem] || 0) + 1; // Số lượng thực học là mốc PPCT hiện tại
+                let monGocChuan = mon.toLowerCase().replace(/\s+/g, ' ');
+                let monPPCT = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+                if (t < maxTuanChon) {
+                    // Lịch sử (W1 -> W_N-1): Chỉ đếm những tiết ĐÃ LƯU
+                    if (d.DaLuu === true) {
+                        demTietTienDo[monGocChuan] = (demTietTienDo[monGocChuan] || 0) + 1;
+                        boDemTietPPCT[monPPCT] = (boDemTietPPCT[monPPCT] || 0) + 1; 
+                    }
+                } else if (t === maxTuanChon) {
+                    // Tuần hiện hành (W_N): Cộng toàn bộ tiết trên UI vào Tiến Độ để đánh giá thừa/bù/thiếu
+                    demTietTienDo[monGocChuan] = (demTietTienDo[monGocChuan] || 0) + 1;
+                    // (Lưu ý: Không cộng boDemTietPPCT ở đây, sẽ tính trong vòng lặp render bên dưới)
+                }
             }
         }
     });
 
-    // 2. Tính toán cảnh báo Tiến độ chậm/vượt
+    // 2. Tính toán Cảnh báo Tiến độ (Reset & Bù trừ tự động)
     let matchKhoiChon = lopChon.match(/\d+/);
     let khoiChon = matchKhoiChon ? matchKhoiChon[0] : '';
     let dinhMucKhoiNay = dinhMucKhungCT[khoiChon] || {};
     let canhBaoHtml = ''; let hasCanhBao = false;
 
-    if (tuanSoSanh > 0) {
+    if (maxTuanChon > 0) {
         for (let mon in dinhMucKhoiNay) {
             let dinhMuc = dinhMucKhoiNay[mon];
-            let tietThucTe = demTietThucTe[mon] || 0; 
-            let tietChuanDuKien = dinhMuc * tuanSoSanh; 
+            let tietThucTe = demTietTienDo[mon] || 0; // Đã bao gồm dữ liệu trên UI tuần này
+            let tietChuanDuKien = dinhMuc * maxTuanChon; 
+            
             let doLech = tietThucTe - tietChuanDuKien;
             let tenMonIn = mon.charAt(0).toUpperCase() + mon.slice(1);
 
+            // Nếu doLech === 0 (Thừa bù thiếu khớp nhau), hệ thống tự bỏ qua không in cảnh báo
             if (doLech < 0) { 
-                canhBaoHtml += `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded border border-red-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>${tenMonIn}: Chậm ${Math.abs(doLech)} (tính đến tuần ${tuanSoSanh})</span>`;
+                canhBaoHtml += `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded border border-red-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>${tenMonIn}: Thiếu ${Math.abs(doLech)} (tính đến hết tuần ${maxTuanChon})</span>`;
                 hasCanhBao = true;
             } else if (doLech > 0) { 
-                canhBaoHtml += `<span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded border border-orange-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>${tenMonIn}: Vượt ${doLech} (tính đến tuần ${tuanSoSanh})</span>`;
+                canhBaoHtml += `<span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded border border-orange-200 shadow-sm flex items-center gap-1 text-xs whitespace-nowrap"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>${tenMonIn}: Thừa ${doLech} (tính đến hết tuần ${maxTuanChon})</span>`;
                 hasCanhBao = true;
             }
         }
@@ -364,7 +374,7 @@ function ketXuatSoDauBaiLenLuoi() {
     let dictTKB = {}; let mapNgayChinhXac = {}; 
     let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
-    // 3. Nối tiếp số PPCT cho các tiết trong tuần hiện hành
+    // 3. Nối tiếp PPCT và xuất dữ liệu tuần hiện hành
     tkbTuanNay.forEach(dong => {
         let thuGoc = String(dong['Thứ']).trim();
         if (thuGoc === 'Thứ 7') coDayBuThu7 = true;
@@ -375,22 +385,20 @@ function ketXuatSoDauBaiLenLuoi() {
         let mon = String(dong['Môn Học']).trim();
         if (mon !== '') {
             tongSoTietCoMon++;
-            let monDem = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+            let monPPCT = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
 
             if (dong['DaLuu'] === true) {
                 soTietDaLuu++;
-                // Nếu tiết trong tuần này đã ký, cập nhật lại biến đếm để duy trì mốc tịnh tiến cho các tiết sau
-                if (!boDemTietPPCT[monDem]) boDemTietPPCT[monDem] = 0;
-                boDemTietPPCT[monDem]++;
+                // Nhận diện mốc đã lưu để duy trì bộ đếm tịnh tiến nội bộ tuần
+                let tietLuu = parseInt(String(dong['TietPPCT_Thuc']).replace(/\D/g, '')) || 0;
+                if (tietLuu > (boDemTietPPCT[monPPCT] || 0)) boDemTietPPCT[monPPCT] = tietLuu;
             } else {
-                // Nếu tiết chưa ký -> Nhận số thứ tự tịnh tiến (Tổng số tiết đã thực học + 1)
-                if (!boDemTietPPCT[monDem]) boDemTietPPCT[monDem] = 0;
-                boDemTietPPCT[monDem]++;
-                dong['TietPPCT_Thuc'] = boDemTietPPCT[monDem];
+                // Tiết chưa lưu: Thừa hưởng mốc bị lùi (nếu có) và cộng tiến thêm 1 
+                boDemTietPPCT[monPPCT] = (boDemTietPPCT[monPPCT] || 0) + 1;
+                dong['TietPPCT_Thuc'] = boDemTietPPCT[monPPCT];
 
-                // Móc Tên Bài chuẩn xác từ PPCT tương ứng với số thứ tự mới
-                let khoaChinh = `${khoiChon}_${mon.toLowerCase()}_${dong['TietPPCT_Thuc']}`;
-                let khoaPhu = `${khoiChon}_${monDem}_${dong['TietPPCT_Thuc']}`;
+                let khoaChinh = `${khoiChon}_${mon.toLowerCase().replace(/\s+/g, ' ')}_${dong['TietPPCT_Thuc']}`;
+                let khoaPhu = `${khoiChon}_${monPPCT}_${dong['TietPPCT_Thuc']}`;
                 dong['TenBai_Thuc'] = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
             }
         }
