@@ -229,14 +229,25 @@
             
             <select id="oChonNhom" onchange="hienThiNutGoogle()" class="o-c-kieu" style="width: 100%; margin-bottom: 20px; box-sizing: border-box; text-align: center;">
                 <option value="" disabled selected>-- Chọn chức vụ của bạn --</option>
-                <option value="giaovienc1">TỔ TRƯỞNG (CẤP 1)</option>
-                <option value="giaovienc1">TỔ PHÓ (CẤP 1)</option>
-                <option value="giaovienc1">TỔNG PHỤ TRÁCH (CẤP 1)</option>
-                <option value="giaovienc1">GIÁO VIÊN (CẤP 1)</option>
-                <option value="giaovienc2">TỔ TRƯỞNG (CẤP 2)</option>
-                <option value="giaovienc2">TỔ PHÓ (CẤP 2)</option>
-                <option value="giaovienc2">TỔNG PHỤ TRÁCH (CẤP 2)</option>
-                <option value="giaovienc2">GIÁO VIÊN (CẤP 2)</option>
+                <!-- BỔ SUNG ĐỐI TƯỢNG VÙNG THẤP -->
+                <option value="giaovienc1">TỔ TRƯỞNG (CẤP 1 - VÙNG THẤP)</option>
+                <option value="giaovienc1">TỔ PHÓ (CẤP 1 - VÙNG THẤP)</option>
+                <option value="giaovienc1">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG THẤP)</option>
+                <option value="giaovienc1">GIÁO VIÊN (CẤP 1 - VÙNG THẤP)</option>
+                <option value="giaovienc2">TỔ TRƯỞNG (CẤP 2 - VÙNG THẤP)</option>
+                <option value="giaovienc2">TỔ PHÓ (CẤP 2 - VÙNG THẤP)</option>
+                <option value="giaovienc2">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG THẤP)</option>
+                <option value="giaovienc2">GIÁO VIÊN (CẤP 2 - VÙNG THẤP)</option>
+                <!-- BỔ SUNG ĐỐI TƯỢNG VÙNG CAO -->
+                <option value="giaovienc1vc">TỔ TRƯỞNG (CẤP 1 - VÙNG CAO)</option>
+                <option value="giaovienc1vc">TỔ PHÓ (CẤP 1 - VÙNG CAO)</option>
+                <option value="giaovienc1vc">TỔNG PHỤ TRÁCH (CẤP 1 - VÙNG CAO)</option>
+                <option value="giaovienc1vc">GIÁO VIÊN (CẤP 1 - VÙNG CAO)</option>
+                <option value="giaovienc2vc">TỔ TRƯỞNG (CẤP 2 - VÙNG CAO)</option>
+                <option value="giaovienc2vc">TỔ PHÓ (CẤP 2 - VÙNG CAO)</option>
+                <option value="giaovienc2vc">TỔNG PHỤ TRÁCH (CẤP 2 - VÙNG CAO)</option>
+                <option value="giaovienc2vc">GIÁO VIÊN (CẤP 2 - VÙNG CAO)</option>
+                <!-- CHUNG: NHÂN VIÊN -->
                 <option value="nhanvien">TỔ TRƯỞNG VP</option>
                 <option value="nhanvien">TỔ PHÓ VP</option>
                 <option value="nhanvien">NHÂN VIÊN</option>
@@ -292,11 +303,18 @@
                 <span style="margin-left: auto; font-size: 14px;">▼</span>
             </span>
             <div class="submenu-tieu-chi" id="submenu-tieu-chi" style="display: none;">
+                <!-- MENU BỔ SUNG CHO CÁC NHÓM -->
                 <span class="the-chuyen" id="menu-tieu-chi-gv-c1" style="display: none;">
-                    <span class="b-tuong">🏫</span> Tiêu chí xếp loại giáo viên C1
+                    <span class="b-tuong">🏫</span> Tiêu chí GV Cấp 1 (Vùng thấp)
                 </span>
                 <span class="the-chuyen" id="menu-tieu-chi-gv-c2" style="display: none;">
-                    <span class="b-tuong">🏫</span> Tiêu chí xếp loại giáo viên C2
+                    <span class="b-tuong">🏫</span> Tiêu chí GV Cấp 2 (Vùng thấp)
+                </span>
+                <span class="the-chuyen" id="menu-tieu-chi-gv-c1-vc" style="display: none;" onclick="f_x_mo_tieu_chi_gv_c1_vc()">
+                    <span class="b-tuong">⛰️</span> Tiêu chí GV Cấp 1 (Vùng cao)
+                </span>
+                <span class="the-chuyen" id="menu-tieu-chi-gv-c2-vc" style="display: none;" onclick="f_x_mo_tieu_chi_gv_c2_vc()">
+                    <span class="b-tuong">⛰️</span> Tiêu chí GV Cấp 2 (Vùng cao)
                 </span>
                 <span class="the-chuyen" id="menu-tieu-chi-nv" style="display: none;">
                     <span class="b-tuong">💼</span> Tiêu chí xếp loại nhân viên
@@ -481,14 +499,19 @@ function khoiDongHeThong() {
         });
     }
     
+   // THÊM TẤT CẢ CÁC MODULE VÙNG CAO VÀO PROMISE LOAD
    Promise.all([
         f_x_k('danhgiaGVC1.html'),
         f_x_k('danhgiaGVC2.html'),
+        f_x_k('danhgiaGVC1VC.html'), // Bổ sung
+        f_x_k('danhgiaGVC2VC.html'), // Bổ sung
         f_x_k('danhgiaNV.html'), 
         f_x_k('CapQuyen.html'),
         f_x_k('KetQua.html'),
         f_x_k('tieuchiGVC1.html'),
         f_x_k('tieuchiGVC2.html'),
+        f_x_k('tieuchiGVC1VC.html'), // Bổ sung
+        f_x_k('tieuchiGVC2VC.html'), // Bổ sung
         f_x_k('tieuchiNhanVien.html')
     ]).catch(e => console.log(e));
     
@@ -577,7 +600,8 @@ function showMainUI(d_danh) {
     const objNhom = document.getElementById('oChonNhom');
     let hienNhom = document.getElementById('hienThiNhom');
     if(objNhom && hienNhom) {
-        let tenHienThi = objNhom.options[objNhom.selectedIndex].text.replace(/\s*\(CẤP\s*[12]\)/gi, '').trim();
+        // Loại bỏ text trong ngoặc đơn để hiển thị cho sạch đẹp
+        let tenHienThi = objNhom.options[objNhom.selectedIndex].text.replace(/\s*\([^)]+\)/gi, '').trim();
         hienNhom.innerText = tenHienThi;
     }
     const oNhap = document.getElementById('oNhapChinh');
@@ -609,12 +633,37 @@ function v_hien_thi_menu_admin(hienThi) {
         const arrowSpan = mnCha.querySelector('span:last-child');
         if (arrowSpan) arrowSpan.innerHTML = '▼';
     }
+    // HIỂN THỊ ĐỦ MENU TIÊU CHÍ 4 NHÓM + NHÂN VIÊN KHI LÀ ADMIN
     let mn2 = document.getElementById("menu-tieu-chi-gv-c1");
     let mn3 = document.getElementById("menu-tieu-chi-gv-c2");
-    let mn4 = document.getElementById("menu-tieu-chi-nv");
+    let mn4 = document.getElementById("menu-tieu-chi-gv-c1-vc");
+    let mn5 = document.getElementById("menu-tieu-chi-gv-c2-vc");
+    let mn6 = document.getElementById("menu-tieu-chi-nv");
     if (mn2) mn2.style.display = kieu;
     if (mn3) mn3.style.display = kieu;
     if (mn4) mn4.style.display = kieu;
+    if (mn5) mn5.style.display = kieu;
+    if (mn6) mn6.style.display = kieu;
+}
+
+// Ẩn tất cả các form đánh giá/tiêu chí trước khi mở menu mới
+function hideAllSubUIs() {
+    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
+    if(document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
+    if(document.getElementById("cap-quyen-ui")) document.getElementById("cap-quyen-ui").style.display = "none";
+    if(document.getElementById("tieuchi-gvc1-ui")) document.getElementById("tieuchi-gvc1-ui").style.display = "none";
+    if(document.getElementById("tieuchi-gvc2-ui")) document.getElementById("tieuchi-gvc2-ui").style.display = "none";
+    if(document.getElementById("tieuchi-gvc1vc-ui")) document.getElementById("tieuchi-gvc1vc-ui").style.display = "none";
+    if(document.getElementById("tieuchi-gvc2vc-ui")) document.getElementById("tieuchi-gvc2vc-ui").style.display = "none";
+    if(document.getElementById("tieuchi-nhanvien-ui")) document.getElementById("tieuchi-nhanvien-ui").style.display = "none";
+    
+    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
+    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
+    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
+    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
+    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
+    
+    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
 }
 
 async function fetchAPI(url) {
@@ -642,7 +691,10 @@ async function f_x_load_guest_template(p_n) {
                 let isGv = roleStr.includes('giáo viên') || roleStr.includes('giao vien') || roleStr.includes('tổ trưởng') || roleStr.includes('to truong') || roleStr.includes('tổ phó') || roleStr.includes('to pho') || roleStr.includes('tổng phụ trách') || roleStr.includes('tong phu trach');
                 let isNv = roleStr.includes('nhân viên') || roleStr.includes('nhan vien') || roleStr.includes('vp') || roleStr.includes('kế toán') || roleStr.includes('ke toan') || roleStr.includes('y tế') || roleStr.includes('y te') || roleStr.includes('thư viện') || roleStr.includes('thu vien') || roleStr.includes('thiết bị') || roleStr.includes('thiet bi') || roleStr.includes('bảo vệ') || roleStr.includes('bao ve') || roleStr.includes('văn thư') || roleStr.includes('van thu');
                 
-                if ((p_n === 'nhanvien' && isNv) || ((p_n === 'giaovienc1' || p_n === 'giaovienc2') && isGv)) {
+                if (
+                    (p_n === 'nhanvien' && isNv) || 
+                    ((p_n === 'giaovienc1' || p_n === 'giaovienc2' || p_n === 'giaovienc1vc' || p_n === 'giaovienc2vc') && isGv)
+                ) {
                     repId = vc.id;
                     break;
                 }
@@ -689,7 +741,7 @@ async function f_x_vao_khach() {
     
     const p_n = objNhom.value;
     let hienNhom = document.getElementById('ui-phan-loai');
-    if (hienNhom) hienNhom.innerText = objNhom.options[objNhom.selectedIndex].text.replace(/\s*\(CẤP\s*[12]\)/gi, '').trim();
+    if (hienNhom) hienNhom.innerText = objNhom.options[objNhom.selectedIndex].text.replace(/\s*\([^)]+\)/gi, '').trim();
     let namHoc = document.getElementById('ui-nam-hoc');
     if (namHoc) namHoc.innerText = "2025-2026";
     
@@ -729,18 +781,7 @@ function f_x_mo_ket_qua() {
         hienThiThongBaoUI("CHẾ ĐỘ KHÁCH:<br>Chức năng xem Kết quả đã bị vô hiệu hóa.");
         return;
     }
-    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
-    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
-    if(document.getElementById("cap-quyen-ui")) document.getElementById("cap-quyen-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc1-ui")) document.getElementById("tieuchi-gvc1-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc2-ui")) document.getElementById("tieuchi-gvc2-ui").style.display = "none";
-    if(document.getElementById("tieuchi-nhanvien-ui")) document.getElementById("tieuchi-nhanvien-ui").style.display = "none";
-    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
-    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
-    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
-    
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
+    hideAllSubUIs();
     
     let mKq = document.getElementById("menu-ket-qua");
     if (mKq) { mKq.classList.add("active"); }
@@ -767,18 +808,7 @@ function f_x_mo_ket_qua() {
 }
 
 function f_x_mo_quan_ly_quyen() {
-    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
-    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
-    if(document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc1-ui")) document.getElementById("tieuchi-gvc1-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc2-ui")) document.getElementById("tieuchi-gvc2-ui").style.display = "none";
-    if(document.getElementById("tieuchi-nhanvien-ui")) document.getElementById("tieuchi-nhanvien-ui").style.display = "none";
-    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
-    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
-    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
-    
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
+    hideAllSubUIs();
     
     let mQuyen = document.getElementById("menu-quan-ly-quyen");
     if (mQuyen) { mQuyen.classList.add("active"); }
@@ -793,18 +823,7 @@ function f_x_mo_quan_ly_quyen() {
 }
 
 function f_x_mo_tieu_chi_gv_c1() {
-    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
-    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
-    if(document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
-    if(document.getElementById("cap-quyen-ui")) document.getElementById("cap-quyen-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc2-ui")) document.getElementById("tieuchi-gvc2-ui").style.display = "none";
-    if(document.getElementById("tieuchi-nhanvien-ui")) document.getElementById("tieuchi-nhanvien-ui").style.display = "none";
-    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
-    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
-    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
-    
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
+    hideAllSubUIs();
     let menuTc = document.getElementById("menu-tieu-chi-gv-c1");
     if (menuTc) menuTc.classList.add("active");
     
@@ -818,18 +837,7 @@ function f_x_mo_tieu_chi_gv_c1() {
 }
 
 function f_x_mo_tieu_chi_gv_c2() {
-    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
-    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
-    if(document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
-    if(document.getElementById("cap-quyen-ui")) document.getElementById("cap-quyen-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc1-ui")) document.getElementById("tieuchi-gvc1-ui").style.display = "none";
-    if(document.getElementById("tieuchi-nhanvien-ui")) document.getElementById("tieuchi-nhanvien-ui").style.display = "none";
-    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
-    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
-    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
-    
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
+    hideAllSubUIs();
     let menuTc = document.getElementById("menu-tieu-chi-gv-c2");
     if (menuTc) menuTc.classList.add("active");
     
@@ -842,19 +850,37 @@ function f_x_mo_tieu_chi_gv_c2() {
     }
 }
 
-function f_x_mo_tieu_chi_nv() {
-    if(document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-    if(document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.add("a-di");
-    if(document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "none";
-    if(document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
-    if(document.getElementById("cap-quyen-ui")) document.getElementById("cap-quyen-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc1-ui")) document.getElementById("tieuchi-gvc1-ui").style.display = "none";
-    if(document.getElementById("tieuchi-gvc2-ui")) document.getElementById("tieuchi-gvc2-ui").style.display = "none";
-    if(document.getElementById("vungHienThiNamHoc")) document.getElementById("vungHienThiNamHoc").style.display = "none";
-    if(document.getElementById("vungChonAdmin")) document.getElementById("vungChonAdmin").style.display = "none";
-    if(document.getElementById("h-dang-tai")) document.getElementById("h-dang-tai").style.display = "none";
+// BỔ SUNG LỆNH MỞ TIÊU CHÍ VÙNG CAO
+function f_x_mo_tieu_chi_gv_c1_vc() {
+    hideAllSubUIs();
+    let menuTc = document.getElementById("menu-tieu-chi-gv-c1-vc");
+    if (menuTc) menuTc.classList.add("active");
     
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
+    let vungTc = document.getElementById("tieuchi-gvc1vc-ui");
+    if (vungTc) {
+        vungTc.style.display = "block";
+        if (typeof tcgvc1vc_TaiDuLieu === "function") tcgvc1vc_TaiDuLieu();
+    } else {
+        hienThiThongBaoUI("Module quản lý tiêu chí C1 Vùng Cao chưa được tải xong.");
+    }
+}
+
+function f_x_mo_tieu_chi_gv_c2_vc() {
+    hideAllSubUIs();
+    let menuTc = document.getElementById("menu-tieu-chi-gv-c2-vc");
+    if (menuTc) menuTc.classList.add("active");
+    
+    let vungTc = document.getElementById("tieuchi-gvc2vc-ui");
+    if (vungTc) {
+        vungTc.style.display = "block";
+        if (typeof tcgvc2vc_TaiDuLieu === "function") tcgvc2vc_TaiDuLieu();
+    } else {
+        hienThiThongBaoUI("Module quản lý tiêu chí C2 Vùng Cao chưa được tải xong.");
+    }
+}
+
+function f_x_mo_tieu_chi_nv() {
+    hideAllSubUIs();
     let menuTc = document.getElementById("menu-tieu-chi-nv");
     if (menuTc) menuTc.classList.add("active");
     
@@ -868,20 +894,10 @@ function f_x_mo_tieu_chi_nv() {
 }
 
 function f_x_c() {
-    let vungQuyen = document.getElementById("cap-quyen-ui");
-    if (vungQuyen) vungQuyen.style.display = "none";
-    let vungTc1 = document.getElementById("tieuchi-gvc1-ui");
-    if (vungTc1) vungTc1.style.display = "none";
-    let vungTc2 = document.getElementById("tieuchi-gvc2-ui");
-    if (vungTc2) vungTc2.style.display = "none";
-    let vungTcNv = document.getElementById("tieuchi-nhanvien-ui");
-    if (vungTcNv) vungTcNv.style.display = "none";
-    if (document.getElementById("ket-qua-ui")) document.getElementById("ket-qua-ui").style.display = "none";
-    
+    hideAllSubUIs();
     if (document.getElementById("vungThongTinUser")) document.getElementById("vungThongTinUser").style.display = "block";
     if (document.getElementById("vung-danh-gia-ui")) document.getElementById("vung-danh-gia-ui").style.display = "block";
 
-    document.querySelectorAll('.the-chuyen').forEach(el => el.classList.remove('active'));
     let mDanhGia = document.getElementById("menu-danh-gia");
     if (mDanhGia) { mDanhGia.classList.add("active"); }
 
@@ -919,7 +935,7 @@ async function f_x_d() {
 
     const p_c = elNhap.value.trim();
     const p_n = elNhom.value; 
-    const p_chuc_vu_chon = elNhom.options[elNhom.selectedIndex].text.replace(/\s*\(CẤP\s*[12]\)/gi, '').trim();
+    const p_chuc_vu_chon = elNhom.options[elNhom.selectedIndex].text.replace(/\s*\([^)]+\)/gi, '').trim();
     const z_y_a = (typeof DG_CONFIG_GAS_URL !== 'undefined') ? DG_CONFIG_GAS_URL : "";
 
     if (!p_c) {
@@ -930,17 +946,8 @@ async function f_x_d() {
     
     f_x_j(true);
     try {
-        /* BƯỚC TỐI ƯU THUẬT TOÁN: Chỉ gọi API chính xác theo nhóm đã chọn, tránh gửi song song thừa thãi */
         const urlChinh = `${z_y_a}?z_p_a=m_k_o&z_p_b=${encodeURIComponent(p_c)}&z_p_c=${p_n}&z_p_d=${encodeURIComponent(p_chuc_vu_chon)}`;
         let t_k = await fetchAPI(urlChinh);
-        let t_k_khac = { status: '' };
-
-        // Nếu hệ thống báo chọn sai vai trò (wrong_role), mới tiến hành gọi API nhóm thứ 2 để đối soát
-        if (t_k.status === 'wrong_role') {
-            const p_n_khac = (p_n.includes('giaovien')) ? 'nhanvien' : 'giaovienc1';
-            const urlKhac = `${z_y_a}?z_p_a=m_k_o&z_p_b=${encodeURIComponent(p_c)}&z_p_c=${p_n_khac}&z_p_d=${encodeURIComponent(p_chuc_vu_chon)}`;
-            t_k_khac = await fetchAPI(urlKhac);
-        }
         
         if (t_k.status === 'success') {
             v_che_do_khach = false; 
@@ -983,17 +990,12 @@ async function f_x_d() {
             
             if (typeof f_x_h === "function") f_x_h();
             
-        } else if (t_k.status === 'wrong_role' || t_k_khac.status === 'wrong_role') {
-            let chucVuDung = t_k.y_role || t_k_khac.y_role || "";
+        } else if (t_k.status === 'wrong_role') {
+            let chucVuDung = t_k.y_role || "";
             hienThiThongBaoUI("<b>ĐĂNG NHẬP THẤT BẠI</b><br><br>Đồng chí đã chọn sai chức vụ!<br>Chức vụ của đồng chí là: <b>" + chucVuDung.toUpperCase() + "</b>.<br>Vui lòng ấn Đóng để chọn đúng chức vụ của mình.", f_x_logout);
             f_x_j(false);
             return;
             
-        } else if (t_k_khac.status === 'success') {
-            let chucVuDung = t_k_khac.y_role ? t_k_khac.y_role : ((p_n_khac.includes('giaovien')) ? "GIÁO VIÊN" : "NHÂN VIÊN");
-            hienThiThongBaoUI("<b>ĐĂNG NHẬP THẤT BẠI</b><br><br>Đồng chí đã chọn sai đối tượng đánh giá!<br>Chức vụ của đồng chí trên hệ thống là: <b>" + chucVuDung.toUpperCase() + "</b>.<br>Vui lòng ấn Đóng để hệ thống quay lại giao diện xác thực.", f_x_logout);
-            f_x_j(false);
-            return;
         } else { 
             v_che_do_khach = true;
             if (document.getElementById("vungThongTinUser")) document.getElementById("vungThongTinUser").style.display = "block";
@@ -1033,7 +1035,6 @@ function hienThiDanhSachAdmin(danhSach) {
 }
 
 async function f_x_load_users() {
-    /* TỐI ƯU HÓA: Sử dụng bộ nhớ đệm (Cache) cho danh sách quản trị viên để tránh gọi lại API khi không cần thiết */
     if (danhSachVienChucAdmin.length > 0) {
         hienThiDanhSachAdmin(danhSachVienChucAdmin);
         return;
@@ -1064,8 +1065,14 @@ async function f_x_admin_chon_user() {
     const selectedRoleStr = selectedOption.getAttribute('data-role').toLowerCase();
     const selectedName = selectedOption.getAttribute('data-name');
 
+    // TỐI ƯU HÓA: Phân định rõ 4 đối tượng + Nhân viên để Admin tra cứu
     let nhomXacDinh = 'giaovienc1';
-    if (selectedRoleStr.includes('cấp 2') || selectedRoleStr.includes('c2')) {
+    
+    if (selectedRoleStr.includes('cấp 1 - vùng cao') || selectedRoleStr.includes('c1 - vùng cao') || selectedRoleStr.includes('c1vc')) {
+        nhomXacDinh = 'giaovienc1vc';
+    } else if (selectedRoleStr.includes('cấp 2 - vùng cao') || selectedRoleStr.includes('c2 - vùng cao') || selectedRoleStr.includes('c2vc')) {
+        nhomXacDinh = 'giaovienc2vc';
+    } else if (selectedRoleStr.includes('cấp 2') || selectedRoleStr.includes('c2')) {
         nhomXacDinh = 'giaovienc2';
     }
 
@@ -1276,13 +1283,21 @@ function f_x_e(m_n) {
     let p_k = false; 
     let khoiDOM = "";
     
+    // ĐỘNG BỘ HÓA LOGIC PHÂN LUỒNG HÀM TÍNH ĐIỂM + DOM TẠI ĐÂY
     let fnThem = "f_x_f_gv";
     let fnXoa = "f_x_g_gv";
     let elNhom = document.getElementById("oChonNhom");
     let c_n_val = elNhom ? elNhom.value : "";
+    
     if (c_n_val === "giaovienc2") {
         fnThem = "f_x_f_gvc2";
         fnXoa = "f_x_g_gvc2";
+    } else if (c_n_val === "giaovienc1vc") {
+        fnThem = "f_x_f_gvc1vc";
+        fnXoa = "f_x_g_gvc1vc";
+    } else if (c_n_val === "giaovienc2vc") {
+        fnThem = "f_x_f_gvc2vc";
+        fnXoa = "f_x_g_gvc2vc";
     }
 
     m_n.forEach((item, index) => {
@@ -1367,10 +1382,15 @@ function f_x_h() {
 
     let k_q = { diemP1: 0, diemP2: 0, tongDiem: 0, k_t: "CHƯA HOÀN THÀNH NHIỆM VỤ", k_m: "#dc3545" };
 
+    // TÍCH HỢP TOÀN BỘ CÁC HÀM TÍNH ĐIỂM Ở ĐÂY
     if (c_n === "giaovienc1" && typeof f_x_l_chinh === "function") {
         k_q = f_x_l_chinh(mangDuLieuGom);
     } else if (c_n === "giaovienc2" && typeof f_x_l_chinh_c2 === "function") {
         k_q = f_x_l_chinh_c2(mangDuLieuGom);
+    } else if (c_n === "giaovienc1vc" && typeof f_x_l_chinh_vc1 === "function") {
+        k_q = f_x_l_chinh_vc1(mangDuLieuGom);
+    } else if (c_n === "giaovienc2vc" && typeof f_x_l_chinh_vc2 === "function") {
+        k_q = f_x_l_chinh_vc2(mangDuLieuGom);
     } else if (c_n === "nhanvien" && typeof f_x_m_chinh === "function") {
         k_q = f_x_m_chinh(mangDuLieuGom);
     }
