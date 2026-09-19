@@ -9,11 +9,11 @@ document.addEventListener('DOMContentLoaded', () => { khoiTaoGiaoDien(); });
 
 // =========================================================================
 // KHỐI KẾT NỐI MẠNG CỐT LÕI (NÂNG CẤP CHỐNG TREO BĂNG THÔNG)
-// Thay thế toàn bộ hàm fetchVoiCoCheThuLai trong file app (2).js
+// Thay thế toàn bộ hàm fetchVoiCoCheThuLai trong file app.js
 // =========================================================================
-async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho = 45000) {
+async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho = 15000) {
     for (let i = 0; i < soLanThu; i++) {
-        // [LÕI NÂNG CẤP]: Bổ sung bộ điều khiển ngắt kết nối, nới rộng thời gian chờ lên 45s cho Google Apps Script
+        // [LÕI NÂNG CẤP]: Bổ sung bộ điều khiển ngắt kết nối (AbortController) để chống treo mạng
         const boDieuKhien = new AbortController();
         const idHenGio = setTimeout(() => boDieuKhien.abort(), thoiGianCho);
         
@@ -56,9 +56,8 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho 
             }
             
             console.warn(`Tạm nghẽn (${thongBaoLoi}), hệ thống tự động kết nối lại lần ${i + 1}...`);
-            
-            // [LÕI NÂNG CẤP]: Tăng giãn cách nhịp nhàng hơn (3s, 6s...) để máy chủ GAS kịp xử lý xong luồng cũ
-            await new Promise(resolve => setTimeout(resolve, 3000 * (i + 1))); 
+            // Tăng dần thời gian lùi bước để tránh nhồi lệnh làm nghẽn thêm máy chủ (2s, 4s...)
+            await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1))); 
         }
     }
 }
@@ -961,6 +960,8 @@ async function luuDuLieu(event, loaiLuu) {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
                 // Cập nhật lại bộ nhớ đệm nội bộ để đảm bảo đồng bộ mới nhất sau khi lưu
                 duLieuTkbHienTai = dsTietLuoi;
+                const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
+                localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
             }
         }
     } catch (loi) { 
@@ -1813,6 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boGiamSatTuan.observe(theHienThiTuan, { childList: true, characterData: true, subtree: true });
     }
 });
+
 // =========================================================================
 // KHỐI NÂNG CẤP UI: TRÌNH ĐIỀU KHIỂN PHÓNG TO / THU NHỎ TOÀN MÀN HÌNH MODAL
 // =========================================================================
