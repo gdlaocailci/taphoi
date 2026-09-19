@@ -1012,22 +1012,17 @@ async function f_x_d() {
             f_x_j(false);
             return;
             
+        } else if (t_k.status === 'wrong_role') {
+            let chucVuDung = t_k.y_role || "";
+            hienThiThongBaoUI("<b>ĐĂNG NHẬP THẤT BẠI</b><br><br>Đồng chí đã chọn sai chức vụ!<br>Chức vụ của đồng chí là: <b>" + chucVuDung.toUpperCase() + "</b>.<br>Vui lòng ấn Đóng để chọn đúng chức vụ của mình.", f_x_logout);
+            f_x_j(false);
+            return;
+            
         } else { 
-            v_che_do_khach = true;
-            if (document.getElementById("vungThongTinUser")) document.getElementById("vungThongTinUser").style.display = "block";
-            if (document.getElementById("ui-ten-hien-thi")) document.getElementById("ui-ten-hien-thi").innerText = "TÀI KHOẢN KHÔNG HỢP LỆ";
-            if (document.getElementById("ui-phan-loai")) document.getElementById("ui-phan-loai").innerText = "--";
-            if (document.getElementById("ui-nam-hoc")) document.getElementById("ui-nam-hoc").innerText = "--";
-            
-            if (document.getElementById("vungThuNhat")) document.getElementById("vungThuNhat").classList.add("a-di");
-            if (document.getElementById("vungThuHai")) document.getElementById("vungThuHai").classList.remove("a-di");
-            let nutLuu = document.getElementById("vungNutBam");
-            if (nutLuu) nutLuu.style.display = "none";
-
-            v_hien_thi_menu_admin(false);
-            
-            await f_x_load_guest_template(p_n);
-            hienThiThongBaoUI(t_k.message + "<br><br><b>Hệ thống tự động chuyển sang chế độ Khách (Chỉ xem). Các chức năng tương tác đã bị khóa.</b>");
+            // NÂNG CẤP: Chặn vào chế độ khách, báo lỗi và quay lại giao diện đăng nhập
+            hienThiThongBaoUI("<b>ĐĂNG NHẬP THẤT BẠI</b><br><br>" + t_k.message + "<br><br>Vui lòng ấn Đóng để quay lại màn hình chọn chức vụ và đăng nhập bằng tài khoản khác.", f_x_logout);
+            f_x_j(false);
+            return;
         }
     } catch (err) { 
         hienThiThongBaoUI(`<b>Kết nối máy chủ bị lỗi gián đoạn!</b><br><br><span style="font-size:14px;color:#666">Lỗi gốc: ${err.message}</span>`, f_x_logout); 
