@@ -253,9 +253,13 @@ async function khoiTaoGiaoDien() {
 
                 tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
                 
+                // Đoạn hiển thị số tuần (khi có cache hoặc khi tải xong)
                 if (hienThiTuan) {
-                    // Hiển thị Tuần kèm biểu tượng báo hiệu đang đồng bộ nền
-                    hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
+                    if (hienThiTuan.tagName === 'INPUT') {
+                        hienThiTuan.value = tuanDangXem; // Gán thẳng giá trị số nếu là ô nhập
+                    } else {
+                        hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
+                    }
                 }
 
                 xuatMaTranBang(duLieuTkbHienTai);
