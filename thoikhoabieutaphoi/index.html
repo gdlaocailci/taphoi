@@ -171,7 +171,7 @@
                     <!-- BỘ CHUYỂN TUẦN -->
                     <div class="flex items-center bg-white border border-gray-400 rounded shadow-sm px-2 py-1 gap-2 flex-none">
                         <button id="btnTuanTruoc" onclick="chuyenTuan(-1)" class="p-1 hover:bg-gray-200 rounded text-slate-600 font-bold text-lg leading-none" title="Tuần trước">◀</button>
-                        <span id="hienThiTuanHienTai" class="px-2 font-extrabold text-blue-900 whitespace-nowrap text-base">Tuần --</span>
+                        <input type="number" id="hienThiTuanHienTai" class="w-16 text-center bg-transparent outline-none font-extrabold text-blue-700" min="1" max="52" value="1" title="Gõ số tuần và ấn mũi tên để di chuyển" />
                         <button id="btnTuanTiep" onclick="chuyenTuan(1)" class="p-1 hover:bg-gray-200 rounded text-slate-600 font-bold text-lg leading-none" title="Tuần tiếp">▶</button>
                     </div>
 
