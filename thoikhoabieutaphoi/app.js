@@ -132,13 +132,49 @@ function kiemSoatGiaoDien() {
 }
 
 // =========================================================================
-// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG
+// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG (NÂNG CẤP NHẬP TUẦN THỦ CÔNG)
 // =========================================================================
+window.capNhatTuanThuCong = function(giaTri) {
+    let tuanMoi = parseInt(giaTri);
+    if (!isNaN(tuanMoi) && tuanMoi >= 1 && tuanMoi <= 52) {
+        tuanDangXem = tuanMoi; // Chỉ cập nhật biến, KHÔNG load lại dữ liệu
+        capNhatTenNutTuanTiepTheo(); // Cập nhật chữ trên nút Lưu
+    } else {
+        let inputTuan = document.getElementById('nhapTuanThuCong');
+        if(inputTuan) inputTuan.value = tuanDangXem; // Khôi phục nếu nhập sai
+    }
+};
+
+function veGiaoDienTuan(dangTai = false) {
+    const hienThiTuan = document.getElementById('hienThiTuanHienTai');
+    if (!hienThiTuan) return;
+    
+    // Tạo ô input cho phép gõ tay, chỉ rộng w-12 để vừa vặn
+    let htmlTuan = `Tuần <input type="number" id="nhapTuanThuCong" value="${tuanDangXem}" class="w-12 text-center bg-blue-50 border border-blue-400 rounded outline-none font-extrabold text-blue-900 ml-1 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all cursor-text" onchange="capNhatTuanThuCong(this.value)" min="1" max="52" title="Nhập số tuần mới để nhân bản TKB">`;
+    
+    if (dangTai) {
+        htmlTuan += ` <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
+    }
+    
+    hienThiTuan.innerHTML = htmlTuan;
+    capNhatTenNutTuanTiepTheo();
+}
+
+// Hàm phụ trợ cập nhật nút "Tuần tiếp theo..."
+function capNhatTenNutTuanTiepTheo() {
+    const nutKhoiPhuc = document.getElementById('btnKhoiPhuc');
+    if (nutKhoiPhuc) {
+        let tuanKeTiep = parseInt(tuanDangXem) + 1;
+        nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
+    }
+}
+
 async function chuyenTuan(buocNhay) {
     let tuanMoi = parseInt(tuanDangXem) + buocNhay;
     if (tuanMoi < 1) tuanMoi = 1; 
     if (tuanMoi > 52) tuanMoi = 52;
     
+    // Tính toán lùi/tiến mốc ngày tương ứng
     if (ngayDauTuanUI && tuanMoi !== tuanDangXem) {
         let parts = ngayDauTuanUI.split('-');
         if (parts.length === 3) {
@@ -160,11 +196,11 @@ async function chuyenTuan(buocNhay) {
     }
     
     tuanDangXem = tuanMoi;
-    document.getElementById('hienThiTuanHienTai').innerText = `Tuần ${tuanDangXem}`;
+    veGiaoDienTuan(true); // Hiển thị giao diện Tuần kèm vòng xoay
     
     if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) { duLieuTkbHienTai = []; }
     
-    // TRUYỀN THAM SỐ FALSE ĐỂ HIỂN THỊ VÒNG XOAY KHI BẤM CHUYỂN TUẦN
+    // Trực tiếp gọi API vì đây là thao tác Bấm Mũi Tên
     await taiDuLieuTKB(false); 
 }
 
@@ -175,6 +211,7 @@ function capNhatNgayDauTuan() {
         let el = document.getElementById('chonNgayDauTuan');
         if (el && el.value !== ngayDauTuanUI) {
             ngayDauTuanUI = el.value;
+            // Xóa bộ đệm ngày cũ để thuật toán vẽ lưới tự cập nhật ngày mới
             if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
                 duLieuTkbHienTai.forEach(t => t.ngay = ''); 
             }
@@ -1364,11 +1401,7 @@ async function xuatExcel() {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         
-        let tenTuan = "ThoiKhoaBieu";
-        let spanTuan = document.getElementById('hienThiTuanHienTai');
-        if (spanTuan && spanTuan.innerText) {
-            tenTuan = `TKB_${spanTuan.innerText.trim().replace(/\s+/g, '_')}`;
-        }
+        let tenTuan = `TKB_Tuan_${tuanDangXem}`;
         
         link.download = `${tenTuan}.xlsx`;
         link.click();
@@ -1795,22 +1828,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const nutKhoiPhuc = document.getElementById('btnKhoiPhuc');
 
     if (theHienThiTuan && nutKhoiPhuc) {
-        // Hàm bóc tách số tuần từ giao diện và gán tên nút mới
         const capNhatTenNutTuanTiepTheo = () => {
-            let textTuan = theHienThiTuan.innerText || '';
-            let match = textTuan.match(/\d+/);
-            
-            if (match) {
-                let tuanHienTai = parseInt(match[0], 10);
-                let tuanKeTiep = tuanHienTai + 1;
-                nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
-            }
+            let tuanKeTiep = parseInt(tuanDangXem) + 1;
+            nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
         };
 
-        // Kích hoạt đồng bộ lần đầu ngay khi hệ thống vừa nạp xong dữ liệu
         setTimeout(capNhatTenNutTuanTiepTheo, 1000); 
-
-        // Khởi tạo bộ giám sát DOM để tự động chạy lại hàm khi có sự kiện chuyển tuần
         const boGiamSatTuan = new MutationObserver(capNhatTenNutTuanTiepTheo);
         boGiamSatTuan.observe(theHienThiTuan, { childList: true, characterData: true, subtree: true });
     }
