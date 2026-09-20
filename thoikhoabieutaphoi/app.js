@@ -1001,11 +1001,11 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
                     }
                 });
             }
-
-            let khungDich = document.getElementById(idKhung);
+           let khungDich = document.getElementById(idKhung);
             if (khungDich) {
                 khungDich.classList.remove('hidden');
-                if (idKhung === 'khungTKB' || idKhung === 'khungThongKe') {
+                // Nắn lại: Chỉ khungTKB mới dùng block, tất cả các khung khác bắt buộc dùng flex để không hỏng thanh cuộn
+                if (idKhung === 'khungTKB') {
                     khungDich.classList.add('block');
                 } else {
                     khungDich.classList.add('flex');
