@@ -59,7 +59,23 @@
     .nav-tabs .nav-link.active { background-color: #003366; color: #ffffff !important; border-color: #003366; }
     .nav-pills .nav-link.active { background-color: #b71c1c; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .nav-pills .nav-link { color: #333; background: #eceff1; font-weight: 700; border: 1px solid #999; margin-right: 5px; }
-    .table-container { overflow: auto; height: calc(100vh - 220px); background: rgba(255,255,255,0.95); border: 1px solid #333; }
+   /* 1. Kích thước mặc định (Dành cho Tab 1 và 2) */
+    .table-container { 
+        overflow: auto; 
+        height: calc(100vh - 230px); 
+        background: rgba(255,255,255,0.95); 
+        border: 1px solid #333; 
+    }
+
+    /* 2. Kích thước cho Tab 3 (Do có thêm hàng menu phụ nên cần trừ nhiều chiều cao hơn) */
+    #tab3 .table-container {
+        height: calc(100vh - 290px);
+    }
+
+    /* 3. Kích thước riêng cho Tab Biểu đồ (Có tới 3 hàng công cụ phía trên nên trừ tối đa để không lẹm thanh trượt) */
+    #tk_bieudo .table-container {
+        height: calc(100vh - 350px);
+    }
     table { margin-bottom: 0 !important; border-collapse: collapse; border-spacing: 0; }
     table thead th { background-color: #e0e0e0; color: #000000; text-shadow: none; text-align: center; vertical-align: middle; white-space: nowrap; border: 1px solid #999; position: sticky; top: 0; z-index: 10; font-weight: 700; font-size: 14px; padding: 6px 4px !important; }
     #bang1 thead th:nth-child(-n+6), #bang1 thead th:nth-child(n+7):nth-child(-n+10), #bang1 thead th:nth-child(n+11):nth-child(-n+16), #bang1 thead th:nth-child(n+17) { background-color: #e0e0e0 !important; color: #000 !important; }
