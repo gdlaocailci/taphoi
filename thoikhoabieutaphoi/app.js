@@ -130,17 +130,14 @@ function kiemSoatGiaoDien() {
         }
     }
 }
-
 // =========================================================================
-// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG (ĐÃ NÂNG CẤP ĐỊNH TUYẾN DỮ LIỆU)
-// Thay thế toàn bộ hàm chuyenTuan và taiDuLieuTKB 
+// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG (BẢN VÁ LỖI LOGIC ĐỊNH TUYẾN)
 // =========================================================================
-
 async function chuyenTuan(buocNhay) {
     let theTuan = document.getElementById('hienThiTuanHienTai');
     let tuanHienTaiTrenUI = tuanDangXem;
     
-    // Đọc giá trị người dùng vừa nhập thủ công (nếu là thẻ input) để làm mốc tịnh tiến
+    // Đọc số tuần đồng chí vừa gõ vào ô Input làm mốc
     if (theTuan) {
         if (theTuan.tagName === 'INPUT') {
             tuanHienTaiTrenUI = parseInt(theTuan.value) || tuanDangXem;
@@ -154,15 +151,20 @@ async function chuyenTuan(buocNhay) {
     if (tuanMoi < 1) tuanMoi = 1; 
     if (tuanMoi > 52) tuanMoi = 52;
     
-    // Phân luồng nguồn dữ liệu theo hướng mũi tên (Căn cứ theo yêu cầu nghiệp vụ)
+    // [LÕI ĐỊNH TUYẾN]: So sánh Tuần Đích với Tuần Hệ Thống
+    let tuanHeThong = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
     let nguonTruyXuat = 'TKB_HIEN_TAI';
-    if (buocNhay < 0) {
-        nguonTruyXuat = 'DATA_TKB'; // Lùi về quá khứ
-    } else if (buocNhay > 0) {
-        nguonTruyXuat = 'TKB_CoDinh'; // Tiến tới tương lai
+    
+    if (tuanMoi < tuanHeThong) {
+        nguonTruyXuat = 'DATA_TKB';       // Nhỏ hơn -> Lấy Lịch sử
+    } else if (tuanMoi > tuanHeThong) {
+        nguonTruyXuat = 'TKB_CoDinh';     // Lớn hơn -> Lấy Tương lai
+    } else {
+        nguonTruyXuat = 'TKB_HIEN_TAI';   // Bằng -> Lấy Hiện tại
     }
     
-    if (ngayDauTuanUI && tuanMoi !== tuanHienTaiTrenUI) {
+    // Đồng bộ nhảy ngày/tháng trên thanh công cụ
+    if (ngayDauTuanUI && tuanMoi !== tuanDangXem) {
         let parts = ngayDauTuanUI.split('-');
         if (parts.length === 3) {
             let yy = parseInt(parts[0], 10);
@@ -170,7 +172,8 @@ async function chuyenTuan(buocNhay) {
             let dd = parseInt(parts[2], 10);
             
             let d = new Date(yy, mm - 1, dd);
-            d.setDate(d.getDate() + (buocNhay * 7));
+            let doLechTuan = tuanMoi - tuanDangXem; 
+            d.setDate(d.getDate() + (doLechTuan * 7));
             
             let newYy = d.getFullYear();
             let newMm = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -184,7 +187,6 @@ async function chuyenTuan(buocNhay) {
     
     tuanDangXem = tuanMoi;
     
-    // Cập nhật giá trị hiển thị mà không làm hỏng thẻ input
     if (theTuan) {
         if (theTuan.tagName === 'INPUT') {
             theTuan.value = tuanDangXem;
@@ -195,7 +197,11 @@ async function chuyenTuan(buocNhay) {
     
     if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) { duLieuTkbHienTai = []; }
     
-    // Bổ sung tham số nguồn truy xuất để lấy dữ liệu chính xác từ máy chủ
+    // Kích hoạt cập nhật lại tên nút "Tuần tiếp theo"
+    if (typeof window.capNhatTenNutTuanTiepTheo === 'function') {
+        window.capNhatTenNutTuanTiepTheo();
+    }
+    
     await taiDuLieuTKB(false, nguonTruyXuat); 
 }
 
@@ -1844,29 +1850,34 @@ window.dongBoChuanHoaDuLieuUI = function() {
 // =========================================================================
 // KHỐI NÂNG CẤP: TỰ ĐỘNG CẬP NHẬT TÊN NÚT "TUẦN TIẾP THEO" THEO THỜI GIAN THỰC
 // =========================================================================
-document.addEventListener('DOMContentLoaded', () => {
+window.capNhatTenNutTuanTiepTheo = () => {
     const theHienThiTuan = document.getElementById('hienThiTuanHienTai');
     const nutKhoiPhuc = document.getElementById('btnKhoiPhuc');
-
+    
     if (theHienThiTuan && nutKhoiPhuc) {
-        // Hàm bóc tách số tuần từ giao diện và gán tên nút mới
-        const capNhatTenNutTuanTiepTheo = () => {
+        let tuanHienTai = 1;
+        // Bóc tách dữ liệu an toàn kể cả khi UI dùng thẻ input hay thẻ thường
+        if (theHienThiTuan.tagName === 'INPUT') {
+            tuanHienTai = parseInt(theHienThiTuan.value, 10) || 1;
+        } else {
             let textTuan = theHienThiTuan.innerText || '';
             let match = textTuan.match(/\d+/);
-            
-            if (match) {
-                let tuanHienTai = parseInt(match[0], 10);
-                let tuanKeTiep = tuanHienTai + 1;
-                nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
-            }
-        };
+            if (match) tuanHienTai = parseInt(match[0], 10);
+        }
+        
+        let tuanKeTiep = tuanHienTai + 1;
+        nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
+    }
+};
 
-        // Kích hoạt đồng bộ lần đầu ngay khi hệ thống vừa nạp xong dữ liệu
-        setTimeout(capNhatTenNutTuanTiepTheo, 1000); 
-
-        // Khởi tạo bộ giám sát DOM để tự động chạy lại hàm khi có sự kiện chuyển tuần
-        const boGiamSatTuan = new MutationObserver(capNhatTenNutTuanTiepTheo);
-        boGiamSatTuan.observe(theHienThiTuan, { childList: true, characterData: true, subtree: true });
+document.addEventListener('DOMContentLoaded', () => {
+    // Chạy mồi lần đầu khi trang vừa tải xong
+    setTimeout(window.capNhatTenNutTuanTiepTheo, 1000); 
+    
+    // Móc sự kiện trực tiếp vào thẻ input để cập nhật ngay khi giáo viên gõ phím
+    const theHienThiTuan = document.getElementById('hienThiTuanHienTai');
+    if (theHienThiTuan && theHienThiTuan.tagName === 'INPUT') {
+        theHienThiTuan.addEventListener('input', window.capNhatTenNutTuanTiepTheo);
     }
 });
 
