@@ -1811,3 +1811,48 @@ window.toggleToanManHinhModal = function(idModal, nutBam) {
         nutBam.title = "Thu nhỏ về mặc định";
     }
 };
+// =========================================================================
+// THUẬT TOÁN LỌC LỚP HỌC THÔNG MINH BẰNG KÝ TỰ ĐẠI DIỆN (*)
+// Nguyên tắc: Chạy độc lập qua Regex, không làm hỏng cấu trúc bảng gốc
+// =========================================================================
+window.locTheoLop = function() {
+    let theLocLop = document.getElementById('locLopHoc');
+    if (!theLocLop) return;
+    
+    // Lấy giá trị, xóa khoảng trắng 2 đầu và in hoa tự động (vd: 1a1 -> 1A1)
+    let chuoiLoc = theLocLop.value.trim().toUpperCase(); 
+    let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
+
+    // Kịch bản 1: Nếu người dùng xóa trắng ô tìm kiếm -> Trả lại giao diện gốc
+    if (chuoiLoc === "") {
+        tatCaCacCot.forEach(cot => cot.classList.remove('hidden'));
+        
+        // Kích hoạt lại bộ lọc giáo viên (nếu có) để 2 bộ lọc không "đánh nhau"
+        let locGV = document.getElementById('locGiaoVien');
+        if (locGV && locGV.value.trim() !== "" && locGV.value.trim() !== "Toàn trường") {
+            if (typeof locTheoGiaoVien === 'function') locTheoGiaoVien();
+        }
+        return;
+    }
+
+    // Kịch bản 2: Động cơ chuyển đổi dấu (*) thành Biểu thức chính quy (Regex)
+    // Ví dụ: "1*" -> /^1.*$/, "*A" -> /^.*A$/, "*A1*" -> /^.*A1.*$/
+    
+    // Bước A: Thoát các ký tự đặc biệt có thể gây lỗi hệ thống (trừ dấu *)
+    let chuoiAnToan = chuoiLoc.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&'));
+    
+    // Bước B: Ghép mảng lại bằng cụm '.*' và bọc đầu (^) cuối ($) chuỗi
+    let regexHinhThai = new RegExp("^" + chuoiAnToan.join('.*') + "$");
+
+    // Áp dụng bộ lọc Regex lên toàn bộ cột của ma trận
+    tatCaCacCot.forEach(cot => {
+        let tenLopCuaCot = cot.getAttribute('data-cotlop').toUpperCase();
+        
+        // Hàm .test() siêu tốc sẽ kiểm tra xem tên lớp (như 1A1) có khớp quy tắc không
+        if (regexHinhThai.test(tenLopCuaCot)) {
+            cot.classList.remove('hidden'); // Khớp -> Mở khóa hiển thị
+        } else {
+            cot.classList.add('hidden');    // Không khớp -> Đóng băng cột
+        }
+    });
+};
