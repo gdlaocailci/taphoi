@@ -205,6 +205,7 @@ async function khoiTaoGiaoDien() {
     const KEY_CH = 'SmartTKB_CauHinh_' + MA_DA;
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const hienThiTuan = document.getElementById('hienThiTuanHienTai');
+    const spinnerTuan = document.getElementById('spinnerTaiTuan'); // Biến điều khiển tải ngầm
 
     try {
         if(typeof CAU_HINH_FRONTEND !== 'undefined') {
@@ -238,6 +239,7 @@ async function khoiTaoGiaoDien() {
                 if (hienThiTuan) {
                     if (hienThiTuan.tagName === 'INPUT') {
                         hienThiTuan.value = tuanDangXem;
+                        if (spinnerTuan) spinnerTuan.classList.remove('hidden'); // Bật biểu tượng tải
                     } else {
                         hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
                     }
@@ -289,7 +291,10 @@ async function khoiTaoGiaoDien() {
             }
             
             if (hienThiTuan) {
-                if (hienThiTuan.tagName === 'INPUT') hienThiTuan.value = tuanDangXem;
+                if (hienThiTuan.tagName === 'INPUT') {
+                    hienThiTuan.value = tuanDangXem;
+                    if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải khi chốt dữ liệu
+                }
                 else hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
             }
         } else {
@@ -312,13 +317,16 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const vungHienThi = document.getElementById('vungHienThiDuLieu');
     const hienThiTuan = document.getElementById('hienThiTuanHienTai');
+    const spinnerTuan = document.getElementById('spinnerTaiTuan'); // Biến điều khiển tải ngầm
     
     let nhanNguon = nguonTruyXuat === 'DATA_TKB' ? 'Dữ liệu quá khứ' : (nguonTruyXuat === 'TKB_CoDinh' ? 'Dự kiến cố định' : 'Hệ thống hiện tại');
 
     if (!coCache) {
         vungHienThi.innerHTML = `<tr><td class="text-center text-blue-600 font-bold py-10 reactbits-fade-in text-lg" style="font-family:'Times New Roman',Times,serif;"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải TKB Tuần ${tuanDangXem} từ [${nhanNguon}]...</td></tr>`;
     } else if (hienThiTuan) {
-        if (hienThiTuan.tagName !== 'INPUT' && !hienThiTuan.innerHTML.includes('animate-spin')) {
+        if (hienThiTuan.tagName === 'INPUT') {
+            if (spinnerTuan) spinnerTuan.classList.remove('hidden'); // Bật biểu tượng tải
+        } else if (!hienThiTuan.innerHTML.includes('animate-spin')) {
             hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
         }
     }
@@ -364,7 +372,10 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
         }
     } finally {
         if (hienThiTuan) {
-            if (hienThiTuan.tagName === 'INPUT') hienThiTuan.value = tuanDangXem;
+            if (hienThiTuan.tagName === 'INPUT') {
+                hienThiTuan.value = tuanDangXem;
+                if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải khi hoàn tất
+            }
             else hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
         }
     }
