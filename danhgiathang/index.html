@@ -273,7 +273,9 @@ function xulyPhienDn(phanho) {
     
     #overlay-menu-mobile {
         display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.5); z-index: 1040; backdrop-filter: blur(2px);
+        background: rgba(0,0,0,0.5); 
+        z-index: 10000; /* Đã nâng lên mức rất cao */
+        backdrop-filter: blur(2px);
     }
 
     /* Kích hoạt khi xem trên điện thoại hoặc máy tính bảng nhỏ */
@@ -283,17 +285,18 @@ function xulyPhienDn(phanho) {
         #bo-cuc-he-thong { position: relative; display: block; }
         
         #khuVucMenu {
-            position: fixed; top: 0; left: -320px; /* Đẩy menu ra ngoài mép trái */
-            width: 280px; height: 100vh; z-index: 1050;
-            background: white; /* Đảm bảo không bị trong suốt */
+            position: fixed; top: 0; left: -320px;
+            width: 280px; height: 100vh; 
+            z-index: 10001; /* Đã nâng lên mức cao nhất, đè lên mọi giao diện */
+            background: white; 
             transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 2px 0 15px rgba(0,0,0,0.3);
             overflow-y: auto;
         }
         
-        #khuVucMenu.mo-menu { left: 0; /* Kéo menu vào trong màn hình */ }
+        #khuVucMenu.mo-menu { left: 0; }
         
-        .k-ngoai { width: 100%; padding: 10px; } /* Trả lại 100% không gian cho bảng biểu */
+        .k-ngoai { width: 100%; padding: 10px; } 
         
         /* Tối ưu hiển thị bảng trên điện thoại */
         .table-responsive { max-height: calc(100vh - 180px) !important; }
