@@ -314,8 +314,13 @@ async function khoiTaoGiaoDien() {
                 xuatMaTranBang(duLieuTkbHienTai);
             }
             
-            // Xóa biểu tượng tải nền khi đã chốt dữ liệu
-            if (hienThiTuan) hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
+           if (hienThiTuan) {
+                if (hienThiTuan.tagName === 'INPUT') {
+                    hienThiTuan.value = tuanDangXem;
+                } else {
+                    hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
+                }
+            }
         } else {
             await taiDuLieuTKB(coCache); 
         }
