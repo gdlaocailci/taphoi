@@ -132,23 +132,24 @@ async function hks_layDuLieuPhanMot_fn() {
     }, 10);
   }
 
-  function hks_veBangPhanMot_fn(hks_duLieuBang_arr) {
+function hks_veBangPhanMot_fn(hks_duLieuBang_arr) {
     const hks_thanBang_el = document.querySelector('#bang1 tbody'); 
     hks_thanBang_el.innerHTML = '';
     
     // [BẢN NÂNG CẤP]: Dùng DocumentFragment gom toàn bộ DOM rồi mới đính vào bảng (chỉ 1 reflow), giải quyết dứt điểm kẹt giao diện
     const hks_manhGhepBoNho_frag = document.createDocumentFragment();
     
-    hks_duLieuBang_arr.forEach(hks_dongDuLieu_arr => {
-        // Tham số true yêu cầu trả về node DOM thay vì ép chèn ngay vào bảng
-        let hks_theDong_el = hks_chenDongPhanMot_fn(hks_dongDuLieu_arr, true);
+    hks_duLieuBang_arr.forEach((hks_dongDuLieu_arr, hks_chiSo_num) => {
+        // Truyền thêm chỉ số index + 1 làm tham số thứ 3 để đánh số thứ tự chính xác
+        let hks_theDong_el = hks_chenDongPhanMot_fn(hks_dongDuLieu_arr, true, hks_chiSo_num + 1);
         hks_manhGhepBoNho_frag.appendChild(hks_theDong_el);
     });
     
     hks_thanBang_el.appendChild(hks_manhGhepBoNho_frag);
   }
 
-  function hks_chenDongPhanMot_fn(hks_duLieuBang_arr = null, hks_traVePhanTu_bol = false) {
+  // Bổ sung tham số thứ 3 (hks_soThuTu_num)
+  function hks_chenDongPhanMot_fn(hks_duLieuBang_arr = null, hks_traVePhanTu_bol = false, hks_soThuTu_num = null) {
     const hks_thanBang_el = document.querySelector('#bang1 tbody');
     const hks_theDong_el = document.createElement('tr');
     
@@ -164,7 +165,8 @@ async function hks_layDuLieuPhanMot_fn() {
        let hks_hienThiXoa_str = hks_trangThaiSuaMot_bol ? 'inline-block' : 'none';
        hks_chuoiHtmlXoa_str = `<i class="bi bi-x-circle-fill text-secondary fs-6" style="cursor:pointer; display:${hks_hienThiXoa_str}" title="Hủy" onclick="this.closest('tr').remove()"></i>`;
     } else {
-       let hks_chuoiSTT_str = hks_thanBang_el.rows.length + 1; // Sẽ xử lý đồng bộ CSS hiển thị
+       // Sử dụng STT truyền vào, nếu không có (trường hợp tự thêm dòng mới) thì lấy độ dài bảng + 1
+       let hks_chuoiSTT_str = hks_soThuTu_num !== null ? hks_soThuTu_num : (hks_thanBang_el.rows.length + 1); 
        let hks_hienThiXoa_str = (hks_trangThaiSuaMot_bol && hks_laQuanTriCapCao_bol) ? 'inline-block' : 'none'; 
        let hks_hienThiSTT_str = (hks_trangThaiSuaMot_bol && hks_laQuanTriCapCao_bol) ? 'none' : 'inline-block';
        if (hks_laQuanTriCapCao_bol) {
@@ -229,11 +231,15 @@ async function hks_layDuLieuPhanMot_fn() {
       hks_theDong_el.appendChild(hks_theCot_el);
     });
     
-    // [BẢN NÂNG CẤP]: Phân luồng điều khiển trả về Element (Tối ưu kết xuất số lượng lớn) hoặc tự append (Khi người dùng tự thêm 1 dòng mới)
+    // [BẢN NÂNG CẤP]: Phân luồng điều khiển trả về Element
     if (hks_traVePhanTu_bol) {
         return hks_theDong_el;
     } else {
         hks_thanBang_el.appendChild(hks_theDong_el);
+        // Reset lại STT toàn bảng trong trường hợp người dùng thêm dòng thủ công
+        let danhSachSTT = hks_thanBang_el.querySelectorAll('.stt-label');
+        danhSachSTT.forEach((el, index) => { el.textContent = index + 1; });
+        
         if (!hks_duLieuBang_arr) {
             let hks_khungCuon_el = hks_thanBang_el.closest('.table-container');
             if (hks_khungCuon_el) hks_khungCuon_el.scrollTop = hks_khungCuon_el.scrollHeight;
