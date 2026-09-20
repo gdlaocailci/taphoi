@@ -1399,12 +1399,7 @@ async function xuatExcel() {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         
-        // --- ĐÂY LÀ PHẦN MÃ GỐC CẦN THAY THẾ ---
-        let tenTuan = "ThoiKhoaBieu";
-        let spanTuan = document.getElementById('hienThiTuanHienTai');
-        if (spanTuan && spanTuan.innerText) {
-            tenTuan = `TKB_${spanTuan.innerText.trim().replace(/\s+/g, '_')}`;
-        }
+       let tenTuan = `TKB_Tuan_${tuanDangXem}`;
         // --------------------------------------
         
         link.download = `${tenTuan}.xlsx`;
@@ -1823,24 +1818,6 @@ window.dongBoChuanHoaDuLieuUI = function() {
         alert("Tuyệt vời! Toàn bộ dữ liệu trên lưới Thời khóa biểu đã khớp chuẩn 100% với danh mục máy chủ.");
     }
 };
-// =========================================================================
-// KHỐI NÂNG CẤP: TỰ ĐỘNG CẬP NHẬT TÊN NÚT "TUẦN TIẾP THEO" THEO THỜI GIAN THỰC
-// =========================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    const theHienThiTuan = document.getElementById('hienThiTuanHienTai');
-    const nutKhoiPhuc = document.getElementById('btnKhoiPhuc');
-
-    if (theHienThiTuan && nutKhoiPhuc) {
-        const capNhatTenNutTuanTiepTheo = () => {
-            let tuanKeTiep = parseInt(tuanDangXem) + 1;
-            nutKhoiPhuc.innerText = `Tuần tiếp theo ${tuanKeTiep}`;
-        };
-
-        setTimeout(capNhatTenNutTuanTiepTheo, 1000); 
-        const boGiamSatTuan = new MutationObserver(capNhatTenNutTuanTiepTheo);
-        boGiamSatTuan.observe(theHienThiTuan, { childList: true, characterData: true, subtree: true });
-    }
-});
 
 // =========================================================================
 // KHỐI NÂNG CẤP UI: TRÌNH ĐIỀU KHIỂN PHÓNG TO / THU NHỎ TOÀN MÀN HÌNH MODAL
