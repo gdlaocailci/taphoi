@@ -132,14 +132,37 @@ function kiemSoatGiaoDien() {
 }
 
 // =========================================================================
-// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG
+// KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG (ĐÃ NÂNG CẤP ĐỊNH TUYẾN DỮ LIỆU)
+// Thay thế toàn bộ hàm chuyenTuan và taiDuLieuTKB 
 // =========================================================================
+
 async function chuyenTuan(buocNhay) {
-    let tuanMoi = parseInt(tuanDangXem) + buocNhay;
+    let theTuan = document.getElementById('hienThiTuanHienTai');
+    let tuanHienTaiTrenUI = tuanDangXem;
+    
+    // Đọc giá trị người dùng vừa nhập thủ công (nếu là thẻ input) để làm mốc tịnh tiến
+    if (theTuan) {
+        if (theTuan.tagName === 'INPUT') {
+            tuanHienTaiTrenUI = parseInt(theTuan.value) || tuanDangXem;
+        } else {
+            let match = theTuan.innerText.match(/\d+/);
+            if (match) tuanHienTaiTrenUI = parseInt(match[0], 10);
+        }
+    }
+
+    let tuanMoi = parseInt(tuanHienTaiTrenUI) + buocNhay;
     if (tuanMoi < 1) tuanMoi = 1; 
     if (tuanMoi > 52) tuanMoi = 52;
     
-    if (ngayDauTuanUI && tuanMoi !== tuanDangXem) {
+    // Phân luồng nguồn dữ liệu theo hướng mũi tên (Căn cứ theo yêu cầu nghiệp vụ)
+    let nguonTruyXuat = 'TKB_HIEN_TAI';
+    if (buocNhay < 0) {
+        nguonTruyXuat = 'DATA_TKB'; // Lùi về quá khứ
+    } else if (buocNhay > 0) {
+        nguonTruyXuat = 'TKB_CoDinh'; // Tiến tới tương lai
+    }
+    
+    if (ngayDauTuanUI && tuanMoi !== tuanHienTaiTrenUI) {
         let parts = ngayDauTuanUI.split('-');
         if (parts.length === 3) {
             let yy = parseInt(parts[0], 10);
@@ -160,12 +183,20 @@ async function chuyenTuan(buocNhay) {
     }
     
     tuanDangXem = tuanMoi;
-    document.getElementById('hienThiTuanHienTai').innerText = `Tuần ${tuanDangXem}`;
+    
+    // Cập nhật giá trị hiển thị mà không làm hỏng thẻ input
+    if (theTuan) {
+        if (theTuan.tagName === 'INPUT') {
+            theTuan.value = tuanDangXem;
+        } else {
+            theTuan.innerText = `Tuần ${tuanDangXem}`;
+        }
+    }
     
     if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) { duLieuTkbHienTai = []; }
     
-    // TRUYỀN THAM SỐ FALSE ĐỂ HIỂN THỊ VÒNG XOAY KHI BẤM CHUYỂN TUẦN
-    await taiDuLieuTKB(false); 
+    // Bổ sung tham số nguồn truy xuất để lấy dữ liệu chính xác từ máy chủ
+    await taiDuLieuTKB(false, nguonTruyXuat); 
 }
 
 let timerCapNhatNgay;
@@ -290,28 +321,34 @@ async function khoiTaoGiaoDien() {
     }
 }
 
-async function taiDuLieuTKB(coCache = false) {
+async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const vungHienThi = document.getElementById('vungHienThiDuLieu');
     const hienThiTuan = document.getElementById('hienThiTuanHienTai');
     
+    // Định dạng nhãn để thông báo trực quan cho người dùng về nguồn dữ liệu đang xem
+    let nhanNguon = nguonTruyXuat === 'DATA_TKB' ? 'Dữ liệu quá khứ' : (nguonTruyXuat === 'TKB_CoDinh' ? 'Dự kiến cố định' : 'Hệ thống hiện tại');
+
     if (!coCache) {
-        vungHienThi.innerHTML = `<tr><td class="text-center text-blue-600 font-bold py-10 reactbits-fade-in text-lg" style="font-family:'Times New Roman',Times,serif;"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải TKB Tuần ${tuanDangXem}...</td></tr>`;
-    } else if (hienThiTuan && !hienThiTuan.innerHTML.includes('animate-spin')) {
-        // Bật báo hiệu ngầm nếu đang chuyển tuần mà màn hình đã có đệm
-        hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
+        vungHienThi.innerHTML = `<tr><td class="text-center text-blue-600 font-bold py-10 reactbits-fade-in text-lg" style="font-family:'Times New Roman',Times,serif;"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải TKB Tuần ${tuanDangXem} từ [${nhanNguon}]...</td></tr>`;
+    } else if (hienThiTuan) {
+        // Đảm bảo không ghi đè innerHTML gây mất thẻ input
+        if (hienThiTuan.tagName !== 'INPUT' && !hienThiTuan.innerHTML.includes('animate-spin')) {
+            hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
+        }
     }
     
     try {
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}`);
+        // Gắn thêm tham số "nguon" vào truy vấn để báo cho bộ máy GAS biết cần truy xuất từ Sheet nào
+        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}`);
         const textPhanHoi = await phanHoi.text();
         let duLieu;
 
         try {
             duLieu = JSON.parse(textPhanHoi);
         } catch (loiParse) {
-            throw new Error("Máy chủ trả về dữ liệu hỏng. Hãy kiểm tra lại mã nguồn CODE.gs.");
+            throw new Error("Máy chủ trả về dữ liệu hỏng. Hãy kiểm tra lại định dạng dữ liệu đầu ra.");
         }
 
         if (duLieu.trangThai === 'loi_he_thong') throw new Error(duLieu.thongBao);
@@ -320,9 +357,17 @@ async function taiDuLieuTKB(coCache = false) {
             let chuoiTkbMoi = JSON.stringify(duLieu);
             let chuoiTkbCu = localStorage.getItem(KEY_TKB);
             
-            if (!coCache || chuoiTkbMoi !== chuoiTkbCu) {
-                duLieuTkbHienTai = duLieu;
-                localStorage.setItem(KEY_TKB, chuoiTkbMoi);
+            // Nếu truy xuất dữ liệu tham khảo (Quá khứ / Tương lai), không ghi đè vào cache chính để tránh sai lệch đồng bộ
+            if (nguonTruyXuat === 'TKB_HIEN_TAI') {
+                if (!coCache || chuoiTkbMoi !== chuoiTkbCu) {
+                    duLieuTkbHienTai = duLieu;
+                    localStorage.setItem(KEY_TKB, chuoiTkbMoi);
+                    xuatMaTranBang(duLieuTkbHienTai);
+                } else {
+                    xuatMaTranBang(duLieuTkbHienTai);
+                }
+            } else {
+                duLieuTkbHienTai = duLieu; // Cập nhật biến RAM nội bộ
                 xuatMaTranBang(duLieuTkbHienTai);
             }
         } else {
@@ -336,8 +381,13 @@ async function taiDuLieuTKB(coCache = false) {
             </td></tr>`;
         }
     } finally {
-        // Hoàn trả text cứng, tắt biểu tượng tải
-        if (hienThiTuan) hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
+        if (hienThiTuan) {
+            if (hienThiTuan.tagName === 'INPUT') {
+                hienThiTuan.value = tuanDangXem;
+            } else {
+                hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
+            }
+        }
     }
 }
 // =========================================================================
