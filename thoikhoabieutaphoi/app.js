@@ -221,7 +221,7 @@ function capNhatNgayDauTuan() {
 }
 
 // =========================================================================
-// KHỐI 1: KHỞI TẠO VÀ TẢI DỮ LIỆU CƠ BẢN (NÂNG CẤP BÁO HIỆU ĐỒNG BỘ NGẦM)
+// KHỐI 1: KHỞI TẠO VÀ TẢI DỮ LIỆU CƠ BẢN (ĐÃ TÍCH HỢP UI NHẬP TUẦN THỦ CÔNG)
 // =========================================================================
 async function khoiTaoGiaoDien() {
     const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
@@ -259,10 +259,8 @@ async function khoiTaoGiaoDien() {
 
                 tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
                 
-                if (hienThiTuan) {
-                    // Hiển thị Tuần kèm biểu tượng báo hiệu đang đồng bộ nền
-                    hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
-                }
+                // [ĐÃ THAY THẾ]: Hiển thị Tuần kèm biểu tượng báo hiệu đang đồng bộ nền
+                veGiaoDienTuan(true);
 
                 xuatMaTranBang(duLieuTkbHienTai);
                 coCache = true;
@@ -310,8 +308,8 @@ async function khoiTaoGiaoDien() {
                 xuatMaTranBang(duLieuTkbHienTai);
             }
             
-            // Xóa biểu tượng tải nền khi đã chốt dữ liệu
-            if (hienThiTuan) hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
+            // [ĐÃ THAY THẾ]: Xóa biểu tượng tải nền khi đã chốt dữ liệu
+            veGiaoDienTuan(false);
         } else {
             await taiDuLieuTKB(coCache); 
         }
@@ -1391,7 +1389,7 @@ async function xuatExcel() {
             });
         });
 
-        worksheet.getColumn(1).width = 14;
+       worksheet.getColumn(1).width = 14;
         worksheet.getColumn(2).width = 10;
         worksheet.getColumn(3).width = 6;
         for(let i = 4; i < 4 + mangLop.length * 2; i++) { worksheet.getColumn(i).width = 15; }
@@ -1401,7 +1399,13 @@ async function xuatExcel() {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         
-        let tenTuan = `TKB_Tuan_${tuanDangXem}`;
+        // --- ĐÂY LÀ PHẦN MÃ GỐC CẦN THAY THẾ ---
+        let tenTuan = "ThoiKhoaBieu";
+        let spanTuan = document.getElementById('hienThiTuanHienTai');
+        if (spanTuan && spanTuan.innerText) {
+            tenTuan = `TKB_${spanTuan.innerText.trim().replace(/\s+/g, '_')}`;
+        }
+        // --------------------------------------
         
         link.download = `${tenTuan}.xlsx`;
         link.click();
@@ -1414,7 +1418,6 @@ async function xuatExcel() {
         if (btn) btn.innerHTML = textGoc;
     }
 }
-
 document.addEventListener('click', function(suKien) {
     let menuDuocBam = suKien.target.closest('nav a');
     
