@@ -168,22 +168,27 @@
             <div id="thanhCongCuTKB" class="bg-slate-50 border border-gray-400 p-2 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 flex-wrap reactbits-fade-in delay-200">
                 
                 <div class="flex flex-col md:flex-row flex-wrap items-center gap-4 w-full xl:w-auto font-sans">
-                    <!-- BỘ CHUYỂN TUẦN -->
-                    <div class="flex items-center bg-white border border-gray-400 rounded shadow-sm px-2 py-1 gap-2 flex-none">
-                       <!-- KHỐI MÃ MỚI CẦN DÁN ĐÈ VÀO -->
-                        <button id="btnTuanTruoc" onclick="chuyenTuan(-1)" class="bg-blue-500 hover:bg-blue-600 text-white rounded p-1 shadow-sm transition-colors cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        
-                        <div class="flex items-center justify-center font-extrabold text-blue-800 text-lg mx-3">
-                            <span class="mr-1">Tuần</span>
-                            <input type="number" id="hienThiTuanHienTai" class="w-10 text-center bg-transparent outline-none font-extrabold text-blue-700" min="1" max="52" value="1" title="Nhập số tuần và ấn mũi tên để tải dữ liệu" />
-                        </div>
-                        
-                        <button id="btnTuanTiep" onclick="chuyenTuan(1)" class="bg-blue-500 hover:bg-blue-600 text-white rounded p-1 shadow-sm transition-colors cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
+                   <!-- BỘ CHUYỂN TUẦN -->
+                <div class="flex items-center bg-white border border-gray-400 rounded shadow-sm px-2 py-1 gap-2 flex-none">
+                    <button id="btnTuanTruoc" onclick="chuyenTuan(-1)" class="bg-blue-500 hover:bg-blue-600 text-white rounded p-1 shadow-sm transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    
+                    <div class="flex items-center justify-center font-extrabold text-blue-800 text-lg mx-3">
+                        <span class="mr-1">Tuần</span>
+                        <input type="number" id="hienThiTuanHienTai" class="w-10 text-center bg-transparent outline-none font-extrabold text-blue-700" min="1" max="52" value="1" title="Nhập số tuần và ấn mũi tên để tải dữ liệu" />
+                    </div>
+                    
+                    <button id="btnTuanTiep" onclick="chuyenTuan(1)" class="bg-blue-500 hover:bg-blue-600 text-white rounded p-1 shadow-sm transition-colors cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div> <!-- ĐÂY CHÍNH LÀ THẺ DIV BỊ XÓA NHẦM KHIẾN GIAO DIỆN VỠ VỤN -->
 
+                <!-- BỘ CHỌN NGÀY -->
+                <div class="flex items-center bg-white border border-gray-400 rounded shadow-sm px-2 py-1 gap-2 flex-none" title="Cài đặt mốc ngày cho Thứ 2 của tuần này">
+                    <span class="text-sm font-bold text-slate-600 whitespace-nowrap">Từ ngày:</span>
+                    <input type="date" id="chonNgayDauTuan" onchange="capNhatNgayDauTuan()" class="text-sm font-bold text-blue-900 outline-none cursor-pointer bg-transparent">
+                </div>
                     <!-- BỘ CHỌN NGÀY -->
                     <div class="flex items-center bg-white border border-gray-400 rounded shadow-sm px-2 py-1 gap-2 flex-none" title="Cài đặt mốc ngày cho Thứ 2 của tuần này">
                         <span class="text-sm font-bold text-slate-600 whitespace-nowrap">Từ ngày:</span>
