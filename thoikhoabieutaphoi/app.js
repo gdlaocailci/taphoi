@@ -892,6 +892,15 @@ function xuatMaTranBang(danhSachTiet) {
 // KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (TỐI ƯU ĐỒNG BỘ UI)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
+    // [VÁ LỖI 3]: Chặn hành vi submit form mặc định (tránh tải lại trang ngoài ý muốn gây hoàn nguyên dữ liệu)
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+
+    // [VÁ LỖI 2]: Ép ô input đang trỏ chuột hoàn tất việc gán giá trị (Blur) trước khi quét dữ liệu
+    // Ngăn chặn việc bấm "Lưu" khi đang focus làm mất dữ liệu tạm thời
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+        document.activeElement.blur();
+    }
+
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
     if (!coQuyenThaoTac) return;
     
@@ -906,7 +915,7 @@ async function luuDuLieu(event, loaiLuu) {
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
     if(btn.disabled === undefined) { } else {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; 
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang đồng bộ...`; 
         btn.disabled = true;
     }
 
@@ -914,8 +923,14 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         
-        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        // [VÁ LỖI 1]: Lấy danh sách Lớp từ tiêu đề ma trận thay vì từ ô input
+        // Đảm bảo không bị khôi phục nhầm dữ liệu cũ khi giáo viên xóa trắng 100% tiết của 1 lớp
         let setLopDangHienThi = new Set();
+        document.querySelectorAll('th[data-cotlop]').forEach(cot => {
+            setLopDangHienThi.add(cot.getAttribute('data-cotlop'));
+        });
+        
+        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
         
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
@@ -925,8 +940,6 @@ async function luuDuLieu(event, loaiLuu) {
                 let buoi = parts[2];
                 let tiet = parts[3];
                 let lop = parts.slice(4).join('_'); 
-                
-                setLopDangHienThi.add(lop); 
                 
                 let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
                 let valGv = oGv ? oGv.value.trim() : "";
@@ -950,6 +963,7 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
+        // Bù đắp dữ liệu của các lớp KHÔNG hiển thị trên UI (Bảo toàn dữ liệu cũ của hệ thống)
         let mangLopDangHienThi = Array.from(setLopDangHienThi);
         if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
             duLieuTkbHienTai.forEach(tietGoc => {
@@ -976,14 +990,14 @@ async function luuDuLieu(event, loaiLuu) {
                 btnAn.innerHTML = "Auto Save";
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
-                // [NÂNG CẤP 1]: Chuyển cảnh báo sang cơ chế Non-blocking (Không chặn luồng UI)
+                // Đẩy thông báo ra khỏi luồng chính (Non-blocking UI)
                 setTimeout(() => alert("Đã lưu dữ liệu thời khóa biểu thành công!"), 10);
                 
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
                 
-                // [NÂNG CẤP 2]: Ép kết xuất lại ma trận lập tức để làm sạch UI, xóa bỏ các CSS cảnh báo lỗi (đỏ) trước đó và gọi lại thuật toán check trùng
+                // Vẽ lại ngay lập tức để làm mới giao diện, xóa bỏ cảnh báo CSS màu đỏ, và kích hoạt đối chiếu trùng lịch
                 xuatMaTranBang(duLieuTkbHienTai);
             }
         }
