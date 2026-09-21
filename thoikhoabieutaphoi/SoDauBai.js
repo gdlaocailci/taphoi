@@ -562,15 +562,12 @@ function ketXuatSoDauBaiLenLuoi() {
                         
                         let theDatalistPPCT = `<datalist id="${datalistId}">${optionsHtml}</datalist>`;
                         
-                        // [NÂNG CẤP]: Xóa tạm thời khi click/focus để xổ tất cả gợi ý, phục hồi khi blur
-                        let onFocusClick = `this.dataset.oldValue=this.value; this.value=''; if(this.showPicker) this.showPicker();`;
-                        let onBlurLogic = `if(this.value.trim() === '') { this.value = this.dataset.oldValue || ''; }`;
+                        // [BẢN VÁ LỖI]: Bổ sung điều kiện "if(ta && ten !== '')" để không ghi đè chuỗi rỗng làm mất tên bài hiện tại nếu không tìm thấy PPCT tương ứng
+                        let onchangeLogic = `let val = this.value.trim(); if(val === ''){ this.value = ''; return; } let vMatch=val.match(/\\d+/); if(vMatch){ let v=vMatch[0]; this.value=v; let ten=tuDienPPCTToanCuc['${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_'+v] || tuDienPPCTToanCuc['${khoiChon}_${monPPCT}_'+v] || ''; let tr=this.closest('tr'); if(tr){ let ta=tr.querySelector('td[data-loai=\\'tenBai\\'] textarea'); if(ta && ten !== ''){ ta.value=ten; ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; } } }`;
                         
-                        // Tối ưu lại logic onchange để kết hợp với bản sao lưu oldValue
-                        let onchangeLogic = `let val = this.value.trim(); if(val === ''){ this.value = this.dataset.oldValue || ''; return; } let vMatch=val.match(/\\d+/); if(vMatch){ let v=vMatch[0]; this.value=v; let ten=tuDienPPCTToanCuc['${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_'+v] || tuDienPPCTToanCuc['${khoiChon}_${monPPCT}_'+v] || ''; let tr=this.closest('tr'); if(tr){ let ta=tr.querySelector('td[data-loai=\\'tenBai\\'] textarea'); if(ta){ ta.value=ten; ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; } } }`;
+                        // Gọi trực tiếp showPicker() để mở danh sách khi nhấp chuột hoặc nhận tiêu điểm
+                        theTietPPCT = `<input type="text" list="${datalistId}" onclick="if(this.showPicker) this.showPicker();" onfocus="if(this.showPicker) this.showPicker();" onchange="${onchangeLogic}" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-extrabold text-blue-700 placeholder-blue-300 transition-all cursor-pointer hover:bg-blue-50" placeholder="..." value="${tietPPCT}">` + theDatalistPPCT;
                         
-                        theTietPPCT = `<input type="text" list="${datalistId}" onclick="${onFocusClick}" onfocus="${onFocusClick}" onblur="${onBlurLogic}" onchange="${onchangeLogic}" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-extrabold text-blue-700 placeholder-blue-300 transition-all cursor-pointer hover:bg-blue-50" placeholder="..." value="${tietPPCT}">` + theDatalistPPCT;
-                       
                         let optTot = (xepLoai === 'Tốt') ? 'selected' : '';
                         let optKha = (xepLoai === 'Khá') ? 'selected' : '';
                         let optTB = (xepLoai === 'TB') ? 'selected' : '';
