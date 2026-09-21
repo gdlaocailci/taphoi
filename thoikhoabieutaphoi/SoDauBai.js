@@ -715,7 +715,7 @@ async function luuSoDauBaiSangMayChu() {
 }
 
 // =========================================================================
-// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM
+// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (BỔ SUNG THÔNG MINH)
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -736,6 +736,7 @@ function dongBoTenBaiHoc() {
         let khoi = matchKhoi ? matchKhoi[0] : '';
         
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
+        let soLuongBoSung = 0;
         
         cacDong.forEach(dong => {
             let oMon = dong.querySelector('td[data-loai="mon"]');
@@ -746,10 +747,17 @@ function dongBoTenBaiHoc() {
                 let isLocked = oTenBai.getAttribute('data-islocked') === 'true';
                 let coQuyenSua = oTenBai.getAttribute('data-coquyensua') === 'true';
                 
-                if (isLocked) return;
+                // Bỏ qua nếu ô đã bị khóa (đã ký) hoặc không có quyền sửa
+                if (isLocked || !coQuyenSua) return;
 
                 let mon = oMon.innerText.trim().toLowerCase();
-                let tiet = oTiet.innerText.trim();
+                
+                // [VÁ LỖI TRÍCH XUẤT]: Lấy giá trị chính xác từ thẻ <input> (nếu có) thay vì innerText
+                let theInputTiet = oTiet.querySelector('input');
+                let tiet = theInputTiet ? theInputTiet.value.trim() : oTiet.innerText.trim();
+                
+                let theTextarea = oTenBai.querySelector('textarea');
+                let tenBaiHienTai = theTextarea ? theTextarea.value.trim() : oTenBai.innerText.trim();
                 
                 if (mon !== '' && tiet !== '') {
                     let monRutGon = mon.replace(/[0-9\(\)]/g, '').trim().replace(/\s+/g, ' ');
@@ -759,19 +767,27 @@ function dongBoTenBaiHoc() {
                     
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
-                    let trangThaiKhoa = !coQuyenSua ? "disabled" : "";
-                    let cssNenKhoa = !coQuyenSua ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
-                    let placeholderText = !coQuyenSua ? "Không có quyền" : "Nhập tên bài...";
-                    
-                    oTenBai.innerHTML = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${baiDay}</textarea>`;
-                    oTenBai.className = "border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle";
-                    oTenBai.style.whiteSpace = "normal"; 
-                    oTenBai.style.wordWrap = "break-word";
-                    
-                    let ta = oTenBai.querySelector('textarea');
-                    if (ta) {
-                        ta.style.height = 'auto';
-                        ta.style.height = (ta.scrollHeight) + 'px';
+                    // [TÍNH NĂNG MỚI]: Chỉ cập nhật bổ sung khi Tên bài trên UI đang trống
+                    if (baiDay !== '' && tenBaiHienTai === '') {
+                        
+                        if (theTextarea) {
+                            // Ghi trực tiếp vào textarea có sẵn, tự động giãn dòng
+                            theTextarea.value = baiDay;
+                            theTextarea.style.height = 'auto';
+                            theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
+                            
+                            // Nháy màu nền nhẹ để báo hiệu ô vừa được điền bổ sung tự động
+                            theTextarea.classList.add('bg-blue-50', 'transition-colors');
+                            setTimeout(() => theTextarea.classList.remove('bg-blue-50'), 1500);
+                        } else {
+                            // Dự phòng nếu DOM chưa render thẻ textarea
+                            let trangThaiKhoa = !coQuyenSua ? "disabled" : "";
+                            let cssNenKhoa = !coQuyenSua ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
+                            let placeholderText = !coQuyenSua ? "Không có quyền" : "Nhập tên bài...";
+                            
+                            oTenBai.innerHTML = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${baiDay}</textarea>`;
+                        }
+                        soLuongBoSung++;
                     }
                 } 
             } 
@@ -781,6 +797,7 @@ function dongBoTenBaiHoc() {
             btn.innerHTML = textGoc; 
             btn.disabled = false; 
         }
+        
     }, 100); 
 } 
 
