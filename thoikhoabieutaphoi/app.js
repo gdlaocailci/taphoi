@@ -197,9 +197,6 @@ function capNhatNgayDauTuan() {
     }, 500); 
 }
 
-// =========================================================================
-// KHỐI 1: KHỞI TẠO VÀ TẢI DỮ LIỆU CƠ BẢN
-// =========================================================================
 async function khoiTaoGiaoDien() {
     const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
     const KEY_CH = 'SmartTKB_CauHinh_' + MA_DA;
@@ -250,7 +247,8 @@ async function khoiTaoGiaoDien() {
             }
         } catch(e) { console.warn("Cache hỏng, tải lại từ đầu."); }
 
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layCauHinh`);
+        // [BẢN VÁ LỖI]: Bơm TimeStamp _t chống cache trình duyệt khi khởi động
+        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layCauHinh&_t=${new Date().getTime()}`);
         const thongSoMoi = await phanHoi.json();
         
         if (thongSoMoi.trangThai === 'loi_he_thong') throw new Error(thongSoMoi.thongBao);
@@ -332,7 +330,8 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     }
     
     try {
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}`);
+        // [BẢN VÁ LỖI]: Bơm TimeStamp _t chống cache khi tải TKB tuần
+        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}&_t=${new Date().getTime()}`);
         const textPhanHoi = await phanHoi.text();
         let duLieu;
 
@@ -967,9 +966,21 @@ async function luuDuLieu(event, loaiLuu) {
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
+                
+                // [BẢN VÁ LỖI]: Cập nhật trực tiếp lên biến RAM toàn cục
                 duLieuTkbHienTai = dsTietLuoi;
+                if (thongSoHocVu) thongSoHocVu.TKB_TUAN = dsTietLuoi; 
+
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
+                
+                // [BẢN VÁ LỖI]: Xóa sạch bộ nhớ đệm Sổ Đầu Bài để ép SĐB phải tải lại TKB mới nhất
+                if (typeof window.lamSachBoNhoSoDauBai === 'function') {
+                    window.lamSachBoNhoSoDauBai();
+                }
+
+                // [BẢN VÁ LỖI]: Ép động cơ vẽ lại ma trận ngay lập tức để chốt hiển thị UI
+                xuatMaTranBang(duLieuTkbHienTai);
             }
         }
     } catch (loi) { 
