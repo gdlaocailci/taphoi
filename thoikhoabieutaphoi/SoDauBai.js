@@ -91,9 +91,6 @@ function kiemTraTrangThaiDangNhapSDB() {
     }, 500);
 }
 
-// =========================================================================
-// HÀM TẢI DỮ LIỆU TỐC ĐỘ CAO (ASYNCHRONOUS BACKGROUND THREAD)
-// =========================================================================
 async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-12 text-slate-500 font-bold">
@@ -106,9 +103,9 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     try {
         let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
         
-        // [VÁ LỖI TIMEOUT]: Bơm trực tiếp tham số: {}, 3 (lần thử), 60000 (thời gian chờ 60 giây) vào luồng gọi mạng
+        // [VÁ LỖI TIMEOUT & CACHE]: Bơm TimeStamp _t vào luồng gọi mạng để chống bộ nhớ đệm
         const phanHoi = await fetchVoiCoCheThuLai(
-            `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`,
+            `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}&_t=${new Date().getTime()}`,
             {},
             3,
             60000
@@ -695,9 +692,10 @@ async function luuSoDauBaiSangMayChu() {
 
         if (ketQua.trangThai === 'thanh_cong') {
             alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanChon.replace(/\D/g, '')}!`);
-            await taiDuLieuSoDauBaiTuMayChu();
+            
+            // [BẢN VÁ LỖI]: Đặt lại cờ ĐÃ TẢI về false TRƯỚC khi gọi hàm tải mới để tránh kẹt logic tải kép
             daTaiDuLieuSoDauBai = false; 
-            taiDuLieuSoDauBaiTuMayChu();
+            await taiDuLieuSoDauBaiTuMayChu();
         } else throw new Error(ketQua.thongBao);
 
     } catch (loi) { alert("Lưu thất bại: " + loi.message); } 
