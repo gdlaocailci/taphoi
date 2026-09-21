@@ -7,17 +7,35 @@ let ngayDauTuanUI = '';
 
 document.addEventListener('DOMContentLoaded', () => { khoiTaoGiaoDien(); });
 
-// =========================================================================
-// KHỐI KẾT NỐI MẠNG CỐT LÕI (NÂNG CẤP CHỐNG TREO BĂNG THÔNG)
+// KHỐI KẾT NỐI MẠNG CỐT LÕI (NÂNG CẤP CHỐNG TREO & CHỐNG CACHE TUYỆT ĐỐI)
 // =========================================================================
 async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho = 45000) {
     for (let i = 0; i < soLanThu; i++) {
         const boDieuKhien = new AbortController();
         const idHenGio = setTimeout(() => boDieuKhien.abort(), thoiGianCho);
-        const tuyChonMoi = { ...tuyChon, signal: boDieuKhien.signal };
+        
+        // [ĐỘNG CƠ CHỐNG CACHE TUYỆT ĐỐI]
+        // 1. Tự động chèn mốc thời gian mili-giây vào mọi URL GET để bẻ gãy bộ nhớ đệm URL
+        let urlChongCache = url;
+        if ((!tuyChon.method || tuyChon.method === 'GET') && !url.includes('_t=')) {
+            urlChongCache += (url.includes('?') ? '&' : '?') + '_t=' + new Date().getTime();
+        }
+
+        // 2. Ép header trình duyệt tuyệt đối không được phép tải luồng dữ liệu cũ
+        const tuyChonMoi = { 
+            ...tuyChon, 
+            signal: boDieuKhien.signal,
+            cache: 'no-store', // Vô hiệu hóa tính năng lưu đệm của trình duyệt
+            headers: {
+                ...tuyChon.headers,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        };
 
         try {
-            const phanHoi = await fetch(url, tuyChonMoi);
+            const phanHoi = await fetch(urlChongCache, tuyChonMoi);
             clearTimeout(idHenGio); 
             
             if (!phanHoi.ok) {
