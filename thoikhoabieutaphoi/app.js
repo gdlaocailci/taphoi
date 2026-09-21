@@ -892,15 +892,19 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (TỐI ƯU ĐỒNG BỘ UI)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
     if (!coQuyenThaoTac) return;
     
-    if (loaiLuu === 'codinh') { if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; }
+    if (loaiLuu === 'codinh') { 
+        if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; 
+    }
     
-    if (loaiLuu === 'khoiphuc') { if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; }
+    if (loaiLuu === 'khoiphuc') { 
+        if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; 
+    }
 
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
@@ -975,10 +979,15 @@ async function luuDuLieu(event, loaiLuu) {
                 btnAn.innerHTML = "Auto Save";
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
-                alert("Đã lưu dữ liệu thời khóa biểu thành công!");
+                // [NÂNG CẤP 1]: Chuyển cảnh báo sang cơ chế Non-blocking (Không chặn luồng UI)
+                setTimeout(() => alert("Đã lưu dữ liệu thời khóa biểu thành công!"), 10);
+                
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
+                
+                // [NÂNG CẤP 2]: Ép kết xuất lại ma trận lập tức để làm sạch UI, xóa bỏ các CSS cảnh báo lỗi (đỏ) trước đó và gọi lại thuật toán check trùng
+                xuatMaTranBang(duLieuTkbHienTai);
             }
         }
     } catch (loi) { 
