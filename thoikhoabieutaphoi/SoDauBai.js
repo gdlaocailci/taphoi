@@ -546,7 +546,7 @@ function ketXuatSoDauBaiLenLuoi() {
                         theChuyenCan = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400" placeholder="..." value="${chuyenCan}">`;
                         theNhanXet = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="Nhận xét...">${nhanXet}</textarea>`;
                         
-                       let datalistId = `list_ppct_${thu.replace(/\s/g,'')}_${buoiObj.id}_${tiet}`;
+                      let datalistId = `list_ppct_${thu.replace(/\s/g,'')}_${buoiObj.id}_${tiet}`;
                         let optionsHtml = "";
                         let tietDuKien = parseInt(tietPPCT) || (boDemTietPPCT[monPPCT] || 1);
                                                 
@@ -561,10 +561,15 @@ function ketXuatSoDauBaiLenLuoi() {
                         }
                         
                         let theDatalistPPCT = `<datalist id="${datalistId}">${optionsHtml}</datalist>`;
-                                              
-                        let onchangeLogic = `let val = this.value.trim(); if(val === ''){ this.value = ''; return; } let vMatch=val.match(/\\d+/); if(vMatch){ let v=vMatch[0]; this.value=v; let ten=tuDienPPCTToanCuc['${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_'+v] || tuDienPPCTToanCuc['${khoiChon}_${monPPCT}_'+v] || ''; let tr=this.closest('tr'); if(tr){ let ta=tr.querySelector('td[data-loai=\\'tenBai\\'] textarea'); if(ta){ ta.value=ten; ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; } } }`;
                         
-                        theTietPPCT = `<input type="text" list="${datalistId}" onclick="this.select()" onchange="${onchangeLogic}" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-extrabold text-blue-700 placeholder-blue-300 transition-all cursor-pointer hover:bg-blue-50" placeholder="..." value="${tietPPCT}">` + theDatalistPPCT;
+                        // [NÂNG CẤP]: Xóa tạm thời khi click/focus để xổ tất cả gợi ý, phục hồi khi blur
+                        let onFocusClick = `this.dataset.oldValue=this.value; this.value=''; if(this.showPicker) this.showPicker();`;
+                        let onBlurLogic = `if(this.value.trim() === '') { this.value = this.dataset.oldValue || ''; }`;
+                        
+                        // Tối ưu lại logic onchange để kết hợp với bản sao lưu oldValue
+                        let onchangeLogic = `let val = this.value.trim(); if(val === ''){ this.value = this.dataset.oldValue || ''; return; } let vMatch=val.match(/\\d+/); if(vMatch){ let v=vMatch[0]; this.value=v; let ten=tuDienPPCTToanCuc['${khoiChon}_${monHoc.toLowerCase().replace(/\s+/g, ' ')}_'+v] || tuDienPPCTToanCuc['${khoiChon}_${monPPCT}_'+v] || ''; let tr=this.closest('tr'); if(tr){ let ta=tr.querySelector('td[data-loai=\\'tenBai\\'] textarea'); if(ta){ ta.value=ten; ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; } } }`;
+                        
+                        theTietPPCT = `<input type="text" list="${datalistId}" onclick="${onFocusClick}" onfocus="${onFocusClick}" onblur="${onBlurLogic}" onchange="${onchangeLogic}" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-extrabold text-blue-700 placeholder-blue-300 transition-all cursor-pointer hover:bg-blue-50" placeholder="..." value="${tietPPCT}">` + theDatalistPPCT;
                        
                         let optTot = (xepLoai === 'Tốt') ? 'selected' : '';
                         let optKha = (xepLoai === 'Khá') ? 'selected' : '';
