@@ -9,7 +9,6 @@ let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
 
-// [NÂNG CẤP]: Cập nhật định danh dọn dẹp bộ nhớ
 window.lamSachBoNhoSoDauBai = function() {
     daTaiDuLieuSoDauBai = false;
     duLieuTKBGopDaMap = [];
@@ -26,6 +25,11 @@ window.lamSachBoNhoSoDauBai = function() {
     let elementLop = document.getElementById('chonLopSo');
     if(elementTuan) elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>';
     if(elementLop) elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>';
+
+    // [BẢN VÁ BẢO MẬT]: Tiêu diệt triệt để thẻ DOM lưu quyền ẩn
+    // Ngăn chặn rò rỉ quyền quản trị sang phiên làm việc của người chưa đăng nhập
+    let theChotQuyen = document.getElementById('theChotQuyenSDB');
+    if (theChotQuyen) theChotQuyen.remove();
 };
 
 async function taiDuLieuSoDauBaiTuMayChu() {
@@ -295,7 +299,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
 }
 
 // =========================================================================
-// HÀM 2: KẾT XUẤT SỔ ĐẦU BÀI LÊN LƯỚI 
+// HÀM 2: KẾT XUẤT SỔ ĐẦU BÀI LÊN LƯỚI (ĐÃ TÍCH HỢP BẢO MẬT ĐỊNH DANH 3 LỚP)
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -306,8 +310,22 @@ function ketXuatSoDauBaiLenLuoi() {
     if (!tuanChon || !lopChon || !vungHienThi) return;
 
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
-    let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
-    let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
+    
+    // [BẢN VÁ BẢO MẬT LỚP 1]: Ưu tiên tuyệt đối định danh chuẩn từ hệ thống chính (app.js)
+    let madinhdanhGV = (typeof window.dinhDanhToanCuc !== 'undefined' && window.dinhDanhToanCuc !== '') 
+        ? window.dinhDanhToanCuc 
+        : (maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : ''));
+
+    // [BẢN VÁ BẢO MẬT LỚP 2]: KỶ LUẬT THÉP - KHÔNG CÓ ĐỊNH DANH THÌ HỦY BỎ MỌI QUYỀN QUẢN TRỊ
+    let quyenQuanTri = false;
+    if (madinhdanhGV && madinhdanhGV.trim() !== '') {
+        quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
+        
+        // Kế thừa quyền quản trị hệ thống nếu có
+        if (typeof quyenSuaChua !== 'undefined' && quyenSuaChua === true) {
+            quyenQuanTri = true;
+        }
+    }
 
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     
@@ -413,6 +431,7 @@ function ketXuatSoDauBaiLenLuoi() {
         let monHoc = String(dong['Môn Học']).trim();
         if (monHoc !== '') {
             let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+            // Quét quyền xem tiết để hiển thị trên thông tin đầu trang
             if (quyenQuanTri || tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
                 tapHopMonDay.add(monHoc);
             }
@@ -486,12 +505,15 @@ function ketXuatSoDauBaiLenLuoi() {
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase().normalize('NFC') : '';
                 let quyenNhapThuCong = false;
                 
-                if (quyenQuanTri) {
-                    quyenNhapThuCong = true;
-                } else if (monHoc !== '' && maGvDangNhapLC !== '') {
-                    let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
-                    if (tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
+                // [BẢN VÁ BẢO MẬT LỚP 3]: Khóa băng hoàn toàn input nếu madinhdanhGV rỗng
+                if (madinhdanhGV && madinhdanhGV.trim() !== '') {
+                    if (quyenQuanTri) {
                         quyenNhapThuCong = true;
+                    } else if (monHoc !== '' && maGvDangNhapLC !== '') {
+                        let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
+                        if (tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
+                            quyenNhapThuCong = true;
+                        }
                     }
                 }
                 
