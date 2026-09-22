@@ -472,12 +472,15 @@ function ketXuatSoDauBaiLenLuoi() {
     if (coDayBuThu7) danhSachThu.push("Thứ 7");
     if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
 
-    let mienNgayHienTai = inputNgay ? inputNgay.value : '';
-    if (!mienNgayHienTai && mapNgayChinhXac['Thứ 2']) {
-        let p = mapNgayChinhXac['Thứ 2'].split('/');
-        if (p.length === 3) {
-            mienNgayHienTai = `${p[2]}-${p[1]}-${p[0]}`; 
-            if (inputNgay) inputNgay.value = mienNgayHienTai;
+    if (inputNgay) {
+        inputNgay.readOnly = true;
+        inputNgay.classList.add('bg-slate-100', 'cursor-not-allowed');
+        
+        if (mapNgayChinhXac['Thứ 2']) {
+            let p = mapNgayChinhXac['Thứ 2'].split('/');
+            if (p.length === 3) {
+                inputNgay.value = `${p[2]}-${p[1]}-${p[0]}`;
+            }
         }
     }
 
