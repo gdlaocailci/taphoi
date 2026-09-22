@@ -1941,3 +1941,57 @@ window.locTheoLop = function() {
         }
     });
 };
+/* =========================================================================
+   [NÂNG CẤP]: KHỐI LỆNH ĐIỀU KHIỂN TRẠNG THÁI TRUY CẬP VÀ HIỂN THỊ
+   ========================================================================= */
+
+// Biến toàn cục lưu trữ trạng thái kiểm duyệt của hệ thống
+let trangThaiDaKiemDuyet = false; 
+
+// Hàm xử lý khi nhấn vào nút điều khiển truy cập
+function xuLyChuyenDoiTrangThaiKiemDuyet() {
+    if (!trangThaiDaKiemDuyet) {
+        // Kích hoạt luồng kiểm duyệt cũ nếu chưa vào hệ thống
+        if (typeof khoiDongDangNhap === 'function') {
+            khoiDongDangNhap();
+        }
+        // Ghi chú: Chuyển dòng capNhatGiaoDienDaVaoHeThong() vào bên trong hàm callback 
+        // thành công của hệ thống máy chủ để giao diện phản hồi chính xác nhất.
+        // capNhatGiaoDienDaVaoHeThong(); 
+    } else {
+        // Xử lý thoát khi hệ thống đã mở
+        thoatKhoiHeThong();
+    }
+}
+
+// Hàm cập nhật giao diện nút thành trạng thái "Đăng xuất"
+function capNhatGiaoDienDaVaoHeThong() {
+    trangThaiDaKiemDuyet = true;
+    const nutDieuKhien = document.getElementById('nutXacThucTruyCap');
+    const nhanHienThi = document.getElementById('nhanNutXacThuc');
+    const bieuTuong = document.getElementById('bieuTuongXacThuc');
+    
+    if (nhanHienThi && nutDieuKhien) {
+        nhanHienThi.innerText = "Đăng xuất";
+        // Thay đổi diện mạo nút sang cảnh báo đỏ để dễ nhận biết thao tác thoát
+        nutDieuKhien.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-slate-500');
+        nutDieuKhien.classList.add('bg-red-700', 'hover:bg-red-600', 'border-red-500');
+        // Sử dụng biểu tượng thoát chuẩn từ hệ thống SVG Repo
+        bieuTuong.src = "https://www.svgrepo.com/show/502646/logout.svg"; 
+        bieuTuong.classList.remove('p-0.5', 'bg-white'); 
+        bieuTuong.classList.add('invert'); // Đảo màu icon sang trắng cho đồng bộ
+    }
+}
+
+// Hàm dọn dẹp phiên làm việc và tải lại giao diện mặc định
+function thoatKhoiHeThong() {
+    trangThaiDaKiemDuyet = false;
+    
+    // Hủy bỏ phiên làm việc của thư viện danh tính (nếu có)
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+    }
+    
+    // Tải lại toàn bộ hệ thống để đảm bảo bộ nhớ RAM được dọn dẹp sạch sẽ
+    window.location.reload();
+}
