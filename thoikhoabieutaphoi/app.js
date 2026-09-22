@@ -950,15 +950,20 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (Ghi đè: Tuần + Năm + Tháng)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
     if (!coQuyenThaoTac) return;
     
-    if (loaiLuu === 'codinh') { if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; }
+    if (loaiLuu === 'codinh') { 
+        if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; 
+    }
     
-    if (loaiLuu === 'khoiphuc') { if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; }
+    // [NÂNG CẤP]: Cảnh báo UI cập nhật theo logic Mới (Tuần + Năm + Tháng)
+    if (loaiLuu === 'khoiphuc') { 
+        if (!confirm(`XÁC NHẬN CHUYỂN TUẦN:\nLưu trữ TKB Tuần ${tuanDangXem} vào lịch sử và chuyển sang tuần tiếp theo?\n\n⚠️ LƯU Ý: Nếu dữ liệu cùng Năm học, cùng Tháng và cùng Tuần ${tuanDangXem} đã tồn tại, hệ thống sẽ XÓA BẢN CŨ VÀ GHI BẢN MỚI.`)) return; 
+    }
 
     const btn = event.currentTarget; 
     const textGoc = btn.innerHTML;
@@ -973,6 +978,10 @@ async function luuDuLieu(event, loaiLuu) {
         
         let cacOMon = document.querySelectorAll('input[id^="mon_"]');
         let setLopDangHienThi = new Set();
+        
+        // Tính toán tháng chuẩn cho đợt lưu dựa vào ngày đầu tuần (Thứ 2)
+        let thongTinNgayChuan = tinhNgayDocLap(ngayDauTuanUI, "Thứ 2");
+        let thangChuan = thongTinNgayChuan.thang;
         
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
@@ -1016,9 +1025,20 @@ async function luuDuLieu(event, loaiLuu) {
             });
         }
 
+        // Đóng gói Payload gửi lên Server
+        const payloadDongBo = { 
+            thaoTac: 'luuDuLieu', 
+            loaiLuu: loaiLuu, 
+            tuan: tuanDangXem, 
+            namHoc: namHocChuan, 
+            thang: thangChuan, // Bổ sung thông tin Tháng
+            ghiDeTruongHopTrung: true, 
+            duLieu: dsTietLuoi 
+        };
+
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { 
             method: 'POST', 
-            body: JSON.stringify({ thaoTac: 'luuDuLieu', loaiLuu: loaiLuu, tuan: tuanDangXem, duLieu: dsTietLuoi }) 
+            body: JSON.stringify(payloadDongBo) 
         });
         const ketQua = await phanHoi.json();
         
@@ -1035,21 +1055,15 @@ async function luuDuLieu(event, loaiLuu) {
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
                 
-                // 1. Lưu dự phòng ngay vào RAM để bảo vệ thành quả nếu lỡ rớt mạng ở bước sau
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
 
-                // 2. Dọn dẹp cache Sổ Đầu Bài
                 if (typeof window.lamSachBoNhoSoDauBai === 'function') {
                     window.lamSachBoNhoSoDauBai();
                 }
 
-                // 3. [ĐÁP ỨNG YÊU CẦU]: Kích hoạt hiệu ứng tải ở ô tuần và kéo bản ghi chuẩn xác từ Server về.
-                // Tham số thứ 3 (epDongBo = true) cho phép vòng quay hoạt động và ép hệ thống vượt qua Khóa bảo vệ.
                 await taiDuLieuTKB(true, 'TKB_HIEN_TAI', true);
-
-                // 4. Đặt Khóa chống trễ 15s sau khi đồng bộ xong để chặn F5 làm hỏng dữ liệu
                 localStorage.setItem('KhoaDongBo_TKB', Date.now().toString());
             }
         }
