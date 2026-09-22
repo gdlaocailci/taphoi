@@ -769,6 +769,7 @@ async function luuSoDauBaiSangMayChu() {
 
 // =========================================================================
 // KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (NÂNG CẤP ĐIỀN KHUYẾT THÔNG MINH)
+// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -795,32 +796,38 @@ function dongBoTenBaiHoc() {
             let oTenBai = dong.querySelector('td[data-loai="tenBai"]');
             
             if (oMon && oTiet && oTenBai) {
-                let isLocked = oTenBai.getAttribute('data-islocked') === 'true';
-                let coQuyenSua = oTenBai.getAttribute('data-coquyensua') === 'true';
-                
-                // Bỏ qua nếu đã chốt chữ ký hoặc không có quyền sửa
-                if (isLocked || !coQuyenSua) return;
-
-                let theTextarea = oTenBai.querySelector('textarea');
-                // [NÂNG CẤP]: Thuật toán điền khuyết - Bỏ qua nếu giáo viên đã nhập nội dung
-                if (theTextarea && theTextarea.value.trim() !== '') return;
-
                 let mon = oMon.innerText.trim().toLowerCase();
-                let tiet = oTiet.innerText.trim();
                 
-                if (mon !== '' && tiet !== '' && theTextarea) {
+                // Lấy giá trị Tiết PPCT linh hoạt (từ ô input hoặc text thô)
+                let theNhapTiet = oTiet.querySelector('input, select, textarea');
+                let tiet = theNhapTiet ? theNhapTiet.value.trim() : oTiet.innerText.trim();
+                
+                if (mon !== '' && tiet !== '') {
+                    // Cắt bỏ phần số và ngoặc để khớp môn (VD: HĐTN2 -> HĐTN)
                     let monRutGon = mon.replace(/[0-9\(\)]/g, '').trim().replace(/\s+/g, ' ');
-                    
                     let khoaChinh = `${khoi}_${mon}_${tiet}`;
                     let khoaPhu = `${khoi}_${monRutGon}_${tiet}`;
                     
-                    let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
+                    let baiDayChuan = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
-                    if (baiDay !== '') {
-                        theTextarea.value = baiDay;
-                        // Kích hoạt tự giãn dòng ngay lập tức cho tên bài vừa được đồng bộ
-                        theTextarea.style.height = 'auto';
-                        theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
+                    if (baiDayChuan !== '') {
+                        let isLocked = oTenBai.getAttribute('data-islocked') === 'true';
+                        let theTextarea = oTenBai.querySelector('textarea');
+                        
+                        // [VÁ LỖI]: Xóa bỏ chốt chặn phân quyền. Ép điền bù dữ liệu cho mọi trạng thái.
+                        if (isLocked) {
+                            // Trường hợp 1: Đã lưu (đã ký) -> Render dạng text thuần
+                            if (oTenBai.innerText.trim() === '') {
+                                oTenBai.innerText = baiDayChuan;
+                            }
+                        } else {
+                            // Trường hợp 2: Ô Textarea (Có quyền hoặc Bị disable vì không có quyền)
+                            if (theTextarea && theTextarea.value.trim() === '') {
+                                theTextarea.value = baiDayChuan;
+                                theTextarea.style.height = 'auto';
+                                theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
+                            }
+                        }
                     }
                 }
             } 
