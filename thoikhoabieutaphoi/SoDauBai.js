@@ -9,7 +9,7 @@ let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
 
-// [BẢN VÁ LỖI]: Hàm dọn dẹp bộ nhớ đệm khi có sự kiện đổi tài khoản
+// [BẢN VÁ LỖI]: Hàm dọn dẹp bộ nhớ đệm khi có sự kiện đổi tài khoản hoặc TKB
 window.lamSachBoNhoSoDauBai = function() {
     daTaiDuLieuSoDauBai = false;
     duLieuTKBGopDaMap = [];
@@ -17,6 +17,11 @@ window.lamSachBoNhoSoDauBai = function() {
     dinhMucKhungCT = {}; 
     tuDienQuyenPhanCong = {};
     coToanQuyenSDB = false;
+    
+    // Xóa triệt để Cache tĩnh của user hiện hành
+    let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
+    try { sessionStorage.removeItem(`SDB_CACHE_${emailGoiLen}`); } catch(e) {}
+    
     maGvDangNhapHeThong = '';
     
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
