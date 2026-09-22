@@ -352,7 +352,8 @@ async function khoiTaoGiaoDien() {
     }
 }
 
-async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
+// Bổ sung tham số thứ 3: epDongBo để nhận tín hiệu từ nút Lưu
+async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI', epDongBo = false) {
     const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const vungHienThi = document.getElementById('vungHienThiDuLieu');
@@ -361,6 +362,7 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     
     let nhanNguon = nguonTruyXuat === 'DATA_TKB' ? 'Dữ liệu quá khứ' : (nguonTruyXuat === 'TKB_CoDinh' ? 'Dự kiến cố định' : 'Hệ thống hiện tại');
 
+    // [HIỆU ỨNG]: Nếu coCache = true, giữ nguyên lưới nhưng hiển thị vòng quay ở ô Tuần
     if (!coCache) {
         vungHienThi.innerHTML = `<tr><td class="text-center text-blue-600 font-bold py-10 reactbits-fade-in text-lg" style="font-family:'Times New Roman',Times,serif;"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải TKB Tuần ${tuanDangXem} từ [${nhanNguon}]...</td></tr>`;
     } else if (hienThiTuan) {
@@ -372,7 +374,6 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     }
     
     try {
-        // [NÂNG CẤP]: Bơm timestamp vào URL để vượt qua Proxy Cache của Server
         const urlTKB = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}&_noCacheTkb=${new Date().getTime()}`;
         const phanHoi = await fetchVoiCoCheThuLai(urlTKB);
         const textPhanHoi = await phanHoi.text();
@@ -399,10 +400,11 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
             let vanTayRam = taoDauVanTay(tkbRam);
 
             let thoiGianKhoa = parseInt(localStorage.getItem('KhoaDongBo_TKB') || '0');
-            let vuaMoiLuu = (Date.now() - thoiGianKhoa) < 15000;
+            // Nếu epDongBo = true, vô hiệu hóa Khóa 15s để cho phép tải dữ liệu mới
+            let vuaMoiLuu = (Date.now() - thoiGianKhoa) < 15000 && !epDongBo;
 
             if (nguonTruyXuat === 'TKB_HIEN_TAI') {
-                if (!coCache || vanTayMayChu !== vanTayRam) {
+                if (!coCache || vanTayMayChu !== vanTayRam || epDongBo) {
                     if (vuaMoiLuu && coCache) {
                         console.log("🔒 [Bảo vệ RAM]: Từ chối ghi đè dữ liệu cũ từ server do vừa mới lưu xong.");
                         if (document.getElementById('vungHienThiDuLieu').innerHTML.includes('Đang tải')) {
@@ -435,6 +437,7 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
             </td></tr>`;
         }
     } finally {
+        // Tắt vòng quay thông báo kết thúc tiến trình
         if (hienThiTuan) {
             if (hienThiTuan.tagName === 'INPUT') {
                 hienThiTuan.value = tuanDangXem;
@@ -947,7 +950,7 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (ĐÃ NÂNG CẤP KHÓA CHỐNG TRỄ)
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -1032,24 +1035,22 @@ async function luuDuLieu(event, loaiLuu) {
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
                 
-                // Cập nhật biến toàn cục và RAM
+                // 1. Lưu dự phòng ngay vào RAM để bảo vệ thành quả nếu lỡ rớt mạng ở bước sau
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
-                
-                // [NÂNG CẤP]: Bật khóa chống trễ Server trong 15 giây
-                localStorage.setItem('KhoaDongBo_TKB', Date.now().toString());
 
-                // [NÂNG CẤP]: Bắn tín hiệu dọn dẹp cache Sổ Đầu Bài
+                // 2. Dọn dẹp cache Sổ Đầu Bài
                 if (typeof window.lamSachBoNhoSoDauBai === 'function') {
                     window.lamSachBoNhoSoDauBai();
-                    console.log("Đã dọn dẹp cache Sổ Đầu Bài do TKB có sự thay đổi.");
                 }
 
-                // [NÂNG CẤP]: Ép buộc kết xuất lại lưới UI ngay lập tức để reset định dạng và cảnh báo
-                if (typeof xuatMaTranBang === 'function') {
-                    xuatMaTranBang(duLieuTkbHienTai);
-                }
+                // 3. [ĐÁP ỨNG YÊU CẦU]: Kích hoạt hiệu ứng tải ở ô tuần và kéo bản ghi chuẩn xác từ Server về.
+                // Tham số thứ 3 (epDongBo = true) cho phép vòng quay hoạt động và ép hệ thống vượt qua Khóa bảo vệ.
+                await taiDuLieuTKB(true, 'TKB_HIEN_TAI', true);
+
+                // 4. Đặt Khóa chống trễ 15s sau khi đồng bộ xong để chặn F5 làm hỏng dữ liệu
+                localStorage.setItem('KhoaDongBo_TKB', Date.now().toString());
             }
         }
     } catch (loi) { 
