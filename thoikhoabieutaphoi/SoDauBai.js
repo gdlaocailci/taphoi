@@ -1090,7 +1090,7 @@ function napDropdownSoDauBai() {
 }
 // =========================================================================
 // KHỐI MỚI: THUẬT TOÁN CỬA SỔ TRƯỢT HIỂN THỊ TIẾT PPCT (+/- 10 TIẾT)
-// THIẾT KẾ: HOÀNG NGỌC LÂM
+// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM (BẢN VÁ LỖI ĐÓNG KHUNG GIAO DIỆN)
 // =========================================================================
 
 let trangThaiKhungPPCT = {
@@ -1100,11 +1100,11 @@ let trangThaiKhungPPCT = {
 };
 
 function moKhungTruotPPCT(event, theInputTiet, khoi, mon, tietHienTai) {
-    // Đóng khung cũ nếu đang mở chỗ khác
-    dongKhungTruotPPCT();
+    if (event) event.stopPropagation(); // Chặn sự kiện nổi bọt gây lỗi đóng khung
+    
+    dongKhungTruotPPCT(); // Làm sạch khung cũ nếu có trước khi mở khung mới
     
     trangThaiKhungPPCT.inputTiet = theInputTiet;
-    // Tìm ô nhập Tên bài dạy cùng hàng (tránh gọi nhầm dòng khác)
     let tr = theInputTiet.closest('tr');
     trangThaiKhungPPCT.inputTenBai = tr ? tr.querySelector('td[data-loai="tenBai"] textarea') : null;
     
@@ -1121,50 +1121,53 @@ function veGiaoDienKhungTruot(theInputTiet, khoi, mon, tietTrungTam, tietBatDau,
     
     let htmlDanhSach = `<ul class="max-h-64 overflow-y-auto bg-white border border-blue-300 shadow-lg rounded text-sm w-80 text-left relative z-50">`;
     
-    // Nút tải các tiết trước
     if (tietBatDau > 1) {
         let tietMoi = Math.max(1, tietBatDau - 10);
         htmlDanhSach += `<li class="p-2 text-center text-blue-600 font-bold bg-blue-50 cursor-pointer hover:bg-blue-100" 
-                             onclick="veGiaoDienKhungTruot(trangThaiKhungPPCT.inputTiet, '${khoi}', '${mon}', ${tietTrungTam}, ${tietMoi}, ${tietBatDau - 1})">
+                             onclick="veGiaoDienKhungTruot(trangThaiKhungPPCT.inputTiet, '${khoi}', '${mon}', ${tietTrungTam}, ${tietMoi}, ${tietBatDau - 1}); event.stopPropagation();">
                              ↑ Tải các tiết trước...
                          </li>`;
     }
 
-    // Danh sách bài học trong khung
     for (let i = tietBatDau; i <= tietKetThuc; i++) {
-        // Trích xuất từ bộ nhớ đệm đã tải sẵn ở Frontend
         let baiDay = tuDienPPCTToanCuc[`${khoi}_${monGocChuan}_${i}`] || tuDienPPCTToanCuc[`${khoi}_${monPPCT}_${i}`] || 'Chưa có dữ liệu bài dạy';
         let baiDayAnToan = baiDay.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
         let cssDangChon = (i === tietTrungTam) ? "bg-blue-100 border-l-4 border-blue-600 font-bold" : "hover:bg-slate-100 border-l-4 border-transparent";
         
+        // Truyền thêm biến event vào hàm chonMucPPCT
         htmlDanhSach += `<li class="p-2 cursor-pointer border-b border-slate-100 ${cssDangChon}" 
-                             onclick="chonMucPPCT(${i}, '${baiDayAnToan}')">
+                             onclick="chonMucPPCT(${i}, '${baiDayAnToan}', event)">
                              <span class="text-blue-700 font-extrabold">Tiết ${i}:</span> <span class="text-slate-700">${baiDay}</span>
                          </li>`;
     }
 
-    // Nút tải các tiết sau
     htmlDanhSach += `<li class="p-2 text-center text-blue-600 font-bold bg-blue-50 cursor-pointer hover:bg-blue-100" 
-                         onclick="veGiaoDienKhungTruot(trangThaiKhungPPCT.inputTiet, '${khoi}', '${mon}', ${tietTrungTam}, ${tietKetThuc + 1}, ${tietKetThuc + 11})">
+                         onclick="veGiaoDienKhungTruot(trangThaiKhungPPCT.inputTiet, '${khoi}', '${mon}', ${tietTrungTam}, ${tietKetThuc + 1}, ${tietKetThuc + 11}); event.stopPropagation();">
                          ↓ Tải các tiết sau...
                      </li></ul>`;
 
-    // Tạo thẻ div bọc ngoài và định vị tuyệt đối
     let divKhung = document.createElement('div');
     divKhung.id = 'khungHienThiPPCT_Dong';
     divKhung.className = 'absolute mt-1 z-50';
     divKhung.innerHTML = htmlDanhSach;
 
-    // Gắn ngay dưới ô input Tiết
-    let rect = theInputTiet.getBoundingClientRect();
-    theInputTiet.parentNode.style.position = 'relative';
-    theInputTiet.parentNode.appendChild(divKhung);
+    // Xử lý không gian hiển thị của ô chứa
+    let tdContainer = theInputTiet.parentNode;
+    if (window.getComputedStyle(tdContainer).position === 'static') {
+        tdContainer.style.position = 'relative';
+    }
     
+    // Ngăn chặn việc click vào thanh cuộn của khung làm đóng khung
+    divKhung.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
+    tdContainer.appendChild(divKhung);
     trangThaiKhungPPCT.dangMo = true;
 }
 
-function chonMucPPCT(soTiet, tenBai) {
+function chonMucPPCT(soTiet, tenBai, event) {
+    if (event) event.stopPropagation(); // Khóa sự kiện nổi bọt khi click chọn bài
+    
     if (trangThaiKhungPPCT.inputTiet) {
         trangThaiKhungPPCT.inputTiet.value = soTiet;
     }
@@ -1173,7 +1176,7 @@ function chonMucPPCT(soTiet, tenBai) {
         trangThaiKhungPPCT.inputTenBai.style.height = 'auto';
         trangThaiKhungPPCT.inputTenBai.style.height = (trangThaiKhungPPCT.inputTenBai.scrollHeight) + 'px';
     }
-    dongKhungTruotPPCT();
+    dongKhungTruotPPCT(); // Đóng khung ngay lập tức sau khi gán xong dữ liệu
 }
 
 function dongKhungTruotPPCT() {
@@ -1182,9 +1185,17 @@ function dongKhungTruotPPCT() {
     trangThaiKhungPPCT.dangMo = false;
 }
 
-// Lắng nghe sự kiện click ra ngoài để tự động đóng khung
-document.addEventListener('click', function(event) {
-    if (trangThaiKhungPPCT.dangMo && !event.target.closest('td[data-loai="tiet"]')) {
-        dongKhungTruotPPCT();
+document.removeEventListener('mousedown', kiemTraDongKhungNgoaiVung);
+document.addEventListener('mousedown', kiemTraDongKhungNgoaiVung);
+
+function kiemTraDongKhungNgoaiVung(event) {
+    if (trangThaiKhungPPCT.dangMo) {
+        let khungDong = document.getElementById('khungHienThiPPCT_Dong');
+        let oTietDangKichHoat = trangThaiKhungPPCT.inputTiet;
+        
+        // Nếu click chuột KHÔNG nằm trong khung danh sách VÀ KHÔNG nằm trong ô Tiết đang mở
+        if (khungDong && event.target !== oTietDangKichHoat && !khungDong.contains(event.target)) {
+            dongKhungTruotPPCT();
+        }
     }
-});
+}
