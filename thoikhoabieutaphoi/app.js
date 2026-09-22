@@ -1015,15 +1015,22 @@ async function luuDuLieu(event, loaiLuu) {
                 await luuDuLieu({ currentTarget: btnAn }, 'tuan');
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
+                
+                // Cập nhật biến toàn cục và RAM
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
                 
-                // [NÂNG CẤP]: Bắn tín hiệu giải phóng bộ nhớ đệm Sổ Đầu Bài khi TKB thay đổi
-                // Đảm bảo lần tải tiếp theo UI Sổ Đầu Bài sẽ lấy đúng dữ liệu TKB mới nhất
+                // Dọn dẹp cache Sổ Đầu Bài
                 if (typeof window.lamSachBoNhoSoDauBai === 'function') {
                     window.lamSachBoNhoSoDauBai();
                     console.log("Đã dọn dẹp cache Sổ Đầu Bài do TKB có sự thay đổi.");
+                }
+
+                // [NÂNG CẤP]: Tự động kết xuất (vẽ lại) lưới TKB bằng dữ liệu vừa chốt
+                // Thao tác này giúp reset UI, xóa các cảnh báo rác và chạy lại đối soát trùng lịch
+                if (typeof xuatMaTranBang === 'function') {
+                    xuatMaTranBang(duLieuTkbHienTai);
                 }
             }
         }
