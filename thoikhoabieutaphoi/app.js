@@ -210,14 +210,14 @@ function capNhatNgayDauTuan() {
 }
 
 // =========================================================================
-// KHỐI 1: KHỞI TẠO VÀ TẢI DỮ LIỆU CƠ BẢN
+// KHỐI 1: KHỞI TẠO VÀ TẢI DỮ LIỆU CƠ BẢN (ĐÃ NÂNG CẤP SMART SYNC FINGERPRINT)
 // =========================================================================
 async function khoiTaoGiaoDien() {
     const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
     const KEY_CH = 'SmartTKB_CauHinh_' + MA_DA;
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const hienThiTuan = document.getElementById('hienThiTuanHienTai');
-    const spinnerTuan = document.getElementById('spinnerTaiTuan'); // Biến điều khiển tải ngầm
+    const spinnerTuan = document.getElementById('spinnerTaiTuan');
 
     try {
         if(typeof CAU_HINH_FRONTEND !== 'undefined') {
@@ -251,7 +251,7 @@ async function khoiTaoGiaoDien() {
                 if (hienThiTuan) {
                     if (hienThiTuan.tagName === 'INPUT') {
                         hienThiTuan.value = tuanDangXem;
-                        if (spinnerTuan) spinnerTuan.classList.remove('hidden'); // Bật biểu tượng tải
+                        if (spinnerTuan) spinnerTuan.classList.remove('hidden');
                     } else {
                         hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
                     }
@@ -292,13 +292,13 @@ async function khoiTaoGiaoDien() {
         
         tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
         
-        // [THUẬT TOÁN ĐỐI SÁNH THÔNG MINH]: Phát hiện thay đổi giữa RAM và Server
+        // [NÂNG CẤP]: THUẬT TOÁN ĐỐI SÁNH THÔNG MINH CÓ KHÓA CHỐNG TRỄ
         if (thongSoHocVu.TKB_TUAN && thongSoHocVu.TKB_TUAN.length > 0) {
             let tkbMayChu = thongSoHocVu.TKB_TUAN;
             let tkbRam = [];
             try { tkbRam = JSON.parse(localStorage.getItem(KEY_TKB) || '[]'); } catch(e){}
 
-            // Hàm băm dữ liệu (Tạo "dấu vân tay" cốt lõi, loại bỏ nhiễu định dạng JSON)
+            // Hàm băm dữ liệu (Tạo "dấu vân tay" loại bỏ nhiễu cấu trúc JSON)
             const taoDauVanTay = (mangTkb) => {
                 if (!Array.isArray(mangTkb)) return '';
                 return mangTkb.map(t => `${String(t.thu).trim()}_${String(t.buoi).trim()}_${String(t.tiet).trim()}_${String(t.maLop).trim()}_${String(t.monHoc || '').trim()}_${String(t.maGv || '').trim()}`).sort().join('||');
@@ -307,16 +307,23 @@ async function khoiTaoGiaoDien() {
             let vanTayMayChu = taoDauVanTay(tkbMayChu);
             let vanTayRam = taoDauVanTay(tkbRam);
 
+            // Kiểm tra xem giáo viên có vừa ấn "Lưu" trong 15 giây qua không
+            let thoiGianKhoa = parseInt(localStorage.getItem('KhoaDongBo_TKB') || '0');
+            let vuaMoiLuu = (Date.now() - thoiGianKhoa) < 15000; 
+
             if (vanTayMayChu !== vanTayRam) {
-                console.log("⚡ [Smart Sync]: Phát hiện dữ liệu Server thay đổi. Đang đồng bộ hóa lưới UI...");
-                duLieuTkbHienTai = tkbMayChu;
-                localStorage.setItem(KEY_TKB, JSON.stringify(tkbMayChu));
-                xuatMaTranBang(duLieuTkbHienTai);
-                
-                // Đồng bộ làm sạch cache Sổ đầu bài nếu có thay đổi
-                if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+                if (vuaMoiLuu) {
+                    console.log("🔒 [Bảo vệ RAM]: Server có dấu hiệu trễ nhịp. Giữ nguyên dữ liệu vừa lưu trên UI!");
+                    if (!duLieuTkbHienTai || duLieuTkbHienTai.length === 0) duLieuTkbHienTai = tkbRam;
+                } else {
+                    console.log("⚡ [Smart Sync]: Dữ liệu thay đổi. Đang đồng bộ hóa lưới UI...");
+                    duLieuTkbHienTai = tkbMayChu;
+                    localStorage.setItem(KEY_TKB, JSON.stringify(tkbMayChu));
+                    xuatMaTranBang(duLieuTkbHienTai);
+                    if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+                }
             } else {
-                console.log("✅ [Smart Sync]: Dữ liệu RAM và Server khớp 100%. Bỏ qua vẽ lại UI để tối ưu hiệu suất.");
+                console.log("✅ [Smart Sync]: Dữ liệu RAM và Server khớp 100%.");
                 if (!duLieuTkbHienTai || duLieuTkbHienTai.length === 0) {
                     duLieuTkbHienTai = tkbRam.length > 0 ? tkbRam : tkbMayChu;
                 }
@@ -325,7 +332,7 @@ async function khoiTaoGiaoDien() {
             if (hienThiTuan) {
                 if (hienThiTuan.tagName === 'INPUT') {
                     hienThiTuan.value = tuanDangXem;
-                    if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải
+                    if (spinnerTuan) spinnerTuan.classList.add('hidden');
                 } else {
                     hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
                 }
@@ -350,7 +357,7 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     const KEY_TKB = 'SmartTKB_DuLieuTuan_' + MA_DA;
     const vungHienThi = document.getElementById('vungHienThiDuLieu');
     const hienThiTuan = document.getElementById('hienThiTuanHienTai');
-    const spinnerTuan = document.getElementById('spinnerTaiTuan'); // Biến điều khiển tải ngầm
+    const spinnerTuan = document.getElementById('spinnerTaiTuan');
     
     let nhanNguon = nguonTruyXuat === 'DATA_TKB' ? 'Dữ liệu quá khứ' : (nguonTruyXuat === 'TKB_CoDinh' ? 'Dự kiến cố định' : 'Hệ thống hiện tại');
 
@@ -358,14 +365,14 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
         vungHienThi.innerHTML = `<tr><td class="text-center text-blue-600 font-bold py-10 reactbits-fade-in text-lg" style="font-family:'Times New Roman',Times,serif;"><div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>Đang tải TKB Tuần ${tuanDangXem} từ [${nhanNguon}]...</td></tr>`;
     } else if (hienThiTuan) {
         if (hienThiTuan.tagName === 'INPUT') {
-            if (spinnerTuan) spinnerTuan.classList.remove('hidden'); // Bật biểu tượng tải
+            if (spinnerTuan) spinnerTuan.classList.remove('hidden');
         } else if (!hienThiTuan.innerHTML.includes('animate-spin')) {
             hienThiTuan.innerHTML = `Tuần ${tuanDangXem} <svg class="inline w-4 h-4 text-blue-500 animate-spin ml-1.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"></path></svg>`;
         }
     }
     
     try {
-        // [NÂNG CẤP BẢO MẬT]: Bơm timestamp vào cấp độ URL để chắc chắn vượt qua các proxy cache của Google
+        // [NÂNG CẤP]: Bơm timestamp vào URL để vượt qua Proxy Cache của Server
         const urlTKB = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}&_noCacheTkb=${new Date().getTime()}`;
         const phanHoi = await fetchVoiCoCheThuLai(urlTKB);
         const textPhanHoi = await phanHoi.text();
@@ -379,7 +386,7 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
 
         if (duLieu.trangThai === 'loi_he_thong') throw new Error(duLieu.thongBao);
 
-     if (Array.isArray(duLieu)) {
+        if (Array.isArray(duLieu)) {
             let tkbRam = [];
             try { tkbRam = JSON.parse(localStorage.getItem(KEY_TKB) || '[]'); } catch(e){}
             
@@ -391,15 +398,24 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
             let vanTayMayChu = taoDauVanTay(duLieu);
             let vanTayRam = taoDauVanTay(tkbRam);
 
+            let thoiGianKhoa = parseInt(localStorage.getItem('KhoaDongBo_TKB') || '0');
+            let vuaMoiLuu = (Date.now() - thoiGianKhoa) < 15000;
+
             if (nguonTruyXuat === 'TKB_HIEN_TAI') {
                 if (!coCache || vanTayMayChu !== vanTayRam) {
-                    console.log("⚡ [Smart Sync]: Cập nhật lưới TKB Hiện Tại từ Máy chủ...");
-                    duLieuTkbHienTai = duLieu;
-                    localStorage.setItem(KEY_TKB, JSON.stringify(duLieu));
-                    xuatMaTranBang(duLieuTkbHienTai);
-                    if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+                    if (vuaMoiLuu && coCache) {
+                        console.log("🔒 [Bảo vệ RAM]: Từ chối ghi đè dữ liệu cũ từ server do vừa mới lưu xong.");
+                        if (document.getElementById('vungHienThiDuLieu').innerHTML.includes('Đang tải')) {
+                            xuatMaTranBang(duLieuTkbHienTai);
+                        }
+                    } else {
+                        console.log("⚡ [Smart Sync]: Cập nhật lưới TKB Hiện Tại từ Máy chủ...");
+                        duLieuTkbHienTai = duLieu;
+                        localStorage.setItem(KEY_TKB, JSON.stringify(duLieu));
+                        xuatMaTranBang(duLieuTkbHienTai);
+                        if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+                    }
                 } else {
-                    // Dữ liệu giống nhau, chỉ kết xuất lại UI nếu lưới đang trống
                     if (document.getElementById('vungHienThiDuLieu').innerHTML.includes('Đang tải')) {
                         xuatMaTranBang(duLieuTkbHienTai);
                     }
@@ -422,7 +438,7 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
         if (hienThiTuan) {
             if (hienThiTuan.tagName === 'INPUT') {
                 hienThiTuan.value = tuanDangXem;
-                if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải khi hoàn tất
+                if (spinnerTuan) spinnerTuan.classList.add('hidden');
             }
             else hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
         }
@@ -931,7 +947,7 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (ĐÃ NÂNG CẤP KHÓA CHỐNG TRỄ)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -1021,14 +1037,16 @@ async function luuDuLieu(event, loaiLuu) {
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
                 
-                // Dọn dẹp cache Sổ Đầu Bài
+                // [NÂNG CẤP]: Bật khóa chống trễ Server trong 15 giây
+                localStorage.setItem('KhoaDongBo_TKB', Date.now().toString());
+
+                // [NÂNG CẤP]: Bắn tín hiệu dọn dẹp cache Sổ Đầu Bài
                 if (typeof window.lamSachBoNhoSoDauBai === 'function') {
                     window.lamSachBoNhoSoDauBai();
                     console.log("Đã dọn dẹp cache Sổ Đầu Bài do TKB có sự thay đổi.");
                 }
 
-                // [NÂNG CẤP]: Tự động kết xuất (vẽ lại) lưới TKB bằng dữ liệu vừa chốt
-                // Thao tác này giúp reset UI, xóa các cảnh báo rác và chạy lại đối soát trùng lịch
+                // [NÂNG CẤP]: Ép buộc kết xuất lại lưới UI ngay lập tức để reset định dạng và cảnh báo
                 if (typeof xuatMaTranBang === 'function') {
                     xuatMaTranBang(duLieuTkbHienTai);
                 }
