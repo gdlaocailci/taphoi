@@ -950,7 +950,7 @@ function xuatMaTranBang(danhSachTiet) {
 }
 
 // =========================================================================
-// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (Ghi đè: Tuần + Năm + Tháng)
+// KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (Ghi đè: Năm + Tháng + Tuần)
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -960,9 +960,8 @@ async function luuDuLieu(event, loaiLuu) {
         if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; 
     }
     
-    // [NÂNG CẤP]: Cảnh báo UI cập nhật theo logic Mới (Tuần + Năm + Tháng)
     if (loaiLuu === 'khoiphuc') { 
-        if (!confirm(`XÁC NHẬN CHUYỂN TUẦN:\nLưu trữ TKB Tuần ${tuanDangXem} vào lịch sử và chuyển sang tuần tiếp theo?\n\n⚠️ LƯU Ý: Nếu dữ liệu cùng Năm học, cùng Tháng và cùng Tuần ${tuanDangXem} đã tồn tại, hệ thống sẽ XÓA BẢN CŨ VÀ GHI BẢN MỚI.`)) return; 
+        if (!confirm(`XÁC NHẬN CHUYỂN TUẦN:\nLưu trữ TKB Tuần ${tuanDangXem} vào lịch sử và chuyển sang tuần tiếp theo?\n\n⚠️ LƯU Ý: Nếu dữ liệu cùng Năm học, cùng Tháng và cùng Tuần ${tuanDangXem} đã tồn tại, hệ thống sẽ XÓA CŨ VÀ GHI ĐÈ BẢN MỚI.`)) return; 
     }
 
     const btn = event.currentTarget; 
@@ -976,12 +975,12 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         
-        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
-        let setLopDangHienThi = new Set();
-        
-        // Tính toán tháng chuẩn cho đợt lưu dựa vào ngày đầu tuần (Thứ 2)
+        // Trích xuất tháng từ ngày đầu tuần trên giao diện
         let thongTinNgayChuan = tinhNgayDocLap(ngayDauTuanUI, "Thứ 2");
         let thangChuan = thongTinNgayChuan.thang;
+        
+        let cacOMon = document.querySelectorAll('input[id^="mon_"]');
+        let setLopDangHienThi = new Set();
         
         cacOMon.forEach(oMon => {
             let valMon = oMon.value.trim();
@@ -1016,6 +1015,7 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
+        // GIỮ NGUYÊN BẢN CŨ: Bảo tồn các lớp không hiển thị trên UI
         let mangLopDangHienThi = Array.from(setLopDangHienThi);
         if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
             duLieuTkbHienTai.forEach(tietGoc => {
@@ -1025,13 +1025,12 @@ async function luuDuLieu(event, loaiLuu) {
             });
         }
 
-        // Đóng gói Payload gửi lên Server
         const payloadDongBo = { 
             thaoTac: 'luuDuLieu', 
             loaiLuu: loaiLuu, 
             tuan: tuanDangXem, 
             namHoc: namHocChuan, 
-            thang: thangChuan, // Bổ sung thông tin Tháng
+            thang: thangChuan, 
             ghiDeTruongHopTrung: true, 
             duLieu: dsTietLuoi 
         };
