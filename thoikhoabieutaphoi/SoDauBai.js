@@ -210,18 +210,31 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-    // BƯỚC 2: Điền khuyết từ TKB Lịch Sử và Hiện Tại
+   // BƯỚC 2: Điền khuyết từ TKB Lịch Sử và Hiện Tại (NÂNG CẤP BẢO MẬT PHÂN QUYỀN)
     let mapTkbToanTap = {};
+    
+    // Khai thác mốc thời gian thực tế từ hệ thống App.js
+    let tuanHeThong = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(thongSoHocVu.TUAN_HIEN_TAI) : 999;
+
+    // Phân luồng 1: Chỉ lấy dữ liệu lịch sử cho các Tuần Cũ
     if (duLieuSever.DATA_TKB) {
         duLieuSever.DATA_TKB.forEach(dong => {
-            let khoa = `${String(dong['Tuần']).replace(/\D/g, '')}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
-            mapTkbToanTap[khoa] = dong;
+            let tuanDong = parseInt(String(dong['Tuần']).replace(/\D/g, '')) || 0;
+            if (tuanDong < tuanHeThong) {
+                let khoa = `${tuanDong}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
+                mapTkbToanTap[khoa] = dong;
+            }
         });
     }
+    
+    // Phân luồng 2: Chỉ lấy dữ liệu hiện hành cho Tuần Hiện Tại và Tương Lai
     if (duLieuSever.TKB_HIEN_TAI) {
         duLieuSever.TKB_HIEN_TAI.forEach(dong => {
-            let khoa = `${String(dong['Tuần']).replace(/\D/g, '')}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
-            mapTkbToanTap[khoa] = dong;
+            let tuanDong = parseInt(String(dong['Tuần']).replace(/\D/g, '')) || 0;
+            if (tuanDong >= tuanHeThong) {
+                let khoa = `${tuanDong}_${String(dong['Mã Lớp']).trim().toUpperCase()}_${chuanHoaThu(dong['Thứ'])}_${String(dong['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều'}_${String(dong['Tiết']).trim()}`;
+                mapTkbToanTap[khoa] = dong;
+            }
         });
     }
 
@@ -242,7 +255,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 'DaLuu': false 
             };
         } else {
-            // [BẢN VÁ LỖI]: Bù đắp 'Mã GV' từ TKB nếu dòng lịch sử đã lưu bị khuyết để không mất quyền
+            // [BẢN VÁ LỖI]: Bù đắp 'Mã GV' từ TKB Lịch Sử để giữ vững quyền thao tác cho giáo viên ở tuần cũ
             if (!mapDuiLieuHopNhat[khoa]['Mã GV'] || mapDuiLieuHopNhat[khoa]['Mã GV'].trim() === '') {
                 mapDuiLieuHopNhat[khoa]['Mã GV'] = dongTkb['Mã GV'] || dongTkb['Giáo viên'] || '';
             }
@@ -705,7 +718,7 @@ async function luuSoDauBaiSangMayChu() {
 }
 
 // =========================================================================
-// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (BẢO TOÀN LỖI KHI ĐÃ KÝ VÀ QUYỀN)
+// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (NÂNG CẤP ĐIỀN KHUYẾT THÔNG MINH)
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -724,7 +737,6 @@ function dongBoTenBaiHoc() {
         
         let matchKhoi = lopChon.match(/\d+/);
         let khoi = matchKhoi ? matchKhoi[0] : '';
-        
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
         
         cacDong.forEach(dong => {
@@ -736,12 +748,17 @@ function dongBoTenBaiHoc() {
                 let isLocked = oTenBai.getAttribute('data-islocked') === 'true';
                 let coQuyenSua = oTenBai.getAttribute('data-coquyensua') === 'true';
                 
-                if (isLocked) return;
+                // Bỏ qua nếu đã chốt chữ ký hoặc không có quyền sửa
+                if (isLocked || !coQuyenSua) return;
+
+                let theTextarea = oTenBai.querySelector('textarea');
+                // [NÂNG CẤP]: Thuật toán điền khuyết - Bỏ qua nếu giáo viên đã nhập nội dung
+                if (theTextarea && theTextarea.value.trim() !== '') return;
 
                 let mon = oMon.innerText.trim().toLowerCase();
                 let tiet = oTiet.innerText.trim();
                 
-                if (mon !== '' && tiet !== '') {
+                if (mon !== '' && tiet !== '' && theTextarea) {
                     let monRutGon = mon.replace(/[0-9\(\)]/g, '').trim().replace(/\s+/g, ' ');
                     
                     let khoaChinh = `${khoi}_${mon}_${tiet}`;
@@ -749,33 +766,22 @@ function dongBoTenBaiHoc() {
                     
                     let baiDay = tuDienPPCTToanCuc[khoaChinh] || tuDienPPCTToanCuc[khoaPhu] || '';
 
-                    // Đúc tên bài vào ô Textarea để giáo viên có thể chỉnh sửa thêm sau khi đồng bộ
-                    let trangThaiKhoa = !coQuyenSua ? "disabled" : "";
-                    let cssNenKhoa = !coQuyenSua ? "bg-slate-100 cursor-not-allowed opacity-70" : "bg-transparent";
-                    let placeholderText = !coQuyenSua ? "Không có quyền" : "Nhập tên bài...";
-                    
-                    oTenBai.innerHTML = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${baiDay}</textarea>`;
-                    oTenBai.className = "border border-gray-500 p-1 bg-white group-hover:bg-slate-50 align-middle";
-                    oTenBai.style.whiteSpace = "normal"; 
-                    oTenBai.style.wordWrap = "break-word";
-                    
-                    // Kích hoạt tự giãn dòng ngay lập tức cho tên bài vừa được đồng bộ
-                    let ta = oTenBai.querySelector('textarea');
-                    if (ta) {
-                        ta.style.height = 'auto';
-                        ta.style.height = (ta.scrollHeight) + 'px';
+                    if (baiDay !== '') {
+                        theTextarea.value = baiDay;
+                        // Kích hoạt tự giãn dòng ngay lập tức cho tên bài vừa được đồng bộ
+                        theTextarea.style.height = 'auto';
+                        theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
                     }
-                } // Đóng if (mon && tiet)
-            } // Đóng if (oMon && oTiet && oTenBai)
-        }); // Đóng forEach
+                }
+            } 
+        }); 
         
         if (btn) { 
             btn.innerHTML = textGoc; 
             btn.disabled = false; 
         }
     }, 100); 
-} // Đóng hàm dongBoTenBaiHoc
-
+}
 
 function xuatWordSoDauBai() {
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
