@@ -379,21 +379,35 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
 
         if (duLieu.trangThai === 'loi_he_thong') throw new Error(duLieu.thongBao);
 
-        if (Array.isArray(duLieu)) {
-            let chuoiTkbMoi = JSON.stringify(duLieu);
+     if (Array.isArray(duLieu)) {
+            let tkbRam = [];
+            try { tkbRam = JSON.parse(localStorage.getItem(KEY_TKB) || '[]'); } catch(e){}
             
-            // [BẢN VÁ LỖI]: Hủy bỏ lệnh if (!coCache || chuoiTkbMoi !== chuoiTkbCu).
-            // Trực tiếp ghi đè mọi dữ liệu cũ kỹ trong RAM bằng dữ liệu máy chủ vừa gửi về
-            duLieuTkbHienTai = duLieu;
-            
-            // Chỉ cập nhật LocalStorage nếu đang xem Tuần Hiện Tại để tránh nhiễu
+            const taoDauVanTay = (mangTkb) => {
+                if (!Array.isArray(mangTkb)) return '';
+                return mangTkb.map(t => `${String(t.thu).trim()}_${String(t.buoi).trim()}_${String(t.tiet).trim()}_${String(t.maLop).trim()}_${String(t.monHoc || '').trim()}_${String(t.maGv || '').trim()}`).sort().join('||');
+            };
+
+            let vanTayMayChu = taoDauVanTay(duLieu);
+            let vanTayRam = taoDauVanTay(tkbRam);
+
             if (nguonTruyXuat === 'TKB_HIEN_TAI') {
-                localStorage.setItem(KEY_TKB, chuoiTkbMoi);
+                if (!coCache || vanTayMayChu !== vanTayRam) {
+                    console.log("⚡ [Smart Sync]: Cập nhật lưới TKB Hiện Tại từ Máy chủ...");
+                    duLieuTkbHienTai = duLieu;
+                    localStorage.setItem(KEY_TKB, JSON.stringify(duLieu));
+                    xuatMaTranBang(duLieuTkbHienTai);
+                    if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+                } else {
+                    // Dữ liệu giống nhau, chỉ kết xuất lại UI nếu lưới đang trống
+                    if (document.getElementById('vungHienThiDuLieu').innerHTML.includes('Đang tải')) {
+                        xuatMaTranBang(duLieuTkbHienTai);
+                    }
+                }
+            } else {
+                duLieuTkbHienTai = duLieu; 
+                xuatMaTranBang(duLieuTkbHienTai);
             }
-            
-            // Ép buộc kết xuất lại lưới UI ngay lập tức
-            xuatMaTranBang(duLieuTkbHienTai);
-            
         } else {
             throw new Error("Dữ liệu nhận được không đúng cấu trúc mảng.");
         }
