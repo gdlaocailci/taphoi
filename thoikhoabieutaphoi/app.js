@@ -982,6 +982,13 @@ async function luuDuLieu(event, loaiLuu) {
                 duLieuTkbHienTai = dsTietLuoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
                 localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(dsTietLuoi));
+                
+                // [NÂNG CẤP]: Bắn tín hiệu giải phóng bộ nhớ đệm Sổ Đầu Bài khi TKB thay đổi
+                // Đảm bảo lần tải tiếp theo UI Sổ Đầu Bài sẽ lấy đúng dữ liệu TKB mới nhất
+                if (typeof window.lamSachBoNhoSoDauBai === 'function') {
+                    window.lamSachBoNhoSoDauBai();
+                    console.log("Đã dọn dẹp cache Sổ Đầu Bài do TKB có sự thay đổi.");
+                }
             }
         }
     } catch (loi) { 
@@ -994,7 +1001,6 @@ async function luuDuLieu(event, loaiLuu) {
         }
     }
 }
-
 // =========================================================================
 // KHỐI 5: ĐỘNG CƠ ĐIỀU HƯỚNG SIÊU TỐC
 // =========================================================================
