@@ -1942,56 +1942,59 @@ window.locTheoLop = function() {
     });
 };
 /* =========================================================================
-   [NÂNG CẤP]: KHỐI LỆNH ĐIỀU KHIỂN TRẠNG THÁI TRUY CẬP VÀ HIỂN THỊ
+   [NÂNG CẤP LẦN 2]: ĐIỀU KHIỂN TRẠNG THÁI VÀ THÔNG TIN ĐỊNH DANH
    ========================================================================= */
 
-// Biến toàn cục lưu trữ trạng thái kiểm duyệt của hệ thống
 let trangThaiDaKiemDuyet = false; 
 
-// Hàm xử lý khi nhấn vào nút điều khiển truy cập
 function xuLyChuyenDoiTrangThaiKiemDuyet() {
     if (!trangThaiDaKiemDuyet) {
-        // Kích hoạt luồng kiểm duyệt cũ nếu chưa vào hệ thống
         if (typeof khoiDongDangNhap === 'function') {
             khoiDongDangNhap();
         }
-        // Ghi chú: Chuyển dòng capNhatGiaoDienDaVaoHeThong() vào bên trong hàm callback 
-        // thành công của hệ thống máy chủ để giao diện phản hồi chính xác nhất.
-        // capNhatGiaoDienDaVaoHeThong(); 
     } else {
-        // Xử lý thoát khi hệ thống đã mở
         thoatKhoiHeThong();
     }
 }
 
-// Hàm cập nhật giao diện nút thành trạng thái "Đăng xuất"
-function capNhatGiaoDienDaVaoHeThong() {
+// [HƯỚNG DẪN TÍCH HỢP]: Gọi hàm này bên trong khối lệnh xử lý thành công của hệ thống đăng nhập.
+// Dữ liệu truyền vào dạng object: { tenHienThi: "Nguyễn Văn A", anhDaiDien: "url_anh_hoac_base64" }
+function capNhatGiaoDienDaVaoHeThong(duLieuDinhDanh) {
     trangThaiDaKiemDuyet = true;
+    
     const nutDieuKhien = document.getElementById('nutXacThucTruyCap');
     const nhanHienThi = document.getElementById('nhanNutXacThuc');
     const bieuTuong = document.getElementById('bieuTuongXacThuc');
+    const lopPhu = document.getElementById('lopPhuThoat');
     
-    if (nhanHienThi && nutDieuKhien) {
-        nhanHienThi.innerText = "Đăng xuất";
-        // Thay đổi diện mạo nút sang cảnh báo đỏ để dễ nhận biết thao tác thoát
-        nutDieuKhien.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-slate-500');
-        nutDieuKhien.classList.add('bg-red-700', 'hover:bg-red-600', 'border-red-500');
-        // Sử dụng biểu tượng thoát chuẩn từ hệ thống SVG Repo
-        bieuTuong.src = "https://www.svgrepo.com/show/502646/logout.svg"; 
-        bieuTuong.classList.remove('p-0.5', 'bg-white'); 
-        bieuTuong.classList.add('invert'); // Đảo màu icon sang trắng cho đồng bộ
+    if (nutDieuKhien && nhanHienThi && bieuTuong && duLieuDinhDanh) {
+        // Cập nhật tên hiển thị
+        nhanHienThi.innerText = duLieuDinhDanh.tenHienThi || "Đã kết nối";
+        nhanHienThi.classList.remove('group-hover:text-blue-300');
+        
+        // Cập nhật ảnh đại diện
+        if (duLieuDinhDanh.anhDaiDien) {
+            bieuTuong.src = duLieuDinhDanh.anhDaiDien;
+            bieuTuong.classList.remove('p-0.5', 'bg-white');
+        }
+        
+        // Thay đổi diện mạo khung viền của nút
+        nutDieuKhien.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'border-slate-500', 'justify-center');
+        nutDieuKhien.classList.add('bg-slate-800', 'border-blue-400', 'justify-start');
+        
+        // Kích hoạt sự kiện hiển thị lớp phủ Đăng xuất khi hover
+        if (lopPhu) {
+            lopPhu.classList.remove('hidden');
+            nutDieuKhien.addEventListener('mouseenter', () => lopPhu.classList.remove('opacity-0'));
+            nutDieuKhien.addEventListener('mouseleave', () => lopPhu.classList.add('opacity-0'));
+        }
     }
 }
 
-// Hàm dọn dẹp phiên làm việc và tải lại giao diện mặc định
 function thoatKhoiHeThong() {
     trangThaiDaKiemDuyet = false;
-    
-    // Hủy bỏ phiên làm việc của thư viện danh tính (nếu có)
     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
         google.accounts.id.disableAutoSelect();
     }
-    
-    // Tải lại toàn bộ hệ thống để đảm bảo bộ nhớ RAM được dọn dẹp sạch sẽ
     window.location.reload();
 }
