@@ -135,16 +135,9 @@
         
         <!-- PHẦN CUỐI: NÚT ĐĂNG NHẬP VÀ BẢN QUYỀN (Thêm flex-none để ghim chặt dưới đáy màn hình) -->
        <div class="p-4 bg-black/20 text-center flex-none mt-auto w-full relative z-20">
-           <!-- [ĐÃ NÂNG CẤP]: Khối nút xác thực hiển thị thông tin định danh -->
-            <button id="nutXacThucTruyCap" onclick="xuLyChuyenDoiTrangThaiKiemDuyet()" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold py-2 px-3 rounded shadow-md flex items-center justify-center gap-3 transition duration-200 mb-4 group relative overflow-hidden cursor-pointer">
-                <img id="bieuTuongXacThuc" src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6 bg-white rounded-full p-0.5 flex-none object-cover" alt="G">
-                <span id="nhanNutXacThuc" class="group-hover:text-blue-300 transition-colors truncate text-sm flex-1 text-left">Đăng nhập</span>
-                
-                <!-- Lớp phủ xuất hiện khi di chuột vào lúc đã mở hệ thống -->
-                <div id="lopPhuThoat" class="absolute inset-0 bg-red-600 flex items-center justify-center gap-2 opacity-0 transition-opacity duration-300 hidden z-10">
-                    <img src="https://www.svgrepo.com/show/502646/logout.svg" class="w-5 h-5 invert" alt="Thoát">
-                    <span class="text-white font-bold">Đăng xuất</span>
-                </div>
+            <button id="nutDangNhapG" onclick="khoiDongDangNhap()" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold py-2 px-4 rounded shadow-md flex items-center justify-center gap-2 transition duration-200 mb-4 group">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 bg-white rounded-full p-0.5" alt="G">
+                <span class="group-hover:text-blue-300 transition-colors">Đăng nhập</span>
             </button>
             <p class="text-xs text-blue-200 font-bold uppercase tracking-widest">Thiết kế và phát triển</p>
             <p class="text-sm font-bold text-white mt-1">Hoàng Ngọc Lâm</p>
