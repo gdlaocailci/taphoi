@@ -292,22 +292,43 @@ async function khoiTaoGiaoDien() {
         
         tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
         
+        // [THUẬT TOÁN ĐỐI SÁNH THÔNG MINH]: Phát hiện thay đổi giữa RAM và Server
         if (thongSoHocVu.TKB_TUAN && thongSoHocVu.TKB_TUAN.length > 0) {
-            let chuoiTkbMoi = JSON.stringify(thongSoHocVu.TKB_TUAN);
-            let chuoiTkbCu = localStorage.getItem(KEY_TKB);
-            
-            if (chuoiTkbMoi !== chuoiTkbCu) {
-                duLieuTkbHienTai = thongSoHocVu.TKB_TUAN;
-                localStorage.setItem(KEY_TKB, chuoiTkbMoi);
+            let tkbMayChu = thongSoHocVu.TKB_TUAN;
+            let tkbRam = [];
+            try { tkbRam = JSON.parse(localStorage.getItem(KEY_TKB) || '[]'); } catch(e){}
+
+            // Hàm băm dữ liệu (Tạo "dấu vân tay" cốt lõi, loại bỏ nhiễu định dạng JSON)
+            const taoDauVanTay = (mangTkb) => {
+                if (!Array.isArray(mangTkb)) return '';
+                return mangTkb.map(t => `${String(t.thu).trim()}_${String(t.buoi).trim()}_${String(t.tiet).trim()}_${String(t.maLop).trim()}_${String(t.monHoc || '').trim()}_${String(t.maGv || '').trim()}`).sort().join('||');
+            };
+
+            let vanTayMayChu = taoDauVanTay(tkbMayChu);
+            let vanTayRam = taoDauVanTay(tkbRam);
+
+            if (vanTayMayChu !== vanTayRam) {
+                console.log("⚡ [Smart Sync]: Phát hiện dữ liệu Server thay đổi. Đang đồng bộ hóa lưới UI...");
+                duLieuTkbHienTai = tkbMayChu;
+                localStorage.setItem(KEY_TKB, JSON.stringify(tkbMayChu));
                 xuatMaTranBang(duLieuTkbHienTai);
+                
+                // Đồng bộ làm sạch cache Sổ đầu bài nếu có thay đổi
+                if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
+            } else {
+                console.log("✅ [Smart Sync]: Dữ liệu RAM và Server khớp 100%. Bỏ qua vẽ lại UI để tối ưu hiệu suất.");
+                if (!duLieuTkbHienTai || duLieuTkbHienTai.length === 0) {
+                    duLieuTkbHienTai = tkbRam.length > 0 ? tkbRam : tkbMayChu;
+                }
             }
             
             if (hienThiTuan) {
                 if (hienThiTuan.tagName === 'INPUT') {
                     hienThiTuan.value = tuanDangXem;
-                    if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải khi chốt dữ liệu
+                    if (spinnerTuan) spinnerTuan.classList.add('hidden'); // Tắt biểu tượng tải
+                } else {
+                    hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
                 }
-                else hienThiTuan.innerText = `Tuần ${tuanDangXem}`;
             }
         } else {
             await taiDuLieuTKB(coCache); 
@@ -344,7 +365,9 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
     }
     
     try {
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}`);
+        // [NÂNG CẤP BẢO MẬT]: Bơm timestamp vào cấp độ URL để chắc chắn vượt qua các proxy cache của Google
+        const urlTKB = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTKB&tuan=${tuanDangXem}&nguon=${nguonTruyXuat}&_noCacheTkb=${new Date().getTime()}`;
+        const phanHoi = await fetchVoiCoCheThuLai(urlTKB);
         const textPhanHoi = await phanHoi.text();
         let duLieu;
 
@@ -358,20 +381,19 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI') {
 
         if (Array.isArray(duLieu)) {
             let chuoiTkbMoi = JSON.stringify(duLieu);
-            let chuoiTkbCu = localStorage.getItem(KEY_TKB);
             
+            // [BẢN VÁ LỖI]: Hủy bỏ lệnh if (!coCache || chuoiTkbMoi !== chuoiTkbCu).
+            // Trực tiếp ghi đè mọi dữ liệu cũ kỹ trong RAM bằng dữ liệu máy chủ vừa gửi về
+            duLieuTkbHienTai = duLieu;
+            
+            // Chỉ cập nhật LocalStorage nếu đang xem Tuần Hiện Tại để tránh nhiễu
             if (nguonTruyXuat === 'TKB_HIEN_TAI') {
-                if (!coCache || chuoiTkbMoi !== chuoiTkbCu) {
-                    duLieuTkbHienTai = duLieu;
-                    localStorage.setItem(KEY_TKB, chuoiTkbMoi);
-                    xuatMaTranBang(duLieuTkbHienTai);
-                } else {
-                    xuatMaTranBang(duLieuTkbHienTai);
-                }
-            } else {
-                duLieuTkbHienTai = duLieu; 
-                xuatMaTranBang(duLieuTkbHienTai);
+                localStorage.setItem(KEY_TKB, chuoiTkbMoi);
             }
+            
+            // Ép buộc kết xuất lại lưới UI ngay lập tức
+            xuatMaTranBang(duLieuTkbHienTai);
+            
         } else {
             throw new Error("Dữ liệu nhận được không đúng cấu trúc mảng.");
         }
