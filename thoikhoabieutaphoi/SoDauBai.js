@@ -793,27 +793,30 @@ function dongBoTenBaiHoc() {
         let khoi = matchKhoi ? matchKhoi[0] : '';
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
         
-       // Thuật toán Tìm kiếm mờ (Fuzzy Search) xử lý bỏ hậu tố số ở cuối tên môn
+     // Thuật toán Tìm kiếm mờ (Fuzzy Search): Chỉ bỏ số cuối, KHÔNG dùng includes lỏng lẻo để tránh nhầm lẫn giữa TC Toán và Toán
         const timTenBaiChuan = (monHoc, tietPPCT) => {
             let monGoc = monHoc.trim().toLowerCase().replace(/\s+/g, ' ');
             
-            // 📌 Chỉ loại bỏ hậu tố là số ở cuối chuỗi (VD: "Toán 1" -> "toán", "HĐTN 3" -> "hđtn")
-            let monKhongSoCuoi = monGoc.replace(/\s*\d+$/, '').trim();
+            // Chỉ loại bỏ hậu tố là số ở cuối chuỗi (VD: "Toán 1" -> "toán", "HĐTN 3" -> "hđtn")
+            // Riêng các môn như "TC Toán", "TC Tiếng Việt" giữ nguyên vẹn từ "TC" để phân biệt với môn chính khóa
+            let monChuanHoa = monGoc.replace(/\s*\d+$/, '').trim();
             
             let k1 = `${khoi}_${monGoc}_${tietPPCT}`;
-            let k2 = `${khoi}_${monKhongSoCuoi}_${tietPPCT}`;
+            let k2 = `${khoi}_${monChuanHoa}_${tietPPCT}`;
             
+            // 1. Khớp chính xác theo khóa chuẩn
             if (tuDienPPCTToanCuc[k1]) return tuDienPPCTToanCuc[k1];
             if (tuDienPPCTToanCuc[k2]) return tuDienPPCTToanCuc[k2];
             
-            // Quét sâu toàn bộ Khung PPCT để đối chiếu theo tên môn đã chuẩn hóa
+            // 2. Quét trong từ điển: Yêu cầu phải TRÙNG KHỚP TUYỆT ĐỐI tên môn sau khi đã bỏ số (Loại bỏ .includes để chặn đứng lỗi nhận diện sai)
             let keys = Object.keys(tuDienPPCTToanCuc);
             for (let i = 0; i < keys.length; i++) {
                 let k = keys[i];
                 let parts = k.split('_');
+                // parts[0] là khối, parts[1] là tên môn trong từ điển, parts[2] là số tiết
                 if (parts.length === 3 && parts[0] === khoi && parts[2] === String(tietPPCT)) {
                     let monTrongTuDien = parts[1]; 
-                    if (monKhongSoCuoi === monTrongTuDien || monTrongTuDien.includes(monKhongSoCuoi) || monKhongSoCuoi.includes(monTrongTuDien)) {
+                    if (monChuanHoa === monTrongTuDien) {
                         return tuDienPPCTToanCuc[k];
                     }
                 }
