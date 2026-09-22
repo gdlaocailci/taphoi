@@ -336,7 +336,10 @@ function ketXuatSoDauBaiLenLuoi() {
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
 
     if (!tuanChon || !lopChon || !vungHienThi) return;
-    
+    if (inputNgay) {
+        inputNgay.readOnly = true;
+        inputNgay.classList.add('bg-slate-100', 'cursor-not-allowed');
+    }
     // [BẢN VÁ LỖI]: Ưu tiên lấy biến toàn cục trên RAM, dự phòng bằng DOM để tránh lỗi Wipeout
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
@@ -468,20 +471,14 @@ function ketXuatSoDauBaiLenLuoi() {
     if (coDayBuThu7) danhSachThu.push("Thứ 7");
     if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
 
-    // Khóa ô Ngày đầu tuần và ép buộc cập nhật liên tục theo tuần mới được chọn
-    if (inputNgay) {
-        inputNgay.readOnly = true;
-        inputNgay.classList.add('bg-slate-100', 'cursor-not-allowed');
-        if (mapNgayChinhXac['Thứ 2']) {
-            let p = mapNgayChinhXac['Thứ 2'].split('/');
-            if (p.length === 3) {
-                inputNgay.value = `${p[2]}-${p[1]}-${p[0]}`;
-            }
-        } else {
-            inputNgay.value = '';
+   let mienNgayHienTai = inputNgay ? inputNgay.value : '';
+    if (!mienNgayHienTai && mapNgayChinhXac['Thứ 2']) {
+        let p = mapNgayChinhXac['Thứ 2'].split('/');
+        if (p.length === 3) {
+            mienNgayHienTai = `${p[2]}-${p[1]}-${p[0]}`; 
+            if (inputNgay) inputNgay.value = mienNgayHienTai;
         }
     }
-    let mienNgayHienTai = inputNgay ? inputNgay.value : '';
 
     let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
     let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
