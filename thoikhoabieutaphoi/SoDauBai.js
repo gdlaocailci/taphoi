@@ -8,7 +8,7 @@ let dinhMucKhungCT = {};
 let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
-let danhSachGiaoVienToanCuc = []; // [BẢN VÁ LỖI]: Phải khai báo biến tại đây để chống lỗi đứt gãy luồng UI
+let danhSachGiaoVienToanCuc = []; // [NÂNG CẤP]: Mảng lưu danh sách giáo viên
 
 // [NÂNG CẤP]: Các biến toàn cục hỗ trợ kiểm soát trạng thái chưa lưu (Chống mất dữ liệu)
 let tuanTruocDo_SDB = '';
@@ -23,7 +23,7 @@ window.lamSachBoNhoSoDauBai = function() {
     dinhMucKhungCT = {}; 
     tuDienQuyenPhanCong = {};
     coToanQuyenSDB = false;
-    danhSachGiaoVienToanCuc = []; // Làm sạch danh sách giáo viên
+    danhSachGiaoVienToanCuc = []; 
     
     // Reset cờ bảo vệ dữ liệu
     tuanTruocDo_SDB = '';
@@ -41,8 +41,6 @@ window.lamSachBoNhoSoDauBai = function() {
     
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
-    
-    // Đưa đúng về nguyên trạng ban đầu theo yêu cầu
     if(elementTuan) elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>';
     if(elementLop) elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>';
 };
@@ -52,7 +50,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    // [BẢN VÁ LỖI]: Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
+    // Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
     const chuaDangNhap = typeof window.emailGiaoVienToanCuc === 'undefined' || window.emailGiaoVienToanCuc === '';
 
     if (chuaDangNhap) {
@@ -95,7 +93,6 @@ function kiemTraTrangThaiDangNhapSDB() {
          if(btnDangNhap) btnDangNhap.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xác thực...`;
     }
 
-    // [BẢN VÁ LỖI]: Dựa vào sự xuất hiện của emailGiaoVienToanCuc để chốt chính xác thời điểm xác thực thành công
     let vongLap = setInterval(() => {
         if (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '') {
             clearInterval(vongLap);
