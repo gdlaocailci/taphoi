@@ -952,9 +952,8 @@ function xuatMaTranBang(danhSachTiet) {
 // =========================================================================
 // KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (Ghi đè: Năm + Tháng + Tuần)
 // =========================================================================
-// =========================================================================
 // Vị trí: file app.js (Thay thế toàn bộ hàm luuDuLieu cũ)
-// Nâng cấp: Hiển thị hộp thoại tóm tắt chi tiết các ô bị thay đổi trước khi lưu
+// Khôi phục an toàn: Chỉ gửi ô sửa lên Server, giữ nguyên 100% ô không sửa trên RAM
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -974,9 +973,9 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         let thangChuan = "";
-        let danhSachThongBao = []; // Mảng chứa các câu thông báo cho người dùng
+        let danhSachThongBao = []; 
         
-        // 1. Lập bản đồ Gốc 
+        // 1. Lập bản đồ Gốc từ RAM
         let mapGoc = {};
         if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
             duLieuTkbHienTai.forEach(t => {
@@ -1017,7 +1016,7 @@ async function luuDuLieu(event, loaiLuu) {
             
             let goc = mapGoc[maTietKhoa] || { monHoc: "", maGv: "" };
 
-            // 2. Chốt kiểm dịch và So sánh Delta
+            // 2. So sánh Delta chống ghi đè
             let uiMonChuan = chuanHoa(valMon);
             let gocMonChuan = chuanHoa(goc.monHoc);
             let uiGvChuan = chuanHoa(valGv);
@@ -1032,9 +1031,6 @@ async function luuDuLieu(event, loaiLuu) {
                 if (thangChuan === "") thangChuan = thongTinNgay.thang;
                 dsLopDangSua.add(lop);
 
-                // ========================================================
-                // 3. TẠO LỜI NHẮN CHI TIẾT TỪNG Ô BỊ THAY ĐỔI
-                // ========================================================
                 if (loaiLuu === 'tuan') {
                     let msgHanhDong = "";
                     if (valMon === "") {
@@ -1065,20 +1061,14 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // 4. Nếu không có thay đổi nào, chặn lệnh gọi Server
         if (dsTietLuoi.length === 0 && loaiLuu === 'tuan') {
             alert("Hệ thống kiểm tra không có sự thay đổi nào trên thời khóa biểu!");
             if(btn.disabled !== undefined) { btn.innerHTML = textGoc; btn.disabled = false; }
             return;
         }
 
-        // ========================================================
-        // 5. HIỂN THỊ HỘP THOẠI XÁC NHẬN CHO NGƯỜI DÙNG
-        // ========================================================
         if (loaiLuu === 'tuan') {
-            let msgXacNhan = `Hệ thống ghi nhận có ${dsTietLuoi.length} sự thay đổi:\n\n`;
-            
-            // Nếu sửa quá nhiều (nhập từ Excel), chỉ hiện 15 dòng đầu để tránh tràn màn hình
+            let msgXacNhan = `Hệ thống ghi nhận có ${dsTietLuoi.length} thay đổi:\n\n`;
             if (danhSachThongBao.length > 15) {
                 msgXacNhan += danhSachThongBao.slice(0, 15).join('\n');
                 msgXacNhan += `\n... và ${danhSachThongBao.length - 15} thay đổi khác.\n\n`;
@@ -1088,7 +1078,6 @@ async function luuDuLieu(event, loaiLuu) {
             msgXacNhan += `Đồng chí có chắc chắn muốn lưu bản cập nhật này lên máy chủ?`;
             
             if (!confirm(msgXacNhan)) {
-                // Nếu người dùng bấm "Hủy", trả lại trạng thái nút và dừng lệnh lưu
                 if(btn.disabled !== undefined) { btn.innerHTML = textGoc; btn.disabled = false; }
                 return; 
             }
@@ -1117,33 +1106,50 @@ async function luuDuLieu(event, loaiLuu) {
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
                 
-                let tkbTamThoi = [];
+                // ===================================================================
+                // [VÁ LỖI AN TOÀN TUỆ ĐỐI]: Hợp nhất chính xác từng ô riêng lẻ vào RAM
+                // Chỉ thay thế đúng những ô có trong dsTietLuoi, giữ nguyên 100% ô còn lại
+                // ===================================================================
+                let mapRamHienTai = {};
                 if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
-                    tkbTamThoi = duLieuTkbHienTai.filter(tiet => {
-                        let keyTiet = `${tiet.thu}_${(tiet.buoi === "Sáng") ? "S" : "C"}_${tiet.tiet}_${tiet.maLop}`;
-                        let timThayTrongDSGhi = dsTietLuoi.find(d => d.maTiet === `${tuanDangXem}_${keyTiet}`);
-                        if (timThayTrongDSGhi) return false; 
-                        return true; 
+                    duLieuTkbHienTai.forEach(t => {
+                        let key = `${t.tuan}_${t.thu}_${(t.buoi === "Sáng") ? "S" : "C"}_${t.tiet}_${t.maLop}`;
+                        mapRamHienTai[key] = t;
                     });
                 }
+
+                // Cập nhật hoặc xóa ô theo hành động
+                dsTietLuoi.forEach(d => {
+                    if (d.hanhDong === "XOA") {
+                        delete mapRamHienTai[d.maTiet];
+                    } else {
+                        mapRamHienTai[d.maTiet] = {
+                            maTiet: d.maTiet, namHoc: d.namHoc, tuan: d.tuan, thu: d.thu,
+                            buoi: d.buoi, tiet: d.tiet, maLop: d.maLop, monHoc: d.monHoc,
+                            maGv: d.maGv, thang: d.thang, ngay: d.ngay
+                        };
+                    }
+                });
+
+                // Chuyển Map ngược lại thành mảng RAM hoàn chỉnh
+                let tkbMoiHoanChinh = Object.values(mapRamHienTai);
+                duLieuTkbHienTai = tkbMoiHoanChinh;
                 
-                let cacTietGhiMoi = dsTietLuoi.filter(d => d.hanhDong !== "XOA");
-                tkbTamThoi = tkbTamThoi.concat(cacTietGhiMoi);
-                
-                duLieuTkbHienTai = tkbTamThoi;
                 const MA_DA = (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.MA_DU_AN) ? CAU_HINH_FRONTEND.MA_DU_AN : 'MAC_DINH';
-                localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(tkbTamThoi));
+                localStorage.setItem('SmartTKB_DuLieuTuan_' + MA_DA, JSON.stringify(tkbMoiHoanChinh));
                 
+                // Vẽ lại giao diện ngay lập tức
                 xuatMaTranBang(duLieuTkbHienTai); 
                 if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
 
+                // Kéo ngầm dữ liệu chuẩn từ Server về sau 2 giây
                 setTimeout(async () => {
                     await taiDuLieuTKB(true, 'TKB_HIEN_TAI', true);
                     localStorage.setItem('KhoaDongBo_TKB', Date.now().toString());
                 }, 2000);
             }
         }
-    } catch (loi) { 
+    } giao (loi) { 
         alert("Có sự cố trong quá trình kết nối đến máy chủ.");
     } finally { 
         if(btn.disabled !== undefined) { btn.innerHTML = textGoc; btn.disabled = false; }
