@@ -650,7 +650,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                                             class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer hover:bg-blue-50 focus:bg-blue-50 pr-5" 
                                             placeholder="${!quyenNhapThuCong ? 'Không có quyền' : 'Ghi rõ họ tên...'}" value="${chuKy}" 
                                             onclick="${onfocusChuKy}" 
-                                            oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">
+                                            oninput="locDanhSachChuKy(this)">
                                         ${!quyenNhapThuCong ? '' : `<svg class="w-4 h-4 absolute right-1 text-blue-400 pointer-events-none opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`}
                                     </div>`;
                     }
@@ -1248,41 +1248,38 @@ document.addEventListener('mousedown', function(event) {
 });
 
 // =========================================================================
-// THUẬT TOÁN CỬA SỔ TRƯỢT DANH SÁCH GIÁO VIÊN (COMBO BOX KÝ TÊN TỌA ĐỘ FIXED)
+// KHỐI MỚI: THUẬT TOÁN CỬA SỔ TRƯỢT DANH SÁCH GIÁO VIÊN (COMBO BOX KÝ TÊN)
 // =========================================================================
-let trangThaiKhungChuKy = { dangMo: false, inputChuKy: null };
+let trangThaiKhungChuKy = { dangMo: false, inputChuKy: null, dangHover: false };
 
 function moKhungTruotChuKy(event, theInputChuKy) {
     if (event) event.stopPropagation();
     
+    // Nếu click lại vào chính ô đang mở thì bỏ qua
     if (trangThaiKhungChuKy.dangMo && trangThaiKhungChuKy.inputChuKy === theInputChuKy) return;
     
     if (typeof dongKhungTruotPPCT === 'function') dongKhungTruotPPCT(); 
     dongKhungTruotChuKy(); 
     
     trangThaiKhungChuKy.inputChuKy = theInputChuKy;
+    trangThaiKhungChuKy.dangHover = false; 
 
+    // Mờ chữ khi mở khung chọn (nhưng sẽ đậm lại khi gõ)
     theInputChuKy.classList.remove('text-blue-700');
     theInputChuKy.classList.add('text-slate-400', 'opacity-60');
 
     if (theInputChuKy.disabled || !danhSachGiaoVienToanCuc || danhSachGiaoVienToanCuc.length === 0) return;
 
-    let htmlDanhSach = `<ul class="max-h-56 overflow-y-auto bg-white border border-blue-400 shadow-2xl rounded text-sm w-48 text-left divide-y divide-slate-100">`;
-    htmlDanhSach += `<li class="p-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors italic text-center font-semibold" onclick="chonMucChuKy('', event)">-- Xóa chữ ký --</li>`;
-
-    danhSachGiaoVienToanCuc.forEach(gv => {
-        let gvAnToan = gv.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        htmlDanhSach += `<li class="p-2.5 cursor-pointer hover:bg-blue-50 transition-colors" onclick="chonMucChuKy('${gvAnToan}', event)">
-                             <span class="text-blue-800 font-bold block">${gv}</span>
-                         </li>`;
-    });
-    htmlDanhSach += `</ul>`;
-
     let divKhung = document.createElement('div');
     divKhung.id = 'khungHienThiChuKy_Dong';
-    // [THUẬT TOÁN BẢO VỆ]: Dùng fixed để ngăn chặn bị cắt giao diện bởi bảng
     divKhung.className = 'fixed z-[9999] mt-1'; 
-    divKhung.innerHTML = htmlDanhSach;
+    
+    // Khởi tạo HTML toàn bộ danh sách (Truyền rỗng = Không lọc)
+    divKhung.innerHTML = taoHtmlDanhSachChuKy('');
+
+    // Bắt sự kiện chuột ra/vào để chống lỗi văng khung khi lăn bi
+    divKhung.addEventListener('mouseenter', () => { trangThaiKhungChuKy.dangHover = true; });
+    divKhung.addEventListener('mouseleave', () => { trangThaiKhungChuKy.dangHover = false; });
 
     document.body.appendChild(divKhung);
     
@@ -1293,14 +1290,74 @@ function moKhungTruotChuKy(event, theInputChuKy) {
     trangThaiKhungChuKy.dangMo = true;
 }
 
+// [THUẬT TOÁN MỚI]: Lọc và xây dựng HTML dựa theo từ khóa
+function taoHtmlDanhSachChuKy(tuKhoa) {
+    let tk = String(tuKhoa).trim().toLowerCase();
+    let danhSachLoc = danhSachGiaoVienToanCuc;
+    
+    // Lọc thông minh: Không phân biệt dấu tiếng Việt
+    if (tk !== '') {
+        let locKhongDau = tk.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        danhSachLoc = danhSachGiaoVienToanCuc.filter(gv => {
+            let gvKhongDau = gv.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return gv.toLowerCase().includes(tk) || gvKhongDau.includes(locKhongDau);
+        });
+    }
+
+    let htmlDanhSach = `<ul class="max-h-56 overflow-y-auto overscroll-contain bg-white border border-blue-400 shadow-2xl rounded text-sm w-48 text-left divide-y divide-slate-100">`;
+    htmlDanhSach += `<li class="p-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors italic text-center font-semibold" onmousedown="chonMucChuKy('', event)">-- Xóa chữ ký --</li>`;
+
+    if (danhSachLoc.length === 0) {
+        htmlDanhSach += `<li class="p-2.5 text-slate-500 italic text-center bg-slate-50">Không tìm thấy giáo viên...</li>`;
+    } else {
+        danhSachLoc.forEach(gv => {
+            let gvAnToan = gv.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            htmlDanhSach += `<li class="p-2.5 cursor-pointer hover:bg-blue-50 transition-colors" onmousedown="chonMucChuKy('${gvAnToan}', event)">
+                                 <span class="text-blue-800 font-bold block">${gv}</span>
+                             </li>`;
+        });
+    }
+    htmlDanhSach += `</ul>`;
+    return htmlDanhSach;
+}
+
+// [THUẬT TOÁN MỚI]: Kích hoạt khi người dùng gõ phím trực tiếp
+function locDanhSachChuKy(theInput) {
+    coThayDoiChuaLuu_SDB = true;
+    
+    // Khi tự gõ phím thì chữ phải rõ ràng, không bị mờ
+    theInput.classList.remove('text-slate-400', 'opacity-60');
+    theInput.classList.add('text-blue-700');
+
+    // Nếu người dùng bắt đầu gõ mà khung chưa mở -> Mở khung
+    if (!trangThaiKhungChuKy.dangMo || trangThaiKhungChuKy.inputChuKy !== theInput) {
+        moKhungTruotChuKy(null, theInput);
+    }
+    
+    // Tiêm từ khóa đang gõ vào hàm lọc và cập nhật ngay lập tức giao diện khung thả xuống
+    let khungDong = document.getElementById('khungHienThiChuKy_Dong');
+    if (khungDong) {
+        khungDong.innerHTML = taoHtmlDanhSachChuKy(theInput.value);
+        khungDong.addEventListener('mouseenter', () => { trangThaiKhungChuKy.dangHover = true; });
+        khungDong.addEventListener('mouseleave', () => { trangThaiKhungChuKy.dangHover = false; });
+    }
+}
+
 function chonMucChuKy(tenGv, event) {
-    if (event) event.stopPropagation();
+    if (event) {
+        event.preventDefault(); 
+        event.stopPropagation();
+    }
     if (trangThaiKhungChuKy.inputChuKy) {
         trangThaiKhungChuKy.inputChuKy.value = tenGv;
         coThayDoiChuaLuu_SDB = true; 
         
         let ev = new Event('input', { bubbles: true});
         trangThaiKhungChuKy.inputChuKy.dispatchEvent(ev);
+        
+        // Hủy mờ sau khi chọn xong
+        trangThaiKhungChuKy.inputChuKy.classList.remove('text-slate-400', 'opacity-60');
+        trangThaiKhungChuKy.inputChuKy.classList.add('text-blue-700');
     }
     dongKhungTruotChuKy();
 }
@@ -1313,6 +1370,7 @@ function dongKhungTruotChuKy() {
         trangThaiKhungChuKy.inputChuKy.classList.add('text-blue-700');
     }
     trangThaiKhungChuKy.dangMo = false;
+    trangThaiKhungChuKy.dangHover = false;
 }
 
 document.addEventListener('mousedown', function(event) {
@@ -1324,6 +1382,15 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-document.addEventListener('scroll', function() {
-    if (trangThaiKhungChuKy.dangMo) dongKhungTruotChuKy();
+document.addEventListener('scroll', function(event) {
+    if (trangThaiKhungChuKy.dangMo) {
+        // Tối ưu: Lăn bi chuột trong danh sách sẽ không làm văng khung
+        if (trangThaiKhungChuKy.dangHover) return;
+        
+        let khungDong = document.getElementById('khungHienThiChuKy_Dong');
+        if (khungDong && (event.target === khungDong || khungDong.contains(event.target))) {
+            return;
+        }
+        dongKhungTruotChuKy();
+    }
 }, true);
