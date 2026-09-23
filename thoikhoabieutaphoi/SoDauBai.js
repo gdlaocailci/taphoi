@@ -681,11 +681,12 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                         
                        theXepLoai = `<select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none"><option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option><option value="Tốt" ${optTot}>Tốt</option><option value="Khá" ${optKha}>Khá</option><option value="TB" ${optTB}>TB</option><option value="Yếu" ${optYeu}>Yếu</option></select>`;
                         
-                        let onfocusChuKy = `moKhungTruotChuKy(event, this)`;
-                        theChuKy = `<input type="text" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" 
-                                        class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer focus:bg-blue-50" 
+                       let onfocusChuKy = `moKhungTruotChuKy(event, this)`;
+                        theChuKy = `<input type="text" autocomplete="off" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" 
+                                        class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer hover:bg-blue-50 focus:bg-blue-50" 
                                         placeholder="Ghi rõ họ tên..." value="${chuKy}" 
-                                        onclick="${onfocusChuKy}" oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">`;
+                                        onclick="${onfocusChuKy}" 
+                                        oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">`;
                     }
                 }
 
@@ -1340,21 +1341,18 @@ function kiemTraDongKhungNgoaiVung(event) {
 let trangThaiKhungChuKy = { dangMo: false, inputChuKy: null };
 
 function moKhungTruotChuKy(event, theInputChuKy) {
-    if (event) event.stopPropagation(); // Chặn sự kiện nổi bọt
+    if (event) event.stopPropagation();
     
-    // Nếu khung đang mở ở chính ô này thì bỏ qua (tránh chớp giật)
     if (trangThaiKhungChuKy.dangMo && trangThaiKhungChuKy.inputChuKy === theInputChuKy) return;
     
-    if (typeof dongKhungTruotPPCT === 'function') dongKhungTruotPPCT(); // Đóng khung PPCT nếu đang mở
+    if (typeof dongKhungTruotPPCT === 'function') dongKhungTruotPPCT(); 
     dongKhungTruotChuKy(); 
     
     trangThaiKhungChuKy.inputChuKy = theInputChuKy;
 
-    // Hiệu ứng UX: Làm mờ dữ liệu cũ khi nhấp vào để chọn hoặc gõ lại
     theInputChuKy.classList.remove('text-blue-700');
     theInputChuKy.classList.add('text-slate-400', 'opacity-60');
 
-    // Nếu không có quyền hoặc danh sách rỗng thì chỉ làm mờ rồi thoát
     if (theInputChuKy.disabled || !danhSachGiaoVienToanCuc || danhSachGiaoVienToanCuc.length === 0) return;
 
     let htmlDanhSach = `<ul class="max-h-56 overflow-y-auto bg-white border border-blue-300 shadow-xl rounded text-sm w-48 text-left relative z-50 divide-y divide-slate-100">`;
@@ -1370,7 +1368,7 @@ function moKhungTruotChuKy(event, theInputChuKy) {
 
     let divKhung = document.createElement('div');
     divKhung.id = 'khungHienThiChuKy_Dong';
-    divKhung.className = 'absolute mt-1 z-50 right-0'; // Ép sát lề phải
+    divKhung.className = 'absolute mt-1 z-50 right-0';
     divKhung.innerHTML = htmlDanhSach;
 
     let tdContainer = theInputChuKy.parentNode;
@@ -1385,10 +1383,9 @@ function moKhungTruotChuKy(event, theInputChuKy) {
 
 function chonMucChuKy(tenGv, event) {
     if (event) event.stopPropagation();
-    
     if (trangThaiKhungChuKy.inputChuKy) {
         trangThaiKhungChuKy.inputChuKy.value = tenGv;
-        coThayDoiChuaLuu_SDB = true; // Bật cờ "Chưa lưu"
+        coThayDoiChuaLuu_SDB = true; 
     }
     dongKhungTruotChuKy();
 }
@@ -1396,22 +1393,17 @@ function chonMucChuKy(tenGv, event) {
 function dongKhungTruotChuKy() {
     let khungOld = document.getElementById('khungHienThiChuKy_Dong');
     if (khungOld) khungOld.remove();
-    
     if (trangThaiKhungChuKy.inputChuKy) {
-        // Hoàn tác hiệu ứng làm mờ: Trả lại độ đậm cho chữ ký
         trangThaiKhungChuKy.inputChuKy.classList.remove('text-slate-400', 'opacity-60');
         trangThaiKhungChuKy.inputChuKy.classList.add('text-blue-700');
     }
-    
     trangThaiKhungChuKy.dangMo = false;
 }
 
-// Bắt sự kiện click ra ngoài để đóng Khung Chữ Ký
 document.addEventListener('mousedown', function(event) {
     if (trangThaiKhungChuKy.dangMo) {
         let khungDong = document.getElementById('khungHienThiChuKy_Dong');
         let oChuKyDangMo = trangThaiKhungChuKy.inputChuKy;
-        
         if (khungDong && event.target !== oChuKyDangMo && !khungDong.contains(event.target)) {
             dongKhungTruotChuKy();
         }
