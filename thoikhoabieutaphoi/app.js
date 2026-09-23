@@ -952,8 +952,9 @@ function xuatMaTranBang(danhSachTiet) {
 // =========================================================================
 // KHỐI 4: TRÌNH LƯU TRỮ VÀ XỬ LÝ DỮ LIỆU ĐA TẦNG (Ghi đè: Năm + Tháng + Tuần)
 // =========================================================================
+// =========================================================================
 // Vị trí: file app.js (Thay thế toàn bộ hàm luuDuLieu cũ)
-// Nâng cấp: Chuẩn hóa Unicode NFC cực mạnh để lá chắn Delta không bị báo giả
+// Nâng cấp: Hiển thị hộp thoại tóm tắt chi tiết các ô bị thay đổi trước khi lưu
 // =========================================================================
 async function luuDuLieu(event, loaiLuu) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
@@ -973,18 +974,27 @@ async function luuDuLieu(event, loaiLuu) {
         let dsTietLuoi = []; 
         let namHocChuan = thongSoHocVu.NAM_HOC || "";
         let thangChuan = "";
+        let danhSachThongBao = []; // Mảng chứa các câu thông báo cho người dùng
         
-        // 1. Lập bản đồ Gốc
+        // 1. Lập bản đồ Gốc 
         let mapGoc = {};
         if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
             duLieuTkbHienTai.forEach(t => {
-                let tienTo = (t.buoi === "Sáng") ? "S" : "C";
-                let key = `${(t.thu||"").trim()}_${tienTo}_${(t.tiet||"").toString().trim()}_${(t.maLop||"").trim()}`;
-                mapGoc[key] = { monHoc: t.monHoc || "", maGv: t.maGv || "" };
+                let thuChuan = (t.thu || "").toString().trim();
+                let buoiChuan = (t.buoi || "").toString().trim();
+                let tietChuan = (t.tiet || "").toString().trim();
+                let lopChuan = (t.maLop || "").toString().trim();
+                
+                let tienTo = (buoiChuan === "Sáng") ? "S" : "C";
+                let key = `${thuChuan}_${tienTo}_${tietChuan}_${lopChuan}`;
+                
+                mapGoc[key] = { 
+                    monHoc: (t.monHoc || "").toString().trim(), 
+                    maGv: (t.maGv || "").toString().trim() 
+                };
             });
         }
 
-        // Hàm chuẩn hóa cắt rễ mọi khoảng trắng và ký tự lạ để so sánh 100% chính xác
         const chuanHoa = (str) => {
             if (!str) return "";
             return str.toString().normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -1007,7 +1017,7 @@ async function luuDuLieu(event, loaiLuu) {
             
             let goc = mapGoc[maTietKhoa] || { monHoc: "", maGv: "" };
 
-            // 2. Chốt kiểm dịch: Ép chuẩn hóa 2 vế trước khi so sánh
+            // 2. Chốt kiểm dịch và So sánh Delta
             let uiMonChuan = chuanHoa(valMon);
             let gocMonChuan = chuanHoa(goc.monHoc);
             let uiGvChuan = chuanHoa(valGv);
@@ -1018,12 +1028,25 @@ async function luuDuLieu(event, loaiLuu) {
             if (valMon === "" && goc.monHoc === "") daSua = false;
             
             if (daSua || loaiLuu === 'codinh' || loaiLuu === 'khoiphuc') {
-                // RADAR THEO DÕI: Báo cáo ô bị sửa (Bấm F12 để xem)
-                console.log(`[BẮT VẾT ĐÃ SỬA]: ${maTietKhoa} | Gốc:[${goc.monHoc}] -> Mới:[${valMon}]`);
-                
                 let thongTinNgay = tinhNgayDocLap(ngayDauTuanUI, thu);
                 if (thangChuan === "") thangChuan = thongTinNgay.thang;
                 dsLopDangSua.add(lop);
+
+                // ========================================================
+                // 3. TẠO LỜI NHẮN CHI TIẾT TỪNG Ô BỊ THAY ĐỔI
+                // ========================================================
+                if (loaiLuu === 'tuan') {
+                    let msgHanhDong = "";
+                    if (valMon === "") {
+                        msgHanhDong = `[XÓA] môn ${goc.monHoc}`;
+                    } else if (goc.monHoc === "") {
+                        msgHanhDong = `[THÊM] môn ${valMon} (GV: ${valGv})`;
+                    } else {
+                        msgHanhDong = `[SỬA] ${goc.monHoc} -> ${valMon}`;
+                        if (valGv !== goc.maGv && valGv !== "") msgHanhDong += ` (Đổi GV: ${valGv})`;
+                    }
+                    danhSachThongBao.push(`- Lớp ${lop} (${thu} - ${buoi} T${tiet}): ${msgHanhDong}`);
+                }
 
                 dsTietLuoi.push({ 
                     maTiet: `${tuanDangXem}_${thu}_${tienToBuoi}_${tiet}_${lop}`, 
@@ -1042,11 +1065,33 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // 3. Đánh chặn 100%: Nếu mảng rỗng (thầy không gõ phím nào), chặn luôn lệnh gọi Server
+        // 4. Nếu không có thay đổi nào, chặn lệnh gọi Server
         if (dsTietLuoi.length === 0 && loaiLuu === 'tuan') {
-            console.log("Tuyệt vời! Hệ thống xác nhận bạn không sửa gì cả. Đã hủy lệnh gửi lên Server để bảo tồn dữ liệu gốc.");
+            alert("Hệ thống kiểm tra không có sự thay đổi nào trên thời khóa biểu!");
             if(btn.disabled !== undefined) { btn.innerHTML = textGoc; btn.disabled = false; }
             return;
+        }
+
+        // ========================================================
+        // 5. HIỂN THỊ HỘP THOẠI XÁC NHẬN CHO NGƯỜI DÙNG
+        // ========================================================
+        if (loaiLuu === 'tuan') {
+            let msgXacNhan = `Hệ thống ghi nhận có ${dsTietLuoi.length} sự thay đổi:\n\n`;
+            
+            // Nếu sửa quá nhiều (nhập từ Excel), chỉ hiện 15 dòng đầu để tránh tràn màn hình
+            if (danhSachThongBao.length > 15) {
+                msgXacNhan += danhSachThongBao.slice(0, 15).join('\n');
+                msgXacNhan += `\n... và ${danhSachThongBao.length - 15} thay đổi khác.\n\n`;
+            } else {
+                msgXacNhan += danhSachThongBao.join('\n') + `\n\n`;
+            }
+            msgXacNhan += `Đồng chí có chắc chắn muốn lưu bản cập nhật này lên máy chủ?`;
+            
+            if (!confirm(msgXacNhan)) {
+                // Nếu người dùng bấm "Hủy", trả lại trạng thái nút và dừng lệnh lưu
+                if(btn.disabled !== undefined) { btn.innerHTML = textGoc; btn.disabled = false; }
+                return; 
+            }
         }
 
         const payloadDongBo = { 
@@ -1072,7 +1117,6 @@ async function luuDuLieu(event, loaiLuu) {
             } else {
                 alert("Đã lưu dữ liệu thời khóa biểu thành công!");
                 
-                // Hợp nhất RAM để tải tức thời (Giữ nguyên)
                 let tkbTamThoi = [];
                 if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
                     tkbTamThoi = duLieuTkbHienTai.filter(tiet => {
