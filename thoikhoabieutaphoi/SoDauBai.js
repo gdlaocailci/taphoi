@@ -50,7 +50,8 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    // Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
+    // [BẢN VÁ LỖI QUAN TRỌNG]: Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
+    // Phải kiểm tra 'window.emailGiaoVienToanCuc' - Biến này được cấp phát khi đăng nhập Google thành công
     const chuaDangNhap = typeof window.emailGiaoVienToanCuc === 'undefined' || window.emailGiaoVienToanCuc === '';
 
     if (chuaDangNhap) {
@@ -79,6 +80,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
         return;
     }
 
+    // Nếu đã đăng nhập thì tiến hành tải dữ liệu bình thường
     thucThiTaiDuLieuVaVeLuoi(vungHienThi);
 }
 
@@ -93,6 +95,7 @@ function kiemTraTrangThaiDangNhapSDB() {
          if(btnDangNhap) btnDangNhap.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xác thực...`;
     }
 
+    // Dựa vào sự xuất hiện của emailGiaoVienToanCuc để chốt chính xác thời điểm xác thực thành công
     let vongLap = setInterval(() => {
         if (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '') {
             clearInterval(vongLap);
@@ -102,7 +105,7 @@ function kiemTraTrangThaiDangNhapSDB() {
         // Hủy vòng lặp chờ sau 1 phút nếu người dùng tắt ngang cửa sổ popup
         if (soLanKiemTra > 120) {
             clearInterval(vongLap); 
-            if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); 
+            if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); // Trả lại giao diện yêu cầu định danh nếu timeout
         }
     }, 500);
 }
