@@ -1015,16 +1015,7 @@ async function luuDuLieu(event, loaiLuu) {
             }
         });
 
-        // GIỮ NGUYÊN BẢN CŨ: Bảo tồn các lớp không hiển thị trên UI
-        let mangLopDangHienThi = Array.from(setLopDangHienThi);
-        if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
-            duLieuTkbHienTai.forEach(tietGoc => {
-                if (!mangLopDangHienThi.includes(tietGoc.maLop)) {
-                    dsTietLuoi.push(tietGoc);
-                }
-            });
-        }
-
+          
         const payloadDongBo = { 
             thaoTac: 'luuDuLieu', 
             loaiLuu: loaiLuu, 
