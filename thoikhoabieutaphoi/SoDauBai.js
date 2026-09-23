@@ -8,7 +8,7 @@ let dinhMucKhungCT = {};
 let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
-let danhSachGiaoVienToanCuc = [];
+let danhSachGiaoVienToanCuc = []; // [BẢN VÁ LỖI]: Phải khai báo biến tại đây để chống lỗi đứt gãy luồng UI
 
 // [NÂNG CẤP]: Các biến toàn cục hỗ trợ kiểm soát trạng thái chưa lưu (Chống mất dữ liệu)
 let tuanTruocDo_SDB = '';
@@ -23,7 +23,7 @@ window.lamSachBoNhoSoDauBai = function() {
     dinhMucKhungCT = {}; 
     tuDienQuyenPhanCong = {};
     coToanQuyenSDB = false;
-    danhSachGiaoVienToanCuc = [];
+    danhSachGiaoVienToanCuc = []; // Làm sạch danh sách giáo viên
     
     // Reset cờ bảo vệ dữ liệu
     tuanTruocDo_SDB = '';
@@ -41,6 +41,8 @@ window.lamSachBoNhoSoDauBai = function() {
     
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
+    
+    // Đưa đúng về nguyên trạng ban đầu theo yêu cầu
     if(elementTuan) elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>';
     if(elementLop) elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>';
 };
