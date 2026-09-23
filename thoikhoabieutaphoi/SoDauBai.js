@@ -8,7 +8,7 @@ let dinhMucKhungCT = {};
 let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
-let danhSachGiaoVienToanCuc = []; // [NÂNG CẤP]: Mảng lưu danh sách giáo viên
+let danhSachGiaoVienToanCuc = [];
 
 // [NÂNG CẤP]: Các biến toàn cục hỗ trợ kiểm soát trạng thái chưa lưu (Chống mất dữ liệu)
 let tuanTruocDo_SDB = '';
@@ -23,7 +23,7 @@ window.lamSachBoNhoSoDauBai = function() {
     dinhMucKhungCT = {}; 
     tuDienQuyenPhanCong = {};
     coToanQuyenSDB = false;
-    danhSachGiaoVienToanCuc = []; 
+    danhSachGiaoVienToanCuc = [];
     
     // Reset cờ bảo vệ dữ liệu
     tuanTruocDo_SDB = '';
@@ -50,8 +50,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    // [BẢN VÁ LỖI QUAN TRỌNG]: Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
-    // Phải kiểm tra 'window.emailGiaoVienToanCuc' - Biến này được cấp phát khi đăng nhập Google thành công
+    // [BẢN VÁ LỖI]: Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
     const chuaDangNhap = typeof window.emailGiaoVienToanCuc === 'undefined' || window.emailGiaoVienToanCuc === '';
 
     if (chuaDangNhap) {
@@ -80,7 +79,6 @@ async function taiDuLieuSoDauBaiTuMayChu() {
         return;
     }
 
-    // Nếu đã đăng nhập thì tiến hành tải dữ liệu bình thường
     thucThiTaiDuLieuVaVeLuoi(vungHienThi);
 }
 
@@ -95,7 +93,7 @@ function kiemTraTrangThaiDangNhapSDB() {
          if(btnDangNhap) btnDangNhap.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xác thực...`;
     }
 
-    // Dựa vào sự xuất hiện của emailGiaoVienToanCuc để chốt chính xác thời điểm xác thực thành công
+    // [BẢN VÁ LỖI]: Dựa vào sự xuất hiện của emailGiaoVienToanCuc để chốt chính xác thời điểm xác thực thành công
     let vongLap = setInterval(() => {
         if (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '') {
             clearInterval(vongLap);
@@ -105,7 +103,7 @@ function kiemTraTrangThaiDangNhapSDB() {
         // Hủy vòng lặp chờ sau 1 phút nếu người dùng tắt ngang cửa sổ popup
         if (soLanKiemTra > 120) {
             clearInterval(vongLap); 
-            if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); // Trả lại giao diện yêu cầu định danh nếu timeout
+            if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); 
         }
     }, 500);
 }
@@ -338,7 +336,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     if (duLieuSever.DANH_SACH_GIAO_VIEN) {
         danhSachGiaoVienToanCuc = duLieuSever.DANH_SACH_GIAO_VIEN;
     }
-
     // Trả lại nguyên trạng mảng gộp, đẩy phần tính toán PPCT sang hàm kết xuất UI
     duLieuTKBGopDaMap = tkbGop; 
     napDropdownSoDauBai();
@@ -682,13 +679,14 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                         let optTB = (xepLoai === 'TB') ? 'selected' : '';
                         let optYeu = (xepLoai === 'Yếu') ? 'selected' : '';
                         
-                        theXepLoai = `<select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none"><option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option><option value="Tốt" ${optTot}>Tốt</option><option value="Khá" ${optKha}>Khá</option><option value="TB" ${optTB}>TB</option><option value="Yếu" ${optYeu}>Yếu</option></select>`;
+                       theXepLoai = `<select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none"><option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option><option value="Tốt" ${optTot}>Tốt</option><option value="Khá" ${optKha}>Khá</option><option value="TB" ${optTB}>TB</option><option value="Yếu" ${optYeu}>Yếu</option></select>`;
                         
                         let onfocusChuKy = `moKhungTruotChuKy(event, this)`;
                         theChuKy = `<input type="text" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" 
-                            class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer focus:bg-blue-50" 
-                            placeholder="Ghi rõ họ tên..." value="${chuKy}" 
-                            onclick="${onfocusChuKy}" oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">`;
+                                        class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer focus:bg-blue-50" 
+                                        placeholder="Ghi rõ họ tên..." value="${chuKy}" 
+                                        onclick="${onfocusChuKy}" oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">`;
+                    }
                 }
 
                 let isRowDauChieu = (buoiObj.id === 'Chieu' && tiet === 1);
@@ -1338,21 +1336,16 @@ function kiemTraDongKhungNgoaiVung(event) {
 }
 // =========================================================================
 // KHỐI MỚI: THUẬT TOÁN CỬA SỔ TRƯỢT DANH SÁCH GIÁO VIÊN (COMBO BOX KÝ TÊN)
-// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM
 // =========================================================================
-
-let trangThaiKhungChuKy = {
-    dangMo: false,
-    inputChuKy: null
-};
+let trangThaiKhungChuKy = { dangMo: false, inputChuKy: null };
 
 function moKhungTruotChuKy(event, theInputChuKy) {
     if (event) event.stopPropagation(); // Chặn sự kiện nổi bọt
     
-    // Nếu khung đang mở ở chính ô này thì bỏ qua (tránh chớp giật), nếu ô khác thì đóng khung cũ
+    // Nếu khung đang mở ở chính ô này thì bỏ qua (tránh chớp giật)
     if (trangThaiKhungChuKy.dangMo && trangThaiKhungChuKy.inputChuKy === theInputChuKy) return;
     
-    dongKhungTruotPPCT(); // Đóng khung PPCT nếu vô tình đang mở
+    if (typeof dongKhungTruotPPCT === 'function') dongKhungTruotPPCT(); // Đóng khung PPCT nếu đang mở
     dongKhungTruotChuKy(); 
     
     trangThaiKhungChuKy.inputChuKy = theInputChuKy;
@@ -1361,7 +1354,7 @@ function moKhungTruotChuKy(event, theInputChuKy) {
     theInputChuKy.classList.remove('text-blue-700');
     theInputChuKy.classList.add('text-slate-400', 'opacity-60');
 
-    // Nếu người dùng không có quyền (input bị disable) hoặc danh sách trống thì chỉ làm mờ rồi thoát
+    // Nếu không có quyền hoặc danh sách rỗng thì chỉ làm mờ rồi thoát
     if (theInputChuKy.disabled || !danhSachGiaoVienToanCuc || danhSachGiaoVienToanCuc.length === 0) return;
 
     let htmlDanhSach = `<ul class="max-h-56 overflow-y-auto bg-white border border-blue-300 shadow-xl rounded text-sm w-48 text-left relative z-50 divide-y divide-slate-100">`;
@@ -1377,8 +1370,7 @@ function moKhungTruotChuKy(event, theInputChuKy) {
 
     let divKhung = document.createElement('div');
     divKhung.id = 'khungHienThiChuKy_Dong';
-    // Ép khung căn lề phải vì cột chữ ký nằm sát lề phải màn hình, tránh bị tràn ngang
-    divKhung.className = 'absolute mt-1 z-50 right-0'; 
+    divKhung.className = 'absolute mt-1 z-50 right-0'; // Ép sát lề phải
     divKhung.innerHTML = htmlDanhSach;
 
     let tdContainer = theInputChuKy.parentNode;
@@ -1396,8 +1388,7 @@ function chonMucChuKy(tenGv, event) {
     
     if (trangThaiKhungChuKy.inputChuKy) {
         trangThaiKhungChuKy.inputChuKy.value = tenGv;
-        // Kích hoạt dirty check
-        coThayDoiChuaLuu_SDB = true; 
+        coThayDoiChuaLuu_SDB = true; // Bật cờ "Chưa lưu"
     }
     dongKhungTruotChuKy();
 }
