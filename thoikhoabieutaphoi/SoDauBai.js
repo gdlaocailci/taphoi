@@ -8,14 +8,14 @@ let dinhMucKhungCT = {};
 let tuDienQuyenPhanCong = {};
 let coToanQuyenSDB = false;
 let maGvDangNhapHeThong = '';
-let danhSachGiaoVienToanCuc = [];
+let danhSachGiaoVienToanCuc = []; // [NÂNG CẤP]: Mảng lưu danh sách giáo viên toàn cục
 
-// [NÂNG CẤP]: Các biến toàn cục hỗ trợ kiểm soát trạng thái chưa lưu (Chống mất dữ liệu)
+// Các biến toàn cục hỗ trợ kiểm soát trạng thái chưa lưu (Chống mất dữ liệu)
 let tuanTruocDo_SDB = '';
 let lopTruocDo_SDB = '';
 let coThayDoiChuaLuu_SDB = false;
 
-// [BẢN VÁ LỖI]: Hàm dọn dẹp bộ nhớ đệm khi có sự kiện đổi tài khoản hoặc TKB
+// Hàm dọn dẹp bộ nhớ đệm khi có sự kiện đổi tài khoản hoặc TKB
 window.lamSachBoNhoSoDauBai = function() {
     daTaiDuLieuSoDauBai = false;
     duLieuTKBGopDaMap = [];
@@ -50,7 +50,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    // [BẢN VÁ LỖI]: Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
+    // Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
     const chuaDangNhap = typeof window.emailGiaoVienToanCuc === 'undefined' || window.emailGiaoVienToanCuc === '';
 
     if (chuaDangNhap) {
@@ -82,25 +82,22 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     thucThiTaiDuLieuVaVeLuoi(vungHienThi);
 }
 
-// HÀM PHỤ TRỢ: Lắng nghe trạng thái đăng nhập để tự động mở Sổ đầu bài
+// Lắng nghe trạng thái đăng nhập để tự động mở Sổ đầu bài
 function kiemTraTrangThaiDangNhapSDB() {
     let soLanKiemTra = 0;
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    // Chuyển nút sang trạng thái đang chờ
     if (vungHienThi) {
          let btnDangNhap = vungHienThi.querySelector('.bg-blue-600');
          if(btnDangNhap) btnDangNhap.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xác thực...`;
     }
 
-    // [BẢN VÁ LỖI]: Dựa vào sự xuất hiện của emailGiaoVienToanCuc để chốt chính xác thời điểm xác thực thành công
     let vongLap = setInterval(() => {
         if (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '') {
             clearInterval(vongLap);
             thucThiTaiDuLieuVaVeLuoi(vungHienThi);
         }
         soLanKiemTra++;
-        // Hủy vòng lặp chờ sau 1 phút nếu người dùng tắt ngang cửa sổ popup
         if (soLanKiemTra > 120) {
             clearInterval(vongLap); 
             if (vungHienThi) taiDuLieuSoDauBaiTuMayChu(); 
@@ -123,7 +120,6 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
     try {
         let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
         
-        // [VÁ LỖI TIMEOUT]: Bơm trực tiếp tham số: {}, 3 (lần thử), 60000 (thời gian chờ 60 giây) vào luồng gọi mạng
         const phanHoi = await fetchVoiCoCheThuLai(
             `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(emailGoiLen)}`,
             {},
@@ -142,7 +138,6 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
 
         if (duLieuSever.trangThai === 'loi_he_thong') throw new Error(duLieuSever.thongBao);
 
-        // Tách luồng để trình duyệt không bị treo giao diện
         setTimeout(() => {
             khoiTaoDuLieuSoDauBai(duLieuSever);
             daTaiDuLieuSoDauBai = true;
@@ -157,7 +152,7 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
 }
 
 // =========================================================================
-// KHỐI 2: VẼ GIAO DIỆN (ĐÃ TỐI ƯU CĂN LỀ & LOGIC KHÓA INPUT BẰNG CHỮ KÝ)
+// KHỐI 2: VẼ GIAO DIỆN VÀ KHỞI TẠO DỮ LIỆU
 // =========================================================================
 function tinhNgayTuInputDate(ngayYMD, tenThu) {
     if (!ngayYMD) return '';
@@ -168,11 +163,7 @@ function tinhNgayTuInputDate(ngayYMD, tenThu) {
     return `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
 }
 
-// =========================================================================
-// HÀM 1: KHỞI TẠO DỮ LIỆU SỔ ĐẦU BÀI (Đã vá lỗi đồng bộ Mã GV và biến toàn cục)
-// =========================================================================
 function khoiTaoDuLieuSoDauBai(duLieuSever) {
-    // [BẢN VÁ LỖI]: Cập nhật trực tiếp vào biến toàn cục, không phụ thuộc hoàn toàn vào DOM
     maGvDangNhapHeThong = duLieuSever.MA_GIAO_VIEN || '';
     coToanQuyenSDB = duLieuSever.TOAN_QUYEN || false;
     tuDienQuyenPhanCong = duLieuSever.QUYEN_THEO_LOP || {};
@@ -200,7 +191,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return raw.charAt(0).toUpperCase() + raw.slice(1);
     };
 
-    // BƯỚC 1: Xây dựng móng từ SỔ ĐẦU BÀI ĐÃ LƯU
     if (duLieuSever.SO_DAU_BAI) {
         duLieuSever.SO_DAU_BAI.forEach(dong => {
             let tuan = String(dong['Tuần']).replace(/\D/g, '');
@@ -227,13 +217,9 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-   // BƯỚC 2: Điền khuyết từ TKB Lịch Sử và Hiện Tại (NÂNG CẤP BẢO MẬT PHÂN QUYỀN)
     let mapTkbToanTap = {};
-    
-    // Khai thác mốc thời gian thực tế từ hệ thống App.js
     let tuanHeThong = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(thongSoHocVu.TUAN_HIEN_TAI) : 999;
 
-    // Phân luồng 1: Chỉ lấy dữ liệu lịch sử cho các Tuần Cũ
     if (duLieuSever.DATA_TKB) {
         duLieuSever.DATA_TKB.forEach(dong => {
             let tuanDong = parseInt(String(dong['Tuần']).replace(/\D/g, '')) || 0;
@@ -244,7 +230,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
     
-    // Phân luồng 2: Chỉ lấy dữ liệu hiện hành cho Tuần Hiện Tại và Tương Lai
     if (duLieuSever.TKB_HIEN_TAI) {
         duLieuSever.TKB_HIEN_TAI.forEach(dong => {
             let tuanDong = parseInt(String(dong['Tuần']).replace(/\D/g, '')) || 0;
@@ -272,7 +257,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
                 'DaLuu': false 
             };
         } else {
-            // [BẢN VÁ LỖI]: Bù đắp 'Mã GV' từ TKB Lịch Sử để giữ vững quyền thao tác cho giáo viên ở tuần cũ
             if (!mapDuiLieuHopNhat[khoa]['Mã GV'] || mapDuiLieuHopNhat[khoa]['Mã GV'].trim() === '') {
                 mapDuiLieuHopNhat[khoa]['Mã GV'] = dongTkb['Mã GV'] || dongTkb['Giáo viên'] || '';
             }
@@ -293,7 +277,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         return (parseInt(a['Tiết']) || 0) - (parseInt(b['Tiết']) || 0);
     });
 
-    // 2. NẠP KHUNG CHƯƠNG TRÌNH & PHÂN PHỐI
     dinhMucKhungCT = {};
     if (duLieuSever.KHUNG_CHUONG_TRINH) {
         duLieuSever.KHUNG_CHUONG_TRINH.forEach(dong => {
@@ -333,7 +316,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
     }
 
-   // [THUẬT TOÁN ĐẢM BẢO DỮ LIỆU]: Nếu Server trả về danh sách, dùng luôn. Nếu không, tự động quét và lọc tên GV từ TKB
+    // [THUẬT TOÁN ĐẢM BẢO DỮ LIỆU GỐC]: Lọc dự phòng danh sách giáo viên từ TKB nếu Server bị lỗi
     if (duLieuSever.DANH_SACH_GIAO_VIEN && duLieuSever.DANH_SACH_GIAO_VIEN.length > 0) {
         danhSachGiaoVienToanCuc = duLieuSever.DANH_SACH_GIAO_VIEN;
     } else {
@@ -347,15 +330,13 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
         });
         danhSachGiaoVienToanCuc = Array.from(tapHopGV).sort();
     }
-    
-    // Trả lại nguyên trạng mảng gộp, đẩy phần tính toán PPCT sang hàm kết xuất UI
+
     duLieuTKBGopDaMap = tkbGop; 
     napDropdownSoDauBai();
 }
 
 // =========================================================================
-// HÀM 2: KẾT XUẤT SỔ ĐẦU BÀI LÊN LƯỚI (NÂNG CẤP: ÉP BUỘC LƯU THEO TRÌNH TỰ & BẢO VỆ DIRTY CHECK)
-// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM
+// HÀM 2: KẾT XUẤT SỔ ĐẦU BÀI LÊN LƯỚI
 // =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let theSelectTuan = document.getElementById('chonTuanSo');
@@ -363,17 +344,12 @@ function ketXuatSoDauBaiLenLuoi() {
     let tuanChon = theSelectTuan?.value;
     let lopChon = theSelectLop?.value;
 
-    if (!tuanChon || !lopChon) return; // Chờ đến khi chọn đủ cả Tuần và Lớp
+    if (!tuanChon || !lopChon) return; 
 
     let tuanSoChon = parseInt(tuanChon.replace(/\D/g, ''));
-
-    // =========================================================================
-    // CHỐT CHẶN 1: ÉP BUỘC TRÌNH TỰ TỊNH TIẾN SỔ (CHỐNG LỆCH PPCT)
-    // =========================================================================
     let trangThaiCacTuan = {};
     let tuanChuaLuuNhoNhat = null;
 
-    // Quét toàn bộ dữ liệu TKB của Lớp đang chọn để thống kê trạng thái Lưu
     duLieuTKBGopDaMap.forEach(d => {
         let maLop = String(d['Mã Lớp']).trim().toUpperCase();
         if (maLop === lopChon.toUpperCase()) {
@@ -382,7 +358,6 @@ function ketXuatSoDauBaiLenLuoi() {
                 if (!trangThaiCacTuan[t]) {
                     trangThaiCacTuan[t] = { tongTietCoMon: 0, tongTietChuaLuu: 0 };
                 }
-                // Chỉ tính toán các tiết có môn học thực tế
                 if (String(d['Môn Học']).trim() !== '') {
                     trangThaiCacTuan[t].tongTietCoMon++;
                     if (d.DaLuu !== true) {
@@ -393,7 +368,6 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     });
 
-    // Sắp xếp các tuần có dữ liệu từ nhỏ đến lớn và tìm ra tuần nợ sổ đầu tiên
     let cacTuanCoDuLieu = Object.keys(trangThaiCacTuan).map(Number).sort((a, b) => a - b);
     for (let i = 0; i < cacTuanCoDuLieu.length; i++) {
         let t = cacTuanCoDuLieu[i];
@@ -403,42 +377,29 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    // Nếu phát hiện có tuần cũ chưa lưu, và giáo viên đang chọn tuần lớn hơn tuần đó
     if (tuanChuaLuuNhoNhat !== null && tuanSoChon > tuanChuaLuuNhoNhat) {
         alert(`⛔ CẢNH BÁO TRÌNH TỰ SỔ ĐẦU BÀI:\n\nĐồng chí không thể lập sổ Tuần ${tuanSoChon} vì Tuần ${tuanChuaLuuNhoNhat} của lớp này chưa được chốt sổ!\n\nNguyên tắc hệ thống: Bắt buộc phải lưu Sổ đầu bài theo đúng trình tự thời gian để Phân phối chương trình (PPCT) tự động tịnh tiến chính xác.\n\nHệ thống sẽ tự động quay trở về Tuần ${tuanChuaLuuNhoNhat}.`);
         
-        // Tự động tìm và trả Dropdown về Tuần chưa lưu
         let optionToSelect = Array.from(theSelectTuan.options).find(opt => parseInt(opt.value.replace(/\D/g, '')) === tuanChuaLuuNhoNhat);
-        
         if (optionToSelect) {
             theSelectTuan.value = optionToSelect.value;
-            // Kích hoạt lại hàm kết xuất với giá trị Tuần đã được lùi về an toàn
             setTimeout(ketXuatSoDauBaiLenLuoi, 100); 
-            return; // Hủy luồng kết xuất hiện tại
+            return; 
         }
     }
 
-    // =========================================================================
-    // CHỐT CHẶN 2: BẢO VỆ DỮ LIỆU ĐANG NHẬP DỞ TRÊN LƯỚI (DIRTY CHECKING)
-    // =========================================================================
     if (coThayDoiChuaLuu_SDB && (tuanChon !== tuanTruocDo_SDB || lopChon !== lopTruocDo_SDB)) {
         alert("Cảnh báo: Đồng chí đang có dữ liệu chưa lưu trên màn hình! Vui lòng bấm 'Lưu Sổ đầu bài' để chốt dữ liệu trước khi chuyển sang Tuần hoặc Lớp khác.");
-        
-        // Hoàn tác Dropdown về trạng thái đang nhập dở
         if (theSelectTuan && tuanTruocDo_SDB) theSelectTuan.value = tuanTruocDo_SDB;
         if (theSelectLop && lopTruocDo_SDB) theSelectLop.value = lopTruocDo_SDB;
-        return; // Hủy lệnh vẽ lưới mới
+        return; 
     }
 
-    // =========================================================================
-    // AN TOÀN - TIẾN HÀNH KẾT XUẤT LƯỚI
-    // =========================================================================
     thucThiKetXuatSoDauBaiLenLuoi();
 
-    // Cập nhật mốc lưu trữ sau khi kết xuất thành công để dùng cho lần kiểm tra sau
     tuanTruocDo_SDB = theSelectTuan?.value || '';
     lopTruocDo_SDB = theSelectLop?.value || '';
-    coThayDoiChuaLuu_SDB = false; // Reset cờ báo thay đổi cho phiên làm việc mới
+    coThayDoiChuaLuu_SDB = false; 
 }
 
 function thucThiKetXuatSoDauBaiLenLuoi() {
@@ -459,13 +420,9 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 
     let maxTuanChon = parseInt(tuanChon.replace(/\D/g, '')) || 0;
     
-    // =================================================================================
-    // [THUẬT TOÁN ĐỐI SÁNH TÍCH LŨY]: THỪA BÙ THIẾU TỰ ĐỘNG TRIỆT TIÊU CẢNH BÁO
-    // =================================================================================
     let boDemTietPPCT = {}; 
     let demTietTienDo = {}; 
     
-    // 1. Quét dữ liệu từ Tuần 1 đến Tuần đang chọn
     duLieuTKBGopDaMap.forEach(d => {
         let t = parseInt(String(d['Tuần']).replace(/\D/g, '')) || 0;
         let maLop = String(d['Mã Lớp']).trim().toUpperCase();
@@ -488,7 +445,6 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
         }
     });
 
-    // 2. Tính toán Cảnh báo Tiến độ
     let matchKhoiChon = lopChon.match(/\d+/);
     let khoiChon = matchKhoiChon ? matchKhoiChon[0] : '';
     let dinhMucKhoiNay = dinhMucKhungCT[khoiChon] || {};
@@ -520,7 +476,6 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     let dictTKB = {}; let mapNgayChinhXac = {}; 
     let coDayBuThu7 = false; let coDayBuChuNhat = false;
 
-    // 3. Nối tiếp PPCT và xuất dữ liệu tuần hiện hành
     tkbTuanNay.forEach(dong => {
         let thuGoc = String(dong['Thứ']).trim();
         if (thuGoc === 'Thứ 7') coDayBuThu7 = true;
@@ -560,16 +515,13 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     }
 
     let tapHopMonDay = new Set();
-    // [BẢN VÁ LỖI]: Chuẩn hóa chuỗi bằng normalize('NFC') để tránh lỗi sai khác bảng mã tiếng Việt
     let maGvDangNhapLC = madinhdanhGV.trim().toLowerCase().normalize('NFC');
     
     tkbTuanNay.forEach(dong => {
-        // [BẢN VÁ LỖI]: Chuẩn hóa NFC
         let gvTkb = String(dong['Mã GV']).trim().toLowerCase().normalize('NFC');
         let monHoc = String(dong['Môn Học']).trim();
         if (monHoc !== '') {
             let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
-            // Bao hàm chuỗi con để phòng viết tắt
             if (quyenQuanTri || tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
                 tapHopMonDay.add(monHoc);
             }
@@ -640,7 +592,6 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                 let chuyenCan = dongDuLieu ? (dongDuLieu['ChuyenCan_Thuc'] || '') : '';
                 let isLocked = isDaLuu && chuKy.trim() !== '';
 
-                // [BẢN VÁ LỖI]: Chuẩn hóa NFC
                 let gvTkb = dongDuLieu ? String(dongDuLieu['Mã GV']).trim().toLowerCase().normalize('NFC') : '';
                 let quyenNhapThuCong = false;
                 
@@ -648,7 +599,6 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                     quyenNhapThuCong = true;
                 } else if (monHoc !== '' && maGvDangNhapLC !== '') {
                     let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
-                    // [BẢN VÁ LỖI]: Kiểm tra tính bao hàm linh hoạt
                     if (tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
                         quyenNhapThuCong = true;
                     }
@@ -678,8 +628,8 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                         theTenBai = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="${placeholderText}">${tenBai}</textarea>`;
                         theChuyenCan = `<input type="text" ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-semibold text-slate-800 placeholder-slate-400" placeholder="..." value="${chuyenCan}">`;
                         theNhanXet = `<textarea rows="1" oninput="this.style.height='auto'; this.style.height=(this.scrollHeight)+'px';" ${trangThaiKhoa} class="w-full text-left outline-none ${cssNenKhoa} font-normal text-slate-800 placeholder-slate-400 px-1 resize-none overflow-hidden align-middle" placeholder="Nhận xét...">${nhanXet}</textarea>`;
-                        // [NÂNG CẤP]: Thay thế hoàn toàn thẻ datalist bằng thuật toán Cửa sổ trượt PPCT
-                        let monHocAnToan = monHoc.replace(/'/g, "\\'"); // Xử lý escape ký tự nháy đơn nếu có trong tên môn
+                        
+                        let monHocAnToan = monHoc.replace(/'/g, "\\'"); 
                         let onfocusLogic = `moKhungTruotPPCT(event, this, '${khoiChon}', '${monHocAnToan}', this.value || ${parseInt(tietPPCT) || (boDemTietPPCT[monPPCT] || 1)})`;
                         
                         theTietPPCT = `<input type="text" onclick="${onfocusLogic}" readonly ${trangThaiKhoa} 
@@ -691,14 +641,14 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                         let optTB = (xepLoai === 'TB') ? 'selected' : '';
                         let optYeu = (xepLoai === 'Yếu') ? 'selected' : '';
                         
-                       theXepLoai = `<select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none"><option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option><option value="Tốt" ${optTot}>Tốt</option><option value="Khá" ${optKha}>Khá</option><option value="TB" ${optTB}>TB</option><option value="Yếu" ${optYeu}>Yếu</option></select>`;
+                        theXepLoai = `<select ${trangThaiKhoa} class="w-full text-center outline-none ${cssNenKhoa} font-bold text-slate-800 cursor-pointer appearance-none"><option value="" ${!xepLoai ? 'selected' : ''}>-Chọn-</option><option value="Tốt" ${optTot}>Tốt</option><option value="Khá" ${optKha}>Khá</option><option value="TB" ${optTB}>TB</option><option value="Yếu" ${optYeu}>Yếu</option></select>`;
                         
-                       // [THUẬT TOÁN GIAO DIỆN COMBO BOX]: Tạo khối bọc có biểu tượng mũi tên để người dùng biết có thể xổ xuống
+                        // [TÍCH HỢP COMBO BOX ĐỒNG BỘ UI]: Bọc giao diện để ô chữ ký có mũi tên báo hiệu chọn danh sách
                         let onfocusChuKy = `moKhungTruotChuKy(event, this)`;
-                        theChuKy = `<div class="relative flex items-center justify-center">
+                        theChuKy = `<div class="relative flex items-center justify-center w-full h-full">
                                         <input type="text" autocomplete="off" ${trangThaiKhoa} data-thuocve="${thuocVeGvHienTai}" 
                                             class="w-full text-center outline-none transition-colors duration-300 rounded ${cssNenKhoa} font-semibold text-blue-700 placeholder-blue-300 cursor-pointer hover:bg-blue-50 focus:bg-blue-50 pr-5" 
-                                            placeholder="Ghi rõ họ tên..." value="${chuKy}" 
+                                            placeholder="${!quyenNhapThuCong ? 'Không có quyền' : 'Ghi rõ họ tên...'}" value="${chuKy}" 
                                             onclick="${onfocusChuKy}" 
                                             oninput="dongKhungTruotChuKy(); coThayDoiChuaLuu_SDB = true;">
                                         ${!quyenNhapThuCong ? '' : `<svg class="w-4 h-4 absolute right-1 text-blue-400 pointer-events-none opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`}
@@ -739,7 +689,6 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
             ta.style.height = (ta.scrollHeight) + 'px';
         });
 
-        // [NÂNG CẤP]: Lắng nghe mọi sự kiện chỉnh sửa trên lưới để bật cờ "Chưa lưu"
         let tatCaOVanBan = vungHienThi.querySelectorAll('textarea, input, select');
         tatCaOVanBan.forEach(oNhap => {
             oNhap.addEventListener('input', () => { coThayDoiChuaLuu_SDB = true; });
@@ -749,7 +698,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 }
 
 // =========================================================================
-// HÀM 2 (NÂNG CẤP): LƯU SỔ ĐẦU BÀI (Xác thực quyền & Bù đắp dữ liệu)
+// HÀM LƯU SỔ ĐẦU BÀI 
 // =========================================================================
 async function luuSoDauBaiSangMayChu() {
     let tuanChon = document.getElementById('chonTuanSo')?.value;
@@ -759,7 +708,6 @@ async function luuSoDauBaiSangMayChu() {
     let tuanSo = parseInt(tuanChon.replace(/\D/g, ''));
     let tuanHeThong = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(window.thongSoHocVu.TUAN_HIEN_TAI) : 999;
     
-    // Trích xuất quyền từ biến toàn cục đã lưu sẵn trên RAM
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
     let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true') : false);
@@ -767,7 +715,7 @@ async function luuSoDauBaiSangMayChu() {
 
     let duLieuQuetDuoc = [];
     let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
-    let canThiTietThieuTenBai = false; // Cờ kiểm soát tuần quá khứ
+    let canThiTietThieuTenBai = false; 
     let loiPhanQuyen = false;
 
     cacBang.forEach(khungBang => {
@@ -801,11 +749,7 @@ async function luuSoDauBaiSangMayChu() {
                 let chuKyGV = getVal(dong.querySelector('td[data-loai="chuKy"]'));
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
-                // ================================================================
-                // KIỂM TRA ĐỘC LẬP 100%: QUYỀN KÝ SỔ (Theo luồng dữ liệu gộp)
-                // ================================================================
                 let buoiKiemTra = buoi.toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
-                let khoaKiemTra = `${tuanSo}_${lopChon.toUpperCase()}_${thuHienTai}_${buoi}_${tiet}`;
                 let tkbDoiChieu = duLieuTKBGopDaMap.find(d => 
                     String(d['Tuần']).trim() == tuanSo && 
                     String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase() && 
@@ -821,17 +765,13 @@ async function luuSoDauBaiSangMayChu() {
                         let coQuyen = tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2);
                         if (!coQuyen) {
                             loiPhanQuyen = true;
-                            dong.classList.add('bg-red-100'); // Đánh dấu dòng vi phạm
+                            dong.classList.add('bg-red-100'); 
                         }
                     }
                 }
 
-                // ================================================================
-                // NGHIỆP VỤ BÙ ĐẮP DỮ LIỆU: Thiếu tên bài ở tuần quá khứ
-                // ================================================================
                 if (chuKyGV !== '' && tuanSo < tuanHeThong && tenBai === '') {
                     canThiTietThieuTenBai = true;
-                    // Truy xuất bù đắp
                     let matchKhoi = lopChon.match(/\d+/);
                     let khoi = matchKhoi ? matchKhoi[0] : '';
                     let monPPCT = mon.replace(/[0-9\(\)]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -846,7 +786,7 @@ async function luuSoDauBaiSangMayChu() {
                             theTextarea.style.height = 'auto';
                             theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
                         }
-                        tenBai = baiDayChuan; // Cập nhật vào biến gửi đi
+                        tenBai = baiDayChuan; 
                     }
                 }
 
@@ -863,14 +803,13 @@ async function luuSoDauBaiSangMayChu() {
         });
     });
 
-    // CHỐT CHẶN NGHIỆP VỤ
     if (loiPhanQuyen) {
         return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công của đồng chí. Các dòng vi phạm đã bị bôi đỏ. Vui lòng xóa chữ ký và thử lại!");
     }
 
     if (canThiTietThieuTenBai) {
         alert("Hệ thống phát hiện sổ tuần quá khứ bị bỏ trống Tên bài. Đã tự động đối chiếu Khung PPCT và điền bù Tên bài chuẩn. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
-        return; // Dừng lại 1 nhịp để giáo viên nhìn thấy dữ liệu vừa được điền tự động
+        return; 
     }
 
     if (duLieuQuetDuoc.length === 0) return alert("Sổ đầu bài đang trống, không có dữ liệu để lưu.");
@@ -888,7 +827,7 @@ async function luuSoDauBaiSangMayChu() {
 
         if (ketQua.trangThai === 'thanh_cong') {
             alert(`✅ Đã chốt thành công Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanSo}!`);
-            coThayDoiChuaLuu_SDB = false; // [NÂNG CẤP]: Xóa cờ cảnh báo sau khi lưu thành công
+            coThayDoiChuaLuu_SDB = false; 
             await taiDuLieuSoDauBaiTuMayChu();
             daTaiDuLieuSoDauBai = false; 
             taiDuLieuSoDauBaiTuMayChu();
@@ -901,8 +840,7 @@ async function luuSoDauBaiSangMayChu() {
 }
 
 // =========================================================================
-// KHỐI 3: HÀM ĐỒNG BỘ TÊN BÀI THEO NÚT BẤM (NÂNG CẤP TÌM KIẾM THÔNG MINH)
-// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM
+// HÀM ĐỒNG BỘ TÊN BÀI VÀ XUẤT FILE
 // =========================================================================
 function dongBoTenBaiHoc() {
     const btn = document.getElementById('btnDongBoTenBai');
@@ -923,33 +861,22 @@ function dongBoTenBaiHoc() {
         let khoi = matchKhoi ? matchKhoi[0] : '';
         let cacDong = document.querySelectorAll('#vungHienThiSoDauBai tbody tr');
         
-     // Thuật toán Tìm kiếm thông minh 2 lớp: Ưu tiên Khớp chính xác -> Dự phòng bỏ chữ số ở hậu tố
         const timTenBaiChuan = (monHoc, tietPPCT) => {
             let monGoc = monHoc.trim().toLowerCase().replace(/\s+/g, ' ');
-            
-            // Lệnh cắt bỏ hậu tố là chữ số (bao gồm cả khoảng trắng trước chữ số nếu có)
             let monKhongSoCuoi = monGoc.replace(/\s*\d+$/, '').trim();
-            
             let keys = Object.keys(tuDienPPCTToanCuc);
 
-            // =========================================================================
-            // BƯỚC 1: Tìm CHÍNH XÁC tên môn gốc (Lấy nguyên tên trên TKB gọi lên, VD: "tc toán 1")
-            // =========================================================================
             let khoaChinhXac = `${khoi}_${monGoc}_${tietPPCT}`;
             if (tuDienPPCTToanCuc[khoaChinhXac]) return tuDienPPCTToanCuc[khoaChinhXac];
             
             for (let i = 0; i < keys.length; i++) {
                 let k = keys[i];
                 let parts = k.split('_');
-                // parts[0] là khối, parts[1] là tên môn trong từ điển, parts[2] là số tiết
                 if (parts.length === 3 && parts[0] === khoi && parts[2] === String(tietPPCT)) {
                     if (parts[1] === monGoc) return tuDienPPCTToanCuc[k];
                 }
             }
 
-            // =========================================================================
-            // BƯỚC 2: Nếu KHÔNG CÓ tên chính xác, mới tiến hành bỏ hậu tố chữ số để tìm (VD: "tc toán")
-            // =========================================================================
             if (monGoc !== monKhongSoCuoi) { 
                 let khoaDuPhong = `${khoi}_${monKhongSoCuoi}_${tietPPCT}`;
                 if (tuDienPPCTToanCuc[khoaDuPhong]) return tuDienPPCTToanCuc[khoaDuPhong];
@@ -962,7 +889,6 @@ function dongBoTenBaiHoc() {
                     }
                 }
             }
-            
             return '';
         };
         
@@ -983,21 +909,18 @@ function dongBoTenBaiHoc() {
                         let isLocked = oTenBai.getAttribute('data-islocked') === 'true';
                         let theTextarea = oTenBai.querySelector('textarea');
                         
-                        // Xóa bỏ chốt chặn, ép điền dữ liệu cho mọi trạng thái ô trống
                         if (isLocked) {
-                            // Xử lý tiết đã lưu (text thuần)
                             if (oTenBai.innerText.trim() === '') {
                                 oTenBai.innerText = baiDayChuan;
                                 oTenBai.classList.add('text-emerald-700', 'font-bold');
                             }
                         } else {
-                            // Xử lý thẻ Textarea (Kể cả khi bị disable do không có quyền)
                             if (theTextarea && theTextarea.value.trim() === '') {
                                 theTextarea.value = baiDayChuan;
-                                document.activeElement.blur(); // Tách focus để tránh xung đột giao diện
+                                document.activeElement.blur(); 
                                 theTextarea.style.height = 'auto';
                                 theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
-                                coThayDoiChuaLuu_SDB = true; // [NÂNG CẤP]: Bật cờ "Chưa lưu"
+                                coThayDoiChuaLuu_SDB = true; 
                             }
                         }
                     }
@@ -1019,9 +942,6 @@ function xuatWordSoDauBai() {
     let tuanChon = document.getElementById('chonTuanSo').value;
     let lopChon = document.getElementById('chonLopSo').value;
 
-    // =========================================================================
-    // [NÂNG CẤP]: THUẬT TOÁN BẢO MẬT - TỰ ĐỘNG KIỂM TRA QUYỀN TẢI XUỐNG
-    // =========================================================================
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
     let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
@@ -1036,7 +956,6 @@ function xuatWordSoDauBai() {
             if (monHoc === '') return false;
             let gvTkb = String(dong['Mã GV']).trim().toLowerCase().normalize('NFC');
             let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
-            // Kiểm tra bao hàm linh hoạt để phòng trường hợp viết tắt
             return tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2);
         });
     }
@@ -1044,7 +963,6 @@ function xuatWordSoDauBai() {
     if (!coQuyenTaiXuong) {
         return alert("Từ chối truy cập: Đồng chí không có tiết dạy tại lớp này nên không được cấp quyền xuất Sổ đầu bài!");
     }
-    // =========================================================================
 
     let preHtml = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1089,9 +1007,6 @@ async function xuatExcelSoDauBai() {
     let tuanChon = document.getElementById('chonTuanSo').value;
     let lopChon = document.getElementById('chonLopSo').value;
 
-    // =========================================================================
-    // [NÂNG CẤP]: THUẬT TOÁN BẢO MẬT - TỰ ĐỘNG KIỂM TRA QUYỀN TẢI XUỐNG
-    // =========================================================================
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
     let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
@@ -1113,7 +1028,6 @@ async function xuatExcelSoDauBai() {
     if (!coQuyenTaiXuong) {
         return alert("Từ chối truy cập: Đồng chí không có tiết dạy tại lớp này nên không được cấp quyền xuất Sổ đầu bài!");
     }
-    // =========================================================================
 
     try {
         if (typeof ExcelJS === 'undefined') {
@@ -1170,7 +1084,7 @@ async function xuatExcelSoDauBai() {
                     cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
                     if([1, 2, 3, 4, 5, 8, 9].includes(colNumber)) cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
                     else cell.alignment = { vertical: 'middle', wrapText: true };
-                    if (colNumber === 2) cell.numFmt = '@'; // Ép file Excel định dạng Text cho Cột C.Cần
+                    if (colNumber === 2) cell.numFmt = '@'; 
                 });
                 rowIndex++;
             });
@@ -1238,22 +1152,15 @@ function napDropdownSoDauBai() {
         vungHienThi.innerHTML = `<div class="p-4"><p class="text-center py-10 text-slate-500 font-bold">Vui lòng chọn Tuần và Lớp để xem Sổ đầu bài.</p></div>`;
     }
 }
-// =========================================================================
-// KHỐI MỚI: THUẬT TOÁN CỬA SỔ TRƯỢT HIỂN THỊ TIẾT PPCT (+/- 10 TIẾT)
-// THIẾT KẾ VÀ PHÁT TRIỂN: HOÀNG NGỌC LÂM (BẢN VÁ LỖI ĐÓNG KHUNG GIAO DIỆN)
-// =========================================================================
 
-let trangThaiKhungPPCT = {
-    dangMo: false,
-    inputTiet: null,
-    inputTenBai: null
-};
+// =========================================================================
+// THUẬT TOÁN CỬA SỔ TRƯỢT HIỂN THỊ TIẾT PPCT
+// =========================================================================
+let trangThaiKhungPPCT = { dangMo: false, inputTiet: null, inputTenBai: null };
 
 function moKhungTruotPPCT(event, theInputTiet, khoi, mon, tietHienTai) {
-    if (event) event.stopPropagation(); // Chặn sự kiện nổi bọt gây lỗi đóng khung
-    
-    dongKhungTruotPPCT(); // Làm sạch khung cũ nếu có trước khi mở khung mới
-    
+    if (event) event.stopPropagation(); 
+    dongKhungTruotPPCT(); 
     trangThaiKhungPPCT.inputTiet = theInputTiet;
     let tr = theInputTiet.closest('tr');
     trangThaiKhungPPCT.inputTenBai = tr ? tr.querySelector('td[data-loai="tenBai"] textarea') : null;
@@ -1261,7 +1168,6 @@ function moKhungTruotPPCT(event, theInputTiet, khoi, mon, tietHienTai) {
     let intTiet = parseInt(tietHienTai) || 1;
     let tietBatDau = Math.max(1, intTiet - 10);
     let tietKetThuc = intTiet + 10;
-    
     veGiaoDienKhungTruot(theInputTiet, khoi, mon, intTiet, tietBatDau, tietKetThuc);
 }
 
@@ -1284,8 +1190,6 @@ function veGiaoDienKhungTruot(theInputTiet, khoi, mon, tietTrungTam, tietBatDau,
         let baiDayAnToan = baiDay.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
         let cssDangChon = (i === tietTrungTam) ? "bg-blue-100 border-l-4 border-blue-600 font-bold" : "hover:bg-slate-100 border-l-4 border-transparent";
-        
-        // Truyền thêm biến event vào hàm chonMucPPCT
         htmlDanhSach += `<li class="p-2 cursor-pointer border-b border-slate-100 ${cssDangChon}" 
                              onclick="chonMucPPCT(${i}, '${baiDayAnToan}', event)">
                              <span class="text-blue-700 font-extrabold">Tiết ${i}:</span> <span class="text-slate-700">${baiDay}</span>
@@ -1302,33 +1206,29 @@ function veGiaoDienKhungTruot(theInputTiet, khoi, mon, tietTrungTam, tietBatDau,
     divKhung.className = 'absolute mt-1 z-50';
     divKhung.innerHTML = htmlDanhSach;
 
-    // Xử lý không gian hiển thị của ô chứa
     let tdContainer = theInputTiet.parentNode;
     if (window.getComputedStyle(tdContainer).position === 'static') {
         tdContainer.style.position = 'relative';
     }
     
-    // Ngăn chặn việc click vào thanh cuộn của khung làm đóng khung
     divKhung.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-
     tdContainer.appendChild(divKhung);
     trangThaiKhungPPCT.dangMo = true;
 }
 
 function chonMucPPCT(soTiet, tenBai, event) {
-    if (event) event.stopPropagation(); // Khóa sự kiện nổi bọt khi click chọn bài
-    
+    if (event) event.stopPropagation(); 
     if (trangThaiKhungPPCT.inputTiet) {
         trangThaiKhungPPCT.inputTiet.value = soTiet;
-        coThayDoiChuaLuu_SDB = true; // [NÂNG CẤP]: Bật cờ cảnh báo
+        coThayDoiChuaLuu_SDB = true; 
     }
     if (trangThaiKhungPPCT.inputTenBai && tenBai !== 'Chưa có dữ liệu bài dạy') {
         trangThaiKhungPPCT.inputTenBai.value = tenBai;
         trangThaiKhungPPCT.inputTenBai.style.height = 'auto';
         trangThaiKhungPPCT.inputTenBai.style.height = (trangThaiKhungPPCT.inputTenBai.scrollHeight) + 'px';
-        coThayDoiChuaLuu_SDB = true; // [NÂNG CẤP]: Bật cờ cảnh báo
+        coThayDoiChuaLuu_SDB = true; 
     }
-    dongKhungTruotPPCT(); // Đóng khung ngay lập tức sau khi gán xong dữ liệu
+    dongKhungTruotPPCT(); 
 }
 
 function dongKhungTruotPPCT() {
@@ -1337,29 +1237,24 @@ function dongKhungTruotPPCT() {
     trangThaiKhungPPCT.dangMo = false;
 }
 
-document.removeEventListener('mousedown', kiemTraDongKhungNgoaiVung);
-document.addEventListener('mousedown', kiemTraDongKhungNgoaiVung);
-
-function kiemTraDongKhungNgoaiVung(event) {
+document.addEventListener('mousedown', function(event) {
     if (trangThaiKhungPPCT.dangMo) {
         let khungDong = document.getElementById('khungHienThiPPCT_Dong');
         let oTietDangKichHoat = trangThaiKhungPPCT.inputTiet;
-        
-        // Nếu click chuột KHÔNG nằm trong khung danh sách VÀ KHÔNG nằm trong ô Tiết đang mở
         if (khungDong && event.target !== oTietDangKichHoat && !khungDong.contains(event.target)) {
             dongKhungTruotPPCT();
         }
     }
-}
+});
+
 // =========================================================================
-// KHỐI MỚI: THUẬT TOÁN CỬA SỔ TRƯỢT DANH SÁCH GIÁO VIÊN (COMBO BOX KÝ TÊN)
+// THUẬT TOÁN CỬA SỔ TRƯỢT DANH SÁCH GIÁO VIÊN (COMBO BOX KÝ TÊN TỌA ĐỘ FIXED)
 // =========================================================================
 let trangThaiKhungChuKy = { dangMo: false, inputChuKy: null };
 
 function moKhungTruotChuKy(event, theInputChuKy) {
     if (event) event.stopPropagation();
     
-    // Ngăn chớp giật
     if (trangThaiKhungChuKy.dangMo && trangThaiKhungChuKy.inputChuKy === theInputChuKy) return;
     
     if (typeof dongKhungTruotPPCT === 'function') dongKhungTruotPPCT(); 
@@ -1367,15 +1262,12 @@ function moKhungTruotChuKy(event, theInputChuKy) {
     
     trangThaiKhungChuKy.inputChuKy = theInputChuKy;
 
-    // Hiệu ứng mờ dữ liệu cũ
     theInputChuKy.classList.remove('text-blue-700');
     theInputChuKy.classList.add('text-slate-400', 'opacity-60');
 
-    // Chốt chặn an toàn: Nếu ô khóa hoặc mảng rỗng thì không mở
     if (theInputChuKy.disabled || !danhSachGiaoVienToanCuc || danhSachGiaoVienToanCuc.length === 0) return;
 
     let htmlDanhSach = `<ul class="max-h-56 overflow-y-auto bg-white border border-blue-400 shadow-2xl rounded text-sm w-48 text-left divide-y divide-slate-100">`;
-    
     htmlDanhSach += `<li class="p-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors italic text-center font-semibold" onclick="chonMucChuKy('', event)">-- Xóa chữ ký --</li>`;
 
     danhSachGiaoVienToanCuc.forEach(gv => {
@@ -1388,7 +1280,7 @@ function moKhungTruotChuKy(event, theInputChuKy) {
 
     let divKhung = document.createElement('div');
     divKhung.id = 'khungHienThiChuKy_Dong';
-    // [THUẬT TOÁN TỌA ĐỘ]: Dùng fixed để danh sách luôn nổi lên trên bảng, không bị cắt xén
+    // [THUẬT TOÁN BẢO VỆ]: Dùng fixed để ngăn chặn bị cắt giao diện bởi bảng
     divKhung.className = 'fixed z-[9999] mt-1'; 
     divKhung.innerHTML = htmlDanhSach;
 
@@ -1396,7 +1288,7 @@ function moKhungTruotChuKy(event, theInputChuKy) {
     
     let rect = theInputChuKy.getBoundingClientRect();
     divKhung.style.top = (rect.bottom + 2) + 'px';
-    divKhung.style.left = (rect.right - 192) + 'px'; // width w-48 = 192px
+    divKhung.style.left = (rect.right - 192) + 'px'; 
     
     trangThaiKhungChuKy.dangMo = true;
 }
@@ -1406,6 +1298,9 @@ function chonMucChuKy(tenGv, event) {
     if (trangThaiKhungChuKy.inputChuKy) {
         trangThaiKhungChuKy.inputChuKy.value = tenGv;
         coThayDoiChuaLuu_SDB = true; 
+        
+        let ev = new Event('input', { bubbles: true});
+        trangThaiKhungChuKy.inputChuKy.dispatchEvent(ev);
     }
     dongKhungTruotChuKy();
 }
@@ -1429,7 +1324,6 @@ document.addEventListener('mousedown', function(event) {
     }
 });
 
-// Đóng khung khi cuộn trang để tránh trôi nổi danh sách
 document.addEventListener('scroll', function() {
     if (trangThaiKhungChuKy.dangMo) dongKhungTruotChuKy();
 }, true);
