@@ -404,7 +404,7 @@ function hks_xuLyHanhDongXoa_fn(hks_nutBamUI_el, hks_thongTinTruyen_obj) {
       });
   }
   
-  function hks_thucHienDoiLop_fn() {
+ function hks_thucHienDoiLop_fn() {
       Swal.fire({ title: 'Cập nhật cấu trúc', text: "Đồng bộ chuyển đổi lớp cho các học sinh đã được đánh dấu chỉnh sửa?", icon: 'warning', showCancelButton: true, confirmButtonText: 'Đồng ý' }).then((result) => {
         if (result.isConfirmed) {
           const hks_thanBang_el = document.querySelector('#bang1 tbody'); let hks_duLieuCanLuu_arr = [];
@@ -425,14 +425,22 @@ function hks_xuLyHanhDongXoa_fn(hks_nutBamUI_el, hks_thongTinTruyen_obj) {
           if(hks_duLieuCanLuu_arr.length === 0) { Swal.fire("Thông báo", "Vui lòng chỉnh sửa và đánh dấu ít nhất 1 học sinh để thao tác!", "info"); return; }
           
           hks_hienThiManHinhTai_fn(true);
-        hks_thucThiGiaoTiep_fn('hks_dieuChuyenThucThe_api', {hks_mangDuLieuDauVao_arr: hks_duLieuCanLuu_arr, hks_dinhTuyenNguon_str: hks_hoSoNguoiDungHienTai_obj.reqId}).then(hks_ketQuaAPI_obj => { 
-              if(hks_ketQuaAPI_obj.success === false) { Swal.fire('Từ chối', 'Mất kết nối máy chủ xác thực!', 'warning'); hks_hienThiManHinhTai_fn(false); return; }
+          hks_thucThiGiaoTiep_fn('hks_dieuChuyenThucThe_api', {hks_mangDuLieuDauVao_arr: hks_duLieuCanLuu_arr, hks_dinhTuyenNguon_str: hks_hoSoNguoiDungHienTai_obj.reqId}).then(hks_ketQuaAPI_obj => { 
+              // [Nâng cấp]: Bổ sung lệnh tắt loader ngay lập tức sau khi nhận phản hồi
+              hks_hienThiManHinhTai_fn(false);
+              
+              if(hks_ketQuaAPI_obj.success === false) { Swal.fire('Từ chối', 'Mất kết nối máy chủ xác thực!', 'warning'); return; }
+              
               hks_khoDuLieuTong_arr = hks_ketQuaAPI_obj.data || [];
               let iconStr = hks_ketQuaAPI_obj.message.includes("thành công") ? "success" : "info"; 
               Swal.fire("Kết quả", hks_ketQuaAPI_obj.message, iconStr); 
               hks_khoiPhucTrangThaiGoc_fn(1); 
               hks_layDuLieuPhanMot_fn();
-          }).catch(e => { Swal.fire('Sự cố', e.message, 'warning'); hks_hienThiManHinhTai_fn(false); });
+          }).catch(e => { 
+              // [Nâng cấp]: Đảm bảo tắt loader khi có lỗi mạng
+              hks_hienThiManHinhTai_fn(false); 
+              Swal.fire('Sự cố', e.message, 'warning'); 
+          });
         }
       });
   }
