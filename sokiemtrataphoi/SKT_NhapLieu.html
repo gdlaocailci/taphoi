@@ -1,4 +1,10 @@
 <style>
+/* NÂNG CẤP UI: Hiệu ứng làm mờ chữ khi người dùng đang focus chọn lại danh sách */
+  .input-dimmed::placeholder {
+      color: #64748b !important; 
+      opacity: 0.6 !important;
+      font-style: normal !important;
+  }
   /* NÂNG CẤP: Giao diện cho ô tìm kiếm Combobox */
   input[list] {
       cursor: pointer;
@@ -1182,6 +1188,44 @@ function xulyxo() {
               
               giatri_cu = "";
               onchange_cu = "";
+          });
+      });
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+      // NÂNG CẤP: Xử lý hiệu ứng mờ chữ và hiển thị toàn bộ danh sách Combobox
+      const ds_o_nhap = ['cbGiaoVien', 'cbNguoiKiemTra', 'cbBoPhan'];
+      
+      ds_o_nhap.forEach(function(idd) {
+          const el = document.getElementById(idd);
+          if (!el) return;
+
+          // Khi nhấp chuột vào ô (focus chạy trước click gốc)
+          el.addEventListener('focus', function() {
+              if (el.readOnly || el.disabled) return;
+              
+              if (el.value.trim() !== '') {
+                  // Lưu giá trị đang có
+                  el.dataset.giatriCu = el.value;
+                  // Gán thành chữ mờ
+                  el.placeholder = el.value;
+                  el.classList.add('input-dimmed');
+                  // Xóa sạch để showPicker() xổ toàn bộ danh sách
+                  el.value = ''; 
+              }
+          });
+
+          // Khi thoát chuột ra ngoài hoặc chọn xong
+          el.addEventListener('blur', function() {
+              el.classList.remove('input-dimmed');
+              el.placeholder = "-- Chọn / Nhập tìm kiếm --"; 
+              
+              // Nếu không chọn gì (ô trống), trả lại dữ liệu cũ
+              if (el.value.trim() === '' && el.dataset.giatriCu) {
+                  el.value = el.dataset.giatriCu;
+              }
+              
+              delete el.dataset.giatriCu;
           });
       });
   });
