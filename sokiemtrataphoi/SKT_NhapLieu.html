@@ -17,6 +17,13 @@
     th { text-align: center !important; vertical-align: middle !important; }
   .filter-section { grid-template-columns: 220px 220px 220px 175px 1fr !important; }
 
+  /* NÂNG CẤP UI: Hiệu ứng làm mờ chữ khi người dùng đang focus chọn lại danh sách */
+  .input-dimmed::placeholder {
+      color: #64748b !important; 
+      opacity: 0.6 !important;
+      font-style: normal;
+  }
+
   /* Hiệu ứng trích xuất từ ReactBits (Shiny Button Effect) */
   .reactbits-btn {
       position: relative;
@@ -49,19 +56,20 @@
   <div class="header-card">
    <h1 id="title_nhaplieu" style="text-align:center; color:var(--brand-red); margin-top:0; font-family: 'Times New Roman', serif; font-size: 22px; font-weight: bold;">ĐANG ĐỒNG BỘ DỮ LIỆU...</h1>
 <div class="filter-section">
+      <!-- NÂNG CẤP LỆNH: Bổ sung onclick="mo_danh_sach(this)" và onblur="dong_danh_sach(this)" -->
       <div class="f-item">
         <span>Giáo viên</span>
-        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('GV')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('GV')" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
         <datalist id="list_cbGiaoVien"></datalist>
       </div>
       <div class="f-item">
         <span>Người kiểm tra</span>
-        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('NKT')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('NKT')" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
         <datalist id="list_cbNguoiKiemTra"></datalist>
       </div>
       <div class="f-item">
         <span>Bộ phận</span>
-        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="capnmab()" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="capnmab()" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
         <datalist id="list_cbBoPhan"></datalist>
       </div>
       <div class="f-item">
@@ -158,6 +166,34 @@
 </div>
 
 <script>
+  // --- NÂNG CẤP BLOCK JS MỚI: Xử lý hiệu ứng hiển thị danh sách (Combobox) ---
+  function mo_danh_sach(dt_ch) {
+      if (dt_ch.readOnly || dt_ch.disabled) return;
+      if (dt_ch.value) {
+          dt_ch.setAttribute('data-giatri-cu', dt_ch.value);
+          dt_ch.setAttribute('data-placeholder-cu', dt_ch.placeholder);
+          dt_ch.placeholder = dt_ch.value; // Biến chữ thật thành chữ mờ 
+          dt_ch.value = ''; // Xóa value để ép datalist bung toàn bộ thay vì lọc
+          dt_ch.classList.add('input-dimmed');
+      }
+      try { dt_ch.showPicker(); } catch(e) {}
+  }
+
+  function dong_danh_sach(dt_ch) {
+      dt_ch.classList.remove('input-dimmed');
+      // Nếu người dùng không chọn gì mới (click ra ngoài), khôi phục nguyên trạng
+      if (dt_ch.value.trim() === '' && dt_ch.hasAttribute('data-giatri-cu')) {
+          dt_ch.value = dt_ch.getAttribute('data-giatri-cu');
+      }
+      // Dọn dẹp cache
+      if (dt_ch.hasAttribute('data-placeholder-cu')) {
+          dt_ch.placeholder = dt_ch.getAttribute('data-placeholder-cu');
+      }
+      dt_ch.removeAttribute('data-giatri-cu');
+      dt_ch.removeAttribute('data-placeholder-cu');
+  }
+  // --- KẾT THÚC BLOCK NÂNG CẤP JS ---
+
   // --- ĐỒNG BỘ ĐỊNH DANH GIAO DIỆN ---
   (function dongBoNhanDien() {
       setTimeout(function() {
