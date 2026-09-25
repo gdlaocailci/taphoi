@@ -55,21 +55,21 @@
 <div id="main_content">
   <div class="header-card">
    <h1 id="title_nhaplieu" style="text-align:center; color:var(--brand-red); margin-top:0; font-family: 'Times New Roman', serif; font-size: 22px; font-weight: bold;">ĐANG ĐỒNG BỘ DỮ LIỆU...</h1>
-<div class="filter-section">
-      <!-- NÂNG CẤP LỆNH: Bổ sung onclick="mo_danh_sach(this)" và onblur="dong_danh_sach(this)" -->
+
+    <div class="filter-section">
       <div class="f-item">
         <span>Giáo viên</span>
-        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('GV')" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
+        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('GV')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
         <datalist id="list_cbGiaoVien"></datalist>
       </div>
       <div class="f-item">
         <span>Người kiểm tra</span>
-        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('NKT')" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
+        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('NKT')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
         <datalist id="list_cbNguoiKiemTra"></datalist>
       </div>
       <div class="f-item">
         <span>Bộ phận</span>
-        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="capnmab()" onclick="mo_danh_sach(this)" onblur="dong_danh_sach(this)" autocomplete="off">
+        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="capnmab()" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
         <datalist id="list_cbBoPhan"></datalist>
       </div>
       <div class="f-item">
@@ -82,6 +82,7 @@
         <datalist id="list_cbMaHoSo"></datalist>
       </div>
     </div>
+    
         <div class="status-stepper">
       <div id="step1" class="step active">1. CHỜ CHỌN</div>
       <div id="step2" class="step">2. NẠP DỮ LIỆU</div>
@@ -1124,6 +1125,64 @@ function xulyxo() {
   }
   //===================================
   document.addEventListener('DOMContentLoaded', function() {
-   
+      // NÂNG CẤP: Xử lý hiệu ứng Combobox độc lập, an toàn cho luồng quyền
+      const ds_o_nhap = ['cbGiaoVien', 'cbNguoiKiemTra', 'cbBoPhan'];
+      
+      ds_o_nhap.forEach(function(idd) {
+          const el = document.getElementById(idd);
+          if (!el) return;
+          
+          let giatri_cu = "";
+          let onchange_cu = "";
+
+          // Bắt sự kiện khi vừa nhấn chuột vào ô
+          el.addEventListener('mousedown', function(e) {
+              if (el.readOnly || el.disabled) return;
+              
+              giatri_cu = el.value;
+              if (giatri_cu) {
+                  el.setAttribute('data-placeholder-cu', el.placeholder || "");
+                  el.placeholder = giatri_cu; 
+                  el.classList.add('input-dimmed');
+                  
+                  // Tạm vô hiệu hóa onchange gốc để hệ thống không hiểu nhầm là bị mất dữ liệu
+                  if (el.hasAttribute('onchange')) {
+                      onchange_cu = el.getAttribute('onchange');
+                      el.removeAttribute('onchange');
+                  }
+                  el.value = ''; // Làm rỗng để trình duyệt xổ toàn bộ list mới
+              }
+          });
+
+          // Bắt sự kiện khi thoát chuột ra ngoài
+          el.addEventListener('blur', function(e) {
+              el.classList.remove('input-dimmed');
+              
+              // 1. Nếu không chọn mới, lập tức phục hồi dữ liệu cũ
+              if (el.value.trim() === '' && giatri_cu !== "") {
+                  el.value = giatri_cu;
+              }
+              
+              if (el.hasAttribute('data-placeholder-cu')) {
+                  el.placeholder = el.getAttribute('data-placeholder-cu');
+                  el.removeAttribute('data-placeholder-cu');
+              }
+
+              // 2. Phục hồi lại hàm onchange gốc
+              if (onchange_cu) {
+                  el.setAttribute('onchange', onchange_cu);
+              }
+              
+              // 3. Chỉ kích hoạt xử lý nghiệp vụ nếu thực sự chọn giáo viên/NKT mới
+              if (el.value !== giatri_cu && el.value.trim() !== '') {
+                  if (onchange_cu.includes("khindthd('GV')")) khindthd('GV');
+                  else if (onchange_cu.includes("khindthd('NKT')")) khindthd('NKT');
+                  else if (onchange_cu.includes("capnmab()")) capnmab();
+              }
+              
+              giatri_cu = "";
+              onchange_cu = "";
+          });
+      });
   });
 </script>
