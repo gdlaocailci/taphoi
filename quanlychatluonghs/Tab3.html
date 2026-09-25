@@ -53,6 +53,15 @@
       border-bottom: 2px solid #b71c1c; display: inline-block;
       padding-bottom: 5px; margin-bottom: 15px; position: relative; z-index: 2;
   }
+
+  /* 4. [NÂNG CẤP]: Khóa cứng chiều cao vùng Biểu đồ, ép buộc xuất hiện thanh cuộn */
+  #tab3 #tk_bieudo .table-container {
+      height: calc(100vh - 350px) !important; 
+      max-height: calc(100vh - 350px) !important;
+      overflow-y: auto !important; 
+      overflow-x: hidden !important;
+      padding-bottom: 30px !important; /* Dư địa cuộn để biểu đồ không dính sát viền dưới */
+  }
 </style>
 
 <div class="tab-pane" id="tab3">
@@ -200,13 +209,13 @@
                 </button>
             </div>
         </div>
-       <div class="table-container">
+       <!-- [NÂNG CẤP]: Khóa không gian tuyệt đối bằng Inline Style để trị lỗi giãn nở của Canvas Chart.js, ép thanh cuộn dọc (scroll) xuất hiện -->
+       <div class="table-container" style="height: calc(100vh - 360px) !important; max-height: calc(100vh - 360px) !important; overflow-y: scroll !important; overflow-x: hidden !important; display: block !important;">
             <div id="hks_khungChuaBieuDo_div" class="row g-4 p-2 pb-4 m-0 w-100">
                 <!-- Khu vực nội suy biểu đồ đồ họa -->
             </div>
         </div>
     </div>
-  </div>
 </div>
   <script>
   
