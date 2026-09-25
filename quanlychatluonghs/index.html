@@ -59,23 +59,33 @@
     .nav-tabs .nav-link.active { background-color: #003366; color: #ffffff !important; border-color: #003366; }
     .nav-pills .nav-link.active { background-color: #b71c1c; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .nav-pills .nav-link { color: #333; background: #eceff1; font-weight: 700; border: 1px solid #999; margin-right: 5px; }
-   /* 1. Kích thước mặc định (Dành cho Tab 1 và 2) */
+    
+/* 1. Kích thước mặc định (Dành cho Tab 1 và 2) */
     .table-container { 
-        overflow: auto; 
+        overflow-y: auto !important; 
+        overflow-x: auto !important;
         height: calc(100vh - 300px); 
         background: rgba(255,255,255,0.95); 
         border: 1px solid #333; 
     }
 
-    /* 2. Kích thước cho Tab 3 (Do có thêm hàng menu phụ nên cần trừ nhiều chiều cao hơn) */
+    /* 2. Kích thước cho Tab 3 (Trừ hao thanh menu phụ nav-pills) */
     #tab3 .table-container {
-        height: calc(100vh - 290px);
+        height: calc(100vh - 310px) !important;
     }
 
-    /* 3. Kích thước riêng cho Tab Biểu đồ (Có tới 3 hàng công cụ phía trên nên trừ tối đa để không lẹm thanh trượt) */
+    /* 3. Khóa vùng Biểu đồ (Ép max-height tuyệt đối chống giãn nở của thẻ Canvas) */
     #tk_bieudo .table-container {
-        height: calc(100vh - 350px);
+        height: calc(100vh - 400px) !important;
+        max-height: calc(100vh - 400px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        display: block !important; /* Ngắt hiệu ứng giãn nở tự do của hệ thống Flexbox Bootstrap */
+        border: none !important;
+        background: transparent !important;
+        padding-bottom: 30px !important;
     }
+    
     table { margin-bottom: 0 !important; border-collapse: collapse; border-spacing: 0; }
     table thead th { background-color: #e0e0e0; color: #000000; text-shadow: none; text-align: center; vertical-align: middle; white-space: nowrap; border: 1px solid #999; position: sticky; top: 0; z-index: 10; font-weight: 700; font-size: 14px; padding: 6px 4px !important; }
     #bang1 thead th:nth-child(-n+6), #bang1 thead th:nth-child(n+7):nth-child(-n+10), #bang1 thead th:nth-child(n+11):nth-child(-n+16), #bang1 thead th:nth-child(n+17) { background-color: #e0e0e0 !important; color: #000 !important; }
@@ -270,7 +280,8 @@ let hks_khoDuLieuTong_arr = [];
 
           hks_doDuLieuVaoHopChon_fn();
           hks_thietLapBoLoc_fn();
-          hks_kiemTraQuyenVaNapTabBon_fn(); 
+        hks_kiemTraQuyenVaNapTabBon_fn();
+     
           
           if (typeof hks_kiemTraQuyenXuatNhapExcel_fn === 'function') { hks_kiemTraQuyenXuatNhapExcel_fn(); }
 
@@ -288,13 +299,15 @@ let hks_khoDuLieuTong_arr = [];
       }).catch(e => { Swal.fire("Sự cố hệ thống", e.message, "warning"); hks_hienThiManHinhTai_fn(false); });
   }
 
- $(document).ready(function() {
+$(document).ready(function() {
     hks_hienThiManHinhTai_fn(true);
+        // [NÂNG CẤP TỐI QUAN TRỌNG]: Chống Cache vĩnh viễn bằng TimeStamp
+        let hks_chongCache = new Date().getTime();
         Promise.all([
-        $.get("Tab1.html"),
-        $.get("Tab2.html"),
-        $.get("Tab3.html"),
-        $.get("Tab5.html")
+        $.get("Tab1.html?v=" + hks_chongCache),
+        $.get("Tab2.html?v=" + hks_chongCache),
+        $.get("Tab3.html?v=" + hks_chongCache),
+        $.get("Tab5.html?v=" + hks_chongCache)
     ]).then(function(hks_mangKetQua_arr) {
         
         // Gắn cấu trúc DOM đồng loạt sau khi tải xong
@@ -497,7 +510,8 @@ function hks_khoiPhucTrangThaiGoc_fn(hks_chiSoThe_num) {
           </button>
         </li>
       `);
-      $.get("Tab4.html", function(hks_giaoDienTab4_str) {
+      // [Nâng cấp]: Gắn mã thời gian triệt tiêu cache
+      $.get("Tab4.html?v=" + new Date().getTime(), function(hks_giaoDienTab4_str) {
         $("#khung-chua-tab").append(hks_giaoDienTab4_str);
       });
     }
