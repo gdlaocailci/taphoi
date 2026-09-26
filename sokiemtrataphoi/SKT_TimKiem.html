@@ -128,22 +128,24 @@
 <div class="header-card">
   <div class="page-title" id="title_timkiem">ĐANG ĐỒNG BỘ DỮ LIỆU...</div>
   
-<div class="filter-section-search">
+  <div class="filter-section-search">
+    <!-- NÂNG CẤP: Thay thế bằng cơ chế onchange/onclick/onblur -->
     <div class="f-item">
       <span>Giáo viên</span>
-      <input id="s_gv" list="list_s_gv" class="f-input" placeholder="-- Tất cả --" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+      <input id="s_gv" list="list_s_gv" class="f-input" placeholder="-- Tất cả --" onchange="skt_change_cb(this)" onclick="skt_click_cb(this)" onblur="skt_blur_cb(this)" autocomplete="off">
       <datalist id="list_s_gv"></datalist>
     </div>
     <div class="f-item">
       <span>Người kiểm tra</span>
-      <input id="s_nkt" list="list_s_nkt" class="f-input" placeholder="-- Tất cả --" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+      <input id="s_nkt" list="list_s_nkt" class="f-input" placeholder="-- Tất cả --" onchange="skt_change_cb(this)" onclick="skt_click_cb(this)" onblur="skt_blur_cb(this)" autocomplete="off">
       <datalist id="list_s_nkt"></datalist>
     </div>
     <div class="f-item">
       <span>Bộ phận</span>
-      <input id="s_bp" list="list_s_bp" class="f-input" placeholder="-- Tất cả --" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+      <input id="s_bp" list="list_s_bp" class="f-input" placeholder="-- Tất cả --" onchange="skt_change_cb(this)" onclick="skt_click_cb(this)" onblur="skt_blur_cb(this)" autocomplete="off">
       <datalist id="list_s_bp"></datalist>
     </div>
+    <!-- GIỮ NGUYÊN 2 Ô THỜI GIAN -->
     <div class="f-item"><span>Từ ngày</span><input type="text" id="s_from" class="f-input text-center" placeholder="dd/mm/yyyy" oninput="dinhdng(event);"></div>
     <div class="f-item"><span>Đến ngày</span><input type="text" id="s_to" class="f-input text-center" placeholder="dd/mm/yyyy" oninput="dinhdng(event);"></div>
     <div class="f-item" style="display:flex; align-items: flex-end;">
@@ -254,6 +256,42 @@
 </div>
 
 <script>
+  // --- BẮT ĐẦU NÂNG CẤP KHỐI JS: Quản lý tính năng Combobox ---
+  function skt_click_cb(el) {
+      if (el.readOnly || el.disabled) return;
+      if (el.value.trim() !== "") {
+          el.setAttribute("data-giatri-cu", el.value);
+          el.placeholder = el.value; 
+          el.classList.add("input-dimmed");
+          el.value = ""; 
+      }
+      try { el.showPicker(); } catch(e) {}
+  }
+
+  function skt_change_cb(el) {
+      if (el.value.trim() === "" && el.hasAttribute("data-giatri-cu")) {
+          el.value = el.getAttribute("data-giatri-cu");
+          el.removeAttribute("data-giatri-cu");
+          el.classList.remove("input-dimmed");
+          el.placeholder = "-- Tất cả --";
+          return; 
+      }
+      
+      el.removeAttribute("data-giatri-cu");
+      el.classList.remove("input-dimmed");
+      el.placeholder = "-- Tất cả --";
+  }
+
+  function skt_blur_cb(el) {
+      el.classList.remove("input-dimmed");
+      el.placeholder = "-- Tất cả --";
+      if (el.value.trim() === "" && el.hasAttribute("data-giatri-cu")) {
+          el.value = el.getAttribute("data-giatri-cu");
+      }
+      el.removeAttribute("data-giatri-cu");
+  }
+  // --- KẾT THÚC NÂNG CẤP KHỐI JS ---
+
   // --- ĐỒNG BỘ ĐỊNH DANH GIAO DIỆN ---
   (function dongBoNhanDien() {
       setTimeout(function() {
@@ -271,7 +309,7 @@
   })();
 
   // Hàm chuyển đổi ngày để so sánh nội bộ
-// Hàm chuyển đổi ngày để so sánh nội bộ (Đã nâng cấp chống lỗi khoảng trắng và định dạng Text)
+  // Hàm chuyển đổi ngày để so sánh nội bộ (Đã nâng cấp chống lỗi khoảng trắng và định dạng Text)
   function skt_chuyenDoiNgay_js(chuoi_ngay_vao) {
       if (!chuoi_ngay_vao) return null;
       if (chuoi_ngay_vao instanceof Date) return chuoi_ngay_vao;
