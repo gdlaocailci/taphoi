@@ -1139,7 +1139,11 @@ async function f_x_i() {
     
     m_d.forEach(d_k => {
         const v_c_1 = d_k.querySelector(".m-cot-mot"), v_c_2 = d_k.cells[2], v_c_3 = d_k.querySelector(".o-n-bang");
-        if (v_c_1 && v_c_2 && v_c_3) m_k.push({ x_a: v_c_1.innerText, x_b: v_c_2.innerText === 'Quy chế' ? 'THANHTICH_HS_DONG' : v_c_2.innerText, x_c: v_c_3.value });
+        if (v_c_1 && v_c_2 && v_c_3) {
+            // Đọc chuỗi nguyên bản từ data-name thay vì dùng innerText
+            let exactName = v_c_1.getAttribute('data-name') || v_c_1.innerText;
+            m_k.push({ x_a: exactName, x_b: v_c_2.innerText === 'Quy chế' ? 'THANHTICH_HS_DONG' : v_c_2.innerText, x_c: v_c_3.value });
+        }
     });
     
     if (document.getElementById("o-luu-overlay")) document.getElementById("o-luu-overlay").style.display = "flex";
@@ -1371,9 +1375,8 @@ function f_x_e(m_n) {
         // 2. Dự phòng: Tự động ngắt dòng nếu phát hiện cấu trúc dấu chấm phẩy liền trước dấu gạch ngang (; -)
         let tg_hien_thi = tg === 'THANHTICH_HS_DONG' ? 'Quy chế' : tg.replace(/\n/g, '<br>').replace(/;\s*(?=-)/g, ';<br>');
         let tieu_chi_hien_thi = item.x_a.replace(/\n/g, '<br>');
-        
-        khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} style="vertical-align: middle; line-height: 1.5;">${tieu_chi_hien_thi}</td><td style="text-align: left; vertical-align: middle; line-height: 1.6;">${tg_hien_thi}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
-    });
+        let originalName = item.x_a.replace(/"/g, '&quot;');
+        khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} data-name="${originalName}" style="vertical-align: middle; line-height: 1.5;">${tieu_chi_hien_thi}</td><td style="text-align: left; vertical-align: middle; line-height: 1.6;">${tg_hien_thi}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
     
     k_b.innerHTML = khoiDOM; 
 
