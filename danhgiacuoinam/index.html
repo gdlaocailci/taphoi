@@ -1370,14 +1370,12 @@ function f_x_e(m_n) {
         
         let attr = `data-qd="${item.q_d||''}" data-xs="${item.g_xs||''}" data-htt="${item.g_htt||''}" data-ht="${item.g_ht||''}" data-cht="${item.g_cht||''}"`;
         
-       // Nâng cấp: Xử lý ngắt dòng thông minh để UI hiển thị y hệt Google Sheets
-        // 1. Chuyển đổi ngắt dòng Alt+Enter (\n) thành thẻ <br>
-        // 2. Dự phòng: Tự động ngắt dòng nếu phát hiện cấu trúc dấu chấm phẩy liền trước dấu gạch ngang (; -)
-        let tg_hien_thi = tg === 'THANHTICH_HS_DONG' ? 'Quy chế' : tg.replace(/\n/g, '<br>').replace(/;\s*(?=-)/g, ';<br>');
+       let tg_hien_thi = tg === 'THANHTICH_HS_DONG' ? 'Quy chế' : tg.replace(/\n/g, '<br>').replace(/;\s*(?=-)/g, ';<br>');
         let tieu_chi_hien_thi = item.x_a.replace(/\n/g, '<br>');
         let originalName = item.x_a.replace(/"/g, '&quot;');
         khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} data-name="${originalName}" style="vertical-align: middle; line-height: 1.5;">${tieu_chi_hien_thi}</td><td style="text-align: left; vertical-align: middle; line-height: 1.6;">${tg_hien_thi}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
-    
+    }); // NÂNG CẤP: Bổ sung dấu đóng vòng lặp forEach tại đây
+
     k_b.innerHTML = khoiDOM; 
 
     if (v_che_do_xem_admin || v_che_do_khach) {
