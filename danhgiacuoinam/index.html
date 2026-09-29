@@ -1332,17 +1332,16 @@ function f_x_e(m_n) {
        } else if (tg.includes("|")) {
             let t_c = kq ? "" : `<option value="" data-p="0" disabled selected>-- Chọn mức --</option>`;
             
-            // Nâng cấp 1: Chuyển đổi ký tự phân cách thành dấu chấm phẩy (;)
-            // Nâng cấp 2: Bóc tách tên ngắn gọn và đặt mô tả chi tiết vào thuộc tính title
-            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(";").map(opt => {
-                // Xử lý ngoại lệ: Bỏ qua nếu người nhập liệu vô tình gõ dư dấu chấm phẩy ở cuối dòng
+            // Nâng cấp: Thuật toán Regex thông minh. 
+            // Chỉ cắt chuỗi tại dấu chấm phẩy (;) NẾU phía sau nó là dấu gạch ngang (-) hoặc xuống dòng (\n)
+            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(/;\s*(?=-|\n)/).map(opt => {
+                
                 if (opt.trim() === "") return ""; 
 
                 let [n, d] = opt.split("|");
                 let fullText = (n || "").trim();
                 let shortName = fullText;
                 
-                // Cắt bỏ phần giải thích phía sau dấu ngoặc đơn hoặc dấu hai chấm, xóa các ký tự gạch đầu dòng
                 if (shortName.includes(':') || shortName.includes('(')) {
                     shortName = shortName.split('(')[0].split(':')[0].replace(/^[-+*]\s*/, '').trim();
                 }
