@@ -1516,8 +1516,11 @@ async function f_x_xuat_pdf() {
             
             const firstRow = tb.querySelector("tr");
             if (firstRow && firstRow.children.length >= 4) {
-                firstRow.children[0].style.width = "5%"; firstRow.children[1].style.width = "35%";
-                firstRow.children[2].style.width = "15%"; firstRow.children[3].style.width = "45%";
+                // Cập nhật: Đồng bộ tỷ lệ cột in PDF khớp với giao diện Web (5% - 20% - 50% - 25%)
+                firstRow.children[0].style.width = "5%"; 
+                firstRow.children[1].style.width = "20%";
+                firstRow.children[2].style.width = "50%"; 
+                firstRow.children[3].style.width = "25%";
             }
         });
 
