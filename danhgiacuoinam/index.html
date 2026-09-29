@@ -1392,12 +1392,15 @@ function f_x_h() {
     m_d.forEach(d_k => {
         let c_x_1 = d_k.querySelector(".m-cot-mot");
         let c_x_2 = d_k.querySelector(".o-n-bang");
-        if (c_x_1 && c_x_2) {
+        
+        // CẬP NHẬT: Xóa rào chắn && c_x_2. 
+        // Cho phép thu thập cả các dòng tiêu đề (như Phần 2) để truyền điều kiện g_xs, g_htt... về cho Động cơ.
+        if (c_x_1) {
             let e_s = d_k.querySelector("select.o-n-bang");
             mangDuLieuGom.push({
                 ten: c_x_1.innerText.trim().toLowerCase(),
-                giaTri: c_x_2.value.toLowerCase(),
-                so: parseFloat(c_x_2.value.replace(/[^\d\.\-]/g, '')) || 0,
+                giaTri: c_x_2 ? c_x_2.value.toLowerCase() : "",
+                so: c_x_2 ? (parseFloat(c_x_2.value.replace(/[^\d\.\-]/g, '')) || 0) : 0,
                 isSelect: e_s !== null,
                 selectDataP: e_s ? parseFloat(e_s.options[e_s.selectedIndex].getAttribute("data-p")) || 0 : 0,
                 isDongBo: d_k.querySelector(".h-dong-bo") !== null,
@@ -1413,7 +1416,6 @@ function f_x_h() {
 
     let k_q = { diemP1: 0, diemP2: 0, tongDiem: 0, k_t: "CHƯA HOÀN THÀNH NHIỆM VỤ", k_m: "#dc3545" };
 
-    // TÍCH HỢP TOÀN BỘ CÁC HÀM TÍNH ĐIỂM Ở ĐÂY
     if (c_n === "giaovienc1" && typeof f_x_l_chinh === "function") {
         k_q = f_x_l_chinh(mangDuLieuGom);
     } else if (c_n === "giaovienc2" && typeof f_x_l_chinh_c2 === "function") {
