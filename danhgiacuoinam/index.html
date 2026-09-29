@@ -1329,9 +1329,9 @@ function f_x_e(m_n) {
         } 
         else if (tg === "THANHTICH_HS_DONG") {
             html = `<div class="k-phu"><div class="k-d-k"><select id="h_c_${index}"><option value="QUOCGIA">Quốc gia</option><option value="TINH">Cấp Tỉnh</option><option value="XA">Xã/Cụm</option></select><select id="h_g_${index}"><option value="0">Giải Nhất</option><option value="1">Giải Nhìn</option><option value="2">Giải Ba</option><option value="3">KK</option></select><select id="h_l_${index}"><option value="1">Cá nhân</option><option value="1.5">Tập thể (x1.5)</option></select><input type="number" id="h_s_${index}" value="1" min="1" style="width: 50px;"><button class="n-bam n-xanh-b n-nho btn-reactbits-shiny" onclick="${fnThem}(${index})">Thêm</button><button class="n-bam n-do n-nho btn-reactbits-shiny" onclick="${fnXoa}(${index})">Xóa</button></div><div id="h_t_${index}" class="k-k-q" style="font-weight: normal; font-size: 14px;">${kq ? kq.replace(/\\n/g, '<br>') : '...'}</div><input type="hidden" class="o-n-bang k-hoat-t" id="h_a_${index}" value="${kq}"></div>`;
-        } else if (tg.includes("|")) {
+       } else if (tg.includes("|")) {
             let t_c = kq ? "" : `<option value="" data-p="0" disabled selected>-- Chọn mức --</option>`;
-            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(",").map(opt => {
+            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(";;").map(opt => {
                 let [n, d] = opt.split("|");
                 return `<option value="${n.trim()}" data-p="${d?d.trim():'0'}" ${kq.includes(n.trim())?'selected':''}>${n.trim()} (${d?d.trim():'0'}đ)</option>`;
             }).join("") + `</select>`;
