@@ -217,8 +217,20 @@ function f_x_m_chinh(dataRows) {
     };
 
     // Đánh giá từng hàng cấu hình
+    // Đánh giá từng hàng cấu hình
     dataRows.forEach(r => {
-        if (r.ten === "" || r.ten.includes("phần 1") || r.ten.includes("phần 2")) return;
+        if (r.ten === "" || r.ten.includes("phần 1")) return;
+        
+        // NÂNG CẤP: Biến dòng tiêu đề "Phần 2" thành rào chắn kiểm tra Tổng điểm Phần 2
+        if (r.ten === "phần 2" || r.ten === "phần ii") {
+            // Truyền trực tiếp tổng diemP2 vào hàm đánh giá thay vì điểm thành phần
+            if (r.g_xs && !evalCondition(r.g_xs, diemP2, "", r)) datXS = false;
+            if (r.g_htt && !evalCondition(r.g_htt, diemP2, "", r)) datTot = false;
+            if (r.g_ht && !evalCondition(r.g_ht, diemP2, "", r)) datHT = false;
+            return; // Xét xong tổng điểm thì bỏ qua, không quét như tiêu chí thường
+        }
+
+        // Xử lý các tiêu chí thành phần bình thường
         if (r.g_xs && !evalCell(r.g_xs, r.so, r.giaTri, r)) datXS = false;
         if (r.g_htt && !evalCell(r.g_htt, r.so, r.giaTri, r)) datTot = false;
         if (r.g_ht && !evalCell(r.g_ht, r.so, r.giaTri, r)) datHT = false;
