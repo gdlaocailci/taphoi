@@ -1332,19 +1332,21 @@ function f_x_e(m_n) {
        } else if (tg.includes("|")) {
             let t_c = kq ? "" : `<option value="" data-p="0" disabled selected>-- Chọn mức --</option>`;
             
-            // Cập nhật: Nâng cấp thuật toán bóc tách tên ngắn từ chuỗi mô tả dài
-            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(";;").map(opt => {
+            // Nâng cấp 1: Chuyển đổi ký tự phân cách thành dấu chấm phẩy (;)
+            // Nâng cấp 2: Bóc tách tên ngắn gọn và đặt mô tả chi tiết vào thuộc tính title
+            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(";").map(opt => {
+                // Xử lý ngoại lệ: Bỏ qua nếu người nhập liệu vô tình gõ dư dấu chấm phẩy ở cuối dòng
+                if (opt.trim() === "") return ""; 
+
                 let [n, d] = opt.split("|");
-                let fullText = n.trim();
+                let fullText = (n || "").trim();
                 let shortName = fullText;
                 
-                // Bóc tách từ khóa "Xuất sắc", "Tốt", "Khá"... (Cắt trước dấu '(' hoặc ':' và dọn dẹp ký tự thừa)
+                // Cắt bỏ phần giải thích phía sau dấu ngoặc đơn hoặc dấu hai chấm, xóa các ký tự gạch đầu dòng
                 if (shortName.includes(':') || shortName.includes('(')) {
                     shortName = shortName.split('(')[0].split(':')[0].replace(/^[-+*]\s*/, '').trim();
                 }
                 
-                // Thuộc tính value="${shortName}": Lưu về CSDL bằng tên ngắn gọn giúp báo cáo đẹp hơn
-                // Thuộc tính title="${fullText}": Giữ nguyên chuỗi dài để hiển thị chú thích khi di chuột vào
                 return `<option value="${shortName}" data-p="${d ? d.trim() : '0'}" title="${fullText}" ${(kq.includes(shortName) || kq.includes(fullText)) ? 'selected' : ''}>${shortName} (${d ? d.trim() : '0'}đ)</option>`;
             }).join("") + `</select>`;
         } else {
