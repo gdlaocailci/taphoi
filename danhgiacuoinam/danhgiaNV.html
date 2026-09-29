@@ -222,7 +222,7 @@ function f_x_m_chinh(dataRows) {
         if (r.ten === "" || r.ten.includes("phần 1")) return;
         
         // NÂNG CẤP: Biến dòng tiêu đề "Phần 2" thành rào chắn kiểm tra Tổng điểm Phần 2
-        if (r.ten === "phần 2" || r.ten === "phần ii") {
+        if (r.ten.includes("phần 2") || r.ten.includes("phần ii")) {
             // Truyền trực tiếp tổng diemP2 vào hàm đánh giá thay vì điểm thành phần
             if (r.g_xs && !evalCondition(r.g_xs, diemP2, "", r)) datXS = false;
             if (r.g_htt && !evalCondition(r.g_htt, diemP2, "", r)) datTot = false;
