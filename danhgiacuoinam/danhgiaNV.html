@@ -188,6 +188,14 @@ function f_x_m_chinh(dataRows) {
         }
 
         if (op === "==") return valStr === targetText;
+        
+        // Nâng cấp: Chặn lỗi "bao hàm" trong tiếng Việt 
+        // Ưu tiên khớp tuyệt đối trước
+        if (valStr === cond) return true;
+        
+        // Loại trừ các trường hợp phủ định (Ví dụ: "chưa đạt" sẽ không được nhận diện nhầm thành "đạt")
+        if (valStr.includes("chưa " + cond) || valStr.includes("không " + cond)) return false;
+        
         return valStr.includes(cond);
     };
 
