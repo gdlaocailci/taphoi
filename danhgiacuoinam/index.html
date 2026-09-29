@@ -1148,7 +1148,15 @@ async function f_x_i() {
     const ten_tren_web = (elTheHien ? elTheHien.innerText : null) || v_l_b;
     
     try {
-        await fetch(z_y_a, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ w_a: v_l_a, w_b: v_l_b, w_f: ten_tren_web, w_c: m_k, w_d: v_l_e, w_e: v_l_f, w_g: v_nam_hoc_hien_tai }) });
+        const payload = { w_a: v_l_a, w_b: v_l_b, w_f: ten_tren_web, w_c: m_k, w_d: v_l_e, w_e: v_l_f, w_g: v_nam_hoc_hien_tai };
+        
+        // THUẬT TOÁN MỚI: Chống treo (hang) trình duyệt bằng Promise.race
+        const fetchPromise = fetch(z_y_a, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        // Khởi tạo bộ đếm 2.5 giây giải phóng UI
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2500)); 
+        
+        // Trình duyệt sẽ chạy lệnh nào hoàn thành trước (Giải quyết triệt để lỗi vòng xoay vô tận)
+        await Promise.race([fetchPromise, timeoutPromise]);
         
         v_bo_nho_dem_admin = {}; 
 
