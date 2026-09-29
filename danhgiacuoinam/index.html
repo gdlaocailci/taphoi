@@ -1359,7 +1359,13 @@ function f_x_e(m_n) {
         
         let attr = `data-qd="${item.q_d||''}" data-xs="${item.g_xs||''}" data-htt="${item.g_htt||''}" data-ht="${item.g_ht||''}" data-cht="${item.g_cht||''}"`;
         
-        khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} style="vertical-align: middle;">${item.x_a}</td><td style="text-align: center; vertical-align: middle;">${tg==='THANHTICH_HS_DONG'?'Quy chế':tg}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
+       // Nâng cấp: Xử lý ngắt dòng thông minh để UI hiển thị y hệt Google Sheets
+        // 1. Chuyển đổi ngắt dòng Alt+Enter (\n) thành thẻ <br>
+        // 2. Dự phòng: Tự động ngắt dòng nếu phát hiện cấu trúc dấu chấm phẩy liền trước dấu gạch ngang (; -)
+        let tg_hien_thi = tg === 'THANHTICH_HS_DONG' ? 'Quy chế' : tg.replace(/\n/g, '<br>').replace(/;\s*(?=-)/g, ';<br>');
+        let tieu_chi_hien_thi = item.x_a.replace(/\n/g, '<br>');
+        
+        khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} style="vertical-align: middle; line-height: 1.5;">${tieu_chi_hien_thi}</td><td style="text-align: left; vertical-align: middle; line-height: 1.6;">${tg_hien_thi}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
     });
     
     k_b.innerHTML = khoiDOM; 
