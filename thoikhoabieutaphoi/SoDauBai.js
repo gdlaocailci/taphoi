@@ -1349,28 +1349,44 @@ function napDropdownSoDauBai() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
     
-    // [NÂNG CẤP UX]: Mở khóa lại thẻ select sau khi dữ liệu đã tải xong
+    // BẢO VỆ GIÁ TRỊ: Lưu lại giá trị đang chọn trước khi làm mới danh sách HTML
+    let giaTriTuanCu = elementTuan ? elementTuan.value : null;
+    let giaTriLopCu = elementLop ? elementLop.value : null;
+
     if(elementTuan) {
         elementTuan.disabled = false;
         elementTuan.innerHTML = chonTuanHtml;
+        // Phục hồi lại giá trị cũ nếu danh sách mới vẫn chứa giá trị đó
+        if (giaTriTuanCu && mangTuan.includes(giaTriTuanCu)) {
+            elementTuan.value = giaTriTuanCu;
+        }
     }
     if(elementLop) {
         elementLop.disabled = false;
         elementLop.innerHTML = chonLopHtml;
+        // Phục hồi lại giá trị cũ
+        if (giaTriLopCu && mangLop.includes(giaTriLopCu)) {
+            elementLop.value = giaTriLopCu;
+        }
     }
 
-    // Mở khóa UI Input (nếu có)
     let inTuan = document.getElementById('input_chonTuanSo');
     let inLop = document.getElementById('input_chonLopSo');
     if (inTuan) { inTuan.disabled = false; inTuan.classList.remove('cursor-wait'); }
     if (inLop) { inLop.disabled = false; inLop.classList.remove('cursor-wait'); }
 
-    // Khởi tạo giao diện nhập liệu tìm kiếm
     nangCapSelectThanhInput('chonTuanSo', 'Tìm/Nhập Tuần...');
     nangCapSelectThanhInput('chonLopSo', 'Tìm/Nhập Lớp...');
 
+    // ĐỒNG BỘ GIAO DIỆN: Ép thẻ Input hiển thị lại đúng chữ dựa trên value vừa phục hồi
+    if (typeof dongBoHienThiTuSelect === 'function') {
+        dongBoHienThiTuSelect('chonTuanSo');
+        dongBoHienThiTuSelect('chonLopSo');
+    }
+
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
-    if (vungHienThi) {
+    // Chỉ báo "Vui lòng chọn" nếu thực sự ô chọn đang trống
+    if (vungHienThi && (!elementTuan || !elementTuan.value || !elementLop || !elementLop.value)) {
         vungHienThi.innerHTML = `<div class="p-4"><p class="text-center py-10 text-slate-500 font-bold">Vui lòng chọn Tuần và Lớp để xem Sổ đầu bài.</p></div>`;
     }
 }
