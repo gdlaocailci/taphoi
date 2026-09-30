@@ -711,16 +711,21 @@ function xuatMaTranBang(danhSachTiet) {
         return;
     }
 
-    let dateInput = document.getElementById('chonNgayDauTuan');
-    if (duLieuTiet && duLieuTiet.length > 0) {
+   let dateInput = document.getElementById('chonNgayDauTuan');
+       
+    if (!ngayDauTuanUI && duLieuTiet && duLieuTiet.length > 0) {
         let thu2Data = duLieuTiet.find(t => t.thu === "Thứ 2" && t.ngay);
         if (thu2Data && thu2Data.ngay) {
             let p = thu2Data.ngay.split('/'); 
             if (p.length === 3) {
                 ngayDauTuanUI = `${p[2]}-${p[1]}-${p[0]}`; 
-                if (dateInput) dateInput.value = ngayDauTuanUI;
             }
         }
+    }
+    
+    // Luôn ép Input UI hiển thị theo biến toàn cục (Nguồn chân lý)
+    if (dateInput && ngayDauTuanUI) {
+        dateInput.value = ngayDauTuanUI;
     }
 
     let theadHTML = `<tr style="height: 45px;">
