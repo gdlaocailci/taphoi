@@ -30,7 +30,7 @@ window.lamSachBoNhoSoDauBai = function() {
     lopTruocDo_SDB = '';
     coThayDoiChuaLuu_SDB = false;
     
-    // Xóa triệt để Cache tĩnh của user hiện hành
+    // Xóa triệt để Cache tĩnh của người dùng hiện hành
     let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
     try { sessionStorage.removeItem(`SDB_CACHE_${emailGoiLen}`); } catch(e) {}
     
@@ -42,12 +42,27 @@ window.lamSachBoNhoSoDauBai = function() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
 
-    // [NÂNG CẤP]: Khôi phục hiển thị và dọn dẹp các lớp bọc UI khi hệ thống reset
-    let wTuan = document.getElementById('wrapper_chonTuanSo'); if (wTuan) wTuan.remove();
-    let wLop = document.getElementById('wrapper_chonLopSo'); if (wLop) wLop.remove();
+    // [BẢN SỬA LỖI]: Bốc thẻ select trả về nút cha gốc trước khi tiêu diệt wrapper
+    let wTuan = document.getElementById('wrapper_chonTuanSo'); 
+    if (wTuan) { 
+        if (elementTuan) wTuan.parentNode.insertBefore(elementTuan, wTuan);
+        wTuan.remove(); 
+    }
+    
+    let wLop = document.getElementById('wrapper_chonLopSo'); 
+    if (wLop) { 
+        if (elementLop) wLop.parentNode.insertBefore(elementLop, wLop);
+        wLop.remove(); 
+    }
 
-    if(elementTuan) { elementTuan.style.display = ''; elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; }
-    if(elementLop) { elementLop.style.display = ''; elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; }
+    if(elementTuan) { 
+        elementTuan.style.display = ''; 
+        elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; 
+    }
+    if(elementLop) { 
+        elementLop.style.display = ''; 
+        elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; 
+    }
 };
 
 async function taiDuLieuSoDauBaiTuMayChu() {
