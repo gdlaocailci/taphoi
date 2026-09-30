@@ -16,7 +16,6 @@ let tuanTruocDo_SDB = '';
 let lopTruocDo_SDB = '';
 let coThayDoiChuaLuu_SDB = false;
 
-// Hàm dọn dẹp bộ nhớ đệm khi có sự kiện đổi tài khoản hoặc TKB
 window.lamSachBoNhoSoDauBai = function() {
     if (dangTaiDuLieuSoDauBai) return;
     daTaiDuLieuSoDauBai = false;
@@ -27,12 +26,10 @@ window.lamSachBoNhoSoDauBai = function() {
     coToanQuyenSDB = false;
     danhSachGiaoVienToanCuc = [];
     
-    // Reset cờ bảo vệ dữ liệu
     tuanTruocDo_SDB = '';
     lopTruocDo_SDB = '';
     coThayDoiChuaLuu_SDB = false;
     
-    // Xóa triệt để Cache tĩnh của người dùng hiện hành
     let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
     try { sessionStorage.removeItem(`SDB_CACHE_${emailGoiLen}`); } catch(e) {}
     
@@ -44,7 +41,10 @@ window.lamSachBoNhoSoDauBai = function() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
 
-    // [BẢN SỬA LỖI]: Bốc thẻ select trả về nút cha gốc trước khi tiêu diệt wrapper
+    // BẢO LƯU TRẠNG THÁI: Lấy giá trị đang chọn trước khi đập bỏ HTML
+    let giaTriTuanCu = elementTuan ? elementTuan.value : '';
+    let giaTriLopCu = elementLop ? elementLop.value : '';
+
     let wTuan = document.getElementById('wrapper_chonTuanSo'); 
     if (wTuan) { 
         if (elementTuan) wTuan.parentNode.insertBefore(elementTuan, wTuan);
@@ -59,11 +59,20 @@ window.lamSachBoNhoSoDauBai = function() {
 
     if(elementTuan) { 
         elementTuan.style.display = ''; 
-        elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; 
+        // Gắn tạm giá trị cũ vào HTML để giữ chỗ cho hàm nạp phía sau
+        if (giaTriTuanCu) elementTuan.innerHTML = `<option value="${giaTriTuanCu}" selected>${giaTriTuanCu}</option>`;
+        else elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; 
     }
     if(elementLop) { 
         elementLop.style.display = ''; 
-        elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; 
+        if (giaTriLopCu) elementLop.innerHTML = `<option value="${giaTriLopCu}" selected>${giaTriLopCu}</option>`;
+        else elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; 
+    }
+
+    // Tự động tải lại lưới SĐB nếu tab này đang mở để chống lỗi trắng trang do lệnh dọn dẹp
+    let khungSDB = document.getElementById('khungSoDauBai');
+    if (khungSDB && !khungSDB.classList.contains('hidden') && emailGoiLen !== '') {
+        setTimeout(() => { taiDuLieuSoDauBaiTuMayChu(); }, 500);
     }
 };
 
