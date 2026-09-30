@@ -145,6 +145,17 @@ function kiemTraTrangThaiDangNhapSDB() {
 // HÀM TẢI DỮ LIỆU TỐC ĐỘ CAO (ASYNCHRONOUS BACKGROUND THREAD)
 // =========================================================================
 async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
+    // [TỐI ƯU UX AN TOÀN]: Chỉ khóa giao diện Input, tuyệt đối không phá hủy nội dung HTML của Thẻ Select gốc để bảo toàn logic đồng bộ ngầm
+    let selTuan = document.getElementById('chonTuanSo');
+    let selLop = document.getElementById('chonLopSo');
+    let inTuan = document.getElementById('input_chonTuanSo');
+    let inLop = document.getElementById('input_chonLopSo');
+
+    if (selTuan) selTuan.disabled = true;
+    if (selLop) selLop.disabled = true;
+    if (inTuan) { inTuan.dataset.oldValue = inTuan.value; inTuan.value = '⏳ Đang tải...'; inTuan.disabled = true; inTuan.classList.add('cursor-wait'); }
+    if (inLop) { inLop.dataset.oldValue = inLop.value; inLop.value = '⏳ Đang tải...'; inLop.disabled = true; inLop.classList.add('cursor-wait'); }
+
     if (vungHienThi) {
         vungHienThi.innerHTML = `<div class="text-center py-12 text-slate-500 font-bold">
             <div class="w-9 h-9 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
@@ -177,6 +188,18 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
         setTimeout(() => {
             khoiTaoDuLieuSoDauBai(duLieuSever);
             daTaiDuLieuSoDauBai = true;
+
+            // [MỞ KHÓA UX AN TOÀN]: Nhả các khóa giao diện sau khi hàm khởi tạo đã chạy xong
+            let inTuanReset = document.getElementById('input_chonTuanSo');
+            let inLopReset = document.getElementById('input_chonLopSo');
+            let selTuanReset = document.getElementById('chonTuanSo');
+            let selLopReset = document.getElementById('chonLopSo');
+
+            if (selTuanReset) selTuanReset.disabled = false;
+            if (selLopReset) selLopReset.disabled = false;
+            if (inTuanReset) { inTuanReset.disabled = false; inTuanReset.classList.remove('cursor-wait'); }
+            if (inLopReset) { inLopReset.disabled = false; inLopReset.classList.remove('cursor-wait'); }
+
         }, 10);
 
     } catch (loi) {
@@ -184,6 +207,11 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi) {
         if (vungHienThi) {
             vungHienThi.innerHTML = `<div class="text-center py-10 text-red-600 font-bold text-lg">⚠️ Cảnh báo lỗi kết nối: <br><span class="text-base font-normal text-slate-700">${loi.message}</span></div>`;
         }
+        // Trả lại trạng thái nếu mạng lỗi
+        if (selTuan) selTuan.disabled = false;
+        if (selLop) selLop.disabled = false;
+        if (inTuan) { inTuan.disabled = false; inTuan.classList.remove('cursor-wait'); inTuan.value = inTuan.dataset.oldValue || ''; }
+        if (inLop) { inLop.disabled = false; inLop.classList.remove('cursor-wait'); inLop.value = inLop.dataset.oldValue || ''; }
     }
 }
 
@@ -1308,10 +1336,23 @@ function napDropdownSoDauBai() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
     
-    if(elementTuan) elementTuan.innerHTML = chonTuanHtml;
-    if(elementLop) elementLop.innerHTML = chonLopHtml;
+    // [NÂNG CẤP UX]: Mở khóa lại thẻ select sau khi dữ liệu đã tải xong
+    if(elementTuan) {
+        elementTuan.disabled = false;
+        elementTuan.innerHTML = chonTuanHtml;
+    }
+    if(elementLop) {
+        elementLop.disabled = false;
+        elementLop.innerHTML = chonLopHtml;
+    }
 
-    // [NÂNG CẤP]: Khởi tạo giao diện nhập liệu tìm kiếm
+    // Mở khóa UI Input (nếu có)
+    let inTuan = document.getElementById('input_chonTuanSo');
+    let inLop = document.getElementById('input_chonLopSo');
+    if (inTuan) { inTuan.disabled = false; inTuan.classList.remove('cursor-wait'); }
+    if (inLop) { inLop.disabled = false; inLop.classList.remove('cursor-wait'); }
+
+    // Khởi tạo giao diện nhập liệu tìm kiếm
     nangCapSelectThanhInput('chonTuanSo', 'Tìm/Nhập Tuần...');
     nangCapSelectThanhInput('chonLopSo', 'Tìm/Nhập Lớp...');
 
