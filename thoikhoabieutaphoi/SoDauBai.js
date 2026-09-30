@@ -845,17 +845,17 @@ async function luuSoDauBaiSangMayChu() {
     
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
-    let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true') : false);
+    let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
     let maGvDangNhapLC = madinhdanhGV.trim().toLowerCase().normalize('NFC');
 
-    let duLieuQuetDuoc = []; // Mảng chứa TOÀN BỘ dữ liệu để gửi lên server (tránh mất dữ liệu)
-    let danhSachThongBao = []; // Mảng CHỈ chứa thông tin các dòng có thay đổi để hiện hộp thoại
-    let soDongCoThayDoi = 0; // Biến đếm số lượng thực sự có sửa đổi
-
-    let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
+    let duLieuQuetDuoc = [];
+    let danhSachThongBao = []; 
+    let soDongCoThayDoi = 0; 
     let canThiTietThieuTenBai = false; 
     let loiPhanQuyen = false;
 
+    // BƯỚC 1: QUÉT UI (DOM) VÀ ĐÓNG GÓI CHỈ NHỮNG DÒNG CÓ THAY ĐỔI
+    let cacBang = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container');
     cacBang.forEach(khungBang => {
         let thuHienTai = ''; let ngayHienTai = '';
         let cacDong = khungBang.querySelectorAll('table tbody tr');
@@ -864,19 +864,24 @@ async function luuSoDauBaiSangMayChu() {
             let cellThu = dong.querySelector('td[rowspan]');
             if (cellThu) {
                 let textThuNgay = cellThu.innerText.split('\n');
-                thuHienTai = textThuNgay[0].trim();
+                let thuGoc = textThuNgay[0].trim().toLowerCase();
+                thuHienTai = thuGoc.charAt(0).toUpperCase() + thuGoc.slice(1);
                 ngayHienTai = textThuNgay.length > 1 ? textThuNgay[1].trim() : '';
             }
 
             let cellMon = dong.querySelector('td[data-loai="mon"]');
-            let mon = cellMon ? cellMon.innerText.trim() : '';
+            let mon = '';
+            if (cellMon) {
+                for (let node of cellMon.childNodes) {
+                    if (node.nodeType === 3) mon += node.textContent;
+                }
+                mon = mon.trim();
+            }
 
-            // Quét và lấy TẤT CẢ các tiết có môn học để đề phòng Backend xóa đè toàn bộ
-            if (mon && mon !== '') {
+            if (mon !== '') {
                 let isDaLuu = dong.getAttribute('data-daluu') === 'true';
                 let isThayDoi = dong.getAttribute('data-thaydoi') === 'true';
 
-                // Lọc bỏ ký tự ngắt dòng (Enter) trong Textarea để chống gãy mảng khi ghi xuống Sheet
                 let getVal = (cell) => {
                     if (!cell) return '';
                     let theNhap = cell.querySelector('input, select, textarea');
@@ -893,8 +898,8 @@ async function luuSoDauBaiSangMayChu() {
                 let chuKyGV = getVal(dong.querySelector('td[data-loai="chuKy"]'));
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
-                let buoiKiemTra = buoi.toLowerCase() === 'sáng' ? 'Sang' : 'Chieu';
-                let tkbDoiChieu = duLieuTKBGopDaMap.find(d => 
+                // Đối chiếu với bộ nhớ RAM
+                let indexTrongRam = duLieuTKBGopDaMap.findIndex(d => 
                     String(d['Tuần']).trim() == tuanSo && 
                     String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase() && 
                     String(d['Thứ']).trim() === thuHienTai && 
@@ -903,8 +908,8 @@ async function luuSoDauBaiSangMayChu() {
                 );
 
                 if (chuKyGV !== '') {
-                    if (!quyenQuanTri && tkbDoiChieu) {
-                        let gvTkb = String(tkbDoiChieu['Mã GV']).trim().toLowerCase().normalize('NFC');
+                    if (!quyenQuanTri && indexTrongRam !== -1) {
+                        let gvTkb = String(duLieuTKBGopDaMap[indexTrongRam]['Mã GV']).trim().toLowerCase().normalize('NFC');
                         let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim());
                         let coQuyen = tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2);
                         if (!coQuyen) {
@@ -932,56 +937,58 @@ async function luuSoDauBaiSangMayChu() {
                         }
                         tenBai = baiDayChuan.replace(/\n/g, ' ').trim(); 
                         isThayDoi = true;
-                        danhDauDongThayDoi(dong); 
+                        if (typeof danhDauDongThayDoi === 'function') danhDauDongThayDoi(dong);
                     }
                 }
 
-                let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
-
-                // [KHẮC PHỤC LỖI ĐỒNG BỘ]: Trả lại đúng các Key mà Code.gs đang nhận diện
-                duLieuQuetDuoc.push({
-                    maLuuTru: maLuuTru, 
-                    tuan: tuanSo, 
-                    maLop: lopChon,
-                    thu: thuHienTai, 
-                    ngay: ngayHienTai, 
-                    buoi: buoi, 
-                    tiet: tiet,
-                    mon: mon, 
-                    tietPPCT: tietPPCT, 
-                    tenBai: tenBai, 
-                    nhanXet: nhanXetGV, 
-                    xepLoai: xepLoaiGV, 
-                    chuKy: chuKyGV,
-                    chuyenCan: chuyenCan
-                });
-
-                // CHỈ THÔNG BÁO CHO NGƯỜI DÙNG NHỮNG DÒNG THỰC SỰ CÓ THAY ĐỔI
                 if (isThayDoi || !isDaLuu) {
                     soDongCoThayDoi++;
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
+                    
+                    let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
+                    
+                    duLieuQuetDuoc.push({
+                        maLuuTru: maLuuTru, 
+                        tuan: tuanSo, 
+                        maLop: lopChon,
+                        thu: thuHienTai, 
+                        ngay: ngayHienTai, 
+                        buoi: buoi, 
+                        tiet: tiet,
+                        mon: mon, 
+                        tietPPCT: tietPPCT, 
+                        tenBai: tenBai, 
+                        nhanXet: nhanXetGV, 
+                        xepLoai: xepLoaiGV, 
+                        chuKy: chuKyGV,
+                        chuyenCan: chuyenCan
+                    });
+
+                    // Cập nhật giá trị sửa vào bộ nhớ tạm (RAM)
+                    if (indexTrongRam !== -1) {
+                        duLieuTKBGopDaMap[indexTrongRam]['ChuyenCan_Thuc'] = chuyenCan;
+                        duLieuTKBGopDaMap[indexTrongRam]['TietPPCT_Thuc'] = tietPPCT;
+                        duLieuTKBGopDaMap[indexTrongRam]['TenBai_Thuc'] = tenBai;
+                        duLieuTKBGopDaMap[indexTrongRam]['NhanXet_Thuc'] = nhanXetGV;
+                        duLieuTKBGopDaMap[indexTrongRam]['XepLoai_Thuc'] = xepLoaiGV;
+                        duLieuTKBGopDaMap[indexTrongRam]['ChuKy_Thuc'] = chuKyGV;
+                        duLieuTKBGopDaMap[indexTrongRam]['TrangThaiThayDoi'] = true;
+                    }
                 }
             }
         });
     });
 
-    if (loiPhanQuyen) {
-        return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công của đồng chí. Các dòng vi phạm đã bị bôi đỏ. Vui lòng xóa chữ ký và thử lại!");
-    }
-
-    if (canThiTietThieuTenBai) {
-        alert("Hệ thống phát hiện sổ tuần quá khứ bị bỏ trống Tên bài. Đã tự động đối chiếu Khung PPCT và điền bù Tên bài chuẩn. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
-        return; 
-    }
-
-    // Nếu không có dòng nào thực sự thay đổi, chặn thao tác gửi server
+    if (loiPhanQuyen) return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công. Vui lòng kiểm tra lại!");
+    if (canThiTietThieuTenBai) return alert("Phát hiện sổ tuần bị bỏ trống Tên bài. Hệ thống đã điền tự động. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
     if (soDongCoThayDoi === 0) return alert("Sổ đầu bài chưa có thay đổi nào để lưu.");
-    
-    let thongBaoHienThi = `Hệ thống ghi nhận ${soDongCoThayDoi} tiết học có sự thay đổi/cập nhật dữ liệu:\n\n` + 
-                          danhSachThongBao.join('\n') + 
-                          `\n\nĐồng chí có chắc chắn muốn chốt lưu các thay đổi này vào Cơ sở dữ liệu?`;
+
+    let thongBaoGiaoDien = `Hệ thống ghi nhận ${soDongCoThayDoi} tiết học có sự thay đổi/cập nhật dữ liệu:\n\n` + 
+                          danhSachThongBao.slice(0, 15).join('\n') + 
+                          (danhSachThongBao.length > 15 ? `\n... và ${danhSachThongBao.length - 15} thay đổi khác.` : "") + 
+                          `\n\nĐồng chí có chắc chắn muốn chốt ghi đè dữ liệu này lên Server?`;
                           
-    if (!confirm(thongBaoHienThi)) return;
+    if (!confirm(thongBaoGiaoDien)) return;
 
     const btn = document.getElementById('btnLuuSoDauBai');
     let textGoc = btn.innerHTML;
@@ -995,11 +1002,22 @@ async function luuSoDauBaiSangMayChu() {
 
         if (ketQua.trangThai === 'thanh_cong') {
             alert(`✅ Đã chốt thành công các cập nhật của Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanSo}!`);
+            
+            // Xóa cờ cảnh báo rủi ro mất dữ liệu
             coThayDoiChuaLuu_SDB = false; 
             
-            // ÉP TẢI LẠI TRỰC TIẾP TỪ MÁY CHỦ LÊN GIAO DIỆN
-            daTaiDuLieuSoDauBai = false; // Reset cờ để kích hoạt hàm tải
-            await taiDuLieuSoDauBaiTuMayChu();
+            // Cập nhật lại trạng thái gốc của RAM (Đã lưu)
+            duLieuTKBGopDaMap.forEach(d => { 
+                if (d.TrangThaiThayDoi) { 
+                    d.DaLuu = true; 
+                    delete d.TrangThaiThayDoi; 
+                } 
+            });
+            
+            // SỬ DỤNG HÀM CẬP NHẬT NGẦM TẠI CHỖ ĐỂ TỰ ĐỘNG ĐỔI BĂNG THÔNG BÁO VÀ KHÓA Ô UI
+            if (typeof capNhatSoDauBaiNgamLenLuoi === 'function') {
+                capNhatSoDauBaiNgamLenLuoi(tuanChon, lopChon);
+            }
         } else throw new Error(ketQua.thongBao);
     } catch (loi) { 
         alert("Lưu thất bại: " + loi.message); 
