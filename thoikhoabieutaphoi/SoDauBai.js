@@ -633,29 +633,33 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     if (coDayBuThu7) danhSachThu.push("Thứ 7");
     if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
 
-    // [NÂNG CẤP - FIX LỖI]: Ép buộc cập nhật Ngày đầu tuần theo đúng dữ liệu TKB của tuần vừa chọn
+    // [THUẬT TOÁN ĐỒNG BỘ THỜI GIAN TUYỆT ĐỐI]: Tước quyền quyết định của CSDL Sổ Đầu Bài
+    // Tính toán trực tiếp khoảng cách từ Tuần đang xem bên TKB (Nguồn chân lý)
     let mienNgayHienTai = '';
+    let tuanSoChonSDB = parseInt(tuanChon.replace(/\D/g, '')) || 1;
+
+    if (typeof ngayDauTuanUI !== 'undefined' && ngayDauTuanUI !== '' && typeof tuanDangXem !== 'undefined') {
+        let parts = ngayDauTuanUI.split('-');
+        if (parts.length === 3) {
+            let d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            // Tính số ngày lệch: (Tuần SDB - Tuần TKB) * 7
+            d.setDate(d.getDate() + ((tuanSoChonSDB - tuanDangXem) * 7));
+            mienNgayHienTai = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        }
+    }
     
-    // Ưu tiên lấy ngày Thứ 2 trực tiếp từ cục dữ liệu TKB của tuần đang được render
-    if (mapNgayChinhXac['Thứ 2']) {
+    // Fallback an toàn cực đoan nếu chưa liên kết được app.js
+    if (!mienNgayHienTai && mapNgayChinhXac['Thứ 2']) {
         let p = mapNgayChinhXac['Thứ 2'].split('/');
-        if (p.length === 3) {
-            mienNgayHienTai = `${p[2]}-${p[1]}-${p[0]}`; // Định dạng yyyy-mm-dd chuẩn cho thẻ input
-        }
+        if (p.length === 3) mienNgayHienTai = `${p[2]}-${p[1]}-${p[0]}`; 
     }
 
-    if (inputNgay) {
-        if (mienNgayHienTai) {
-            // Nếu có ngày chính xác từ tuần mới, ghi đè ngay lập tức để đồng bộ UI
-            inputNgay.value = mienNgayHienTai;
-        } else {
-            // Dự phòng: Nếu tuần này khuyết dữ liệu ngày trên server, dùng tạm giá trị đang có trên Input để tính toán tiếp
-            mienNgayHienTai = inputNgay.value;
-        }
+    if (inputNgay && mienNgayHienTai) {
+        inputNgay.value = mienNgayHienTai;
     }
 
-    let ngayDauTieuDe = mapNgayChinhXac['Thứ 2'] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...');
-    let ngayCuoiTieuDe = mapNgayChinhXac[danhSachThu[danhSachThu.length - 1]] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...');
+    let ngayDauTieuDe = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...';
+    let ngayCuoiTieuDe = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...';
 
     let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container overflow-x-auto">
@@ -683,8 +687,8 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                 <tbody>
     `;
 
-    danhSachThu.forEach(thu => {
-        let ngayCuaThu = mapNgayChinhXac[thu] || (mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '');
+   danhSachThu.forEach(thu => {
+        let ngayCuaThu = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '';
         let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-[11px] font-normal tracking-tight normal-case">${ngayCuaThu}</span>` : thu;
         let danhSachBuoi = [{ id: 'Sang', dataBuoi: 'Sáng', dsTiet: [1, 2, 3, 4, 5] }, { id: 'Chieu', dataBuoi: 'Chiều', dsTiet: [1, 2, 3, 4] }];
         let tongDongTrongNgay = 9; let daInCotThu = false;
