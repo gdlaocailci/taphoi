@@ -973,10 +973,19 @@ async function luuSoDauBaiSangMayChu() {
                     soDongCoThayDoi++;
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
                     
-                    let maLuuTru = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
+                    // [ĐÃ SỬA CHỮA HOÀN TOÀN TẠI ĐÂY]:
+                    // Tuyệt đối không tự ý ghép nối tạo mã mới.
+                    // Tìm bản ghi gốc trong RAM (duLieuTKBGopDaMap), nếu có trường 'Mã Lưu Trữ' thì xài luôn,
+                    // nếu không (trường hợp tạo mới tinh), mới dùng cấu trúc mặc định như một Fallback.
+                    let maLuuTruNguyenBan = '';
+                    if (indexTrongRam !== -1 && duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ']) {
+                         maLuuTruNguyenBan = duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'];
+                    } else {
+                         maLuuTruNguyenBan = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
+                    }
                     
                     duLieuQuetDuoc.push({
-                        maLuuTru: maLuuTru, 
+                        maLuuTru: maLuuTruNguyenBan, // Trả lại y nguyên mã cũ cho Server
                         tuan: tuanSo, 
                         maLop: lopChon,
                         thu: thuHienTai, 
@@ -994,6 +1003,7 @@ async function luuSoDauBaiSangMayChu() {
 
                     // Cập nhật giá trị sửa vào bộ nhớ tạm (RAM)
                     if (indexTrongRam !== -1) {
+                        duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruNguyenBan; // Chốt mã vào RAM
                         duLieuTKBGopDaMap[indexTrongRam]['ChuyenCan_Thuc'] = chuyenCan;
                         duLieuTKBGopDaMap[indexTrongRam]['TietPPCT_Thuc'] = tietPPCT;
                         duLieuTKBGopDaMap[indexTrongRam]['TenBai_Thuc'] = tenBai;
