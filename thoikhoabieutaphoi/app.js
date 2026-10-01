@@ -1798,14 +1798,31 @@ document.addEventListener('keydown', () => { thoiGianThaoTacCuoi = Date.now(); }
 document.addEventListener('input', () => { thoiGianThaoTacCuoi = Date.now(); });
 
 async function dongBoDuLieuNgamToanCuc() {
-    if (Date.now() - thoiGianThaoTacCuoi < 10000) return;
+    // KHÓA BẢO VỆ: Không kích hoạt khi hệ thống đang khởi động
+    if (typeof thongSoHocVu === 'undefined' || Object.keys(thongSoHocVu).length === 0) return;
+    let vungDuLieuTKB = document.getElementById('vungHienThiDuLieu');
+    if (vungDuLieuTKB && (vungDuLieuTKB.innerHTML.includes('Đang tải') || vungDuLieuTKB.innerHTML.includes('Đang kết nối'))) return;
+    
+    let thoiGianNghiThaoTac = Date.now() - thoiGianThaoTacCuoi;
+    
+    // Thuật toán hàng đợi: Hẹn giờ chạy lại nếu chưa đủ thời gian nghỉ
+    if (thoiGianNghiThaoTac < 10000) {
+        if (!dangChoTaiLaiNgam) {
+            dangChoTaiLaiNgam = true;
+            setTimeout(() => {
+                dangChoTaiLaiNgam = false;
+                dongBoDuLieuNgamToanCuc();
+            }, 10000 - thoiGianNghiThaoTac + 500); 
+        }
+        return;
+    }
 
     let khungTKB = document.getElementById('khungTKB');
     let khungSDB = document.getElementById('khungSoDauBai');
 
     if (khungTKB && !khungTKB.classList.contains('hidden')) {
         if (khungTKB.querySelector('td[data-thaydoi="true"]')) {
-            console.warn("TKB đang có ô sửa đổi, tạm dừng tải TKB.");
+            console.warn("TKB đang có ô chỉnh sửa chưa lưu, tạm dừng quy trình tải ngầm.");
             return; 
         }
 
@@ -1821,7 +1838,7 @@ async function dongBoDuLieuNgamToanCuc() {
         let coOThayDoiDOM_SDB = khungSDB.querySelector('td[data-thaydoi="true"]');
 
         if (coThayDoiSDB || coOThayDoiDOM_SDB) {
-            console.warn("Sổ đầu bài đang gõ dở, tạm dừng tải SDB.");
+            console.warn("Sổ đầu bài đang phát sinh dữ liệu gõ dở, tạm dừng quy trình tải ngầm.");
             return;
         }
 
