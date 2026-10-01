@@ -1270,7 +1270,7 @@ function xuatWordSoDauBai() {
     let blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
     let link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon.replace(/\D/g,'')}.doc`;
+    link.download = `SoDauBai_Lop${lopChon}_Tuan${tuanChon.replace(/\D/g,'')}.docx`;
     link.click();
 }
 
