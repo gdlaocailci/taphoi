@@ -30,8 +30,8 @@ window.lamSachBoNhoSoDauBai = function() {
     lopTruocDo_SDB = '';
     coThayDoiChuaLuu_SDB = false;
     
-    let dinhDanhGoiLen = typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' ? window.dinhDanhGiaoVienToanCuc : '';
-    try { sessionStorage.removeItem(typeof layKhoaCachLy === 'function' ? layKhoaCachLy('SDB_CACHE') : `SDB_CACHE_${dinhDanhGoiLen}`); } catch(e) {}
+    let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
+    try { sessionStorage.removeItem(`SDB_CACHE_${emailGoiLen}`); } catch(e) {}
     
     maGvDangNhapHeThong = '';
     
@@ -41,6 +41,7 @@ window.lamSachBoNhoSoDauBai = function() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
 
+    // BẢO LƯU TRẠNG THÁI: Lấy giá trị đang chọn trước khi đập bỏ HTML
     let giaTriTuanCu = elementTuan ? elementTuan.value : '';
     let giaTriLopCu = elementLop ? elementLop.value : '';
 
@@ -58,6 +59,7 @@ window.lamSachBoNhoSoDauBai = function() {
 
     if(elementTuan) { 
         elementTuan.style.display = ''; 
+        // Gắn tạm giá trị cũ vào HTML để giữ chỗ cho hàm nạp phía sau
         if (giaTriTuanCu) elementTuan.innerHTML = `<option value="${giaTriTuanCu}" selected>${giaTriTuanCu}</option>`;
         else elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; 
     }
@@ -67,8 +69,9 @@ window.lamSachBoNhoSoDauBai = function() {
         else elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; 
     }
 
+    // Tự động tải lại lưới SĐB nếu tab này đang mở để chống lỗi trắng trang do lệnh dọn dẹp
     let khungSDB = document.getElementById('khungSoDauBai');
-    if (khungSDB && !khungSDB.classList.contains('hidden') && dinhDanhGoiLen !== '') {
+    if (khungSDB && !khungSDB.classList.contains('hidden') && emailGoiLen !== '') {
         setTimeout(() => { taiDuLieuSoDauBaiTuMayChu(); }, 500);
     }
 };
@@ -78,9 +81,11 @@ async function taiDuLieuSoDauBaiTuMayChu() {
     
     const vungHienThi = document.getElementById('vungHienThiSoDauBai');
     
-    const chuaDangNhap = typeof window.dinhDanhGiaoVienToanCuc === 'undefined' || window.dinhDanhGiaoVienToanCuc === '';
+    // Kiểm tra trực tiếp biến toàn cục thay vì check sự kiện onclick để chống lỗi Race Condition
+    const chuaDangNhap = typeof window.emailGiaoVienToanCuc === 'undefined' || window.emailGiaoVienToanCuc === '';
 
     if (chuaDangNhap) {
+        // Giao diện Khóa bảo mật: Yêu cầu định danh trực quan trên vùng hiển thị
         if (vungHienThi) {
             vungHienThi.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-12 animate-pulse-once">
@@ -95,6 +100,7 @@ async function taiDuLieuSoDauBaiTuMayChu() {
                             Quay lại TKB
                         </button>
                         <button onclick="khoiDongDangNhap(); kiemTraTrangThaiDangNhapSDB()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow transition-colors flex items-center gap-2">
+                            <!-- ĐÃ SỬA: Thay thế img bị lỗi bằng mã SVG -->
                             <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 48 48">
                                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"></path>
                                 <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
@@ -436,7 +442,7 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     duLieuTKBGopDaMap = tkbGop; 
     napDropdownSoDauBai();
 }
-//===============================================================================
+
 let khoaDoubleKetXuat = false;
 
 function ketXuatSoDauBaiLenLuoi() {
