@@ -437,9 +437,6 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
     napDropdownSoDauBai();
 }
 
-// =========================================================================
-// HÀM 2: KẾT XUẤT SỔ ĐẦU BÀI LÊN LƯỚI
-// =========================================================================
 function ketXuatSoDauBaiLenLuoi() {
     let theSelectTuan = document.getElementById('chonTuanSo');
     let theSelectLop = document.getElementById('chonLopSo');
@@ -485,24 +482,35 @@ function ketXuatSoDauBaiLenLuoi() {
         let optionToSelect = Array.from(theSelectTuan.options).find(opt => parseInt(opt.value.replace(/\D/g, '')) === tuanChuaLuuNhoNhat);
         if (optionToSelect) {
             theSelectTuan.value = optionToSelect.value;
-            // [NÂNG CẤP]: Kích hoạt đồng bộ UI Input
             if (typeof dongBoHienThiTuSelect === 'function') dongBoHienThiTuSelect('chonTuanSo');
             setTimeout(ketXuatSoDauBaiLenLuoi, 100); 
             return; 
         }
     }
 
+    // [NÂNG CẤP]: Phân nhánh hành động với nút Hủy và OK
     if (coThayDoiChuaLuu_SDB && (tuanChon !== tuanTruocDo_SDB || lopChon !== lopTruocDo_SDB)) {
-        alert("Cảnh báo: Đồng chí đang có dữ liệu chưa lưu trên màn hình! Vui lòng bấm 'Lưu Sổ đầu bài' để chốt dữ liệu trước khi chuyển sang Tuần hoặc Lớp khác.");
-        if (theSelectTuan && tuanTruocDo_SDB) {
-            theSelectTuan.value = tuanTruocDo_SDB;
-            if (typeof dongBoHienThiTuSelect === 'function') dongBoHienThiTuSelect('chonTuanSo');
+        let thongBao = "⚠️ Cảnh báo: Đồng chí đang có dữ liệu chưa lưu trên màn hình!\n\n" +
+                       "- Bấm [Hủy / Cancel] để Ở LẠI và tiếp tục hoàn thiện, bấm 'Lưu Sổ đầu bài'.\n" +
+                       "- Bấm [OK] để TIẾP TỤC chuyển sang Tuần/Lớp khác (Dữ liệu chưa lưu sẽ bị xóa).";
+        
+        let xacNhan = confirm(thongBao);
+        
+        if (!xacNhan) {
+            // Người dùng chọn Hủy -> Khôi phục lại Tuần/Lớp cũ trên UI và dừng tiến trình
+            if (theSelectTuan && tuanTruocDo_SDB) {
+                theSelectTuan.value = tuanTruocDo_SDB;
+                if (typeof dongBoHienThiTuSelect === 'function') dongBoHienThiTuSelect('chonTuanSo');
+            }
+            if (theSelectLop && lopTruocDo_SDB) {
+                theSelectLop.value = lopTruocDo_SDB;
+                if (typeof dongBoHienThiTuSelect === 'function') dongBoHienThiTuSelect('chonLopSo');
+            }
+            return; 
+        } else {
+            // Người dùng chọn OK -> Chấp nhận mất dữ liệu chưa lưu để đi tiếp
+            coThayDoiChuaLuu_SDB = false;
         }
-        if (theSelectLop && lopTruocDo_SDB) {
-            theSelectLop.value = lopTruocDo_SDB;
-            if (typeof dongBoHienThiTuSelect === 'function') dongBoHienThiTuSelect('chonLopSo');
-        }
-        return; 
     }
 
     thucThiKetXuatSoDauBaiLenLuoi();
