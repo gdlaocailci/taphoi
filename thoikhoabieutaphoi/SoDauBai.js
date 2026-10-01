@@ -30,8 +30,8 @@ window.lamSachBoNhoSoDauBai = function() {
     lopTruocDo_SDB = '';
     coThayDoiChuaLuu_SDB = false;
     
-    let emailGoiLen = typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '';
-    try { sessionStorage.removeItem(`SDB_CACHE_${emailGoiLen}`); } catch(e) {}
+    let dinhDanhGoiLen = typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' ? window.dinhDanhGiaoVienToanCuc : '';
+    try { sessionStorage.removeItem(typeof layKhoaCachLy === 'function' ? layKhoaCachLy('SDB_CACHE') : `SDB_CACHE_${dinhDanhGoiLen}`); } catch(e) {}
     
     maGvDangNhapHeThong = '';
     
@@ -41,7 +41,6 @@ window.lamSachBoNhoSoDauBai = function() {
     let elementTuan = document.getElementById('chonTuanSo');
     let elementLop = document.getElementById('chonLopSo');
 
-    // BẢO LƯU TRẠNG THÁI: Lấy giá trị đang chọn trước khi đập bỏ HTML
     let giaTriTuanCu = elementTuan ? elementTuan.value : '';
     let giaTriLopCu = elementLop ? elementLop.value : '';
 
@@ -59,7 +58,6 @@ window.lamSachBoNhoSoDauBai = function() {
 
     if(elementTuan) { 
         elementTuan.style.display = ''; 
-        // Gắn tạm giá trị cũ vào HTML để giữ chỗ cho hàm nạp phía sau
         if (giaTriTuanCu) elementTuan.innerHTML = `<option value="${giaTriTuanCu}" selected>${giaTriTuanCu}</option>`;
         else elementTuan.innerHTML = '<option value="" disabled selected>-- Chọn Tuần --</option>'; 
     }
@@ -69,9 +67,8 @@ window.lamSachBoNhoSoDauBai = function() {
         else elementLop.innerHTML = '<option value="" disabled selected>-- Chọn Lớp --</option>'; 
     }
 
-    // Tự động tải lại lưới SĐB nếu tab này đang mở để chống lỗi trắng trang do lệnh dọn dẹp
     let khungSDB = document.getElementById('khungSoDauBai');
-    if (khungSDB && !khungSDB.classList.contains('hidden') && emailGoiLen !== '') {
+    if (khungSDB && !khungSDB.classList.contains('hidden') && dinhDanhGoiLen !== '') {
         setTimeout(() => { taiDuLieuSoDauBaiTuMayChu(); }, 500);
     }
 };
