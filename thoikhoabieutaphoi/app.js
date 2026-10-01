@@ -1793,19 +1793,20 @@ async function thucThiChuyenTuanTiepTheo(event) {
 let boDemDongBoToanCuc;
 let thoiGianThaoTacCuoi = Date.now();
 const THOI_GIAN_DONG_BO = 60000; 
+let dangChoTaiLaiNgam = false; // [THÊM MỚI]: Cờ kiểm soát việc chờ tải ngầm
 
 document.addEventListener('keydown', () => { thoiGianThaoTacCuoi = Date.now(); });
 document.addEventListener('input', () => { thoiGianThaoTacCuoi = Date.now(); });
 
 async function dongBoDuLieuNgamToanCuc() {
-    // KHÓA BẢO VỆ: Không kích hoạt khi hệ thống đang khởi động
+    // [NHẬN DIỆN THÔNG MINH 1]: KHÔNG KÍCH HOẠT KHI ĐANG KHỞI ĐỘNG HỆ THỐNG
+    // Nếu biến thongSoHocVu chưa được nạp hoặc DOM đang báo "Đang tải", chứng tỏ hệ thống chưa sẵn sàng.
     if (typeof thongSoHocVu === 'undefined' || Object.keys(thongSoHocVu).length === 0) return;
     let vungDuLieuTKB = document.getElementById('vungHienThiDuLieu');
     if (vungDuLieuTKB && (vungDuLieuTKB.innerHTML.includes('Đang tải') || vungDuLieuTKB.innerHTML.includes('Đang kết nối'))) return;
     
     let thoiGianNghiThaoTac = Date.now() - thoiGianThaoTacCuoi;
     
-    // Thuật toán hàng đợi: Hẹn giờ chạy lại nếu chưa đủ thời gian nghỉ
     if (thoiGianNghiThaoTac < 10000) {
         if (!dangChoTaiLaiNgam) {
             dangChoTaiLaiNgam = true;
