@@ -889,11 +889,28 @@ async function luuDuLieu(event, loaiLuu) {
                 let valGv = oGv ? oGv.value.trim() : "";
                 
                 let thongTinNgay = tinhNgayDocLap(ngayDauTuanUI, thu);
-                let namHocDung = namHocChuan || thongTinNgay.nam; // [Sửa lỗi undefined]
+                let namHocDung = namHocChuan || thongTinNgay.nam; 
                 let tienToBuoi = (buoi === "Sáng") ? "S" : "C";
                 
+                // [NÂNG CẤP TỌA ĐỘ 6 TRỤC]: Quét tìm mã nguyên bản bằng Tuần, Thứ, Buổi, Tiết, Lớp, Ngày
+                let indexTrongRam = duLieuTkbHienTai.findIndex(t => 
+                    String(t.tuan).trim() === String(tuanDangXem).trim() &&
+                    String(t.thu).trim() === thu && 
+                    String(t.buoi).trim() === buoi && 
+                    String(t.tiet).trim() === String(tiet) && 
+                    String(t.maLop).trim() === lop &&
+                    (String(t.ngay).trim() === thongTinNgay.ngayDayDu || String(t.ngay).trim() === '') // Khớp ngày tuyệt đối
+                );
+
+                let maTietNguyenBan = '';
+                if (indexTrongRam !== -1 && duLieuTkbHienTai[indexTrongRam].maTiet) {
+                    maTietNguyenBan = duLieuTkbHienTai[indexTrongRam].maTiet;
+                } else {
+                    maTietNguyenBan = `${namHocDung}_${tuanDangXem}_${thu}_${tienToBuoi}_${tiet}_${lop}`;
+                }
+                
                 dsTietLuoi.push({
-                    maTiet: `${namHocDung}_${tuanDangXem}_${thu}_${tienToBuoi}_${tiet}_${lop}`, 
+                    maTiet: maTietNguyenBan, 
                     namHoc: namHocDung, 
                     thang: thongTinNgay.thang, 
                     ngay: thongTinNgay.ngayDayDu, 
@@ -1466,9 +1483,24 @@ async function luuSuaCucBoTKB(event) {
             let namHocDung = namHocChuan || thongTinNgay.nam;
             let tienToBuoi = (buoi === "Sáng") ? "S" : "C";
             
-            let maTietHienTai = `${namHocDung}_${tuanDangXem}_${thu}_${tienToBuoi}_${tiet}_${lop}`;
+            // [NÂNG CẤP TỌA ĐỘ 6 TRỤC]: Quét tìm mã nguyên bản bằng Tuần, Thứ, Buổi, Tiết, Lớp, Ngày
+            let indexTrongRam = duLieuTkbHienTai.findIndex(t => 
+                String(t.tuan).trim() === String(tuanDangXem).trim() &&
+                String(t.thu).trim() === thu && 
+                String(t.buoi).trim() === buoi && 
+                String(t.tiet).trim() === String(tiet) && 
+                String(t.maLop).trim() === lop &&
+                (String(t.ngay).trim() === thongTinNgay.ngayDayDu || String(t.ngay).trim() === '') // Khớp ngày tuyệt đối
+            );
+
+            let maTietNguyenBan = '';
+            if (indexTrongRam !== -1 && duLieuTkbHienTai[indexTrongRam].maTiet) {
+                maTietNguyenBan = duLieuTkbHienTai[indexTrongRam].maTiet;
+            } else {
+                maTietNguyenBan = `${namHocDung}_${tuanDangXem}_${thu}_${tienToBuoi}_${tiet}_${lop}`;
+            }
             
-            let tietGoc = duLieuTkbHienTai.find(t => String(t.maTiet).trim() === maTietHienTai);
+            let tietGoc = duLieuTkbHienTai.find(t => String(t.maTiet).trim() === maTietNguyenBan);
             let monGoc = tietGoc ? (tietGoc.monHoc || "").trim() : "";
             let gvGoc = tietGoc ? (tietGoc.maGv || "").trim() : "";
             
@@ -1485,7 +1517,7 @@ async function luuSuaCucBoTKB(event) {
             danhSachThongBao.push(msg);
 
             dsThayDoi.push({ 
-                maTiet: maTietHienTai, 
+                maTiet: maTietNguyenBan, 
                 namHoc: namHocDung, 
                 thang: thongTinNgay.thang, 
                 ngay: thongTinNgay.ngayDayDu, 
