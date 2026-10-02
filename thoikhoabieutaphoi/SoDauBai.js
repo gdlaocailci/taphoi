@@ -1574,6 +1574,9 @@ window.renderDanhSach = function(selectEl, listEl, inputEl, searchTerm) {
                 selectEl.value = opt.value;
                 listEl.classList.add('hidden');
                 
+                // [NÂNG CẤP]: Tự động nhả con trỏ chuột ra khỏi ô nhập liệu sau khi chọn
+                inputEl.blur();
+                
                 // Đồng bộ thay đổi
                 if (typeof selectEl.onchange === 'function') selectEl.onchange();
                 selectEl.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1589,7 +1592,6 @@ window.renderDanhSach = function(selectEl, listEl, inputEl, searchTerm) {
         listEl.appendChild(li);
     }
 };
-
 window.dongBoHienThiTuSelect = function(selectId) {
     let selectEl = document.getElementById(selectId);
     let inputEl = document.getElementById('input_' + selectId);
