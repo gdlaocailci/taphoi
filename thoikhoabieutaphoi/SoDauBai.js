@@ -707,7 +707,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     let ngayDauTieuDe = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, "Thứ 2") : '...';
     let ngayCuoiTieuDe = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, danhSachThu[danhSachThu.length - 1]) : '...';
 
-   let htmlBang = `
+    let htmlBang = `
         <div class="mb-8 bang-so-dau-bai-container overflow-x-auto">
             <!-- ĐÃ SỬA: Đưa toàn bộ 3 thành phần lên 1 dòng với flex justify-between -->
             <div class="flex justify-between items-center mb-2">
@@ -925,13 +925,14 @@ async function luuSoDauBaiSangMayChu() {
                 let chuKyGV = getVal(dong.querySelector('td[data-loai="chuKy"]'));
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
-                // Đối chiếu với bộ nhớ RAM
+                // Đối chiếu với bộ nhớ RAM [NÂNG CẤP TỌA ĐỘ 6 TRỤC ĐỂ ĐỊNH VỊ TUYỆT ĐỐI]
                 let indexTrongRam = duLieuTKBGopDaMap.findIndex(d => 
                     String(d['Tuần']).trim() == tuanSo && 
                     String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase() && 
                     String(d['Thứ']).trim() === thuHienTai && 
+                    String(d['Buổi']).trim().toLowerCase() === buoi.toLowerCase() &&
                     String(d['Tiết']).trim() == tiet &&
-                    String(d['Buổi']).trim().toLowerCase() === buoi.toLowerCase()
+                    (String(d['Ngày']).trim() === ngayHienTai || String(d['Ngày']).trim() === '') // Khớp ngày tuyệt đối
                 );
 
                 // [FIX LỖI]: Giới hạn kiểm tra quyền chữ ký chỉ dành cho những tiết người dùng vừa sửa đổi hoặc tiết mới.
@@ -973,10 +974,8 @@ async function luuSoDauBaiSangMayChu() {
                     soDongCoThayDoi++;
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
                     
-                    // [ĐÃ SỬA CHỮA HOÀN TOÀN TẠI ĐÂY]:
-                    // Tuyệt đối không tự ý ghép nối tạo mã mới.
-                    // Tìm bản ghi gốc trong RAM (duLieuTKBGopDaMap), nếu có trường 'Mã Lưu Trữ' thì xài luôn,
-                    // nếu không (trường hợp tạo mới tinh), mới dùng cấu trúc mặc định như một Fallback.
+                    // Tuyệt đối không tự ý ghép nối tạo mã mới nếu dữ liệu đã tồn tại.
+                    // Tìm bản ghi gốc trong RAM (duLieuTKBGopDaMap) để lấy lại Mã nguyên bản
                     let maLuuTruNguyenBan = '';
                     if (indexTrongRam !== -1 && duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ']) {
                          maLuuTruNguyenBan = duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'];
@@ -985,7 +984,7 @@ async function luuSoDauBaiSangMayChu() {
                     }
                     
                     duLieuQuetDuoc.push({
-                        maLuuTru: maLuuTruNguyenBan, // Trả lại y nguyên mã cũ cho Server
+                        maLuuTru: maLuuTruNguyenBan, // Trả lại y nguyên mã cũ đã định vị cho Server
                         tuan: tuanSo, 
                         maLop: lopChon,
                         thu: thuHienTai, 
@@ -1003,7 +1002,7 @@ async function luuSoDauBaiSangMayChu() {
 
                     // Cập nhật giá trị sửa vào bộ nhớ tạm (RAM)
                     if (indexTrongRam !== -1) {
-                        duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruNguyenBan; // Chốt mã vào RAM
+                        duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruNguyenBan; 
                         duLieuTKBGopDaMap[indexTrongRam]['ChuyenCan_Thuc'] = chuyenCan;
                         duLieuTKBGopDaMap[indexTrongRam]['TietPPCT_Thuc'] = tietPPCT;
                         duLieuTKBGopDaMap[indexTrongRam]['TenBai_Thuc'] = tenBai;
@@ -1322,7 +1321,7 @@ async function xuatExcelSoDauBai() {
         if(cacBang.length === 0) return alert("Không có dữ liệu để xuất!");
         let rowIndex = 1;
 
-       cacBang.forEach(khungBang => {
+        cacBang.forEach(khungBang => {
             let rowHeader1 = worksheet.getRow(rowIndex);
             
             // [ĐÃ SỬA]: Lấy riêng text của từng thẻ span thông qua các class đánh dấu
