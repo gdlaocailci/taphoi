@@ -331,7 +331,8 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI', epD
             
             const taoDauVanTay = (mangTkb) => {
                 if (!Array.isArray(mangTkb)) return '';
-                return mangTkb.map(t => `${String(t.thu).trim()}_${String(t.buoi).trim()}_${String(t.tiet).trim()}_${String(t.maLop).trim()}_${String(t.monHoc || '').trim()}_${String(t.maGv || '').trim()}`).sort().join('||');
+                // [NÂNG CẤP]: Bổ sung t.tuan và t.ngay vào mã băm để nhận diện thay đổi thời gian
+                return mangTkb.map(t => `${String(t.tuan || '').trim()}_${String(t.thu).trim()}_${String(t.buoi).trim()}_${String(t.tiet).trim()}_${String(t.maLop).trim()}_${String(t.monHoc || '').trim()}_${String(t.maGv || '').trim()}_${String(t.ngay || '').trim()}`).sort().join('||');
             };
 
             let vanTayMayChu = taoDauVanTay(duLieu);
@@ -351,6 +352,17 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI', epD
                         console.log("⚡ [Smart Sync]: Cập nhật lưới TKB Hiện Tại từ Máy chủ...");
                         duLieuTkbHienTai = duLieu;
                         localStorage.setItem(KEY_TKB, JSON.stringify(duLieu));
+                        
+                        // [NÂNG CẤP TỐI ƯU]: Nhặt ngày tháng từ DÒNG ĐẦU TIÊN để đồng bộ ngầm lên UI
+                        if (duLieuTkbHienTai.length > 0 && duLieuTkbHienTai[0].ngay) {
+                            let p = String(duLieuTkbHienTai[0].ngay).trim().split('/'); 
+                            if (p.length === 3) {
+                                ngayDauTuanUI = `${p[2]}-${p[1]}-${p[0]}`; 
+                                let dateInput = document.getElementById('chonNgayDauTuan');
+                                if(dateInput) dateInput.value = ngayDauTuanUI;
+                            }
+                        }
+
                         xuatMaTranBang(duLieuTkbHienTai);
                         if (typeof window.lamSachBoNhoSoDauBai === 'function') window.lamSachBoNhoSoDauBai();
                     }
@@ -361,6 +373,17 @@ async function taiDuLieuTKB(coCache = false, nguonTruyXuat = 'TKB_HIEN_TAI', epD
                 }
             } else {
                 duLieuTkbHienTai = duLieu; 
+                
+                // [NÂNG CẤP TỐI ƯU]: Đồng bộ ngầm ngày tháng từ DÒNG ĐẦU TIÊN cho kho DATA_TKB và TKB_CoDinh
+                if (duLieuTkbHienTai.length > 0 && duLieuTkbHienTai[0].ngay) {
+                    let p = String(duLieuTkbHienTai[0].ngay).trim().split('/'); 
+                    if (p.length === 3) {
+                        ngayDauTuanUI = `${p[2]}-${p[1]}-${p[0]}`; 
+                        let dateInput = document.getElementById('chonNgayDauTuan');
+                        if(dateInput) dateInput.value = ngayDauTuanUI;
+                    }
+                }
+
                 xuatMaTranBang(duLieuTkbHienTai);
             }
         } else {
@@ -711,15 +734,24 @@ function xuatMaTranBang(danhSachTiet) {
         return;
     }
 
-    let dateInput = document.getElementById('chonNgayDauTuan');
+   let dateInput = document.getElementById('chonNgayDauTuan');
        
-    // [BẢO VỆ DỮ LIỆU]: Chỉ lấy ngày từ Server khi ngayDauTuanUI đang rỗng (lúc nạp trang lần đầu tiên)
-    if (!ngayDauTuanUI && duLieuTiet && duLieuTiet.length > 0) {
-        let thu2Data = duLieuTiet.find(t => t.thu === "Thứ 2" && t.ngay);
-        if (thu2Data && thu2Data.ngay) {
-            let p = thu2Data.ngay.split('/'); 
+    // [NÂNG CẤP ĐỒNG BỘ THỜI GIAN ĐỘT PHÁ]: LUÔN LUÔN ưu tiên lấy ngày từ dữ liệu Máy chủ (nếu có).
+    // Xóa bỏ chốt chặn (!ngayDauTuanUI) để thời gian trên UI bị ép buộc phải khớp 100% với dữ liệu Sheet thực tế (như Tuần 5 là 05/10 thay vì 28/09).
+    if (duLieuTiet && duLieuTiet.length > 0) {
+        // Tìm dòng bất kỳ có chứa ngày (Khử lỗi khoảng trắng "Thứ 2 ")
+        let dongCoNgay = duLieuTiet.find(t => t.ngay && String(t.ngay).trim() !== "");
+        if (dongCoNgay) {
+            let p = String(dongCoNgay.ngay).trim().split('/'); 
             if (p.length === 3) {
-                ngayDauTuanUI = `${p[2]}-${p[1]}-${p[0]}`; 
+                let ngayGoc = new Date(p[2], p[1] - 1, p[0]);
+                const doLechThu = {"Thứ 2": 0, "Thứ 3": 1, "Thứ 4": 2, "Thứ 5": 3, "Thứ 6": 4, "Thứ 7": 5, "Chủ nhật": 6};
+                let tenThu = String(dongCoNgay.thu).trim();
+                let soNgayLech = doLechThu[tenThu] || 0;
+                
+                // Lùi ngày về đúng Thứ 2 và ghi đè thẳng vào biến UI
+                ngayGoc.setDate(ngayGoc.getDate() - soNgayLech);
+                ngayDauTuanUI = `${ngayGoc.getFullYear()}-${(ngayGoc.getMonth() + 1).toString().padStart(2, '0')}-${ngayGoc.getDate().toString().padStart(2, '0')}`; 
             }
         }
     }
@@ -1882,7 +1914,13 @@ async function dongBoDuLieuNgamToanCuc() {
 
         hienThiThongBaoTaiNgam(true);
         try {
-            if (typeof taiDuLieuTKB === 'function') await taiDuLieuTKB(true, 'TKB_HIEN_TAI', false);
+            // [NÂNG CẤP ĐỊNH TUYẾN NGẦM]: Tự động quét đúng nguồn thay vì fix cứng TKB_HIEN_TAI
+            let tuanHeThong = parseInt(thongSoHocVu.TUAN_HIEN_TAI, 10) || 1;
+            let nguonTruyXuat = 'TKB_HIEN_TAI';
+            if (tuanDangXem < tuanHeThong) nguonTruyXuat = 'DATA_TKB';
+            else if (tuanDangXem > tuanHeThong) nguonTruyXuat = 'TKB_CoDinh';
+
+            if (typeof taiDuLieuTKB === 'function') await taiDuLieuTKB(true, nguonTruyXuat, false);
         } finally {
             setTimeout(() => hienThiThongBaoTaiNgam(false), 1500);
         }
