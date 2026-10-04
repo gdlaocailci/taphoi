@@ -1299,7 +1299,68 @@ function v_f_x_h_debounce() {
     clearTimeout(v_timer_h);
     v_timer_h = setTimeout(f_x_h, 250); 
 }
+function f_x_e(m_n) {
+    const k_b = document.getElementById("t-b-g");
+    if (!k_b) return;
+    let d_d = 1;
+    let p_k = false; 
+    let khoiDOM = "";
+    
+    // ĐỒNG BỘ: Chỉ duy trì một hàm chuẩn Giáo Viên
+    let fnThem = "f_x_f_gv";
+    let fnXoa = "f_x_g_gv";
 
+    m_n.forEach((item, index) => {
+        let tg = (item.x_b === "undefined" || !item.x_b) ? "" : item.x_b.toString().trim();
+        let kq = item.x_c || "";
+        let html = "";
+        let l_p = !tg && !item.x_a.toLowerCase().includes("phê bình");
+        let isFirstDataRow = false;
+        
+        if (!l_p && !p_k) { isFirstDataRow = true; p_k = true; kq = v_l_d !== "" ? v_l_d : kq; }
+        let l_m = item.x_a.toLowerCase().includes("kết quả xếp loại hàng tháng") || tg.toLowerCase().includes("bình quân cả năm");
+
+        if (l_m) {
+            kq = v_l_d !== "" ? v_l_d : kq; 
+            if (kq) kq = kq.toString().replace(/([^\s\d.,:])\s*(\d)/, '$1:$2');
+            html = `<input type="text" class="o-n-bang k-o-n h-dong-bo k-hoat-t" value="${kq}" readonly title="Khóa - Dữ liệu tự động đồng bộ">`;
+        } 
+        else if (tg === "THANHTICH_HS_DONG") {
+            html = `<div class="k-phu"><div class="k-d-k"><select id="h_c_${index}"><option value="QUOCGIA">Quốc gia</option><option value="TINH">Cấp Tỉnh</option><option value="XA">Xã/Cụm</option></select><select id="h_g_${index}"><option value="0">Giải Nhất</option><option value="1">Giải Nhìn</option><option value="2">Giải Ba</option><option value="3">KK</option></select><select id="h_l_${index}"><option value="1">Cá nhân</option><option value="1.5">Tập thể (x1.5)</option></select><input type="number" id="h_s_${index}" value="1" min="1" style="width: 50px;"><button class="n-bam n-xanh-b n-nho btn-reactbits-shiny" onclick="${fnThem}(${index})">Thêm</button><button class="n-bam n-do n-nho btn-reactbits-shiny" onclick="${fnXoa}(${index})">Xóa</button></div><div id="h_t_${index}" class="k-k-q" style="font-weight: normal; font-size: 14px;">${kq ? kq.replace(/\\n/g, '<br>') : '...'}</div><input type="hidden" class="o-n-bang k-hoat-t" id="h_a_${index}" value="${kq}"></div>`;
+        } else if (tg.includes("|")) {
+            let t_c = kq ? "" : `<option value="" data-p="0" disabled selected>-- Chọn mức --</option>`;
+            html = `<select class="o-n-bang k-hoat-t">` + t_c + tg.split(",").map(opt => {
+                let [n, d] = opt.split("|");
+                return `<option value="${n.trim()}" data-p="${d?d.trim():'0'}" ${kq.includes(n.trim())?'selected':''}>${n.trim()} (${d?d.trim():'0'}đ)</option>`;
+            }).join("") + `</select>`;
+        } else {
+            if (isFirstDataRow) html = `<input type="text" class="o-n-bang k-hoat-t k-o-n" value="${kq}" readonly title="Khóa - Dữ liệu tự động">`;
+            else html = `<input type="text" class="o-n-bang k-hoat-t" value="${kq}">`;
+        }
+
+        let h_s = "";
+        if (!l_p && item.x_a.trim() !== "") { h_s = d_d; d_d++; }
+        
+        let attr = `data-qd="${item.q_d||''}" data-xs="${item.g_xs||''}" data-htt="${item.g_htt||''}" data-ht="${item.g_ht||''}" data-cht="${item.g_cht||''}"`;
+        
+        khoiDOM += `<tr style="${l_p?'background:#f1f8ff;font-weight:bold;color:var(--mau-c);':''}"><td style="text-align: center; vertical-align: middle;">${l_p?"":h_s}</td><td class="m-cot-mot" ${attr} style="vertical-align: middle;">${item.x_a}</td><td style="text-align: center; vertical-align: middle;">${tg==='THANHTICH_HS_DONG'?'Quy chế':tg}</td><td style="vertical-align: middle;">${l_p?"":html}</td></tr>`;
+    });
+    
+    k_b.innerHTML = khoiDOM; 
+
+    if (v_che_do_xem_admin || v_che_do_khach) {
+        document.querySelectorAll("#t-b-g input, #t-b-g select, #t-b-g button").forEach(el => {
+            el.disabled = true;
+            if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.style.backgroundColor = "#e9ecef";
+            el.style.cursor = "not-allowed";
+        });
+        let nutLuu = document.getElementById("vungNutBam");
+        if (nutLuu) nutLuu.style.display = "none";
+    } else {
+        let nutLuu = document.getElementById("vungNutBam");
+        if (nutLuu) nutLuu.style.display = "flex";
+    }
+}
 //**********************************************************************************************
 
 function f_x_h() {
