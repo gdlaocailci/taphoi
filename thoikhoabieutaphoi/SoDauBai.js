@@ -766,7 +766,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 
    danhSachThu.forEach(thu => {
         let ngayCuaThu = mienNgayHienTai ? tinhNgayTuInputDate(mienNgayHienTai, thu) : '';
-        let hienThiThu = ngayCuaThu ? `${thu}<br><span class="text-[11px] font-normal tracking-tight normal-case">${ngayCuaThu}</span>` : thu;
+        let hienThiThu = ngayCuaThu ? `<span style="display: block;">${thu}</span><span style="display: block; font-size: 11pt; font-weight: normal;">${ngayCuaThu}</span>` : `<span style="display: block;">${thu}</span>`;
         let danhSachBuoi = [{ id: 'Sang', dataBuoi: 'Sáng', dsTiet: [1, 2, 3, 4, 5] }, { id: 'Chieu', dataBuoi: 'Chiều', dsTiet: [1, 2, 3, 4] }];
         let tongDongTrongNgay = 9; let daInCotThu = false;
 
@@ -1401,13 +1401,17 @@ async function xuatExcelSoDauBai() {
                         giaTriCell = cell.innerText;
                     }
                     
-                    // Làm sạch dữ liệu trước khi đẩy vào Excel
+                   // Làm sạch dữ liệu trước khi đẩy vào Excel
                     if (giaTriCell && typeof giaTriCell === 'string') {
                         giaTriCell = giaTriCell.trim();
                         // Xóa sạch chữ hệ thống nếu không được chọn
                         if (giaTriCell === "-Chọn-" || giaTriCell === "--") {
                             giaTriCell = "";
                         }
+                        
+                        // [ĐÃ SỬA]: Tách Thứ và Ngày xuống dòng nếu bị dính liền (VD: THỨ 228/09/2026 -> THỨ 2 \n 28/09/2026)
+                        giaTriCell = giaTriCell.replace(/(THỨ\s*\d+|CHỦ NHẬT)(\d{2}\/\d{2}\/\d{4})/gi, "$1\n$2");
+                        
                         // Bộ lọc chống lỗi đứng ứng dụng Excel do dính dấu công thức toán học
                         if (/^[=+\-@]/.test(giaTriCell)) {
                             giaTriCell = "'" + giaTriCell;
