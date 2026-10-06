@@ -635,7 +635,14 @@ window.xacThucGiaTriHopLe = function(inputEl, loaiDanhSach) {
     if (!inputEl) return;
     let giaTri = inputEl.value.trim();
 
-    if (giaTri === '' || giaTri === '--') { inputEl.value = ''; return; }
+    // [NÂNG CẤP]: Xóa trắng ô hoàn toàn nếu người dùng chọn "---" hoặc "--"
+    if (giaTri === '---' || giaTri === '--') { 
+        inputEl.value = ''; 
+        inputEl.dataset.val = ''; // Xóa bộ nhớ tạm để ngăn hàm onblur khôi phục lại chữ cũ
+        return; 
+    }
+
+    if (giaTri === '') { inputEl.value = ''; return; }
 
     let danhSachChuan = (loaiDanhSach === 'mon') ? (thongSoHocVu.DANH_SACH_MON_HOC || []) : (thongSoHocVu.DANH_SACH_GIAO_VIEN || []);
 
@@ -789,10 +796,11 @@ function xuatMaTranBang(danhSachTiet) {
     const tableEl = document.querySelector('.bang-excel');
     if (tableEl) { tableEl.style.borderCollapse = 'separate'; tableEl.style.borderSpacing = '0'; }
 
-    // Xóa và tạo mới datalist Môn học để luôn cập nhật dữ liệu mới nhất
+   // Xóa và tạo mới datalist Môn học để luôn cập nhật dữ liệu mới nhất
     let oldDlMon = document.getElementById('datalistChung_Mon');
     if (oldDlMon) oldDlMon.remove();
     let dlMon = document.createElement('datalist'); dlMon.id = 'datalistChung_Mon';
+    dlMon.innerHTML += `<option value="---">`; // <-- Bổ sung tùy chọn Xóa
     (thongSoHocVu.DANH_SACH_MON_HOC || []).forEach(m => { dlMon.innerHTML += `<option value="${m}">`; });
     document.body.appendChild(dlMon);
 
@@ -800,6 +808,7 @@ function xuatMaTranBang(danhSachTiet) {
     let oldDlGv = document.getElementById('datalistChung_GV');
     if (oldDlGv) oldDlGv.remove();
     let dlGv = document.createElement('datalist'); dlGv.id = 'datalistChung_GV';
+    dlGv.innerHTML += `<option value="---">`; // <-- Bổ sung tùy chọn Xóa
     (thongSoHocVu.DANH_SACH_GIAO_VIEN || []).forEach(g => { dlGv.innerHTML += `<option value="${g}">`; });
     document.body.appendChild(dlGv);
 
