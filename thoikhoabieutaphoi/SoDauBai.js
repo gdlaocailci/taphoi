@@ -1369,7 +1369,6 @@ async function xuatExcelSoDauBai() {
         cacBang.forEach(khungBang => {
             let rowHeader1 = worksheet.getRow(rowIndex);
             
-            // [ĐÃ SỬA]: Lấy riêng text của từng thẻ span thông qua các class đánh dấu
             let txtLop = khungBang.querySelector('.header-lop') ? khungBang.querySelector('.header-lop').innerText : '';
             let txtTuan = khungBang.querySelector('.header-tuan') ? khungBang.querySelector('.header-tuan').innerText : '';
             
@@ -1394,25 +1393,25 @@ async function xuatExcelSoDauBai() {
                     let theNhap = cell.querySelector('input, select, textarea');
                     let giaTriCell = "";
                     
-                    // Ưu tiên lấy giá trị thực mà người dùng đã gõ/chọn
+                    // Ưu tiên đọc dữ liệu người dùng gõ
                     if (theNhap) {
                         giaTriCell = theNhap.value;
                     } else {
                         giaTriCell = cell.innerText;
                     }
                     
-                   // Làm sạch dữ liệu trước khi đẩy vào Excel
+                    // Xử lý và làm sạch dữ liệu
                     if (giaTriCell && typeof giaTriCell === 'string') {
                         giaTriCell = giaTriCell.trim();
-                        // Xóa sạch chữ hệ thống nếu không được chọn
+                        // 1. Xóa rác hệ thống (Chữ "-Chọn-")
                         if (giaTriCell === "-Chọn-" || giaTriCell === "--") {
                             giaTriCell = "";
                         }
                         
-                        // [ĐÃ SỬA]: Giới hạn [2-7] để Regex không bắt nhầm sang số của Ngày, đảm bảo tách dòng chuẩn xác 100%
+                        // 2. Ép Regex tách riêng chữ Thứ và Ngày xuống dòng an toàn
                         giaTriCell = giaTriCell.replace(/(THỨ\s*[2-7]|CHỦ NHẬT)\s*(\d{2}\/\d{2}\/\d{4})/gi, "$1\n$2");
                         
-                        // Bộ lọc chống lỗi đứng ứng dụng Excel do dính dấu công thức toán học
+                        // 3. Chống Crash Excel do nhận diện nhầm dấu (+, -, =) thành công thức toán học
                         if (/^[=+\-@]/.test(giaTriCell)) {
                             giaTriCell = "'" + giaTriCell;
                         }
@@ -1421,7 +1420,7 @@ async function xuatExcelSoDauBai() {
                     rData.push(giaTriCell || "");
                 });
 
-                if(idx > 0 && rData.length < 9) rData.unshift('');
+                if(idx > 0 && rData.length < 9) rData.unshift(''); 
 
                 let row = worksheet.addRow(rData);
                 row.font = { name: 'Times New Roman', size: 12 };
@@ -1445,14 +1444,16 @@ async function xuatExcelSoDauBai() {
 
         worksheet.eachRow((row, rowNumber) => {
             let val = row.getCell(1).value;
-            if (val && typeof val === 'string' && val.startsWith('THỨ ') && val !== 'THỨ') {
+            let valUpper = (val && typeof val === 'string') ? val.toUpperCase() : '';
+            // Gộp ô (Merge Cells) cho cột THỨ
+            if (valUpper && (valUpper.startsWith('THỨ ') || valUpper.startsWith('CHỦ NHẬT')) && valUpper !== 'THỨ') {
                 let rowsToMerge = 0;
                 while(worksheet.getCell(rowNumber + rowsToMerge + 1, 1).value === '') {
                     if(worksheet.getCell(rowNumber + rowsToMerge + 1, 2).value === null) break;
                     rowsToMerge++;
                 }
                 if (rowsToMerge > 0) worksheet.mergeCells(`A${rowNumber}:A${rowNumber + rowsToMerge}`);
-                row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+                row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             }
         });
 
