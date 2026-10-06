@@ -962,18 +962,18 @@ async function luuSoDauBaiSangMayChu() {
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
                 // =====================================================================
-                // [NÂNG CẤP BẢN LỀ]: ÁNH XẠ TỌA ĐỘ THEO 5 CỘT DỮ LIỆU ĐỂ ĐỊNH VỊ
-                // Ép chuẩn hóa dữ liệu (lowercase/uppercase) để so sánh tuyệt đối,
-                // loại bỏ hoàn toàn việc phụ thuộc vào biến "Mã Lưu Trữ" cũ.
+                // [NÂNG CẤP BẢN LỀ - FRONTEND]: ÁNH XẠ CHUẨN 6 TRỤC
                 // =====================================================================
                 let chuanHoaThu = String(thuHienTai).trim().toLowerCase();
                 let chuanHoaBuoi = String(buoi).trim().toLowerCase();
                 let chuanHoaLop = String(lopChon).trim().toUpperCase();
+                let chuanHoaNgay = String(ngayHienTai).trim().toLowerCase();
 
                 let indexTrongRam = duLieuTKBGopDaMap.findIndex(d => 
                     parseInt(String(d['Tuần']).replace(/\D/g, '')) === tuanSo && 
                     String(d['Mã Lớp']).trim().toUpperCase() === chuanHoaLop && 
                     String(d['Thứ']).trim().toLowerCase() === chuanHoaThu && 
+                    (String(d['Ngày']).trim().toLowerCase() === chuanHoaNgay || chuanHoaNgay === '') &&
                     String(d['Buổi']).trim().toLowerCase() === chuanHoaBuoi &&
                     String(d['Tiết']).trim() === tiet
                 );
@@ -1019,13 +1019,11 @@ async function luuSoDauBaiSangMayChu() {
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
                     
                     // =====================================================================
-                    // [NÂNG CẤP]: SINH MÃ LƯU TRỮ CHUẨN ĐẦU RA CHO BACKEND
-                    // Lấy chính 5 cột dữ liệu đã chuẩn hóa để ghép thành mã duy nhất,
-                    // đảm bảo Backend luôn nhận được một định dạng đồng nhất (VD: 4_5A1_Thứ 4_Sáng_4)
+                    // [NÂNG CẤP]: MÃ LƯU TRỮ ĐỊNH DANH ĐẦY ĐỦ 6 TRỤC
                     // =====================================================================
                     let chuCaiDauThu = chuanHoaThu.charAt(0).toUpperCase() + chuanHoaThu.slice(1);
                     let chuCaiDauBuoi = chuanHoaBuoi.charAt(0).toUpperCase() + chuanHoaBuoi.slice(1);
-                    let maLuuTruDinhDanh = `${tuanSo}_${chuanHoaLop}_${chuCaiDauThu}_${chuCaiDauBuoi}_${tiet}`;
+                    let maLuuTruDinhDanh = `${tuanSo}_${chuanHoaLop}_${chuCaiDauThu}_${ngayHienTai}_${chuCaiDauBuoi}_${tiet}`;
                     
                     duLieuQuetDuoc.push({
                         maLuuTru: maLuuTruDinhDanh, 
