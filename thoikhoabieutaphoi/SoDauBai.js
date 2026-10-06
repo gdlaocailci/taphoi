@@ -961,17 +961,24 @@ async function luuSoDauBaiSangMayChu() {
                 let chuKyGV = getVal(dong.querySelector('td[data-loai="chuKy"]'));
                 let buoi = dong.getAttribute('data-buoi') || 'Sáng';
 
-                // Đối chiếu với bộ nhớ RAM [NÂNG CẤP TỌA ĐỘ 6 TRỤC ĐỂ ĐỊNH VỊ TUYỆT ĐỐI]
+                // =====================================================================
+                // [NÂNG CẤP BẢN LỀ]: ÁNH XẠ TỌA ĐỘ THEO 5 CỘT DỮ LIỆU ĐỂ ĐỊNH VỊ
+                // Ép chuẩn hóa dữ liệu (lowercase/uppercase) để so sánh tuyệt đối,
+                // loại bỏ hoàn toàn việc phụ thuộc vào biến "Mã Lưu Trữ" cũ.
+                // =====================================================================
+                let chuanHoaThu = String(thuHienTai).trim().toLowerCase();
+                let chuanHoaBuoi = String(buoi).trim().toLowerCase();
+                let chuanHoaLop = String(lopChon).trim().toUpperCase();
+
                 let indexTrongRam = duLieuTKBGopDaMap.findIndex(d => 
-                    String(d['Tuần']).trim() == tuanSo && 
-                    String(d['Mã Lớp']).trim().toUpperCase() === lopChon.toUpperCase() && 
-                    String(d['Thứ']).trim() === thuHienTai && 
-                    String(d['Buổi']).trim().toLowerCase() === buoi.toLowerCase() &&
-                    String(d['Tiết']).trim() == tiet &&
-                    (String(d['Ngày']).trim() === ngayHienTai || String(d['Ngày']).trim() === '') // Khớp ngày tuyệt đối
+                    parseInt(String(d['Tuần']).replace(/\D/g, '')) === tuanSo && 
+                    String(d['Mã Lớp']).trim().toUpperCase() === chuanHoaLop && 
+                    String(d['Thứ']).trim().toLowerCase() === chuanHoaThu && 
+                    String(d['Buổi']).trim().toLowerCase() === chuanHoaBuoi &&
+                    String(d['Tiết']).trim() === tiet
                 );
 
-                // [FIX LỖI]: Giới hạn kiểm tra quyền chữ ký chỉ dành cho những tiết người dùng vừa sửa đổi hoặc tiết mới.
+                // Kiểm tra quyền chữ ký
                 if (chuKyGV !== '' && (isThayDoi || !isDaLuu)) {
                     if (!quyenQuanTri && indexTrongRam !== -1) {
                         let gvTkb = String(duLieuTKBGopDaMap[indexTrongRam]['Mã GV']).trim().toLowerCase().normalize('NFC');
@@ -984,6 +991,7 @@ async function luuSoDauBaiSangMayChu() {
                     }
                 }
 
+                // Điền tên bài tự động nếu thiếu
                 if (chuKyGV !== '' && tuanSo < tuanHeThong && tenBai === '') {
                     canThiTietThieuTenBai = true;
                     let matchKhoi = lopChon.match(/\d+/);
@@ -1010,22 +1018,22 @@ async function luuSoDauBaiSangMayChu() {
                     soDongCoThayDoi++;
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
                     
-                    // Tuyệt đối không tự ý ghép nối tạo mã mới nếu dữ liệu đã tồn tại.
-                    // Tìm bản ghi gốc trong RAM (duLieuTKBGopDaMap) để lấy lại Mã nguyên bản
-                    let maLuuTruNguyenBan = '';
-                    if (indexTrongRam !== -1 && duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ']) {
-                         maLuuTruNguyenBan = duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'];
-                    } else {
-                         maLuuTruNguyenBan = `${tuanSo}_${lopChon}_${thuHienTai}_${buoi}_${tiet}`;
-                    }
+                    // =====================================================================
+                    // [NÂNG CẤP]: SINH MÃ LƯU TRỮ CHUẨN ĐẦU RA CHO BACKEND
+                    // Lấy chính 5 cột dữ liệu đã chuẩn hóa để ghép thành mã duy nhất,
+                    // đảm bảo Backend luôn nhận được một định dạng đồng nhất (VD: 4_5A1_Thứ 4_Sáng_4)
+                    // =====================================================================
+                    let chuCaiDauThu = chuanHoaThu.charAt(0).toUpperCase() + chuanHoaThu.slice(1);
+                    let chuCaiDauBuoi = chuanHoaBuoi.charAt(0).toUpperCase() + chuanHoaBuoi.slice(1);
+                    let maLuuTruDinhDanh = `${tuanSo}_${chuanHoaLop}_${chuCaiDauThu}_${chuCaiDauBuoi}_${tiet}`;
                     
                     duLieuQuetDuoc.push({
-                        maLuuTru: maLuuTruNguyenBan, // Trả lại y nguyên mã cũ đã định vị cho Server
+                        maLuuTru: maLuuTruDinhDanh, 
                         tuan: tuanSo, 
-                        maLop: lopChon,
-                        thu: thuHienTai, 
+                        maLop: chuanHoaLop,
+                        thu: chuCaiDauThu, 
                         ngay: ngayHienTai, 
-                        buoi: buoi, 
+                        buoi: chuCaiDauBuoi, 
                         tiet: tiet,
                         mon: mon, 
                         tietPPCT: tietPPCT, 
@@ -1038,7 +1046,7 @@ async function luuSoDauBaiSangMayChu() {
 
                     // Cập nhật giá trị sửa vào bộ nhớ tạm (RAM)
                     if (indexTrongRam !== -1) {
-                        duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruNguyenBan; 
+                        duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruDinhDanh; 
                         duLieuTKBGopDaMap[indexTrongRam]['ChuyenCan_Thuc'] = chuyenCan;
                         duLieuTKBGopDaMap[indexTrongRam]['TietPPCT_Thuc'] = tietPPCT;
                         duLieuTKBGopDaMap[indexTrongRam]['TenBai_Thuc'] = tenBai;
@@ -1076,10 +1084,8 @@ async function luuSoDauBaiSangMayChu() {
         if (ketQua.trangThai === 'thanh_cong') {
             alert(`✅ Đã chốt thành công các cập nhật của Sổ đầu bài Lớp ${lopChon} - Tuần ${tuanSo}!`);
             
-            // Xóa cờ cảnh báo rủi ro mất dữ liệu
             coThayDoiChuaLuu_SDB = false; 
             
-            // Cập nhật lại trạng thái gốc của RAM (Đã lưu)
             duLieuTKBGopDaMap.forEach(d => { 
                 if (d.TrangThaiThayDoi) { 
                     d.DaLuu = true; 
@@ -1087,7 +1093,6 @@ async function luuSoDauBaiSangMayChu() {
                 } 
             });
             
-            // SỬ DỤNG HÀM CẬP NHẬT NGẦM TẠI CHỖ ĐỂ TỰ ĐỘNG ĐỔI BĂNG THÔNG BÁO VÀ KHÓA Ô UI
             if (typeof capNhatSoDauBaiNgamLenLuoi === 'function') {
                 capNhatSoDauBaiNgamLenLuoi(tuanChon, lopChon);
             }
