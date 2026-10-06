@@ -1172,7 +1172,7 @@ function dongBoTenBaiHoc() {
                                 oTenBai.classList.add('text-emerald-700', 'font-bold');
                             }
                         } else {
-                            if (theTextarea && theTextarea.value.trim() === '') {
+                            if (theTextarea && theTextarea.value.trim() === '' && !theTextarea.disabled) {
                                 theTextarea.value = baiDayChuan;
                                 document.activeElement.blur(); 
                                 theTextarea.style.height = 'auto';
@@ -1382,7 +1382,7 @@ async function xuatExcelSoDauBai() {
             rows.forEach((tr, idx) => {
                 let rData = [];
                 tr.querySelectorAll('th, td').forEach(cell => {
-                    let input = cell.querySelector('input');
+                    let theNhap = cell.querySelector('input, select, textarea');
                     rData.push(input ? input.value : cell.innerText);
                 });
 
