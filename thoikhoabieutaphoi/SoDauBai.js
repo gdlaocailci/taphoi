@@ -1273,20 +1273,19 @@ function xuatWordSoDauBai() {
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head><meta charset='utf-8'><title>Sổ Đầu Bài</title>
         <style>
-            @page WordSection1 { size: 841.9pt 595.3pt; mso-page-orientation: landscape; margin: 1.0in 1.0in 1.0in 1.0in; }
+            @page WordSection1 { size: 841.9pt 595.3pt; mso-page-orientation: landscape; margin: 0.8in 0.8in 0.8in 0.8in; }
             div.WordSection1 { page: WordSection1; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "Times New Roman", Times, serif; font-size: 13pt; }
-            th, td { border: 1px solid black; padding: 5px; }
-            th { text-align: center; font-weight: bold; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "Times New Roman", Times, serif; font-size: 12pt; }
+            th, td { border: 1px solid black; padding: 6px; }
+            th { text-align: center; font-weight: bold; background-color: #f1f5f9; }
             .text-center { text-align: center; }
-            .italic { font-style: italic; }
             
-            /* ĐÃ SỬA: Bố cục CSS phân chia làm 3 cột bằng nhau để dàn đều trên Word */
-            .flex { display: table; width: 100%; margin-bottom: 10px; }
+            /* Bố cục CSS phân chia làm 3 cột bằng nhau để dàn đều trên Word */
+            .flex { display: table; width: 100%; margin-bottom: 15px; font-family: "Times New Roman", Times, serif; }
             .justify-between span { display: table-cell; vertical-align: middle; width: 33.33%; }
-            .justify-between span:nth-child(1) { text-align: left; font-weight: bold; font-size: 13pt; }
-            .justify-between span:nth-child(2) { text-align: center; font-style: italic; font-size: 11pt; color: #475569; }
-            .justify-between span:last-child { text-align: right; font-weight: bold; font-size: 13pt; }
+            .justify-between span:nth-child(1) { text-align: left; font-weight: bold; font-size: 14pt; text-transform: uppercase; }
+            .justify-between span:nth-child(2) { text-align: center; font-style: italic; font-size: 12pt; }
+            .justify-between span:last-child { text-align: right; font-weight: bold; font-size: 14pt; text-transform: uppercase; }
         </style>
         </head><body><div class='WordSection1'>
     `;
@@ -1295,22 +1294,42 @@ function xuatWordSoDauBai() {
     let canhBaoNode = noiDungClone.querySelector('.border-red-500');
     if (canhBaoNode) canhBaoNode.remove();
 
-    // [ĐÃ SỬA]: Ép toàn bộ ô nhập liệu thành văn bản thuần túy để Word không bị dính menu thả xuống
+    // 1. Quét và ép toàn bộ các ô Nhập liệu (input, select, textarea) thành Văn bản Word
     let cacTagGoc = vungHienThi.querySelectorAll('input, textarea, select');
     let cacTagClone = noiDungClone.querySelectorAll('input, textarea, select');
     cacTagGoc.forEach((tag, idx) => {
         if (cacTagClone[idx]) {
             let val = tag.value ? tag.value.trim() : "";
-            // Làm sạch: Nếu chưa chọn hoặc có chữ rác hệ thống thì trả về rỗng tinh
+            // Xóa sạch rác hệ thống
             if (val === "" || val === "-Chọn-" || val === "--") {
                 val = "";
             }
-            // Tiêu hủy thẻ nhập liệu, thay thế bằng văn bản thuần túy cho Word
+            // Chuyển ký tự Enter (\n) trong Textarea thành thẻ <br> để Word hiển thị đúng nhiều dòng
+            val = val.replace(/\n/g, "<br>");
             cacTagClone[idx].outerHTML = `<span style="font-family: 'Times New Roman', serif;">${val}</span>`;
         }
     });
 
-   let htmlContent = preHtml + noiDungClone.innerHTML + "</div></body></html>";
+    // 2. Can thiệp sâu vào Cột THỨ để ép thẻ <br> chuẩn xác cho MS Word
+    let cacCellThu = noiDungClone.querySelectorAll('td[rowspan]');
+    cacCellThu.forEach(cell => {
+        // Lấy chữ thuần túy trong ô (VD: THỨ 228/09/2026)
+        let textTrongCell = cell.innerText || cell.textContent;
+        
+        // Dùng Regex tách chuẩn xác [2-7] và chèn thẻ <br> của HTML
+        let fixText = textTrongCell.replace(/(THỨ\s*[2-7]|CHỦ NHẬT)\s*(\d{2}\/\d{2}\/\d{4})/gi, "$1<br><span style='font-size: 11pt; font-weight: normal;'>$2</span>");
+        
+        cell.innerHTML = fixText;
+        cell.style.textAlign = "center";
+        cell.style.verticalAlign = "middle";
+    });
+
+    // 3. Xóa các class Tailwind CSS dư thừa để bảng Word sạch sẽ và không bị loạn định dạng
+    noiDungClone.querySelectorAll('table, th, td, tr').forEach(el => {
+        el.removeAttribute('class');
+    });
+
+    let htmlContent = preHtml + noiDungClone.innerHTML + "</div></body></html>";
     let blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
     let link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
