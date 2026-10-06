@@ -1295,10 +1295,19 @@ function xuatWordSoDauBai() {
     let canhBaoNode = noiDungClone.querySelector('.border-red-500');
     if (canhBaoNode) canhBaoNode.remove();
 
-    let cacInputGoc = vungHienThi.querySelectorAll('input');
-    let cacInputClone = noiDungClone.querySelectorAll('input');
-    cacInputGoc.forEach((input, idx) => {
-        if (cacInputClone[idx]) cacInputClone[idx].setAttribute('value', input.value);
+    // [ĐÃ SỬA]: Ép toàn bộ ô nhập liệu thành văn bản thuần túy để Word không bị dính menu thả xuống
+    let cacTagGoc = vungHienThi.querySelectorAll('input, textarea, select');
+    let cacTagClone = noiDungClone.querySelectorAll('input, textarea, select');
+    cacTagGoc.forEach((tag, idx) => {
+        if (cacTagClone[idx]) {
+            let val = tag.value ? tag.value.trim() : "";
+            // Làm sạch: Nếu chưa chọn hoặc có chữ rác hệ thống thì trả về rỗng tinh
+            if (val === "" || val === "-Chọn-" || val === "--") {
+                val = "";
+            }
+            // Tiêu hủy thẻ nhập liệu, thay thế bằng văn bản thuần túy cho Word
+            cacTagClone[idx].outerHTML = `<span style="font-family: 'Times New Roman', serif;">${val}</span>`;
+        }
     });
 
    let htmlContent = preHtml + noiDungClone.innerHTML + "</div></body></html>";
@@ -1383,10 +1392,32 @@ async function xuatExcelSoDauBai() {
                 let rData = [];
                 tr.querySelectorAll('th, td').forEach(cell => {
                     let theNhap = cell.querySelector('input, select, textarea');
-                    rData.push(input ? input.value : cell.innerText);
+                    let giaTriCell = "";
+                    
+                    // Ưu tiên lấy giá trị thực mà người dùng đã gõ/chọn
+                    if (theNhap) {
+                        giaTriCell = theNhap.value;
+                    } else {
+                        giaTriCell = cell.innerText;
+                    }
+                    
+                    // Làm sạch dữ liệu trước khi đẩy vào Excel
+                    if (giaTriCell && typeof giaTriCell === 'string') {
+                        giaTriCell = giaTriCell.trim();
+                        // Xóa sạch chữ hệ thống nếu không được chọn
+                        if (giaTriCell === "-Chọn-" || giaTriCell === "--") {
+                            giaTriCell = "";
+                        }
+                        // Bộ lọc chống lỗi đứng ứng dụng Excel do dính dấu công thức toán học
+                        if (/^[=+\-@]/.test(giaTriCell)) {
+                            giaTriCell = "'" + giaTriCell;
+                        }
+                    }
+                    
+                    rData.push(giaTriCell || "");
                 });
 
-                if(idx > 0 && rData.length < 9) rData.unshift(''); 
+                if(idx > 0 && rData.length < 9) rData.unshift('');
 
                 let row = worksheet.addRow(rData);
                 row.font = { name: 'Times New Roman', size: 12 };
