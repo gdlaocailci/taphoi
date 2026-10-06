@@ -1409,8 +1409,8 @@ async function xuatExcelSoDauBai() {
                             giaTriCell = "";
                         }
                         
-                        // [ĐÃ SỬA]: Tách Thứ và Ngày xuống dòng nếu bị dính liền (VD: THỨ 228/09/2026 -> THỨ 2 \n 28/09/2026)
-                        giaTriCell = giaTriCell.replace(/(THỨ\s*\d+|CHỦ NHẬT)(\d{2}\/\d{2}\/\d{4})/gi, "$1\n$2");
+                        // [ĐÃ SỬA]: Giới hạn [2-7] để Regex không bắt nhầm sang số của Ngày, đảm bảo tách dòng chuẩn xác 100%
+                        giaTriCell = giaTriCell.replace(/(THỨ\s*[2-7]|CHỦ NHẬT)\s*(\d{2}\/\d{2}\/\d{4})/gi, "$1\n$2");
                         
                         // Bộ lọc chống lỗi đứng ứng dụng Excel do dính dấu công thức toán học
                         if (/^[=+\-@]/.test(giaTriCell)) {
