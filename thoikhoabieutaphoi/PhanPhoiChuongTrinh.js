@@ -9,34 +9,42 @@ document.addEventListener('DOMContentLoaded', () => {
     taoMenuPhanPhoiChuongTrinh();
     taoKhungGiaoDienPPCT();
     
-    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin
+    // Liên tục lắng nghe trạng thái đăng nhập để phân quyền Admin / Quản lý PPCT
     setInterval(() => {
-        if (typeof quyenSuaChua !== 'undefined') {
-            let nhomNut = document.getElementById('nhomNutCongCuPPCT');
-            if (nhomNut) {
-                nhomNut.style.display = quyenSuaChua ? 'flex' : 'none';
-            }
+        let nhomNut = document.getElementById('nhomNutCongCuPPCT');
+        if (nhomNut) {
+            let coQuyen = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || 
+                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanPhoiChuongTrinh'));
+            nhomNut.style.display = coQuyen ? 'flex' : 'none';
         }
     }, 1000);
 });
 
 function taoMenuPhanPhoiChuongTrinh() {
-    const menuThongKe = document.getElementById('menuThongKe');
-    if (menuThongKe && !document.getElementById('menuPhanPhoiChuongTrinh')) {
-        const menuPPCT = document.createElement('a');
-        menuPPCT.id = 'menuPhanPhoiChuongTrinh';
-        menuPPCT.onclick = moTabPhanPhoiChuongTrinh;
-        menuPPCT.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group';
-        menuPPCT.innerHTML = `
-            <svg class="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity flex-none text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                <line x1="10" y1="6" x2="16" y2="6"></line>
-                <line x1="10" y1="10" x2="16" y2="10"></line>
-            </svg>
-            <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px]">Phân phối Chương trình</span>
-        `;
-        menuThongKe.insertAdjacentElement('afterend', menuPPCT);
+    if (!document.getElementById('menuPhanPhoiChuongTrinh')) {
+        const nav = document.querySelector('nav');
+        if (nav) {
+            const menuPPCT = document.createElement('a');
+            menuPPCT.id = 'menuPhanPhoiChuongTrinh';
+            menuPPCT.onclick = moTabPhanPhoiChuongTrinh;
+            menuPPCT.style.display = 'none';
+            menuPPCT.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group';
+            menuPPCT.innerHTML = `
+                <svg class="w-5 h-5 flex-none opacity-70 group-hover:opacity-100 transition-opacity text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    <line x1="10" y1="6" x2="16" y2="6"></line>
+                    <line x1="10" y1="10" x2="16" y2="10"></line>
+                </svg>
+                <span class="font-bold text-white/80 group-hover:text-white transition-colors text-[14px] whitespace-nowrap">7. Phân phối Chương trình</span>
+            `;
+            const menuSGK = document.getElementById('menuDanhMucSGK');
+            if (menuSGK) {
+                menuSGK.insertAdjacentElement('afterend', menuPPCT);
+            } else {
+                nav.appendChild(menuPPCT);
+            }
+        }
     }
 }
 
@@ -217,10 +225,15 @@ function moTabPhanPhoiChuongTrinh() {
     }
 
     // 3. Ẩn tất cả các khung giao diện hiện tại
-    ['khungTKB', 'khungThongKe', 'khungPhanCong', 'khungKhungChuongTrinh', 'khungDanhMucGV', 'khungCaiDat', 'khungDanhMucLop'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.classList.remove('flex', 'block'); el.classList.add('hidden'); }
-    });
+    let vungChinh = document.getElementById('vungHienThiChinh');
+    if (vungChinh) {
+        Array.from(vungChinh.children).forEach(el => {
+            if (el.tagName === 'DIV' && el.id !== 'khungNoiDungModal' && el.id !== 'khungPhanPhoiChuongTrinh') {
+                el.classList.add('hidden');
+                el.classList.remove('block', 'flex');
+            }
+        });
+    }
     
     // [ĐÃ SỬA THEO YÊU CẦU]: Ẩn toàn bộ khu vực thanh công cụ TKB (Khu vực viền đỏ)
     const thanhCongCu = document.getElementById('thanhCongCuTKB');
