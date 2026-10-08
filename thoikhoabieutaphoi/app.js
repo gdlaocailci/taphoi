@@ -92,33 +92,15 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho 
     }
 }
 
-// --- ĐOẠN MỚI THAY THẾ ---
+// =========================================================================
+// KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
+// =========================================================================
 function kiemSoatGiaoDien() {
     const menuDuocCap = (quyenChiTiet && quyenChiTiet.menu) ? quyenChiTiet.menu : [];
     const nutDuocCap = (quyenChiTiet && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
     const lopDuocCap = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
 
-    // [TỰ ĐỘNG BƠM NÚT KHÓA TKB NẾU HTML CHƯA CÓ]
-    let btnKhoaTKB = document.getElementById('btnKhoaTKB');
-    if (!btnKhoaTKB) {
-        let viTriChen = document.getElementById('btnKhoiPhuc') || document.getElementById('btnLuuTuan');
-        if (viTriChen && viTriChen.parentNode) {
-            let btnHtml = `
-                <button id="btnKhoaTKB" onclick="thaoTacKhoaMoTKB()" style="display: none;" 
-                        class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap" 
-                        title="Khóa/Mở khóa chỉnh sửa Thời khóa biểu tuần này">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
-                    <span id="textNutKhoaTKB">Khóa TKB Tuần</span>
-                </button>`;
-            viTriChen.insertAdjacentHTML('beforebegin', btnHtml);
-            btnKhoaTKB = document.getElementById('btnKhoaTKB');
-        }
-    }
-
-    // [ĐÃ BỔ SUNG btnKhoaTKB VÀO DANH SÁCH QUẢN TRỊ]
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoChuan', 'btnLuuSua', 'btnKhoaTKB'];
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoChuan', 'btnLuuSua'];
     
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
@@ -127,20 +109,41 @@ function kiemSoatGiaoDien() {
             if (idNut === 'btnLuuSua' || idNut === 'btnLuuTuan') {
                 if (quyenSuaChua || nutDuocCap.includes(idNut) || lopDuocCap.length > 0) duocPhep = true;
             }
-            if (duocPhep) { 
-                nut.style.display = 'inline-flex'; 
-                nut.disabled = false; 
-            } else { 
-                nut.style.display = 'none'; 
-                nut.disabled = true; 
-            }
+            if (duocPhep) { nut.style.display = 'flex'; nut.disabled = false; } 
+            else { nut.style.display = 'none'; nut.disabled = true; }
         }
     });
 
-    // Đồng bộ ngay màu sắc, nhãn và trạng thái khóa của tuần đang xem
-    if (typeof dongBoTrangThaiKhoaTKBUI === 'function') {
-        dongBoTrangThaiKhoaTKBUI();
+    const dsMenuQuanTri = ['menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
+    let coMenuQuanTriDuocMo = false;
+
+    dsMenuQuanTri.forEach(idMenu => {
+        let menu = document.getElementById(idMenu);
+        if (menu) {
+            let duocXem = quyenSuaChua || menuDuocCap.includes(idMenu);
+            menu.style.display = duocXem ? 'flex' : 'none'; 
+            if (duocXem) coMenuQuanTriDuocMo = true;
+        }
+    });
+
+    let nhanHT = document.getElementById('nhanHeThong');
+    if (nhanHT) nhanHT.style.display = coMenuQuanTriDuocMo ? 'flex' : 'none';
+
+    let btnTuanTruoc = document.getElementById('btnTuanTruoc');
+    let btnTuanTiep = document.getElementById('btnTuanTiep');
+    let inputNgay = document.getElementById('chonNgayDauTuan');
+    let coQuyenChuyenTuan = quyenSuaChua || nutDuocCap.includes('btnChuyenTuan');
+
+    if (coQuyenChuyenTuan) {
+        if (btnTuanTruoc) btnTuanTruoc.style.display = 'block'; 
+        if (btnTuanTiep) btnTuanTiep.style.display = 'block'; 
+        if (inputNgay) { inputNgay.disabled = false; inputNgay.classList.remove('cursor-not-allowed', 'opacity-80'); }
+    } else {
+        if (btnTuanTruoc) btnTuanTruoc.style.display = 'none'; 
+        if (btnTuanTiep) btnTuanTiep.style.display = 'none'; 
+        if (inputNgay) { inputNgay.disabled = true; inputNgay.classList.add('cursor-not-allowed', 'opacity-80'); }
     }
+}
 
 // =========================================================================
 // KHỐI XỬ LÝ CHUYỂN TUẦN VÀ NGÀY THÁNG (ĐỊNH TUYẾN 3 LUỒNG)
@@ -200,9 +203,6 @@ async function chuyenTuan(buocNhay) {
         if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) duLieuTkbHienTai = []; 
         if (typeof window.capNhatTenNutTuanTiepTheo === 'function') window.capNhatTenNutTuanTiepTheo();
         await taiDuLieuTKB(false, nguonTruyXuat); 
-        if (typeof dongBoTrangThaiKhoaTKBUI === 'function') {
-            dongBoTrangThaiKhoaTKBUI();
-        }
     } finally {
         khoaChuyenTuan = false;
     }
@@ -1293,29 +1293,14 @@ async function xuLyLayThongTin(maTokenTruyCap) {
         if (dsQuanTri.includes(dinhDanhHeThong) || dinhDanhHeThong === dinhDanhGoc) quyenSuaChua = true; 
         else quyenSuaChua = false; 
         
-        // --- ĐOẠN MỚI THAY THẾ ---
         quyenChiTiet = { menu: [], nut: [], lop: [] }; 
-        if (thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
-            let keyKhop = dinhDanhHeThong;
-            // Nếu không khớp trực tiếp, tự động tìm kiếm không phân biệt chữ hoa/thường
-            if (!thongSoHocVu.MA_TRAN_PHAN_QUYEN[keyKhop]) {
-                let emailLower = String(dinhDanhHeThong).trim().toLowerCase();
-                for (let k in thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
-                    if (String(k).trim().toLowerCase() === emailLower) {
-                        keyKhop = k;
-                        break;
-                    }
-                }
-            }
-
-            if (thongSoHocVu.MA_TRAN_PHAN_QUYEN[keyKhop]) {
-                quyenChiTiet.menu = thongSoHocVu.MA_TRAN_PHAN_QUYEN[keyKhop].menu || [];
-                quyenChiTiet.nut = thongSoHocVu.MA_TRAN_PHAN_QUYEN[keyKhop].nut || [];
-                quyenChiTiet.lop = thongSoHocVu.MA_TRAN_PHAN_QUYEN[keyKhop].lop || [];
-            }
+        if (thongSoHocVu.MA_TRAN_PHAN_QUYEN && thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong]) {
+            quyenChiTiet.menu = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].menu || [];
+            quyenChiTiet.nut = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].nut || [];
+            quyenChiTiet.lop = thongSoHocVu.MA_TRAN_PHAN_QUYEN[dinhDanhHeThong].lop || [];
         }
         
-        kiemSoatGiaoDien();
+        kiemSoatGiaoDien(); 
 
         let khungSDB = document.getElementById('khungSoDauBai');
         
