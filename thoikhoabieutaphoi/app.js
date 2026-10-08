@@ -114,7 +114,7 @@ function kiemSoatGiaoDien() {
         }
     });
 
-    const dsMenuQuanTri = ['menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuPhanCong', 'menuKhungChuongTrinh', 'menuDanhMucSGK'];
+    const dsMenuQuanTri = ['menuCaiDat', 'menuDanhMucGV', 'menuDanhMucLop', 'menuKhungChuongTrinh', 'menuPhanCong', 'menuDanhMucSGK', 'menuPhanPhoiChuongTrinh', 'menuPhanQuyen'];
     let coMenuQuanTriDuocMo = false;
 
     dsMenuQuanTri.forEach(idMenu => {
