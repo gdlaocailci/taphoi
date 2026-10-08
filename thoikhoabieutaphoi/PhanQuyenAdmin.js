@@ -1,10 +1,10 @@
 // =========================================================================
-// KHỐI QUẢN LÝ MA TRẬN PHÂN QUYỀN HỆ THỐNG (BẢN HOÀN CHỈNH ĐỒNG BỘ)
-// Tích hợp: Nút Khóa SĐB + Nút Khóa TKB Tuần + Bộ điều phối UI tự động
+// KHỐI QUẢN LÝ MA TRẬN PHÂN QUYỀN HỆ THỐNG (BẢN CHUẨN ĐỒNG BỘ)
+// Chỉ tập trung: Quản lý Menu Hệ thống, Nút TKB và Khóa Sổ Đầu Bài Tuần
+// Đã loại bỏ hoàn toàn tính năng Khóa TKB theo yêu cầu
 // =========================================================================
 
 let duLieuBangPhanQuyen = [];
-let duLieuKhoaTKBToanCuc = {}; // Lưu map { 1: { daKhoa: true, nguoiThucHien: '...' } }
 
 const DANH_SACH_MENU_HE_THONG = [
     { id: 'menuCaiDat', ten: '1. Cài đặt' },
@@ -25,17 +25,16 @@ const DANH_SACH_NUT_CHUC_NANG = [
     { id: 'btnKiemTra', ten: 'Định Mức tiết' },
     { id: 'btnChuyenTuan', ten: 'Mũi tên Chuyển tuần' },
     { id: 'btnLuuSua', ten: 'Lưu Sửa' },
-    { id: 'btnKhoaSoDauBai', ten: 'Khóa Sổ đầu bài Tuần' },
-    { id: 'btnKhoaTKB', ten: 'Khóa TKB Tuần' } // <-- NÚT MỚI: KHÓA TKB TUẦN
+    { id: 'btnKhoaSoDauBai', ten: 'Khóa Sổ đầu bài Tuần' }
 ];
 
 // =========================================================================
-// BỘ KIỂM SOÁT HIỂN THỊ QUYỀN TRÊN THANH CÔNG CỤ & MENU
+// HÀM KIỂM SOÁT HIỂN THỊ MENU 7 VÀ NÚT KHÓA SỔ ĐẦU BÀI
 // =========================================================================
 function capNhatHienThiPhanQuyen() {
     let coQuyenQuanTri = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua);
 
-    // 1. Kiểm soát hiển thị Menu 7
+    // 1. Kiểm soát hiển thị Menu 7: Phân quyền Hệ thống
     let menuPQ = document.getElementById('menuPhanQuyen');
     if (menuPQ) {
         let duocXemMenu = coQuyenQuanTri || 
@@ -43,190 +42,23 @@ function capNhatHienThiPhanQuyen() {
         menuPQ.style.display = duocXemMenu ? 'flex' : 'none';
     }
 
-    // 2. Kiểm soát hiển thị Nút Khóa Sổ Đầu Bài
+    // 2. Kiểm soát hiển thị Nút Khóa Sổ Đầu Bài Tuần
     let btnKhoaSo = document.getElementById('btnKhoaSoDauBai');
     if (btnKhoaSo) {
         let duocBamKhoaSo = coQuyenQuanTri || 
                             (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaSoDauBai'));
         btnKhoaSo.style.display = duocBamKhoaSo ? 'inline-flex' : 'none';
     }
-
-    // 3. Kiểm soát hiển thị Nút Khóa TKB Tuần
-    let btnKhoaTKB = document.getElementById('btnKhoaTKB');
-    if (btnKhoaTKB) {
-        let duocBamKhoaTKB = coQuyenQuanTri || 
-                             (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaTKB'));
-        btnKhoaTKB.style.display = duocBamKhoaTKB ? 'inline-flex' : 'none';
-    }
-
-    // 4. Đồng bộ trạng thái khóa TKB lên giao diện
-    dongBoTrangThaiKhoaTKBUI();
 }
 
 // =========================================================================
-// THUẬT TOÁN ĐIỀU PHỐI KHÓA THỜI KHÓA BIỂU TUẦN (CLIENT ENGINE)
-// =========================================================================
-
-// Lấy tuần TKB hiện tại đang xem trên giao diện
-function layTuanTKBDangXem() {
-    let inputTuan = document.getElementById('hienThiTuanHienTai');
-    return inputTuan ? parseInt(inputTuan.value, 10) || 1 : 1;
-}
-
-// Kiểm tra tuần TKB có bị khóa không
-window.kiemTraTKBBiKhoa = function(tuan) {
-    let t = parseInt(String(tuan).replace(/\D/g, ''), 10);
-    return !!(duLieuKhoaTKBToanCuc[t] && duLieuKhoaTKBToanCuc[t].daKhoa);
-};
-
-// Đồng bộ giao diện TKB (Nút bấm, Sidebar, Khóa ô) theo trạng thái khóa
-function dongBoTrangThaiKhoaTKBUI() {
-    let tuanHienTai = layTuanTKBDangXem();
-    let daKhoa = window.kiemTraTKBBiKhoa(tuanHienTai);
-    let thongTin = duLieuKhoaTKBToanCuc[tuanHienTai] || {};
-
-    // 1. Cập nhật nhãn trạng thái trên Sidebar Menu
-    let theTrangThai = document.getElementById('trangThaiHeThong');
-    if (theTrangThai) {
-        if (daKhoa) {
-            theTrangThai.className = "font-bold text-red-600 text-base leading-tight inline-block mt-0.5 animate-pulse";
-            theTrangThai.innerHTML = `🔒 TKB Tuần ${tuanHienTai} Đã khóa`;
-        } else {
-            theTrangThai.className = "font-bold text-green-700 text-base leading-tight inline-block mt-0.5";
-            theTrangThai.innerHTML = `Hệ thống mở`;
-        }
-    }
-
-    // 2. Cập nhật màu sắc & Icon nút Khóa TKB
-    let btnKhoa = document.getElementById('btnKhoaTKB');
-    if (btnKhoa) {
-        if (daKhoa) {
-            btnKhoa.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap";
-            btnKhoa.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg><span>Mở Khóa TKB Tuần ${tuanHienTai}</span>`;
-        } else {
-            btnKhoa.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded-lg whitespace-nowrap";
-            btnKhoa.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><span>Khóa TKB Tuần ${tuanHienTai}</span>`;
-        }
-    }
-
-    // 3. Khóa mờ (disabled) toàn bộ các nút chỉnh sửa TKB khi tuần đã khóa
-    const cacNutSuaTKB = ['btnLuuTuan', 'btnLuuSua', 'btnXepTuDong', 'btnKhoiPhuc', 'btnDongBoChuan'];
-    cacNutSuaTKB.forEach(idNut => {
-        let btn = document.getElementById(idNut);
-        if (btn) {
-            if (daKhoa) {
-                btn.setAttribute('data-tam-khoa', 'true');
-                btn.disabled = true;
-                btn.classList.add('opacity-40', 'cursor-not-allowed');
-                btn.title = `TKB Tuần ${tuanHienTai} đã bị khóa chuyên môn, không thể chỉnh sửa`;
-            } else {
-                if (btn.getAttribute('data-tam-khoa') === 'true') {
-                    btn.removeAttribute('data-tam-khoa');
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-40', 'cursor-not-allowed');
-                    btn.title = '';
-                }
-            }
-        }
-    });
-
-    // 4. Khóa cứng tương tác sửa trên bảng TKB (vùng hiển thị)
-    let bangTKB = document.getElementById('vungHienThiDuLieu');
-    if (bangTKB) {
-        if (daKhoa) {
-            bangTKB.style.pointerEvents = 'none'; // Không cho click sửa ô
-            bangTKB.title = `TKB Tuần ${tuanHienTai} đã bị khóa (Chỉ xem)`;
-        } else {
-            bangTKB.style.pointerEvents = 'auto';
-            bangTKB.title = '';
-        }
-    }
-}
-
-// Hàm thực thi khi bấm nút Khóa / Mở khóa TKB Tuần
-async function thaoTacKhoaMoTKB() {
-    let tuanHienTai = layTuanTKBDangXem();
-    let daKhoa = window.kiemTraTKBBiKhoa(tuanHienTai);
-    let hanhDongMoi = !daKhoa; // true = Khóa, false = Mở
-
-    let thongBao = hanhDongMoi 
-        ? `🔒 XÁC NHẬN KHÓA THỜI KHÓA BIỂU TOÀN TRƯỜNG:\n\nĐồng chí có chắc chắn muốn KHÓA Thời khóa biểu TUẦN ${tuanHienTai} của toàn trường?\n\n- Toàn bộ giáo viên chỉ có quyền XEM, không thể sửa đổi, xếp lại hay lưu TKB tuần này.\n- Dữ liệu tuần này được niêm phong chính thức.`
-        : `🔓 XÁC NHẬN MỞ KHÓA THỜI KHÓA BIỂU:\n\nĐồng chí có chắc chắn muốn MỞ KHÓA TKB TUẦN ${tuanHienTai} cho toàn trường?\n\n- Ban Giám hiệu và người quản lý có thể tiếp tục điều chỉnh, xếp lịch và lưu TKB.`;
-
-    if (!confirm(thongBao)) return;
-
-    let btn = document.getElementById('btnKhoaTKB');
-    let textGoc = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`;
-        btn.disabled = true;
-    }
-
-    try {
-        let emailNguoiDung = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') 
-            ? window.dinhDanhGiaoVienToanCuc 
-            : (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '' 
-                ? window.emailGiaoVienToanCuc 
-                : (typeof maGvDangNhapHeThong !== 'undefined' ? maGvDangNhapHeThong : ''));
-
-        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
-            method: 'POST',
-            body: JSON.stringify({
-                thaoTac: 'khoaMoTKB',
-                tuan: tuanHienTai,
-                khoa: hanhDongMoi,
-                emailTruyCap: emailNguoiDung
-            })
-        });
-
-        const ketQua = await phanHoi.json();
-
-        if (ketQua.trangThai === 'thanh_cong') {
-            alert("✅ " + ketQua.thongBao);
-            
-            // Cập nhật RAM Client ngay
-            duLieuKhoaTKBToanCuc[tuanHienTai] = {
-                daKhoa: hanhDongMoi,
-                tuan: tuanHienTai,
-                nguoiThucHien: emailNguoiDung,
-                thoiGian: 'Vừa xong'
-            };
-
-            // Cập nhật ngay giao diện TKB
-            dongBoTrangThaiKhoaTKBUI();
-        } else {
-            alert("Thao tác thất bại: " + (ketQua.thongBao || "Lỗi không xác định."));
-        }
-    } catch (loi) {
-        alert("Lỗi kết nối máy chủ: " + loi.message);
-    } finally {
-        if (btn) {
-            btn.innerHTML = textGoc;
-            btn.disabled = false;
-        }
-    }
-}
-
-// Tải trạng thái Khóa TKB từ máy chủ khi khởi động
-async function taiTrangThaiKhoaTKBTuan() {
-    try {
-        const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layTrangThaiKhoaTKB`);
-        let ketQua = await phanHoi.json();
-        if (ketQua && typeof ketQua === 'object') {
-            duLieuKhoaTKBToanCuc = ketQua;
-            dongBoTrangThaiKhoaTKBUI();
-        }
-    } catch(e) {}
-}
-
-// =========================================================================
-// KHỞI TẠO DOM & LẮNG NGHE SỰ KIỆN CHUYỂN TUẦN TKB
+// CƠ CHẾ BẢO ĐẢM KHỞI TẠO DOM (CHỐNG MẤT MENU 7 DÙ HTML CÓ HAY CHƯA)
 // =========================================================================
 function khoiTaoDOMPhanQuyen() {
     const nav = document.querySelector('nav');
     const vungChinh = document.getElementById('vungHienThiChinh');
 
-    // Chèn Menu 7 nếu trong index.html chưa có
+    // 1. Chèn Menu 7 vào thanh Sidebar nếu trong index.html chưa có
     if (nav && !document.getElementById('menuPhanQuyen')) {
         const menuHtml = `
             <a id="menuPhanQuyen" onclick="moTabPhanQuyenChuyenDung()" style="display: none;" class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group">
@@ -236,7 +68,7 @@ function khoiTaoDOMPhanQuyen() {
         nav.insertAdjacentHTML('beforeend', menuHtml);
     }
 
-    // Chèn Khung ma trận nếu trong index.html chưa có
+    // 2. Chèn Khung ma trận nếu trong index.html chưa có
     if (vungChinh && !document.getElementById('khungPhanQuyen')) {
         const khungHtml = `
             <div id="khungPhanQuyen" class="hidden p-4 w-full h-full flex-col font-sans">
@@ -274,20 +106,8 @@ function khoiTaoDOMPhanQuyen() {
         vungChinh.insertAdjacentHTML('beforeend', khungHtml);
     }
 
-    // Lắng nghe sự kiện chuyển tuần TKB để đổi trạng thái khóa ngay lập tức
-    let btnTuanTruoc = document.getElementById('btnTuanTruoc');
-    let btnTuanTiep = document.getElementById('btnTuanTiep');
-    let inputTuan = document.getElementById('hienThiTuanHienTai');
-
-    if (btnTuanTruoc) btnTuanTruoc.addEventListener('click', () => setTimeout(dongBoTrangThaiKhoaTKBUI, 150));
-    if (btnTuanTiep) btnTuanTiep.addEventListener('click', () => setTimeout(dongBoTrangThaiKhoaTKBUI, 150));
-    if (inputTuan) {
-        inputTuan.addEventListener('input', () => setTimeout(dongBoTrangThaiKhoaTKBUI, 150));
-        inputTuan.addEventListener('change', () => setTimeout(dongBoTrangThaiKhoaTKBUI, 150));
-    }
-
+    // 3. Kích hoạt cập nhật hiển thị ngay
     capNhatHienThiPhanQuyen();
-    taiTrangThaiKhoaTKBTuan();
 }
 
 // Hook vào hàm kiemSoatGiaoDien của app.js
@@ -302,7 +122,7 @@ function ganKetHeThongKiemSoat() {
     }
 }
 
-// Khởi tạo đa tầng
+// Khởi tạo đa tầng để chống trễ nhịp sự kiện DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         khoiTaoDOMPhanQuyen();
@@ -318,8 +138,9 @@ if (document.readyState === 'loading') {
 }
 
 // =========================================================================
-// CÁC HÀM XỬ LÝ MA TRẬN PHÂN QUYỀN
+// CÁC HÀM XỬ LÝ NGHIỆP VỤ BẢNG MA TRẬN PHÂN QUYỀN
 // =========================================================================
+
 function moTabPhanQuyenChuyenDung() {
     if (typeof kichHoatTab === 'function') {
         kichHoatTab('menuPhanQuyen', 'khungPhanQuyen', false);
@@ -336,7 +157,9 @@ async function taiDuLieuPhanQuyenTuMayChu() {
         const phanHoi = await fetchVoiCoCheThuLai(`${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layPhanQuyenHethong`);
         let ketQua = await phanHoi.json();
         
-        if (ketQua && ketQua.trangThai === 'loi_he_thong') throw new Error(ketQua.thongBao);
+        if (ketQua && ketQua.trangThai === 'loi_he_thong') {
+            throw new Error(ketQua.thongBao);
+        }
         
         if (Array.isArray(ketQua)) {
             duLieuBangPhanQuyen = ketQua;
@@ -345,6 +168,7 @@ async function taiDuLieuPhanQuyenTuMayChu() {
         } else {
             duLieuBangPhanQuyen = [];
         }
+        
         hienThiBangPhanQuyen();
     } catch (loi) {
         vungDuLieu.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 font-bold py-10">Lỗi kết nối: ${loi.message}</td></tr>`;
