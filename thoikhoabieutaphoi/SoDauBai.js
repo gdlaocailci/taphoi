@@ -700,8 +700,65 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
         dictTKB[`${thuGoc}_${buoiKiemTra}_${dong['Tiết']}`] = dong;
     });
 
+    // =========================================================================
+    // [ĐOẠN MỚI]: TỰ ĐỘNG BƠM NÚT KHÓA SỔ + BẬT BANNER KHI TUẦN ĐÃ KHÓA
+    // =========================================================================
+    let soBiKhoa = window.kiemTraTuanDaKhoa(tuanChon);
+    let thongTinKhoa = duLieuKhoaSoToanCuc[maxTuanChon] || {};
+
+    // 1. Tự động bơm thẻ nút vào trước nút "Đồng bộ Tên Bài" nếu trên HTML chưa có
+    let btnKhoa = document.getElementById('btnKhoaSoDauBai');
+    if (!btnKhoa) {
+        let btnDongBo = document.getElementById('btnDongBoTenBai');
+        if (btnDongBo && btnDongBo.parentNode) {
+            let btnHtml = `
+                <button id="btnKhoaSoDauBai" onclick="thaoTacKhoaMoSoDauBai()" 
+                        class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 text-xs shadow transition duration-200 rounded flex items-center gap-1.5" 
+                        title="Khóa/Mở khóa toàn bộ sổ đầu bài của Tuần này trên toàn trường">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    <span id="textNutKhoaSo">Khóa sổ Tuần</span>
+                </button>`;
+            btnDongBo.insertAdjacentHTML('beforebegin', btnHtml);
+            btnKhoa = document.getElementById('btnKhoaSoDauBai');
+        }
+    }
+
+    // 2. Kiểm tra quyền và mở hiển thị nút cho BGH / Tài khoản được phân quyền
+    let duocQuyenKhoa = quyenQuanTri || 
+                        (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || 
+                        (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaSoDauBai'));
+
+    if (btnKhoa) {
+        btnKhoa.style.display = duocQuyenKhoa ? 'inline-flex' : 'none';
+
+        if (soBiKhoa) {
+            btnKhoa.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-xs shadow transition duration-200 rounded flex items-center gap-1.5";
+            btnKhoa.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg><span id="textNutKhoaSo">Mở khóa Tuần ${maxTuanChon}</span>`;
+        } else {
+            btnKhoa.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 text-xs shadow transition duration-200 rounded flex items-center gap-1.5";
+            btnKhoa.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><span id="textNutKhoaSo">Khóa Sổ Tuần ${maxTuanChon}</span>`;
+        }
+    }
+
+    // 3. Hiển thị Banner trạng thái
     let theTrangThaiHtml = '';
-    if (tongSoTietCoMon > 0) {
+    if (soBiKhoa) {
+        theTrangThaiHtml = `
+            <div class="mb-4 p-3 bg-red-50 border-2 border-red-500 shadow-sm flex items-center justify-between rounded animate-pulse-once">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-600 text-white rounded-full p-1.5 shadow flex-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <div>
+                        <span class="text-sm font-black text-red-900 tracking-wide uppercase block">SỔ ĐẦU BÀI TUẦN ${maxTuanChon} TOÀN TRƯỜNG ĐÃ ĐƯỢC KHÓA (CHẾ ĐỘ CHỈ XEM)</span>
+                        <span class="text-xs text-red-700 font-semibold">Người khóa: <b>${thongTinKhoa.nguoiThucHien || 'Ban Giám Hiệu'}</b> lúc ${thongTinKhoa.thoiGian || 'Gần đây'}. Toàn bộ các lớp đã được niêm phong, không thể chỉnh sửa.</span>
+                    </div>
+                </div>
+                <span class="text-xs font-extrabold bg-red-200 text-red-900 border border-red-400 px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap">Chỉ Xem</span>
+            </div>`;
+    } else if (tongSoTietCoMon > 0) {
         if (soTietDaLuu > 0) {
             theTrangThaiHtml = `<div class="mb-4 p-2 bg-emerald-50 border border-emerald-200 shadow-sm flex items-center justify-between rounded"><div class="flex items-center gap-2"><div class="bg-emerald-500 rounded-full p-1"><svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div><span class="text-sm font-extrabold text-emerald-800 tracking-wide uppercase">CÓ DỮ LIỆU ĐÃ ĐƯỢC CHỐT SỔ</span></div><span class="text-xs font-semibold text-emerald-700 italic hidden sm:block">Các tiết đã Ký Tên sẽ bị khóa cứng. Các tiết chưa ký vẫn tiếp tục mở để chỉnh sửa.</span></div>`;
         } else {
@@ -808,7 +865,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                // [TÙY CHỈNH]: Tạm thời tắt tính năng khóa cứng khi đã ký để GV dễ dàng bổ sung Tên bài. 
                 // Khi nào cần khóa lại, chỉ cần mở comment dòng dưới và xóa dòng let isLocked = false;
                 // let isLocked = isDaLuu && chuKy.trim() !== '';
-                let isLocked = false;
+                let isLocked = soBiKhoa;
                 
 
                 let gvTkb = dongDuLieu ? window.chuanHoaDinhDanhGiaoVien(dongDuLieu['Mã GV']) : '';
