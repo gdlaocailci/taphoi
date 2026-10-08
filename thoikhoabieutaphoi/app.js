@@ -2146,13 +2146,14 @@ function hienThiThongBaoTaiNgam(dangTai) {
 }
 // =========================================================================
 // HÀM BỔ SUNG: XỬ LÝ PHÓNG TO / THU NHỎ CỬA SỔ MODAL
+// Vị trí: Thay thế hàm toggleToanManHinhModal bị lỗi trong app.js
 // =========================================================================
 window.toggleToanManHinhModal = function(idModal, nutBam) {
     let modal = document.getElementById(idModal);
     if (!modal) return;
     
-    // Lấy phần tử hộp chứa nội dung chính của modal
-    let hopNoiDung = modal.querySelector('.bg-white.rounded-xl');
+    // Bắt trực tiếp thẻ div con đầu tiên (hộp chứa nội dung) thay vì dò theo class
+    let hopNoiDung = modal.firstElementChild;
     if (!hopNoiDung) return;
 
     // Kiểm tra trạng thái hiện tại (nếu có w-full nghĩa là đang toàn màn hình)
