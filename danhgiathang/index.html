@@ -649,6 +649,27 @@ function xulyPhienDn(phanho) {
       
       try {
         $('#chuTenGv').text(kq.tde?.tenn || ''); 
+        
+        // --- [NÂNG CẤP]: BẮT ĐẦU XỬ LÝ HIỂN THỊ CHỨC VỤ ---
+        let maChucVu = "";
+        if (kq.canb && kq.canb.chucvu) {
+            maChucVu = String(kq.canb.chucvu).trim().toLowerCase();
+        } else if (kq.tde && kq.tde.chucvu) {
+            maChucVu = String(kq.tde.chucvu).trim().toLowerCase();
+        }
+
+        let chucVuHienThi = "Chưa xác định";
+        if (maChucVu === "gv") {
+            chucVuHienThi = "Giáo viên";
+        } else if (maChucVu === "nv") {
+            chucVuHienThi = "Nhân viên";
+        } else if (maChucVu === "ql") {
+            chucVuHienThi = "Quản lý";
+        }
+        
+        $('#chuChucVu').text(chucVuHienThi);
+        // --- [NÂNG CẤP]: KẾT THÚC XỬ LÝ HIỂN THỊ CHỨC VỤ ---
+
         $('#chuNamHoc').text(kq.tde?.nhoc || ''); 
         $('#chuThoiGian').text(kq.tde?.tgian || ''); 
         $('#nhapSngayNghi').val(kq.tde?.snnghi || 0); 
