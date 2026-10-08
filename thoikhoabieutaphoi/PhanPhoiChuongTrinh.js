@@ -89,7 +89,7 @@ function taoKhungGiaoDienPPCT() {
                            onfocus="this.dataset.oldValue = this.value; this.value = '';" 
                            onblur="if(this.value === '') this.value = this.dataset.oldValue;" 
                            onchange="tuDongTinhKhoiLop(); this.blur();" 
-                           class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50" placeholder="Chọn lớp">
+                           class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50 text-center" placeholder="Chọn lớp">
                     <datalist id="listLopPPCT"></datalist>
                 </div>
                 <div class="flex flex-col w-24">
@@ -102,7 +102,7 @@ function taoKhungGiaoDienPPCT() {
                            onfocus="this.dataset.oldValue = this.value; this.value = '';" 
                            onblur="if(this.value === '') this.value = this.dataset.oldValue;" 
                            onchange="this.blur()" 
-                           class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50" placeholder="Chọn môn">
+                           class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50 text-center" placeholder="Chọn môn">
                     <datalist id="listMonPPCT"></datalist>
                 </div>
                <button onclick="taiDuLieuTkbVaPpct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-6 rounded shadow transition duration-200 text-sm ml-auto flex items-center gap-2 h-[34px]">
