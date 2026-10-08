@@ -146,10 +146,10 @@
              </div>
         </div>
             
+        <!-- Hàng 1: Ý kiến tham mưu (Trái) & Báo cáo tóm tắt (Phải) -->
         <div class="row g-1 mb-1">
-            <div class="col-md-6 d-flex flex-column gap-1">
+            <div class="col-md-6">
               <textarea id="nhapYkien" class="form-control border-danger" placeholder="* Ý kiến tham mưu, đề xuất..." style="height: 45px; min-height: 45px; overflow-y: hidden; resize: none; font-size: 13px; border: 1px dashed #dc3545; padding: 3px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
-             <textarea id="oNoiDungYkienLanhDao" class="form-control border-success" placeholder="* Ý kiến lãnh đạo hoặc người giám sát..." style="display: none; height: 45px; min-height: 45px; overflow-y: hidden; resize: none; font-size: 13px; border: 1px dashed #198754; padding: 3px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
             </div>
             <div class="col-md-6">
               <div style="position: relative;">
@@ -158,6 +158,13 @@
                 <input type="file" id="tepBcao" multiple style="display:none;" onchange="xulyTaiBcao(this)">
               </div>
               <div id="vungDinhkBcao" class="mt-1 d-flex gap-1 flex-wrap justify-content-end"></div>
+            </div>
+        </div>
+        
+        <!-- Hàng 2: Ý kiến lãnh đạo trải dài toàn bộ chiều ngang (col-12) -->
+        <div class="row g-1 mb-1">
+            <div class="col-12">
+              <textarea id="oNoiDungYkienLanhDao" class="form-control border-success" placeholder="* Ý kiến lãnh đạo hoặc người giám sát..." style="display: none; width: 100%; height: 45px; min-height: 45px; overflow-y: hidden; resize: none; font-size: 13px; border: 1px dashed #198754; padding: 3px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
             </div>
         </div>
     </div>
