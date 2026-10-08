@@ -684,12 +684,32 @@ function hideAllSubUIs() {
 }
 
 async function fetchAPI(url) {
-    const response = await fetch(url);
-    const text = await response.text();
+    // NÂNG CẤP: Sử dụng AbortController để giới hạn thời gian chờ (timeout) tối đa 15 giây
+    const controller = new AbortController();
+    const idTimeOut = setTimeout(() => controller.abort(), 15000);
+    
     try {
-        return JSON.parse(text);
-    } catch (e) {
-        throw new Error("LỖI 500: URL Máy chủ Google Apps Script bị sai, HOẶC đồng chí chưa Triển khai phiên bản mới (New Version) đúng chuẩn.");
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(idTimeOut); // Hủy bộ đếm nếu kết nối thành công trước 15 giây
+        
+        const text = await response.text();
+        
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // NÂNG CẤP: Phân tách lỗi dữ liệu không phải JSON (thường do Google trả về HTML báo lỗi mạng/quá tải)
+            throw new Error("Dữ liệu trả về bị hỏng hoặc máy chủ Google phản hồi chậm do mạng yếu. Đồng chí vui lòng thử lại!");
+        }
+    } catch (err) {
+        clearTimeout(idTimeOut);
+        
+        // NÂNG CẤP: Bắt chính xác lỗi do hết thời gian chờ (Timeout)
+        if (err.name === 'AbortError') {
+            throw new Error("Đường truyền mạng quá yếu, kết nối đã quá hạn thời gian chờ. Đồng chí vui lòng kiểm tra lại WiFi/4G!");
+        }
+        
+        // Bắt các lỗi kết nối cốt lõi khác hoặc giữ lại cảnh báo URL sai
+        throw new Error(err.message || "LỖI 500: Cấu hình URL sai, hoặc máy chủ đang gián đoạn.");
     }
 }
 
