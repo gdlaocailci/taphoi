@@ -362,12 +362,14 @@ function hienThiBangPhanQuyen() {
 
             let laDongCongKhai = (taiKhoan.toLowerCase() === '*' || taiKhoan.toLowerCase().includes('công khai') || taiKhoan.toLowerCase().includes('congkhai'));
             let bgDong = laDongCongKhai ? 'bg-amber-50/70 border-b-2 border-amber-300' : 'bg-white hover:bg-slate-50';
-            let nhanDong = laDongCongKhai ? `<span class="inline-block mt-1 text-[11px] font-extrabold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded">🌐 CÔNG KHAI TOÀN TRƯỜNG</span>` : '';
+            let nhanDong = laDongCongKhai ? '<span class="w-full block text-[11px] font-extrabold text-amber-900 bg-amber-200/90 px-2 py-0.5 rounded text-center border border-amber-300 whitespace-normal leading-tight shadow-sm">🌐 CÔNG KHAI TOÀN TRƯỜNG</span>' : '';
 
             html += `<tr class="dong-phan-quyen ${bgDong} transition-colors" data-index="${index}">
-                <td class="p-2 align-top">
-                    <input type="text" value="${taiKhoan}" placeholder="Nhập định danh truy cập hoặc * (Công khai)..." class="input-tai-khoan w-full border border-blue-400 rounded px-2 py-1.5 text-sm font-bold ${laDongCongKhai ? 'text-amber-900 bg-amber-100/50' : 'text-blue-900'} outline-none focus:ring-2 focus:ring-blue-500">
-                    ${nhanDong}
+                <td class="p-2 align-top whitespace-normal" style="white-space: normal !important; width: 224px; min-width: 224px; max-width: 224px;">
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <input type="text" value="${taiKhoan}" placeholder="Nhập định danh truy cập hoặc * (Công khai)..." class="input-tai-khoan w-full border border-blue-400 rounded px-2 py-1.5 text-sm font-bold ${laDongCongKhai ? 'text-amber-900 bg-amber-100/50' : 'text-blue-900'} outline-none focus:ring-2 focus:ring-blue-500">
+                        ${nhanDong}
+                    </div>
                 </td>
                 <td class="p-2 align-top border-l border-gray-300 bg-gray-50/50">${taoNhomCheckbox(dsLop, lopChon, 'lop')}</td>
                 <td class="p-2 align-top border-l border-gray-300">${taoNhomCheckbox(DANH_SACH_MENU_HE_THONG, menuChon, 'menu')}</td>
