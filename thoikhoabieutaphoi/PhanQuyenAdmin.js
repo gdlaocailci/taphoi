@@ -1,7 +1,6 @@
 // =========================================================================
-// KHỐI QUẢN LÝ MA TRẬN PHÂN QUYỀN HỆ THỐNG (BẢN CHUẨN ĐỒNG BỘ)
-// Chỉ tập trung: Quản lý Menu Hệ thống, Nút TKB và Khóa Sổ Đầu Bài Tuần
-// Đã loại bỏ hoàn toàn tính năng Khóa TKB theo yêu cầu
+// KHỐI QUẢN LÝ MA TRẬN PHÂN QUYỀN HỆ THỐNG (BẢN CHUẨN ĐỒNG BỘ CÔNG KHAI 1 CLICK)
+// Quản lý Menu Hệ thống, Nút TKB, Khóa Sổ Đầu Bài Tuần & Chế độ Công khai 1 Click
 // =========================================================================
 
 let duLieuBangPhanQuyen = [];
@@ -30,17 +29,206 @@ const DANH_SACH_NUT_CHUC_NANG = [
 ];
 
 // =========================================================================
-// HÀM KIỂM SOÁT HIỂN THỊ MENU 7 VÀ NÚT KHÓA SỔ ĐẦU BÀI
+// HÀM TIỆN ÍCH LẤY QUYỀN CÔNG KHAI
+// =========================================================================
+function layQuyenCongKhaiHienTai() {
+    if (typeof window.layQuyenCongKhaiHienTai === 'function') {
+        return window.layQuyenCongKhaiHienTai();
+    }
+    if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.QUYEN_CONG_KHAI) {
+        return thongSoHocVu.QUYEN_CONG_KHAI;
+    }
+    if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
+        let mt = thongSoHocVu.MA_TRAN_PHAN_QUYEN;
+        for (let k in mt) {
+            let kLC = k.trim().toLowerCase();
+            if (kLC === '*' || kLC.includes('công khai') || kLC.includes('congkhai')) {
+                return mt[k];
+            }
+        }
+    }
+    return { menu: [], nut: [], lop: [] };
+}
+
+// =========================================================================
+// HÀM HIỂN THỊ THÔNG BÁO TOAST TỨC THÌ (CHO SỰ KIỆN 1 CLICK)
+// =========================================================================
+function hienThiToastPhanQuyen(noiDung, loai = 'thanh_cong') {
+    let oldToast = document.getElementById('toastPhanQuyen');
+    if (oldToast) oldToast.remove();
+
+    let div = document.createElement('div');
+    div.id = 'toastPhanQuyen';
+    let bgClass = (loai === 'thanh_cong') ? 'bg-emerald-800 border-emerald-500' : 'bg-slate-800 border-slate-600';
+    div.className = `fixed bottom-6 left-1/2 -translate-x-1/2 ${bgClass} border text-white px-5 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 z-[99999] transition-all duration-300 transform scale-95 opacity-0 text-sm font-bold`;
+    div.innerHTML = noiDung;
+    document.body.appendChild(div);
+
+    requestAnimationFrame(() => {
+        div.classList.remove('scale-95', 'opacity-0');
+        div.classList.add('scale-100', 'opacity-100');
+    });
+
+    setTimeout(() => {
+        div.classList.remove('scale-100', 'opacity-100');
+        div.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => div.remove(), 300);
+    }, 3000);
+}
+
+// =========================================================================
+// SỰ KIỆN 1 CLICK: BẬT / TẮT HIỂN THỊ CÔNG KHAI VÀ TỰ ĐỘNG LƯU MÁY CHỦ
+// =========================================================================
+async function xuLyChuyenDoiCongKhai1Click(loai, idItem, trangThaiMoi, tenHienThi = '') {
+    let coQuyenQuanTri = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua);
+    if (!coQuyenQuanTri) {
+        alert("Từ chối: Chỉ tài khoản Quản trị (Admin) mới có quyền bật/tắt hiển thị công khai!");
+        return false;
+    }
+
+    let emailAdmin = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') 
+        ? window.dinhDanhGiaoVienToanCuc 
+        : (typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '');
+
+    // 1. Cập nhật ngay lập tức bộ nhớ Client (Optimistic UI) để giao diện phản hồi tức thì
+    if (typeof thongSoHocVu !== 'undefined') {
+        if (!thongSoHocVu.QUYEN_CONG_KHAI) thongSoHocVu.QUYEN_CONG_KHAI = { menu: [], nut: [], lop: [] };
+        let arr = thongSoHocVu.QUYEN_CONG_KHAI[loai] || [];
+        let idx = arr.indexOf(idItem);
+        if (trangThaiMoi && idx === -1) arr.push(idItem);
+        if (!trangThaiMoi && idx !== -1) arr.splice(idx, 1);
+        thongSoHocVu.QUYEN_CONG_KHAI[loai] = arr;
+
+        if (!thongSoHocVu.MA_TRAN_PHAN_QUYEN) thongSoHocVu.MA_TRAN_PHAN_QUYEN = {};
+        thongSoHocVu.MA_TRAN_PHAN_QUYEN['* (Công khai)'] = thongSoHocVu.QUYEN_CONG_KHAI;
+        
+        try {
+            localStorage.setItem(layKhoaCachLy('SmartTKB_CauHinh'), JSON.stringify(thongSoHocVu));
+        } catch(e) {}
+    }
+
+    // 2. Đồng bộ giao diện ngay
+    capNhatHienThiPhanQuyen();
+    if (typeof kiemSoatGiaoDien === 'function') kiemSoatGiaoDien();
+
+    // 3. Hiển thị Toast thông báo trạng thái
+    let tenItem = tenHienThi || idItem;
+    let thongBaoToast = trangThaiMoi 
+        ? `✅ Đã BẬT hiển thị công khai cho [${tenItem}] (Ai cũng xem được)` 
+        : `🔒 Đã TẮT hiển thị công khai cho [${tenItem}] (Chỉ hiện khi cấp quyền trong ma trận)`;
+    hienThiToastPhanQuyen(thongBaoToast, trangThaiMoi ? 'thanh_cong' : 'dong');
+
+    // 4. Nếu đang mở Tab 8 -> Vẽ lại bảng ma trận để cập nhật checkbox
+    let khungPQ = document.getElementById('khungPhanQuyen');
+    if (khungPQ && !khungPQ.classList.contains('hidden')) {
+        let dongCK = duLieuBangPhanQuyen.find(d => {
+            let tk = String(d[0]).trim().toLowerCase();
+            return tk === '*' || tk.includes('công khai') || tk.includes('congkhai');
+        });
+        if (dongCK) {
+            let colIdx = (loai === 'lop') ? 1 : ((loai === 'nut') ? 2 : 3);
+            let dsArr = dongCK[colIdx] ? String(dongCK[colIdx]).split(',').map(s=>s.trim()).filter(String) : [];
+            let i = dsArr.indexOf(idItem);
+            if (trangThaiMoi && i === -1) dsArr.push(idItem);
+            if (!trangThaiMoi && i !== -1) dsArr.splice(i, 1);
+            dongCK[colIdx] = dsArr.join(', ');
+        }
+        hienThiBangPhanQuyen();
+    }
+
+    // 5. Gửi yêu cầu lưu tự động lên máy chủ (Chạy ngầm trong nền)
+    try {
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+            method: 'POST',
+            body: JSON.stringify({
+                thaoTac: 'chuyenDoiCongKhai',
+                loai: loai,
+                id: idItem,
+                congKhai: trangThaiMoi,
+                emailTruyCap: emailAdmin
+            })
+        });
+        const kq = await phanHoi.json();
+        if (kq.trangThai === 'Thành công' && kq.quyenCongKhai) {
+            thongSoHocVu.QUYEN_CONG_KHAI = kq.quyenCongKhai;
+            thongSoHocVu.MA_TRAN_PHAN_QUYEN['* (Công khai)'] = kq.quyenCongKhai;
+            try {
+                localStorage.setItem(layKhoaCachLy('SmartTKB_CauHinh'), JSON.stringify(thongSoHocVu));
+            } catch(e) {}
+            capNhatHienThiPhanQuyen();
+            if (typeof kiemSoatGiaoDien === 'function') kiemSoatGiaoDien();
+        } else if (kq.trangThai !== 'Thành công') {
+            alert("Lỗi máy chủ: " + (kq.thongBao || "Không thể lưu trạng thái công khai"));
+        }
+    } catch (loi) {
+        console.warn("Lỗi lưu công khai lên máy chủ:", loi);
+    }
+
+    return true;
+}
+
+// Bắt sự kiện 1 click từ menu sidebar
+function xuLyChuyenDoiCongKhaiTuMenu(event, loai, idItem, tenHienThi) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation(); // Ngăn kích hoạt chuyển tab khi bấm nút toggle
+    }
+    let quyenCK = layQuyenCongKhaiHienTai();
+    let daBat = quyenCK[loai] && quyenCK[loai].includes(idItem);
+    let trangThaiMoi = !daBat;
+    xuLyChuyenDoiCongKhai1Click(loai, idItem, trangThaiMoi, tenHienThi);
+}
+
+// Bắt sự kiện 1 click từ checkbox trong bảng ma trận Tab 8
+function xuLyChuyenDoiCongKhaiTuCheckbox(cb, loai, idItem, tenHienThi) {
+    let trangThaiMoi = cb.checked;
+    xuLyChuyenDoiCongKhai1Click(loai, idItem, trangThaiMoi, tenHienThi);
+}
+
+// =========================================================================
+// HÀM GẮN NÚT CHUYỂN ĐỔI CÔNG KHAI 1 CLICK BÊN CẠNH CÁC MENU CHO ADMIN
+// =========================================================================
+function ganNutChuyenDoiCongKhaiNhanhChoAdmin() {
+    let coQuyenQuanTri = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua);
+    let quyenCK = layQuyenCongKhaiHienTai();
+
+    DANH_SACH_MENU_HE_THONG.forEach(itemMenu => {
+        let menuEl = document.getElementById(itemMenu.id);
+        if (!menuEl) return;
+
+        let nutCu = menuEl.querySelector('.btn-badge-cong-khai');
+        if (!coQuyenQuanTri) {
+            if (nutCu) nutCu.remove();
+            return;
+        }
+
+        let daCongKhai = quyenCK.menu && quyenCK.menu.includes(itemMenu.id);
+        let badgeHtml = daCongKhai 
+            ? `<button type="button" onclick="xuLyChuyenDoiCongKhaiTuMenu(event, 'menu', '${itemMenu.id}', '${itemMenu.ten}')" class="btn-badge-cong-khai ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 hover:bg-emerald-500/40 border border-emerald-400/40 flex items-center gap-1 flex-none z-10 transition-all shadow-sm" title="Đang hiển thị công khai (Ai cũng xem được). Bấm 1 click để TẮT công khai"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span>Công khai</span></button>`
+            : `<button type="button" onclick="xuLyChuyenDoiCongKhaiTuMenu(event, 'menu', '${itemMenu.id}', '${itemMenu.ten}')" class="btn-badge-cong-khai ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-300 hover:bg-slate-700 border border-slate-500/40 flex items-center gap-1 flex-none z-10 transition-all shadow-sm" title="Đang đóng (Chỉ hiện khi cấp quyền trong ma trận). Bấm 1 click để BẬT công khai"><svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg><span>Nội bộ</span></button>`;
+
+        if (nutCu) {
+            nutCu.outerHTML = badgeHtml;
+        } else {
+            menuEl.insertAdjacentHTML('beforeend', badgeHtml);
+        }
+    });
+}
+
+// =========================================================================
+// HÀM KIỂM SOÁT HIỂN THỊ MENU VÀ NÚT CHỨC NĂNG
 // =========================================================================
 function capNhatHienThiPhanQuyen() {
     let coQuyenQuanTri = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua);
+    let quyenCongKhai = layQuyenCongKhaiHienTai();
 
     // 1. Kiểm soát hiển thị Menu 8: Phân quyền Hệ thống
     let menuPQ = document.getElementById('menuPhanQuyen');
     let duocXemMenu = false;
     if (menuPQ) {
         duocXemMenu = coQuyenQuanTri || 
-                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanQuyen'));
+                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanQuyen')) ||
+                          (quyenCongKhai.menu && quyenCongKhai.menu.includes('menuPhanQuyen'));
         menuPQ.style.display = duocXemMenu ? 'flex' : 'none';
     }
 
@@ -49,7 +237,8 @@ function capNhatHienThiPhanQuyen() {
     let duocXemPPCT = false;
     if (menuPPCT) {
         duocXemPPCT = coQuyenQuanTri || 
-                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanPhoiChuongTrinh'));
+                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanPhoiChuongTrinh')) ||
+                          (quyenCongKhai.menu && quyenCongKhai.menu.includes('menuPhanPhoiChuongTrinh'));
         menuPPCT.style.display = duocXemPPCT ? 'flex' : 'none';
     }
 
@@ -62,13 +251,17 @@ function capNhatHienThiPhanQuyen() {
     let btnKhoaSo = document.getElementById('btnKhoaSoDauBai');
     if (btnKhoaSo) {
         let duocBamKhoaSo = coQuyenQuanTri || 
-                            (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaSoDauBai'));
+                            (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaSoDauBai')) ||
+                            (quyenCongKhai.nut && quyenCongKhai.nut.includes('btnKhoaSoDauBai'));
         btnKhoaSo.style.display = duocBamKhoaSo ? 'inline-flex' : 'none';
     }
+
+    // 4. Nếu là Admin: gắn nút chuyển đổi công khai nhanh bên cạnh các menu
+    ganNutChuyenDoiCongKhaiNhanhChoAdmin();
 }
 
 // =========================================================================
-// CƠ CHẾ BẢO ĐẢM KHỞI TẠO DOM (CHỐNG MẤT MENU 7 DÙ HTML CÓ HAY CHƯA)
+// CƠ CHẾ BẢO ĐẢM KHỞI TẠO DOM
 // =========================================================================
 function khoiTaoDOMPhanQuyen() {
     const nav = document.querySelector('nav');
@@ -106,11 +299,11 @@ function khoiTaoDOMPhanQuyen() {
                     <table class="bang-excel w-full min-w-[1000px]">
                         <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm text-center">
                             <tr>
-                                <th class="py-2 w-56">Tài khoản (Định danh)</th>
+                                <th class="py-2 w-64">Tài khoản (Định danh)</th>
                                 <th class="py-2">Quyền xếp thời khoá biểu Lớp học</th>
                                 <th class="py-2">Phân quyền Menu</th>
                                 <th class="py-2">Phân quyền Nút chức năng</th>
-                                <th class="py-2 w-16 text-red-600">Xóa</th>
+                                <th class="py-2 w-20 text-red-600">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="vungDuLieuPhanQuyen">
@@ -191,15 +384,22 @@ async function taiDuLieuPhanQuyenTuMayChu() {
     }
 }
 
-function taoNhomCheckbox(danhSachGoc, danhSachDaChon, kieuPhanLoai) {
-    let html = `<div class="flex flex-wrap gap-2 justify-start max-h-32 overflow-y-auto p-1 custom-scrollbar">`;
+function taoNhomCheckbox(danhSachGoc, danhSachDaChon, kieuPhanLoai, laDongCongKhai = false) {
+    let html = `<div class="flex flex-wrap gap-2 justify-start max-h-36 overflow-y-auto p-1 custom-scrollbar">`;
     danhSachGoc.forEach(item => {
         let idItem = typeof item === 'object' ? item.id : item;
         let tenItem = typeof item === 'object' ? item.ten : item;
         let daChon = danhSachDaChon.includes(idItem) ? 'checked' : '';
-        html += `<label class="flex items-center gap-1 bg-slate-50 border border-gray-300 px-2 py-1 rounded text-xs cursor-pointer hover:bg-slate-100 transition-colors">
-            <input type="checkbox" value="${idItem}" data-loai="${kieuPhanLoai}" ${daChon} class="cursor-pointer">
-            <span class="font-semibold text-slate-700 whitespace-nowrap">${tenItem}</span>
+        
+        // Sự kiện 1 click tự động cập nhật và lưu ngay lập tức cho dòng công khai
+        let suKienClick = laDongCongKhai 
+            ? `onchange="xuLyChuyenDoiCongKhaiTuCheckbox(this, '${kieuPhanLoai}', '${idItem}', '${tenItem}')"`
+            : '';
+        let borderClass = laDongCongKhai && daChon ? 'bg-emerald-100 border-emerald-400 text-emerald-900 font-extrabold shadow-sm' : 'bg-slate-50 border-gray-300 text-slate-700';
+
+        html += `<label class="flex items-center gap-1 border px-2 py-1 rounded text-xs cursor-pointer hover:bg-slate-100 transition-colors ${borderClass}">
+            <input type="checkbox" value="${idItem}" data-loai="${kieuPhanLoai}" ${daChon} ${suKienClick} class="cursor-pointer">
+            <span class="font-semibold whitespace-nowrap">${tenItem}</span>
         </label>`;
     });
     html += `</div>`;
@@ -208,25 +408,67 @@ function taoNhomCheckbox(danhSachGoc, danhSachDaChon, kieuPhanLoai) {
 
 function hienThiBangPhanQuyen() {
     const vungDuLieu = document.getElementById('vungDuLieuPhanQuyen');
+    if (!vungDuLieu) return;
     let html = '';
     let dsLop = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.DANH_SACH_LOP) ? thongSoHocVu.DANH_SACH_LOP : [];
 
-    if (duLieuBangPhanQuyen.length === 0) {
-        html = '<tr><td colspan="5" class="text-center py-10 font-bold text-slate-500">Chưa có dữ liệu cấp quyền nào. Bấm "Cấp quyền mới" để tạo.</td></tr>';
+    // Tách dòng Công khai ra khỏi danh sách tài khoản cá nhân
+    let dongCongKhai = null;
+    let danhSachCaNhan = [];
+
+    duLieuBangPhanQuyen.forEach(dong => {
+        let taiKhoan = dong[0] ? String(dong[0]).trim() : '';
+        let tkLC = taiKhoan.toLowerCase();
+        if (tkLC === '*' || tkLC.includes('công khai') || tkLC.includes('congkhai')) {
+            dongCongKhai = dong;
+        } else {
+            danhSachCaNhan.push(dong);
+        }
+    });
+
+    // Nếu chưa có dòng công khai, lấy từ thongSoHocVu hoặc khởi tạo mặc định
+    let quyenCK = layQuyenCongKhaiHienTai();
+    let lopCK = dongCongKhai ? (dongCongKhai[1] ? String(dongCongKhai[1]).split(',').map(s=>s.trim()).filter(String) : []) : (quyenCK.lop || []);
+    let nutCK = dongCongKhai ? (dongCongKhai[2] ? String(dongCongKhai[2]).split(',').map(s=>s.trim()).filter(String) : []) : (quyenCK.nut || []);
+    let menuCK = dongCongKhai ? (dongCongKhai[3] ? String(dongCongKhai[3]).split(',').map(s=>s.trim()).filter(String) : []) : (quyenCK.menu || []);
+
+    // 1. GHIM DÒNG CÔNG KHAI ĐẦU BẢNG (1 CLICK LÀ TỰ LƯU NGAY)
+    html += `<tr class="dong-phan-quyen bg-emerald-50/80 border-b-2 border-emerald-400 hover:bg-emerald-100/50 transition-colors shadow-sm" data-la-cong-khai="true">
+        <td class="p-2.5 align-top">
+            <input type="hidden" class="input-tai-khoan" value="* (Công khai)">
+            <div class="flex items-center gap-2 p-1.5 bg-emerald-100/80 border border-emerald-300 rounded shadow-sm">
+                <span class="text-2xl flex-none">🌐</span>
+                <div>
+                    <div class="font-black text-emerald-950 text-xs uppercase tracking-wide">CÔNG KHAI (TOÀN TRƯỜNG)</div>
+                    <div class="text-[10px] text-emerald-700 italic font-semibold">Tất cả mọi người / 1 click là có hiệu lực</div>
+                </div>
+            </div>
+        </td>
+        <td class="p-2 align-top border-l border-emerald-200">${taoNhomCheckbox(dsLop, lopCK, 'lop', true)}</td>
+        <td class="p-2 align-top border-l border-emerald-200">${taoNhomCheckbox(DANH_SACH_MENU_HE_THONG, menuCK, 'menu', true)}</td>
+        <td class="p-2 align-top border-l border-emerald-200">${taoNhomCheckbox(DANH_SACH_NUT_CHUC_NANG, nutCK, 'nut', true)}</td>
+        <td class="p-2 text-center align-middle border-l border-emerald-200">
+            <span class="text-[11px] font-extrabold text-emerald-800 bg-emerald-200/80 border border-emerald-400 px-2 py-1 rounded shadow-sm whitespace-nowrap">Mặc định</span>
+        </td>
+    </tr>`;
+
+    // 2. CÁC DÒNG PHÂN QUYỀN TÀI KHOẢN CÁ NHÂN
+    if (danhSachCaNhan.length === 0) {
+        html += `<tr><td colspan="5" class="text-center py-8 font-bold text-slate-500 italic bg-white">Chưa có phân quyền tài khoản cá nhân nào. Bấm "+ Cấp quyền mới" để thêm.</td></tr>`;
     } else {
-        duLieuBangPhanQuyen.forEach((dong, index) => {
+        danhSachCaNhan.forEach((dong, index) => {
             let taiKhoan = dong[0] ? String(dong[0]).trim() : '';
             let lopChon = dong[1] ? String(dong[1]).split(',').map(s => s.trim()).filter(String) : [];
             let nutChon = dong[2] ? String(dong[2]).split(',').map(s => s.trim()).filter(String) : [];
             let menuChon = dong[3] ? String(dong[3]).split(',').map(s => s.trim()).filter(String) : [];
 
-            html += `<tr class="dong-phan-quyen bg-white hover:bg-slate-50 transition-colors" data-index="${index}">
+            html += `<tr class="dong-phan-quyen bg-white hover:bg-slate-50 transition-colors border-b border-gray-200" data-index="${index}">
                 <td class="p-2 align-top">
-                    <input type="text" value="${taiKhoan}" placeholder="Nhập định danh truy cập..." class="input-tai-khoan w-full border border-blue-400 rounded px-2 py-1.5 text-sm font-bold text-blue-900 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" value="${taiKhoan}" placeholder="Nhập email hoặc định danh..." class="input-tai-khoan w-full border border-blue-400 rounded px-2 py-1.5 text-sm font-bold text-blue-900 outline-none focus:ring-2 focus:ring-blue-500">
                 </td>
-                <td class="p-2 align-top border-l border-gray-300 bg-gray-50/50">${taoNhomCheckbox(dsLop, lopChon, 'lop')}</td>
-                <td class="p-2 align-top border-l border-gray-300">${taoNhomCheckbox(DANH_SACH_MENU_HE_THONG, menuChon, 'menu')}</td>
-                <td class="p-2 align-top border-l border-gray-300 bg-gray-50/50">${taoNhomCheckbox(DANH_SACH_NUT_CHUC_NANG, nutChon, 'nut')}</td>
+                <td class="p-2 align-top border-l border-gray-300 bg-gray-50/50">${taoNhomCheckbox(dsLop, lopChon, 'lop', false)}</td>
+                <td class="p-2 align-top border-l border-gray-300">${taoNhomCheckbox(DANH_SACH_MENU_HE_THONG, menuChon, 'menu', false)}</td>
+                <td class="p-2 align-top border-l border-gray-300 bg-gray-50/50">${taoNhomCheckbox(DANH_SACH_NUT_CHUC_NANG, nutChon, 'nut', false)}</td>
                 <td class="p-2 text-center align-middle border-l border-gray-300">
                     <button onclick="xoaDongPhanQuyen(this)" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition-colors" title="Xóa quyền">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -235,6 +477,7 @@ function hienThiBangPhanQuyen() {
             </tr>`;
         });
     }
+
     vungDuLieu.innerHTML = html;
 }
 
@@ -248,11 +491,17 @@ function themDongPhanQuyenMoi() {
 }
 
 function xoaDongPhanQuyen(btn) {
-    if (!confirm("Đồng chí chắc chắn muốn thu hồi phân quyền của định danh này?")) return;
     let tr = btn.closest('tr');
-    let index = parseInt(tr.getAttribute('data-index'), 10);
-    if (!isNaN(index)) {
-        duLieuBangPhanQuyen.splice(index, 1);
+    if (tr.getAttribute('data-la-cong-khai') === 'true') {
+        alert("Không thể xóa dòng cấu hình Công khai mặc định của hệ thống!");
+        return;
+    }
+    if (!confirm("Đồng chí chắc chắn muốn thu hồi phân quyền của định danh này?")) return;
+    
+    let taiKhoan = tr.querySelector('.input-tai-khoan').value.trim();
+    let idx = duLieuBangPhanQuyen.findIndex(d => String(d[0]).trim() === taiKhoan);
+    if (idx !== -1) {
+        duLieuBangPhanQuyen.splice(idx, 1);
         hienThiBangPhanQuyen();
     }
 }
@@ -262,7 +511,8 @@ async function luuDuLieuPhanQuyenSangMayChu() {
     let cacDong = document.querySelectorAll('.dong-phan-quyen');
     
     cacDong.forEach(tr => {
-        let taiKhoan = tr.querySelector('.input-tai-khoan').value.trim();
+        let inputTK = tr.querySelector('.input-tai-khoan');
+        let taiKhoan = inputTK ? inputTK.value.trim() : '';
         if (taiKhoan !== '') {
             let chkLop = Array.from(tr.querySelectorAll('input[type="checkbox"][data-loai="lop"]:checked')).map(cb => cb.value);
             let chkMenu = Array.from(tr.querySelectorAll('input[type="checkbox"][data-loai="menu"]:checked')).map(cb => cb.value);
@@ -285,7 +535,27 @@ async function luuDuLieuPhanQuyenSangMayChu() {
         if (kq.trangThai === 'Thành công') {
             alert(kq.thongBao + " Cập nhật an toàn hoàn tất.");
             duLieuBangPhanQuyen = mangGhi; 
+
+            // Cập nhật lại QUYEN_CONG_KHAI
+            let quyenCK = layQuyenCongKhaiHienTai();
+            mangGhi.forEach(dong => {
+                let tk = String(dong[0]).trim().toLowerCase();
+                if (tk === '*' || tk.includes('công khai') || tk.includes('congkhai')) {
+                    quyenCK = {
+                        lop: dong[1] ? String(dong[1]).split(',').map(s=>s.trim()).filter(String) : [],
+                        nut: dong[2] ? String(dong[2]).split(',').map(s=>s.trim()).filter(String) : [],
+                        menu: dong[3] ? String(dong[3]).split(',').map(s=>s.trim()).filter(String) : []
+                    };
+                }
+            });
+            if (typeof thongSoHocVu !== 'undefined') {
+                thongSoHocVu.QUYEN_CONG_KHAI = quyenCK;
+                try { localStorage.setItem(layKhoaCachLy('SmartTKB_CauHinh'), JSON.stringify(thongSoHocVu)); } catch(e) {}
+            }
+
             hienThiBangPhanQuyen();
+            capNhatHienThiPhanQuyen();
+            if (typeof kiemSoatGiaoDien === 'function') kiemSoatGiaoDien();
         } else {
             alert("Lưu thất bại: " + kq.thongBao);
         }
