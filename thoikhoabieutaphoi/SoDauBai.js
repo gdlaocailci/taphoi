@@ -334,13 +334,36 @@ function khoiTaoDuLieuSoDauBai(duLieuSever) {
 
     // 1. XỬ LÝ SỔ ĐẦU BÀI (Chỉ đọc cột vật lý)
     if (duLieuSever.SO_DAU_BAI) {
+        let namHocHienTai = duLieuSever.NAM_HOC || (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) || (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.NAM_HOC) || '';
+
         duLieuSever.SO_DAU_BAI.forEach(dong => {
+            let maLuuTru = String(dong['A'] || '').trim();
             let tuan = String(dong['B'] || '').replace(/\D/g, ''); // Cột B: Tuần
             let lop = String(dong['C'] || '').trim().toUpperCase(); // Cột C: Lớp
             let thuChuan = chuanHoaThu(dong['D'] || ''); 
             let ngay = String(dong['E'] || '').trim();
             let buoi = String(dong['F'] || '').trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
             let tiet = String(dong['G'] || '').trim();
+
+            // [NÂNG CẤP ĐỘT PHÁ]: Cách ly tuyệt đối theo Năm học để chống nhầm lẫn/ghi đè sang năm sau
+            if (namHocHienTai) {
+                if (maLuuTru.startsWith(namHocHienTai + '_')) {
+                    // Thuộc đúng năm học hiện tại -> Chấp nhận nạp
+                } else if (/^\d{4}-\d{4}_/.test(maLuuTru)) {
+                    // Thuộc năm học khác -> Bỏ qua, không nạp đè lên lưới năm nay!
+                    return;
+                } else if (ngay) {
+                    let matchNgay = ngay.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+                    if (matchNgay) {
+                        let thang = parseInt(matchNgay[2], 10);
+                        let nam = parseInt(matchNgay[3], 10);
+                        let nhTuNgay = (thang >= 8) ? `${nam}-${nam+1}` : `${nam-1}-${nam}`;
+                        if (nhTuNgay !== namHocHienTai) {
+                            return; // Khác năm học hiện tại -> Bỏ qua
+                        }
+                    }
+                }
+            }
             
             let khoa = `${tuan}_${lop}_${thuChuan}_${buoi}_${tiet}`;
             
@@ -652,6 +675,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 
     let theTrangThaiHtml = '';
     if (soBiKhoa) {
+        let namHocHienThi = thongTinKhoa.namHoc ? ` (NĂM HỌC ${thongTinKhoa.namHoc})` : '';
         theTrangThaiHtml = `
             <div class="mb-4 p-3 bg-red-50 border-2 border-red-500 shadow-sm flex items-center justify-between rounded animate-pulse-once">
                 <div class="flex items-center gap-3">
@@ -659,7 +683,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     </div>
                     <div>
-                        <span class="text-sm font-black text-red-900 tracking-wide uppercase block">SỔ ĐẦU BÀI TUẦN ${maxTuanChon} TOÀN TRƯỜNG ĐÃ ĐƯỢC KHÓA (CHẾ ĐỘ CHỈ XEM)</span>
+                        <span class="text-sm font-black text-red-900 tracking-wide uppercase block">SỔ ĐẦU BÀI TUẦN ${maxTuanChon}${namHocHienThi} TOÀN TRƯỜNG ĐÃ ĐƯỢC KHÓA (CHẾ ĐỘ CHỈ XEM)</span>
                         <span class="text-xs text-red-700 font-semibold">Người khóa: <b>${thongTinKhoa.nguoiThucHien || 'Ban Giám Hiệu'}</b> lúc ${thongTinKhoa.thoiGian || 'Gần đây'}. Toàn bộ các lớp đã được niêm phong, không thể chỉnh sửa.</span>
                     </div>
                 </div>
@@ -981,15 +1005,13 @@ async function luuSoDauBaiSangMayChu() {
                 let chuanHoaThu = String(thuHienTai).trim().toLowerCase();
                 let chuanHoaBuoi = String(buoi).trim().toLowerCase();
                 let chuanHoaLop = String(lopChon).trim().toUpperCase();
-                let chuanHoaNgay = String(ngayHienTai).trim().toLowerCase();
 
                 let indexTrongRam = duLieuTKBGopDaMap.findIndex(d => 
                     parseInt(String(d['Tuần']).replace(/\D/g, '')) === tuanSo && 
                     String(d['Mã Lớp']).trim().toUpperCase() === chuanHoaLop && 
                     String(d['Thứ']).trim().toLowerCase() === chuanHoaThu && 
-                    (String(d['Ngày']).trim().toLowerCase() === chuanHoaNgay || chuanHoaNgay === '') &&
-                    String(d['Buổi']).trim().toLowerCase() === chuanHoaBuoi &&
-                    String(d['Tiết']).trim() === tiet
+                    String(d['Buổi']).trim().toLowerCase() === chuanHoaBuoi && 
+                    String(d['Tiết']).trim() === String(tiet).trim()
                 );
 
                 // Kiểm tra quyền chữ ký
@@ -1033,14 +1055,16 @@ async function luuSoDauBaiSangMayChu() {
                     danhSachThongBao.push(`- ${thuHienTai} (${buoi}), Tiết ${tiet}: ${mon}`);
                     
                     // =====================================================================
-                    // [NÂNG CẤP]: MÃ LƯU TRỮ ĐỊNH DANH ĐẦY ĐỦ 6 TRỤC
+                    // [NÂNG CẤP]: MÃ LƯU TRỮ ĐỊNH DANH ĐẦY ĐỦ 6 TRỤC (BAO GỒM NĂM HỌC)
                     // =====================================================================
+                    let namHocHienTai = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.NAM_HOC) ? window.thongSoHocVu.NAM_HOC : (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC ? thongSoHocVu.NAM_HOC : '');
                     let chuCaiDauThu = chuanHoaThu.charAt(0).toUpperCase() + chuanHoaThu.slice(1);
                     let chuCaiDauBuoi = chuanHoaBuoi.charAt(0).toUpperCase() + chuanHoaBuoi.slice(1);
-                    let maLuuTruDinhDanh = `${tuanSo}_${chuanHoaLop}_${chuCaiDauThu}_${ngayHienTai}_${chuCaiDauBuoi}_${tiet}`;
+                    let maLuuTruDinhDanh = `${namHocHienTai ? namHocHienTai + '_' : ''}${tuanSo}_${chuanHoaLop}_${chuCaiDauThu}_${chuCaiDauBuoi}_${tiet}`;
                     
                     duLieuQuetDuoc.push({
                         maLuuTru: maLuuTruDinhDanh, 
+                        namHoc: namHocHienTai,
                         tuan: tuanSo, 
                         maLop: chuanHoaLop,
                         thu: chuCaiDauThu, 
@@ -1059,6 +1083,7 @@ async function luuSoDauBaiSangMayChu() {
                     // Cập nhật giá trị sửa vào bộ nhớ tạm (RAM)
                     if (indexTrongRam !== -1) {
                         duLieuTKBGopDaMap[indexTrongRam]['Mã Lưu Trữ'] = maLuuTruDinhDanh; 
+                        duLieuTKBGopDaMap[indexTrongRam]['Ngày'] = ngayHienTai;
                         duLieuTKBGopDaMap[indexTrongRam]['ChuyenCan_Thuc'] = chuyenCan;
                         duLieuTKBGopDaMap[indexTrongRam]['TietPPCT_Thuc'] = tietPPCT;
                         duLieuTKBGopDaMap[indexTrongRam]['TenBai_Thuc'] = tenBai;
@@ -1089,7 +1114,15 @@ async function luuSoDauBaiSangMayChu() {
     btn.disabled = true;
 
     try {
-        const payload = { thaoTac: 'luuSoDauBaiDongBo', tuan: tuanChon.replace(/\D/g, ''), lop: lopChon, duLieu: duLieuQuetDuoc };
+        let namHocLuu = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.NAM_HOC) ? window.thongSoHocVu.NAM_HOC : (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC ? thongSoHocVu.NAM_HOC : '');
+        const payload = { 
+            thaoTac: 'luuSoDauBaiDongBo', 
+            tuan: tuanChon.replace(/\D/g, ''), 
+            namHoc: namHocLuu,
+            lop: lopChon, 
+            duLieu: duLieuQuetDuoc,
+            emailTruyCap: (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') ? window.dinhDanhGiaoVienToanCuc : madinhdanhGV
+        };
         const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, { method: 'POST', body: JSON.stringify(payload) });
         const ketQua = await phanHoi.json();
 
@@ -2222,9 +2255,12 @@ async function thaoTacKhoaMoSoDauBai() {
     let daBiKhoa = window.kiemTraTuanDaKhoa(tuanChon);
     let hanhDongMoi = !daBiKhoa; // true: Khóa, false: Mở
 
+    let namHocHienTai = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.NAM_HOC) ? window.thongSoHocVu.NAM_HOC : (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC ? thongSoHocVu.NAM_HOC : '');
+    let chuoiNamHoc = namHocHienTai ? ` (Năm học ${namHocHienTai})` : '';
+
     let thongBao = hanhDongMoi 
-        ? `🔒 XÁC NHẬN KHÓA SỔ ĐẦU BÀI TOÀN TRƯỜNG:\n\nĐồng chí có chắc chắn muốn KHÓA Sổ đầu bài TUẦN ${tuanSo} của TẤT CẢ CÁC LỚP TRONG TOÀN TRƯỜNG?\n\n- Sau khi khóa, giáo viên toàn trường chỉ có quyền XEM, không thể sửa đổi hay lưu đè dữ liệu ở bất kỳ lớp nào.\n- Dữ liệu tuần này được niêm phong để BGH kiểm tra, đánh giá chuyên môn.`
-        : `🔓 XÁC NHẬN MỞ KHÓA SỔ TOÀN TRƯỜNG:\n\nĐồng chí có chắc chắn muốn MỞ KHÓA Sổ đầu bài TUẦN ${tuanSo} cho toàn trường?\n\n- Toàn bộ các lớp trong Tuần ${tuanSo} sẽ được mở lại để giáo viên tiếp tục cập nhật, bổ sung bài dạy.`;
+        ? `🔒 XÁC NHẬN KHÓA SỔ ĐẦU BÀI TOÀN TRƯỜNG:\n\nĐồng chí có chắc chắn muốn KHÓA Sổ đầu bài TUẦN ${tuanSo}${chuoiNamHoc} của TẤT CẢ CÁC LỚP TRONG TOÀN TRƯỜNG?\n\n- Sau khi khóa, giáo viên toàn trường chỉ có quyền XEM, không thể sửa đổi hay lưu đè dữ liệu ở bất kỳ lớp nào.\n- Dữ liệu tuần này được niêm phong để BGH kiểm tra, đánh giá chuyên môn.`
+        : `🔓 XÁC NHẬN MỞ KHÓA SỔ TOÀN TRƯỜNG:\n\nĐồng chí có chắc chắn muốn MỞ KHÓA Sổ đầu bài TUẦN ${tuanSo}${chuoiNamHoc} cho toàn trường?\n\n- Toàn bộ các lớp trong Tuần ${tuanSo} sẽ được mở lại để giáo viên tiếp tục cập nhật, bổ sung bài dạy.`;
 
     if (!confirm(thongBao)) return;
 
@@ -2244,6 +2280,7 @@ async function thaoTacKhoaMoSoDauBai() {
         let payload = {
             thaoTac: 'khoaMoSoDauBai',
             tuan: tuanSo,
+            namHoc: namHocHienTai,
             khoa: hanhDongMoi,
             emailTruyCap: emailNguoiDung
         };
@@ -2262,6 +2299,8 @@ async function thaoTacKhoaMoSoDauBai() {
             duLieuKhoaSoToanCuc[tuanSo] = {
                 daKhoa: hanhDongMoi,
                 tuan: tuanSo,
+                namHoc: namHocHienTai,
+                maTuan: ketQua.maTuan || ((namHocHienTai ? namHocHienTai + '_' : '') + 'Tuần ' + tuanSo),
                 nguoiThucHien: emailNguoiDung,
                 thoiGian: 'Vừa xong'
             };
