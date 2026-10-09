@@ -1,4 +1,5 @@
 let thongSoHocVu = {};
+window.thongSoHocVu = thongSoHocVu;
 let quyenSuaChua = false; 
 let quyenChiTiet = { menu: [], nut: [], lop: [] }; 
 let duLieuTkbHienTai = []; 
@@ -248,6 +249,7 @@ async function khoiTaoGiaoDien() {
         if (cacheCauHinh && cacheTkb) {
             try {
                 thongSoHocVu = JSON.parse(cacheCauHinh);
+                window.thongSoHocVu = thongSoHocVu;
                 duLieuTkbHienTai = JSON.parse(cacheTkb);
                 
                 tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
@@ -285,6 +287,7 @@ async function khoiTaoGiaoDien() {
         if (thongSoMoi.trangThai === 'loi_he_thong') throw new Error(thongSoMoi.thongBao);
         
         thongSoHocVu = thongSoMoi;
+        window.thongSoHocVu = thongSoHocVu;
         localStorage.setItem(KEY_CH, JSON.stringify(thongSoHocVu)); 
         
         tuanDangXem = parseInt(thongSoHocVu.TUAN_HIEN_TAI) || 1;
