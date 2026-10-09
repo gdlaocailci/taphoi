@@ -4,14 +4,15 @@
 // 1. Tự động gắn Menu "9. Kiểm tra sổ đầu bài" vào vùng Hệ thống & Ma trận Phân quyền
 // 2. Bộ lọc: Năm học, Từ tuần đến tuần (vừa gõ vừa chọn kể cả khi đang có dữ liệu)
 // 3. Bảng dữ liệu: Tuần | Lớp (chỉ lớp chưa hoàn thiện) | Tiết học & Môn | Lý do chưa hoàn thành
-// 4. Lọc tìm nhanh thông minh: Lọc trên dữ liệu (Data-driven) và tự động tính lại Rowspan,
-//    khắc phục triệt để lỗi mất cột Tuần, mất cột Lớp, lệch bảng và sinh cột rác!
+// 4. Lọc tìm nhanh tối ưu: Chỉ lọc khi THOÁT CHUỘT (blur) hoặc bấm ENTER,
+//    loại bỏ hoàn toàn hiện tượng giật lag khi gõ từng ký tự!
 // =========================================================================
 
 let duLieuGopKiemTraSDB = [];
 let dangTaiDuLieuKTSDB = false;
 let daNapDuLieuKTSDB = false;
 let duLieuBaoCaoHienTai_KTSDB = {}; // Lưu trữ cấu trúc báo cáo gốc để lọc tìm kiếm nhanh
+let tuKhoaCu_KTSDB = '';            // Lưu vết từ khoá đã lọc để chống xử lý lặp lại
 
 // Cấu hình các bộ lọc hiện tại
 let boLocHienTai_KTSDB = {
@@ -147,12 +148,25 @@ function taoKhungGiaoDienKiemTraSDB() {
                 Kiểm tra
             </button>
 
-            <!-- Ô TÌM KIẾM NHANH TRÊN KẾT QUẢ (TỰ ĐỘNG LỌC VÀ TÍNH LẠI ROWSPAN) -->
-            <div class="flex-1 min-w-[200px] ml-auto">
-                <label class="text-[11px] text-gray-500 uppercase font-extrabold mb-1 block">Tìm nhanh kết quả</label>
+            <!-- Ô TÌM KIẾM NHANH TRÊN KẾT QUẢ (CHỈ LỌC KHI THOÁT CHUỘT HOẶC ENTER ĐỂ CHỐNG GIẬT LAG) -->
+            <div class="flex-1 min-w-[220px] ml-auto">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] text-gray-500 uppercase font-extrabold">Tìm nhanh kết quả</label>
+                    <span class="text-[10px] text-blue-600 font-semibold italic">(Click ra ngoài hoặc ấn Enter để lọc)</span>
+                </div>
                 <div class="relative">
-                    <input type="text" id="timNhanhKTSDB" oninput="locKetQuaNhanhKTSDB()" placeholder="Lọc theo Lớp, Môn hoặc Giáo viên (VD: 1a1)..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-xs font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white placeholder-slate-400">
+                    <input type="text" id="timNhanhKTSDB" 
+                           onchange="locKetQuaNhanhKTSDB()" 
+                           onblur="locKetQuaNhanhKTSDB()" 
+                           onkeydown="if(event.key === 'Enter') { this.blur(); }" 
+                           placeholder="Nhập lớp, môn, GV (VD: 1a1)..." 
+                           class="w-full pl-8 pr-7 py-1.5 border border-slate-300 rounded text-xs font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white placeholder-slate-400">
                     <svg class="w-4 h-4 absolute left-2.5 top-2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    
+                    <!-- NÚT XOÁ NHANH TÌM KIẾM -->
+                    <button id="btnXoaTimKTSDB" onclick="xoaTimNhanhKTSDB()" style="display: none;" class="absolute right-2 top-2 text-slate-400 hover:text-red-500 transition-colors" title="Xóa từ khóa tìm kiếm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -274,7 +288,7 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
                class="w-full px-2.5 py-1.5 pr-7 text-xs border border-blue-400 rounded shadow-sm outline-none focus:ring-2 focus:ring-blue-600 transition-colors bg-white font-extrabold text-blue-900 placeholder-slate-400 cursor-pointer text-center" 
                placeholder="${placeholder || 'Chọn...'}">
         <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            <svg class="w-4 h-4 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </div>
         <ul id="${idList}" class="absolute z-[999] w-full mt-1 max-h-56 overflow-y-auto overscroll-contain bg-white border border-blue-400 rounded-md shadow-2xl hidden divide-y divide-slate-100 left-0 text-left"></ul>
     `;
@@ -610,8 +624,11 @@ function taiLaiDuLieuKTSDB() {
     daNapDuLieuKTSDB = false;
     duLieuGopKiemTraSDB = [];
     duLieuBaoCaoHienTai_KTSDB = {};
+    tuKhoaCu_KTSDB = '';
     let inputTim = document.getElementById('timNhanhKTSDB');
     if (inputTim) inputTim.value = '';
+    let btnXoa = document.getElementById('btnXoaTimKTSDB');
+    if (btnXoa) btnXoa.style.display = 'none';
     thucThiKiemTraSoDauBai(true);
 }
 
@@ -715,9 +732,12 @@ async function thucThiKiemTraSoDauBai(epBuocTaiMoi = false) {
     });
 
     duLieuBaoCaoHienTai_KTSDB = baoCaoTheoTuanVaLop;
+    tuKhoaCu_KTSDB = '';
 
     let inputTim = document.getElementById('timNhanhKTSDB');
     if (inputTim) inputTim.value = '';
+    let btnXoa = document.getElementById('btnXoaTimKTSDB');
+    if (btnXoa) btnXoa.style.display = 'none';
 
     renderThongKeTongHop(tuTuan, denTuan, tapHopLopChuaXong.size, tongTietChuaXong, tongThieuTenBai, tongChuaNhanXet, tongChuaKy);
     renderBangKetQuaKTSDB(baoCaoTheoTuanVaLop, tuTuan, denTuan);
@@ -923,93 +943,108 @@ window.chuyenHuongXemSDB = function(tuan, lop) {
 };
 
 // =========================================================================
-// [KHẮC PHỤC KHOA HỌC]: TÌM KIẾM THEO DỮ LIỆU & TỰ ĐỘNG TÁI CẤU TRÚC ROWSPAN
+// [KHẮC PHỤC KHOA HỌC]: LỌC KHI THOÁT CHUỘT (BLUR / CHANGE) HOẶC BẤM ENTER
+// Khắc phục triệt để hiện tượng giật lag khi gõ từng ký tự!
 // =========================================================================
-let debounceTimerLocKTSDB = null;
-
 window.locKetQuaNhanhKTSDB = function() {
-    clearTimeout(debounceTimerLocKTSDB);
-    debounceTimerLocKTSDB = setTimeout(() => {
-        let input = document.getElementById('timNhanhKTSDB');
-        if (!input) return;
+    let input = document.getElementById('timNhanhKTSDB');
+    if (!input) return;
 
-        let tuKhoa = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    let tuKhoa = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-        if (!duLieuBaoCaoHienTai_KTSDB || Object.keys(duLieuBaoCaoHienTai_KTSDB).length === 0) return;
+    // 1. Chống chạy lặp lại nếu người dùng chỉ click vào ô rồi click ra ngoài mà không đổi từ khoá
+    if (tuKhoa === tuKhoaCu_KTSDB) return;
+    tuKhoaCu_KTSDB = tuKhoa;
 
-        // Nếu người dùng xóa trắng ô tìm kiếm -> Khôi phục lại toàn bộ dữ liệu gốc
-        if (tuKhoa === '') {
-            let tongTietGoc = 0;
-            let thieuTenGoc = 0, chuaNXGoc = 0, chuaKyGoc = 0;
-            let setLopGoc = new Set();
+    // 2. Bật/tắt nút xoá nhanh (dấu X)
+    let btnXoa = document.getElementById('btnXoaTimKTSDB');
+    if (btnXoa) {
+        btnXoa.style.display = (tuKhoa !== '') ? 'block' : 'none';
+    }
 
-            Object.keys(duLieuBaoCaoHienTai_KTSDB).forEach(tuan => {
-                Object.keys(duLieuBaoCaoHienTai_KTSDB[tuan]).forEach(lop => {
-                    let ds = duLieuBaoCaoHienTai_KTSDB[tuan][lop];
-                    tongTietGoc += ds.length;
-                    setLopGoc.add(`${tuan}_${lop}`);
-                    ds.forEach(t => {
-                        t.lyDo.forEach(ld => {
-                            if (ld.ma === 'TEN_BAI') thieuTenGoc++;
-                            if (ld.ma === 'NHAN_XET') chuaNXGoc++;
-                            if (ld.ma === 'CHU_KY') chuaKyGoc++;
-                        });
-                    });
-                });
-            });
+    if (!duLieuBaoCaoHienTai_KTSDB || Object.keys(duLieuBaoCaoHienTai_KTSDB).length === 0) return;
 
-            renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, setLopGoc.size, tongTietGoc, thieuTenGoc, chuaNXGoc, chuaKyGoc);
-            renderBangKetQuaKTSDB(duLieuBaoCaoHienTai_KTSDB, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
-            return;
-        }
-
-        // Lọc dữ liệu trên đối tượng báo cáo gốc và tái cấu trúc lại
-        let baoCaoDaLoc = {};
-        let tongTietKhop = 0;
-        let tapHopLopKhop = new Set();
-        let thieuTenKhop = 0, chuaNXKhop = 0, chuaKyKhop = 0;
+    // 3. Nếu người dùng xoá trắng ô tìm kiếm -> Khôi phục lại toàn bộ dữ liệu gốc
+    if (tuKhoa === '') {
+        let tongTietGoc = 0;
+        let thieuTenGoc = 0, chuaNXGoc = 0, chuaKyGoc = 0;
+        let setLopGoc = new Set();
 
         Object.keys(duLieuBaoCaoHienTai_KTSDB).forEach(tuan => {
-            let tuanObj = duLieuBaoCaoHienTai_KTSDB[tuan];
-            Object.keys(tuanObj).forEach(lop => {
-                let dsTiet = tuanObj[lop];
-                
-                // Điều kiện khớp: Tên Lớp, Tên Môn, Tên Giáo viên, Thứ, Tiết hoặc Lý do
-                let dsTietKhop = dsTiet.filter(tiet => {
-                    let textLop = (tiet.lop || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let textMon = (tiet.monHoc || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let textGv = (tiet.maGv || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let textThu = (tiet.thu || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let textLyDo = (tiet.lyDo || []).map(l => l.text).join(' ').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    let textToanBo = `${textLop} ${textMon} ${textGv} ${textThu} ${tiet.buoi} tiet ${tiet.tiet} ${textLyDo}`;
-
-                    return textToanBo.includes(tuKhoa) || textLop.includes(tuKhoa) || textGv.includes(tuKhoa) || textMon.includes(tuKhoa);
-                });
-
-                if (dsTietKhop.length > 0) {
-                    if (!baoCaoDaLoc[tuan]) baoCaoDaLoc[tuan] = {};
-                    baoCaoDaLoc[tuan][lop] = dsTietKhop;
-
-                    tongTietKhop += dsTietKhop.length;
-                    tapHopLopKhop.add(`${tuan}_${lop}`);
-                    
-                    dsTietKhop.forEach(t => {
-                        t.lyDo.forEach(ld => {
-                            if (ld.ma === 'TEN_BAI') thieuTenKhop++;
-                            if (ld.ma === 'NHAN_XET') chuaNXKhop++;
-                            if (ld.ma === 'CHU_KY') chuaKyKhop++;
-                        });
+            Object.keys(duLieuBaoCaoHienTai_KTSDB[tuan]).forEach(lop => {
+                let ds = duLieuBaoCaoHienTai_KTSDB[tuan][lop];
+                tongTietGoc += ds.length;
+                setLopGoc.add(`${tuan}_${lop}`);
+                ds.forEach(t => {
+                    t.lyDo.forEach(ld => {
+                        if (ld.ma === 'TEN_BAI') thieuTenGoc++;
+                        if (ld.ma === 'NHAN_XET') chuaNXGoc++;
+                        if (ld.ma === 'CHU_KY') chuaKyGoc++;
                     });
-                }
+                });
             });
         });
 
-        // 1. Cập nhật lại số liệu thống kê phản ánh đúng kết quả tìm kiếm
-        renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, tapHopLopKhop.size, tongTietKhop, thieuTenKhop, chuaNXKhop, chuaKyKhop);
+        renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, setLopGoc.size, tongTietGoc, thieuTenGoc, chuaNXGoc, chuaKyGoc);
+        renderBangKetQuaKTSDB(duLieuBaoCaoHienTai_KTSDB, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
+        return;
+    }
 
-        // 2. Kết xuất lại bảng HTML: Rowspan được tính lại chuẩn xác theo đúng số dòng tìm được
-        renderBangKetQuaKTSDB(baoCaoDaLoc, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
-    }, 150);
+    // 4. Lọc dữ liệu trên đối tượng báo cáo gốc và tái cấu trúc lại
+    let baoCaoDaLoc = {};
+    let tongTietKhop = 0;
+    let tapHopLopKhop = new Set();
+    let thieuTenKhop = 0, chuaNXKhop = 0, chuaKyKhop = 0;
+
+    Object.keys(duLieuBaoCaoHienTai_KTSDB).forEach(tuan => {
+        let tuanObj = duLieuBaoCaoHienTai_KTSDB[tuan];
+        Object.keys(tuanObj).forEach(lop => {
+            let dsTiet = tuanObj[lop];
+            
+            // Điều kiện khớp: Tên Lớp, Tên Môn, Tên Giáo viên, Thứ, Tiết hoặc Lý do
+            let dsTietKhop = dsTiet.filter(tiet => {
+                let textLop = (tiet.lop || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let textMon = (tiet.monHoc || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let textGv = (tiet.maGv || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let textThu = (tiet.thu || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let textLyDo = (tiet.lyDo || []).map(l => l.text).join(' ').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let textToanBo = `${textLop} ${textMon} ${textGv} ${textThu} ${tiet.buoi} tiet ${tiet.tiet} ${textLyDo}`;
+
+                return textToanBo.includes(tuKhoa) || textLop.includes(tuKhoa) || textGv.includes(tuKhoa) || textMon.includes(tuKhoa);
+            });
+
+            if (dsTietKhop.length > 0) {
+                if (!baoCaoDaLoc[tuan]) baoCaoDaLoc[tuan] = {};
+                baoCaoDaLoc[tuan][lop] = dsTietKhop;
+
+                tongTietKhop += dsTietKhop.length;
+                tapHopLopKhop.add(`${tuan}_${lop}`);
+                
+                dsTietKhop.forEach(t => {
+                    t.lyDo.forEach(ld => {
+                        if (ld.ma === 'TEN_BAI') thieuTenKhop++;
+                        if (ld.ma === 'NHAN_XET') chuaNXKhop++;
+                        if (ld.ma === 'CHU_KY') chuaKyKhop++;
+                    });
+                });
+            }
+        });
+    });
+
+    // 5. Cập nhật lại số liệu thống kê phản ánh đúng kết quả tìm kiếm
+    renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, tapHopLopKhop.size, tongTietKhop, thieuTenKhop, chuaNXKhop, chuaKyKhop);
+
+    // 6. Kết xuất lại bảng HTML: Rowspan được tính lại chuẩn xác theo đúng số dòng tìm được
+    renderBangKetQuaKTSDB(baoCaoDaLoc, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
+};
+
+// Hàm xoá nhanh từ khoá tìm kiếm và hoàn tác bảng ngay lập tức
+window.xoaTimNhanhKTSDB = function() {
+    let input = document.getElementById('timNhanhKTSDB');
+    if (input) {
+        input.value = '';
+        locKetQuaNhanhKTSDB();
+    }
 };
 
 // =========================================================================
