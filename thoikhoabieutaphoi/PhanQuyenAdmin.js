@@ -14,7 +14,8 @@ const DANH_SACH_MENU_HE_THONG = [
     { id: 'menuPhanCong', ten: '5. Phân công' },
     { id: 'menuDanhMucSGK', ten: '6. DM SGK' },
     { id: 'menuPhanPhoiChuongTrinh', ten: '7. PP Chương trình' },
-    { id: 'menuPhanQuyen', ten: '8. Phân quyền' }
+    { id: 'menuPhanQuyen', ten: '8. Phân quyền' },
+    { id: 'menuKiemTraSoDauBai', ten: '9. Kiểm tra SĐB' }
 ];
 
 const DANH_SACH_NUT_CHUC_NANG = [
