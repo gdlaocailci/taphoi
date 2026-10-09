@@ -4,12 +4,14 @@
 // 1. Tự động gắn Menu "9. Kiểm tra sổ đầu bài" vào vùng Hệ thống & Ma trận Phân quyền
 // 2. Bộ lọc: Năm học, Từ tuần đến tuần (vừa gõ vừa chọn kể cả khi đang có dữ liệu)
 // 3. Bảng dữ liệu: Tuần | Lớp (chỉ lớp chưa hoàn thiện) | Tiết học & Môn | Lý do chưa hoàn thành
-// 4. Tuyệt đối độc lập, an toàn, không xung đột hay làm hỏng bất kỳ chức năng nào có sẵn
+// 4. Lọc tìm nhanh thông minh: Lọc trên dữ liệu (Data-driven) và tự động tính lại Rowspan,
+//    khắc phục triệt để lỗi mất cột Tuần, mất cột Lớp, lệch bảng và sinh cột rác!
 // =========================================================================
 
 let duLieuGopKiemTraSDB = [];
 let dangTaiDuLieuKTSDB = false;
 let daNapDuLieuKTSDB = false;
+let duLieuBaoCaoHienTai_KTSDB = {}; // Lưu trữ cấu trúc báo cáo gốc để lọc tìm kiếm nhanh
 
 // Cấu hình các bộ lọc hiện tại
 let boLocHienTai_KTSDB = {
@@ -26,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     khoiTaoModuleKiemTraSoDauBai();
 });
 
-// Chạy thêm dự phòng nếu script được nạp sau khi DOM đã sẵn sàng
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
     khoiTaoModuleKiemTraSoDauBai();
 }
@@ -37,7 +38,6 @@ function khoiTaoModuleKiemTraSoDauBai() {
     taoKhungGiaoDienKiemTraSDB();
     ganKetHeThongKiemSoatKTSDB();
 
-    // Lắng nghe cập nhật định kỳ mỗi giây để đảm bảo menu luôn xuất hiện đúng quyền sau khi đăng nhập
     setInterval(() => {
         capNhatHienThiMenuKiemTraSDB();
     }, 1000);
@@ -62,7 +62,7 @@ function taoMenuKiemTraSoDauBai() {
         let menuHTML = document.createElement('a');
         menuHTML.id = 'menuKiemTraSoDauBai';
         menuHTML.onclick = moTabKiemTraSoDauBai;
-        menuHTML.style.display = 'none'; // Mặc định ẩn, sẽ được hàm phân quyền mở khi đủ điều kiện
+        menuHTML.style.display = 'none';
         menuHTML.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent hover:bg-white/10 transition-all duration-150 cursor-pointer group';
         menuHTML.innerHTML = `
             <svg class="w-5 h-5 flex-none opacity-70 group-hover:opacity-100 transition-opacity text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -147,11 +147,11 @@ function taoKhungGiaoDienKiemTraSDB() {
                 Kiểm tra
             </button>
 
-            <!-- Ô TÌM KIẾM NHANH TRÊN KẾT QUẢ -->
+            <!-- Ô TÌM KIẾM NHANH TRÊN KẾT QUẢ (TỰ ĐỘNG LỌC VÀ TÍNH LẠI ROWSPAN) -->
             <div class="flex-1 min-w-[200px] ml-auto">
                 <label class="text-[11px] text-gray-500 uppercase font-extrabold mb-1 block">Tìm nhanh kết quả</label>
                 <div class="relative">
-                    <input type="text" id="timNhanhKTSDB" oninput="locKetQuaNhanhKTSDB()" placeholder="Lọc theo Lớp, Môn hoặc Giáo viên..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-xs font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white placeholder-slate-400">
+                    <input type="text" id="timNhanhKTSDB" oninput="locKetQuaNhanhKTSDB()" placeholder="Lọc theo Lớp, Môn hoặc Giáo viên (VD: 1a1)..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-xs font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white placeholder-slate-400">
                     <svg class="w-4 h-4 absolute left-2.5 top-2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
             </div>
@@ -166,7 +166,7 @@ function taoKhungGiaoDienKiemTraSDB() {
                 <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm border-b-2 border-slate-400" style="font-family:'Times New Roman',Times,serif;">
                     <tr>
                         <th class="py-2.5 px-2 border border-slate-400 w-20 text-center font-bold">Tuần</th>
-                        <th class="py-2.5 px-3 border border-slate-400 w-24 text-center font-bold">Lớp</th>
+                        <th class="py-2.5 px-3 border border-slate-400 w-28 text-center font-bold">Lớp</th>
                         <th class="py-2.5 px-3 border border-slate-400 w-44 text-center font-bold">Tiết học (Thời điểm)</th>
                         <th class="py-2.5 px-3 border border-slate-400 w-60 text-center font-bold">Môn & Giáo viên phụ trách</th>
                         <th class="py-2.5 px-4 border border-slate-400 text-left font-bold min-w-[320px]">Lý do chưa hoàn thành sổ</th>
@@ -240,18 +240,15 @@ window.moTabKiemTraSoDauBai = function() {
         if (khung) khung.classList.remove('hidden');
     }
 
-    // Ẩn thanh công cụ TKB nếu đang mở
     let thanhTKB = document.getElementById('thanhCongCuTKB');
     if (thanhTKB) {
         thanhTKB.classList.remove('flex');
         thanhTKB.classList.add('hidden');
     }
 
-    // Tự động nạp bộ lọc và dữ liệu lần đầu
     khoiTaoBoLocKiemTraSDB();
 };
 
-// Lắng nghe sự kiện chuyển menu để tự động ẩn khung khi bấm tab khác
 document.addEventListener('click', function(e) {
     let menuClicked = e.target.closest('nav a');
     if (menuClicked && menuClicked.id !== 'menuKiemTraSoDauBai') {
@@ -285,7 +282,6 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
     const inputEl = document.getElementById(idInput);
     const listEl = document.getElementById(idList);
 
-    // Gán giá trị mặc định ban đầu
     let itemMacDinh = danhSach.find(d => String(d.value) === String(giaTriMacDinh)) || danhSach[0];
     if (itemMacDinh) {
         inputEl.value = itemMacDinh.text;
@@ -326,7 +322,6 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
         }
     }
 
-    // TÍNH NĂNG VÀNG: Bấm vào là bôi đen và mở danh sách ngay, gõ đè trực tiếp mà không cần xóa tay
     inputEl.addEventListener('focus', () => {
         inputEl.dataset.oldValue = inputEl.value;
         setTimeout(() => { inputEl.select(); }, 30);
@@ -355,7 +350,6 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
     document.addEventListener('click', (e) => {
         if (!container.contains(e.target)) {
             listEl.classList.add('hidden');
-            // Nếu người dùng xóa trắng rồi bấm ra ngoài, phục hồi giá trị cũ
             if (inputEl.value.trim() === '') {
                 let itemKhoiPhuc = danhSach.find(d => String(d.value) === String(inputEl.dataset.val));
                 if (itemKhoiPhuc) inputEl.value = itemKhoiPhuc.text;
@@ -364,13 +358,11 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
     });
 }
 
-// Khởi tạo các giá trị danh mục cho 3 ô lọc
 function khoiTaoBoLocKiemTraSDB() {
     let namHocHienTai = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : '2026-2027';
     let tuanHienTai = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(thongSoHocVu.TUAN_HIEN_TAI, 10) : 1;
     if (isNaN(tuanHienTai) || tuanHienTai < 1) tuanHienTai = 1;
 
-    // 1. Danh sách Năm học
     let dsNam = [];
     let namBatDau = parseInt(namHocHienTai.split('-')[0], 10) || 2026;
     for (let y = namBatDau - 2; y <= namBatDau + 2; y++) {
@@ -391,7 +383,6 @@ function khoiTaoBoLocKiemTraSDB() {
         }
     });
 
-    // 2. Danh sách Tuần (1 đến 35 tuần phổ thông hoặc 52 tuần)
     let dsTuan = [];
     for (let t = 1; t <= 35; t++) {
         dsTuan.push({ value: t, text: `Tuần ${t}` });
@@ -410,7 +401,6 @@ function khoiTaoBoLocKiemTraSDB() {
         onSelect: (val) => {
             boLocHienTai_KTSDB.tuTuan = parseInt(val, 10);
             if (boLocHienTai_KTSDB.tuTuan > boLocHienTai_KTSDB.denTuan) {
-                // Tự động điều chỉnh Đến tuần nếu Từ tuần lớn hơn
                 let inputDen = document.getElementById('input_locDenTuan_KTSDB');
                 if (inputDen) {
                     inputDen.value = `Tuần ${val}`;
@@ -448,12 +438,10 @@ function khoiTaoBoLocKiemTraSDB() {
 async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
     if (dangTaiDuLieuKTSDB) return duLieuGopKiemTraSDB;
 
-    // Nếu đã có dữ liệu và không yêu cầu tải mới thì sử dụng lại
     if (!epBuocTaiMoi && daNapDuLieuKTSDB && duLieuGopKiemTraSDB.length > 0) {
         return duLieuGopKiemTraSDB;
     }
 
-    // Nếu module SoDauBai.js đã nạp sẵn mảng duLieuTKBGopDaMap và hợp lệ
     if (!epBuocTaiMoi && typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap) && duLieuTKBGopDaMap.length > 0) {
         duLieuGopKiemTraSDB = duLieuTKBGopDaMap;
         daNapDuLieuKTSDB = true;
@@ -484,7 +472,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
 
         if (ketQua.trangThai === 'loi_he_thong') throw new Error(ketQua.thongBao);
 
-        // Hợp nhất dữ liệu TKB (DATA_TKB + TKB_HIEN_TAI) và Sổ đầu bài (SO_DAU_BAI)
         let mapHopNhat = {};
 
         const chuanHoaThu = (thuStr) => {
@@ -493,7 +480,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
             return raw.charAt(0).toUpperCase() + raw.slice(1);
         };
 
-        // 1. Đọc Sổ đầu bài thực tế
         if (ketQua.SO_DAU_BAI && Array.isArray(ketQua.SO_DAU_BAI)) {
             let namHocHienTai = ketQua.NAM_HOC || (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) || '';
             
@@ -506,7 +492,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
                 let buoi = String(dong['F'] || '').trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
                 let tiet = String(dong['G'] || '').trim();
 
-                // Lọc theo năm học nếu có tiền tố mã lưu trữ
                 let namCuaDong = namHocHienTai;
                 if (/^\d{4}-\d{4}_/.test(maLuuTru)) {
                     namCuaDong = maLuuTru.split('_')[0];
@@ -535,7 +520,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
             });
         }
 
-        // 2. Đọc Thời khoá biểu để xác định toàn bộ các tiết CÓ MÔN HỌC cần phải ghi sổ
         let mapTkb = {};
         let tuanHeThong = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(thongSoHocVu.TUAN_HIEN_TAI, 10) : 1;
         let namHocChuan = ketQua.NAM_HOC || (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) || '';
@@ -573,7 +557,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
             ketQua.TKB_HIEN_TAI.forEach(napTkbVaoMap);
         }
 
-        // 3. Kết hợp TKB với SĐB: Tiết nào có trong TKB mà chưa có trong SĐB thì coi như chưa vào sổ
         Object.keys(mapTkb).forEach(khoa => {
             let itemTkb = mapTkb[khoa];
             if (!mapHopNhat[khoa]) {
@@ -596,7 +579,6 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
                     'DaLuu': false
                 };
             } else {
-                // Nếu trong SĐB chưa có Mã GV, bù trừ từ TKB sang
                 if (!mapHopNhat[khoa]['Mã GV'] || mapHopNhat[khoa]['Mã GV'].trim() === '') {
                     mapHopNhat[khoa]['Mã GV'] = itemTkb['Mã GV'];
                 }
@@ -627,6 +609,9 @@ async function taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi = false) {
 function taiLaiDuLieuKTSDB() {
     daNapDuLieuKTSDB = false;
     duLieuGopKiemTraSDB = [];
+    duLieuBaoCaoHienTai_KTSDB = {};
+    let inputTim = document.getElementById('timNhanhKTSDB');
+    if (inputTim) inputTim.value = '';
     thucThiKiemTraSoDauBai(true);
 }
 
@@ -658,22 +643,16 @@ async function thucThiKiemTraSoDauBai(epBuocTaiMoi = false) {
     boLocHienTai_KTSDB.denTuan = denTuan;
     boLocHienTai_KTSDB.namHoc = namHoc;
 
-    // Tải dữ liệu
     let danhSachTiet = await taiDuLieuTongHopKiemTraSDB(epBuocTaiMoi);
     if (!danhSachTiet || danhSachTiet.length === 0) return;
 
-    // Lọc theo Năm học và khoảng Tuần
     let danhSachKiemTra = danhSachTiet.filter(dong => {
         let t = parseInt(String(dong['Tuần']).replace(/\D/g, ''), 10) || 0;
         let mon = String(dong['Môn Học'] || '').trim();
         
-        // Chỉ kiểm tra các tiết có lịch phân môn thực tế
         if (mon === '' || mon === '--' || mon === '---') return false;
-
-        // So khớp tuần
         if (t < tuTuan || t > denTuan) return false;
 
-        // So khớp năm học nếu có thông tin
         if (namHoc && dong.namHoc && dong.namHoc !== '' && dong.namHoc !== namHoc) {
             return false;
         }
@@ -681,14 +660,7 @@ async function thucThiKiemTraSoDauBai(epBuocTaiMoi = false) {
         return true;
     });
 
-    // =====================================================================
-    // QUY TRÌNH ĐÁNH GIÁ TIẾT HỌC HOÀN THÀNH HAY CHƯA
-    // Tiêu chí chưa hoàn thành:
-    // 1. Thiếu tên bài học (tenBai trống hoặc chỉ có -- / ...)
-    // 2. Chưa nhận xét GV (nhanXet trống hoặc chỉ có -- / ...)
-    // 3. Chưa ký tên (chuKy trống hoặc chỉ có -- / ...)
-    // =====================================================================
-    let baoCaoTheoTuanVaLop = {}; // Cấu trúc: { tuan: { lop: [dsTietLoi] } }
+    let baoCaoTheoTuanVaLop = {};
     let tongTietChuaXong = 0;
     let tongThieuTenBai = 0;
     let tongChuaNhanXet = 0;
@@ -713,7 +685,6 @@ async function thucThiKiemTraSoDauBai(epBuocTaiMoi = false) {
         let thieuNhanXet = (nhanXet === '' || nhanXet === '--' || nhanXet === '...');
         let thieuChuKy = (chuKy === '' || chuKy === '--' || chuKy === '...');
 
-        // Nếu phát sinh bất kỳ lỗi nào trong 3 tiêu chuẩn trên
         if (thieuTenBai || thieuNhanXet || thieuChuKy) {
             let lyDoList = [];
             if (thieuTenBai) { lyDoList.push({ ma: 'TEN_BAI', text: 'Thiếu tên bài học', mau: 'bg-purple-100 text-purple-800 border-purple-300' }); tongThieuTenBai++; }
@@ -743,15 +714,17 @@ async function thucThiKiemTraSoDauBai(epBuocTaiMoi = false) {
         }
     });
 
-    // Cập nhật thẻ thống kê tổng hợp ở đầu trang
-    renderThongKeTongHop(tuTuan, denTuan, tapHopLopChuaXong.size, tongTietChuaXong, tongThieuTenBai, tongChuaNhanXet, tongChuaKy);
+    duLieuBaoCaoHienTai_KTSDB = baoCaoTheoTuanVaLop;
 
-    // Xuất bảng kết quả
+    let inputTim = document.getElementById('timNhanhKTSDB');
+    if (inputTim) inputTim.value = '';
+
+    renderThongKeTongHop(tuTuan, denTuan, tapHopLopChuaXong.size, tongTietChuaXong, tongThieuTenBai, tongChuaNhanXet, tongChuaKy);
     renderBangKetQuaKTSDB(baoCaoTheoTuanVaLop, tuTuan, denTuan);
 }
 
 // =========================================================================
-// KHỐI 6: XUẤT BẢNG KẾT QUẢ VÀ HIỂN THỊ THỐNG KÊ
+// KHỐI 6: XUẤT BẢNG KẾT QUẢ VÀ HIỂN THỊ THỐNG KÊ (CHUẨN HÓA ROWSPAN)
 // =========================================================================
 function renderThongKeTongHop(tuTuan, denTuan, soLopChuaXong, tongTiet, thieuTen, chuaNX, chuaKy) {
     let divTK = document.getElementById('theThongKeTongHop_KTSDB');
@@ -802,8 +775,8 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
     if (danhSachTuanCoLoi.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-12 text-emerald-700 font-bold text-base">
-                    🎉 Không có lớp nào vi phạm! Toàn bộ sổ đầu bài từ Tuần ${tuTuan} đến Tuần ${denTuan} đã hoàn thành đầy đủ.
+                <td colspan="6" class="text-center py-12 text-slate-500 font-bold text-base">
+                    🔍 Không tìm thấy kết quả phù hợp với từ khoá tìm kiếm.
                 </td>
             </tr>
         `;
@@ -816,7 +789,6 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
     danhSachTuanCoLoi.forEach(tuan => {
         let cacLopTrongTuan = Object.keys(baoCao[tuan]).sort();
         
-        // Tính tổng số dòng hiển thị của cả Tuần để thiết lập rowspan
         let tongDongCuaTuan = 0;
         cacLopTrongTuan.forEach(lop => {
             tongDongCuaTuan += baoCao[tuan][lop].length;
@@ -826,7 +798,6 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
 
         cacLopTrongTuan.forEach(lop => {
             let dsTietLoi = baoCao[tuan][lop];
-            // Sắp xếp các tiết lỗi theo thứ tự thời gian học
             dsTietLoi.sort((a, b) => {
                 let thA = thuTuThu[a.thu] || 99;
                 let thB = thuTuThu[b.thu] || 99;
@@ -846,23 +817,27 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
 
                 bufferHTML.push(`<tr class="dong-du-lieu-ktsdb bg-white hover:bg-slate-50 transition-colors ${vienDayLop}" data-lop="${lop}" data-mon="${item.monHoc}" data-gv="${item.maGv}">`);
 
-                // 1. CỘT TUẦN (Rowspan gộp dòng theo Tuần)
+                // 1. CỘT TUẦN (Rowspan gộp dòng theo Tuần - Căn đỉnh top để luôn nhìn thấy rõ)
                 if (!daInCotTuan) {
                     bufferHTML.push(`
-                        <td rowspan="${tongDongCuaTuan}" class="text-center align-middle font-extrabold text-blue-900 bg-slate-50 border-r-2 border-b-2 border-slate-500 p-2">
-                            <span class="text-base">Tuần ${tuan}</span>
+                        <td rowspan="${tongDongCuaTuan}" class="text-center align-top font-extrabold text-blue-900 bg-slate-100 border-r-2 border-b-2 border-slate-500 p-2.5">
+                            <div class="sticky top-12">
+                                <span class="text-sm font-black text-blue-900 uppercase block">Tuần ${tuan}</span>
+                            </div>
                         </td>
                     `);
                     daInCotTuan = true;
                 }
 
-                // 2. CỘT LỚP (Rowspan gộp dòng theo Lớp)
+                // 2. CỘT LỚP (Rowspan gộp dòng theo Lớp - Căn đỉnh top để luôn nhìn thấy rõ)
                 if (!daInCotLop) {
                     bufferHTML.push(`
-                        <td rowspan="${soDongCuaLop}" class="text-center align-middle font-black text-slate-800 bg-white border-r border-b-2 border-slate-500 p-2">
-                            <div class="text-base text-purple-900">${lop}</div>
-                            <div class="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1 inline-block">
-                                Thiếu ${soDongCuaLop} tiết
+                        <td rowspan="${soDongCuaLop}" class="text-center align-top font-black text-slate-800 bg-purple-50/30 border-r border-b-2 border-slate-500 p-2.5">
+                            <div class="sticky top-12">
+                                <div class="text-base text-purple-900 font-black">${lop}</div>
+                                <div class="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1 inline-block whitespace-nowrap shadow-2xs">
+                                    Thiếu ${soDongCuaLop} tiết
+                                </div>
                             </div>
                         </td>
                     `);
@@ -870,19 +845,20 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
                 }
 
                 // 3. CỘT TIẾT HỌC / THỜI ĐIỂM
-                let textNgay = item.ngay ? `<span class="text-[11px] font-semibold text-slate-500">(${item.ngay})</span>` : '';
+                let textNgay = item.ngay ? `<span class="text-[11px] font-semibold text-slate-500 block">(${item.ngay})</span>` : '';
                 bufferHTML.push(`
                     <td class="text-center align-middle border-r border-gray-300 p-2">
-                        <div class="font-bold text-slate-800">${item.thu}, ${item.buoi}</div>
-                        <div class="font-extrabold text-blue-700 text-sm">Tiết ${item.tiet} ${textNgay}</div>
+                        <div class="font-bold text-slate-800 text-sm">${item.thu}, ${item.buoi}</div>
+                        <div class="font-extrabold text-blue-700 text-sm mt-0.5">Tiết ${item.tiet}</div>
+                        ${textNgay}
                     </td>
                 `);
 
                 // 4. CỘT MÔN & GIÁO VIÊN
-                let textGV = item.maGv ? `<div class="text-xs font-bold text-slate-700 mt-0.5">GV: <span class="text-indigo-900">${item.maGv}</span></div>` : '<div class="text-xs text-red-500 italic">Chưa xếp GV trong TKB</div>';
+                let textGV = item.maGv ? `<div class="text-xs font-bold text-slate-700 mt-0.5">GV: <span class="text-indigo-900 font-extrabold">${item.maGv}</span></div>` : '<div class="text-xs text-red-500 italic">Chưa xếp GV trong TKB</div>';
                 bufferHTML.push(`
                     <td class="text-center align-middle border-r border-gray-300 p-2">
-                        <div class="font-extrabold text-slate-900 text-sm">${item.monHoc}</div>
+                        <div class="font-black text-slate-900 text-sm">${item.monHoc}</div>
                         ${textGV}
                     </td>
                 `);
@@ -946,26 +922,94 @@ window.chuyenHuongXemSDB = function(tuan, lop) {
     }, 150);
 };
 
-// Tìm kiếm nhanh kết quả trên bảng kiểm tra
+// =========================================================================
+// [KHẮC PHỤC KHOA HỌC]: TÌM KIẾM THEO DỮ LIỆU & TỰ ĐỘNG TÁI CẤU TRÚC ROWSPAN
+// =========================================================================
+let debounceTimerLocKTSDB = null;
+
 window.locKetQuaNhanhKTSDB = function() {
-    let input = document.getElementById('timNhanhKTSDB');
-    if (!input) return;
+    clearTimeout(debounceTimerLocKTSDB);
+    debounceTimerLocKTSDB = setTimeout(() => {
+        let input = document.getElementById('timNhanhKTSDB');
+        if (!input) return;
 
-    let tuKhoa = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    let cacDong = document.querySelectorAll('#bangKiemTraSDB tbody tr.dong-du-lieu-ktsdb');
+        let tuKhoa = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    cacDong.forEach(dong => {
-        let lop = (dong.getAttribute('data-lop') || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let mon = (dong.getAttribute('data-mon') || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let gv = (dong.getAttribute('data-gv') || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let textToanDong = dong.innerText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (!duLieuBaoCaoHienTai_KTSDB || Object.keys(duLieuBaoCaoHienTai_KTSDB).length === 0) return;
 
-        if (tuKhoa === '' || lop.includes(tuKhoa) || mon.includes(tuKhoa) || gv.includes(tuKhoa) || textToanDong.includes(tuKhoa)) {
-            dong.style.display = '';
-        } else {
-            dong.style.display = 'none';
+        // Nếu người dùng xóa trắng ô tìm kiếm -> Khôi phục lại toàn bộ dữ liệu gốc
+        if (tuKhoa === '') {
+            let tongTietGoc = 0;
+            let thieuTenGoc = 0, chuaNXGoc = 0, chuaKyGoc = 0;
+            let setLopGoc = new Set();
+
+            Object.keys(duLieuBaoCaoHienTai_KTSDB).forEach(tuan => {
+                Object.keys(duLieuBaoCaoHienTai_KTSDB[tuan]).forEach(lop => {
+                    let ds = duLieuBaoCaoHienTai_KTSDB[tuan][lop];
+                    tongTietGoc += ds.length;
+                    setLopGoc.add(`${tuan}_${lop}`);
+                    ds.forEach(t => {
+                        t.lyDo.forEach(ld => {
+                            if (ld.ma === 'TEN_BAI') thieuTenGoc++;
+                            if (ld.ma === 'NHAN_XET') chuaNXGoc++;
+                            if (ld.ma === 'CHU_KY') chuaKyGoc++;
+                        });
+                    });
+                });
+            });
+
+            renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, setLopGoc.size, tongTietGoc, thieuTenGoc, chuaNXGoc, chuaKyGoc);
+            renderBangKetQuaKTSDB(duLieuBaoCaoHienTai_KTSDB, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
+            return;
         }
-    });
+
+        // Lọc dữ liệu trên đối tượng báo cáo gốc và tái cấu trúc lại
+        let baoCaoDaLoc = {};
+        let tongTietKhop = 0;
+        let tapHopLopKhop = new Set();
+        let thieuTenKhop = 0, chuaNXKhop = 0, chuaKyKhop = 0;
+
+        Object.keys(duLieuBaoCaoHienTai_KTSDB).forEach(tuan => {
+            let tuanObj = duLieuBaoCaoHienTai_KTSDB[tuan];
+            Object.keys(tuanObj).forEach(lop => {
+                let dsTiet = tuanObj[lop];
+                
+                // Điều kiện khớp: Tên Lớp, Tên Môn, Tên Giáo viên, Thứ, Tiết hoặc Lý do
+                let dsTietKhop = dsTiet.filter(tiet => {
+                    let textLop = (tiet.lop || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let textMon = (tiet.monHoc || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let textGv = (tiet.maGv || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let textThu = (tiet.thu || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let textLyDo = (tiet.lyDo || []).map(l => l.text).join(' ').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let textToanBo = `${textLop} ${textMon} ${textGv} ${textThu} ${tiet.buoi} tiet ${tiet.tiet} ${textLyDo}`;
+
+                    return textToanBo.includes(tuKhoa) || textLop.includes(tuKhoa) || textGv.includes(tuKhoa) || textMon.includes(tuKhoa);
+                });
+
+                if (dsTietKhop.length > 0) {
+                    if (!baoCaoDaLoc[tuan]) baoCaoDaLoc[tuan] = {};
+                    baoCaoDaLoc[tuan][lop] = dsTietKhop;
+
+                    tongTietKhop += dsTietKhop.length;
+                    tapHopLopKhop.add(`${tuan}_${lop}`);
+                    
+                    dsTietKhop.forEach(t => {
+                        t.lyDo.forEach(ld => {
+                            if (ld.ma === 'TEN_BAI') thieuTenKhop++;
+                            if (ld.ma === 'NHAN_XET') chuaNXKhop++;
+                            if (ld.ma === 'CHU_KY') chuaKyKhop++;
+                        });
+                    });
+                }
+            });
+        });
+
+        // 1. Cập nhật lại số liệu thống kê phản ánh đúng kết quả tìm kiếm
+        renderThongKeTongHop(boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan, tapHopLopKhop.size, tongTietKhop, thieuTenKhop, chuaNXKhop, chuaKyKhop);
+
+        // 2. Kết xuất lại bảng HTML: Rowspan được tính lại chuẩn xác theo đúng số dòng tìm được
+        renderBangKetQuaKTSDB(baoCaoDaLoc, boLocHienTai_KTSDB.tuTuan, boLocHienTai_KTSDB.denTuan);
+    }, 150);
 };
 
 // =========================================================================
@@ -1000,12 +1044,13 @@ window.xuatExcelKiemTraSoDauBai = async function() {
         cacDong.forEach(dong => {
             if (dong.style.display === 'none') return;
 
-            let tuan = dong.querySelector('td:nth-child(1)') ? dong.querySelector('td:nth-child(1)').innerText.trim() : '';
             let lop = dong.getAttribute('data-lop') || '';
             let mon = dong.getAttribute('data-mon') || '';
             let gv = dong.getAttribute('data-gv') || '';
             
-            // Đọc ô thời điểm và lý do
+            let tuanCell = dong.querySelector('td:nth-child(1)');
+            let tuan = tuanCell ? tuanCell.innerText.trim() : '';
+
             let cacCell = dong.querySelectorAll('td');
             let cellThoiDiem = cacCell[cacCell.length - 4];
             let thoiDiemText = cellThoiDiem ? cellThoiDiem.innerText.replace(/\n/g, ' - ').trim() : '';
@@ -1019,15 +1064,14 @@ window.xuatExcelKiemTraSoDauBai = async function() {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(rowsArr);
 
-        // Định dạng độ rộng cột
         ws['!cols'] = [
-            { wch: 6 },  // STT
-            { wch: 12 }, // Tuần
-            { wch: 10 }, // Lớp
-            { wch: 25 }, // Thời điểm
-            { wch: 20 }, // Môn
-            { wch: 22 }, // Giáo viên
-            { wch: 45 }  // Lý do
+            { wch: 6 },
+            { wch: 12 },
+            { wch: 10 },
+            { wch: 25 },
+            { wch: 20 },
+            { wch: 22 },
+            { wch: 45 }
         ];
 
         XLSX.utils.book_append_sheet(wb, ws, "Chua_Hoan_Thanh_SDB");
@@ -1073,7 +1117,6 @@ window.inBaoCaoKiemTraSoDauBai = function() {
             ${bang.outerHTML}
             <script>
                 window.onload = function() {
-                    // Xóa cột tác vụ cuối cùng khi in
                     document.querySelectorAll('th:last-child, td:last-child').forEach(el => el.remove());
                     window.print();
                 };
