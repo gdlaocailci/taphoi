@@ -9,26 +9,6 @@ let ngayDauTuanUI = '';
 // =========================================================================
 // HÀM BỔ SUNG: BỘ CÁCH LY DỮ LIỆU ĐA TÊN MIỀN (MULTI-TENANT ISOLATION)
 // =========================================================================
-
-// =========================================================================
-// HÀM TIỆN ÍCH: LẤY DANH SÁCH QUYỀN CÔNG KHAI (TOÀN TRƯỜNG / KHÔNG CẦN LOGIN)
-// =========================================================================
-window.layQuyenCongKhaiHienTai = function() {
-    if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.QUYEN_CONG_KHAI) {
-        return thongSoHocVu.QUYEN_CONG_KHAI;
-    }
-    if (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
-        let mt = thongSoHocVu.MA_TRAN_PHAN_QUYEN;
-        for (let k in mt) {
-            let kLC = k.trim().toLowerCase();
-            if (kLC === '*' || kLC.includes('công khai') || kLC.includes('congkhai')) {
-                return mt[k];
-            }
-        }
-    }
-    return { menu: [], nut: [], lop: [] };
-};
-
 window.layKhoaCachLy = function(keyBase) {
     let prefix = 'MAC_DINH';
     if (typeof CAU_HINH_FRONTEND !== 'undefined') {
@@ -117,17 +97,16 @@ async function fetchVoiCoCheThuLai(url, tuyChon = {}, soLanThu = 3, thoiGianCho 
 // KHỐI QUẢN LÝ GIAO DIỆN & PHÂN QUYỀN TRUNG TÂM
 // =========================================================================
 function kiemSoatGiaoDien() {
-    const quyenCongKhai = (typeof layQuyenCongKhaiHienTai === 'function') ? layQuyenCongKhaiHienTai() : { menu: [], nut: [], lop: [] };
     const menuDuocCap = (quyenChiTiet && quyenChiTiet.menu) ? quyenChiTiet.menu : [];
     const nutDuocCap = (quyenChiTiet && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
     const lopDuocCap = (quyenChiTiet && quyenChiTiet.lop) ? quyenChiTiet.lop : [];
 
-    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoChuan', 'btnLuuSua', 'btnKhoaSoDauBai'];
+    const dsNut = ['btnLuuTuan', 'btnLuuCoDinh', 'btnKhoiPhuc', 'btnXepTuDong', 'btnKiemTra', 'btnNhapExcelTKB', 'btnDongBoChuan', 'btnLuuSua'];
     
     dsNut.forEach(idNut => {
         let nut = document.getElementById(idNut);
         if (nut) {
-            let duocPhep = quyenSuaChua || nutDuocCap.includes(idNut) || (quyenCongKhai.nut && quyenCongKhai.nut.includes(idNut));
+            let duocPhep = quyenSuaChua || nutDuocCap.includes(idNut);
             if (idNut === 'btnLuuSua' || idNut === 'btnLuuTuan') {
                 if (quyenSuaChua || nutDuocCap.includes(idNut) || lopDuocCap.length > 0) duocPhep = true;
             }
@@ -142,7 +121,7 @@ function kiemSoatGiaoDien() {
     dsMenuQuanTri.forEach(idMenu => {
         let menu = document.getElementById(idMenu);
         if (menu) {
-            let duocXem = quyenSuaChua || menuDuocCap.includes(idMenu) || (quyenCongKhai.menu && quyenCongKhai.menu.includes(idMenu));
+            let duocXem = quyenSuaChua || menuDuocCap.includes(idMenu);
             menu.style.display = duocXem ? 'flex' : 'none'; 
             if (duocXem) coMenuQuanTriDuocMo = true;
         }
@@ -154,7 +133,7 @@ function kiemSoatGiaoDien() {
     let btnTuanTruoc = document.getElementById('btnTuanTruoc');
     let btnTuanTiep = document.getElementById('btnTuanTiep');
     let inputNgay = document.getElementById('chonNgayDauTuan');
-    let coQuyenChuyenTuan = quyenSuaChua || nutDuocCap.includes('btnChuyenTuan') || (quyenCongKhai.nut && quyenCongKhai.nut.includes('btnChuyenTuan'));
+    let coQuyenChuyenTuan = quyenSuaChua || nutDuocCap.includes('btnChuyenTuan');
 
     if (coQuyenChuyenTuan) {
         if (btnTuanTruoc) btnTuanTruoc.style.display = 'block'; 
