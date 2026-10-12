@@ -27,7 +27,8 @@ const DANH_SACH_NUT_CHUC_NANG = [
     { id: 'btnKiemTra', ten: 'Định Mức tiết' },
     { id: 'btnChuyenTuan', ten: 'Mũi tên Chuyển tuần' },
     { id: 'btnLuuSua', ten: 'Lưu Sửa' },
-    { id: 'btnKhoaSoDauBai', ten: 'Khóa Sổ đầu bài Tuần' }
+    { id: 'btnKhoaSoDauBai', ten: 'Khóa Sổ đầu bài Tuần' },
+    { id: 'btnKhoaTKB', ten: 'Khóa TKB Tuần' }
 ];
 
 // =========================================================================
