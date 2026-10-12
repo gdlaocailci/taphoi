@@ -2705,12 +2705,25 @@ window.thaoTacKhoaMoTKB = async function() {
     let namHocHienTai = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : '';
     let chuoiNamHoc = namHocHienTai ? ` (Năm học ${namHocHienTai})` : '';
 
-    let coQuyenBam = quyenSuaChua || 
+    // [CHẶN TỨC THÌ 0ms]: Kiểm tra quyền trực tiếp tại Client, chặn ngay nếu không có quyền, không bật spinner
+    let coQuyenBam = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || 
+                     (typeof window !== 'undefined' && window.quyenSuaChua) ||
                      (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaTKB')) ||
                      (typeof layQuyenCongKhaiHienTai === 'function' && layQuyenCongKhaiHienTai().nut && layQuyenCongKhaiHienTai().nut.includes('btnKhoaTKB'));
 
     if (!coQuyenBam) {
-        alert("⚠️ Đồng chí không có quyền thực hiện thao tác Khóa / Mở khóa Thời khóa biểu!");
+        alert("⛔ TỪ CHỐI TRUY CẬP:\nTài khoản của đồng chí chưa được cấp quyền Khóa / Mở khóa Thời khóa biểu trong Ma trận phân quyền!");
+        return;
+    }
+
+    let emailNguoiDung = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc) 
+        ? window.dinhDanhGiaoVienToanCuc 
+        : (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc 
+            ? window.emailGiaoVienToanCuc 
+            : (typeof maGvDangNhapHeThong !== 'undefined' ? maGvDangNhapHeThong : ''));
+
+    if (!emailNguoiDung) {
+        alert("⚠️ Vui lòng đăng nhập tài khoản trước khi thực hiện thao tác Khóa / Mở khóa Thời khóa biểu!");
         return;
     }
 
@@ -2730,11 +2743,7 @@ window.thaoTacKhoaMoTKB = async function() {
         btn.disabled = true;
     }
 
-    let emailNguoiDung = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc) 
-        ? window.dinhDanhGiaoVienToanCuc 
-        : (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc 
-            ? window.emailGiaoVienToanCuc 
-            : (typeof maGvDangNhapHeThong !== 'undefined' ? maGvDangNhapHeThong : ''));
+
 
     try {
         let payload = {
@@ -2748,7 +2757,7 @@ window.thaoTacKhoaMoTKB = async function() {
         const res = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
             method: 'POST',
             body: JSON.stringify(payload)
-        });
+        }, 2, 15000);
 
         const kq = await res.json();
 
