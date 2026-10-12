@@ -52,7 +52,7 @@
                 <img id="logoMenuDoc" src="" alt="Logo" class="w-20 h-20 rounded-full object-cover">
             </div>
             <h2 id="tenDonViMenu" class="text-center text-white font-bold text-base uppercase tracking-wide leading-relaxed">
-                Trường TH&THCS Tả Phời<br>Cấp Tiểu học
+                Trường Tiểu học<br>Lê Văn Tám
             </h2>
         </div>
         <div class="px-6 my-2 flex-none"><hr class="border-dashed border-blue-300 opacity-40"></div>
@@ -247,6 +247,14 @@
                             Số tiết dạy trong tuần
                         </button>
 
+                        <!-- NÚT GỌI UI: KIỂM TRA TIẾN ĐỘ DẠY HỌC (CÔNG KHAI) -->
+                        <button id="btnKiemTraTienDo" onclick="moModalKiemTraTienDo()" class="bg-cyan-700 hover:bg-cyan-800 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded flex whitespace-nowrap flex-none group cursor-pointer" title="Kiểm tra tiến độ giảng dạy các lớp, môn học (nhanh, chậm, đúng tiến độ)">
+                            <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            <span>Kiểm tra tiến độ</span>
+                        </button>
+
                         <button onclick="xuatExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-sm shadow transition duration-200 items-center gap-1.5 rounded flex whitespace-nowrap flex-none">
                             Xuất Excel
                         </button>
@@ -346,6 +354,8 @@
                                         </div>
                                         <span>Lưu Sửa (Map)</span>
                                     </button>
+
+
                                 </div>
                             </div>
                         </div>
@@ -791,7 +801,7 @@
     window.dongMenuThaoTacTKB = dongMenuThaoTacTKB;
 
         function chuyenHuongHeThong() {
-            var urlDich = 'https://gdlaocailci.github.io/taphoi/';
+            var urlDich = 'https://gdlaocailci.github.io/thlevantam/';
             window.open(urlDich, '_top');
         }
         function moDongMenuMobile() {
@@ -837,6 +847,7 @@
     <script src="SoDauBai.js"></script>
     <script src="PhanQuyenAdmin.js"></script>
     <script src="KiemTraSoDauBai.js"></script>
+    <script src="TienDoDayHoc.js"></script>
    <script>
  async function thucThiLamMoiNgam() {
         let vungHienThi = document.getElementById('vungHienThiSoDauBai');
