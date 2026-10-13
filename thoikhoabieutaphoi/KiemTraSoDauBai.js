@@ -205,6 +205,7 @@ function taoKhungGiaoDienKiemTraSDB() {
                     <option value="5">5 lượt lớp / trang (~150 tiết)</option>
                     <option value="10" selected>10 lượt lớp / trang (~300 tiết)</option>
                     <option value="20">20 lượt lớp / trang (~600 tiết)</option>
+                    <option value="30">30 lượt lớp / trang (~1.000 tiết)</option>
                     <option value="tuan">Theo từng Tuần học</option>
                 </select>
                 <span class="text-slate-500 font-bold" id="nhanThongKePhanTrangKTSDB">Chưa có dữ liệu</span>
@@ -1205,18 +1206,40 @@ window.inBaoCaoKiemTraSoDauBai = function() {
         });
     });
 
-    // Nếu dữ liệu lớn (> 300 tiết), hỏi người dùng muốn in trang đang xem hay in toàn bộ
-    let cheDoIn = 'tatca';
-    if (tongTiet > 300) {
-        let chon = confirm(`Hệ thống phát sinh ${tongTiet} tiết vi phạm (khoảng ${Math.ceil(tongTiet / 35)} trang in).\n\n- Bấm [OK] để In trang đang xem (khoảng 10 lớp, nhanh và vừa vặn nhất).\n- Bấm [Cancel] để In toàn bộ ${tongTiet} tiết (bản in dạng bảng phẳng tối ưu chống đơ).`);
-        cheDoIn = chon ? 'trang' : 'tatca';
+    // Xác định chế độ in: Mặc định in 1.000 dòng nếu dữ liệu lớn
+    let cheDoIn = '1000'; // '1000', 'trang', hoặc 'tatca'
+
+    if (tongTiet <= 1000) {
+        // Dữ liệu từ 1.000 tiết trở xuống: In toàn bộ ngay lập tức không cần hỏi
+        cheDoIn = 'tatca';
+    } else {
+        // Dữ liệu lớn khổng lồ (> 1.000 tiết như trường hợp 4.608 tiết):
+        // Hỏi người dùng với giá trị mặc định là 1 (In 1.000 dòng theo đúng nhu cầu)
+        let luaChon = prompt(
+            `Hệ thống phát sinh ${tongTiet} tiết vi phạm (khoảng ${Math.ceil(tongTiet / 35)} trang giấy).\n\n` +
+            `Chọn phạm vi in:\n` +
+            `1: In khoảng 1.000 tiết (~30 lớp trọn vẹn, nhanh gọn và tối ưu nhất)\n` +
+            `2: In phạm vi trang đang xem trên màn hình\n` +
+            `3: In toàn bộ ${tongTiet} tiết\n\n` +
+            `Nhập 1, 2 hoặc 3 (Mặc định là 1):`,
+            "1"
+        );
+
+        if (luaChon === null) return; // Người dùng ấn Hủy
+        let luaChonChuan = luaChon.trim();
+        if (luaChonChuan === '2') cheDoIn = 'trang';
+        else if (luaChonChuan === '3') cheDoIn = 'tatca';
+        else cheDoIn = '1000'; // Mặc định là 1.000 dòng
     }
 
     let rowsHTML = [];
     let stt = 1;
     let tongTietIn = 0;
+    let moTaPhamVi = '';
 
     if (cheDoIn === 'trang' && typeof _quanLyPhanTrangKTSDB !== 'undefined') {
+        // 1. Chế độ in trang đang xem
+        moTaPhamVi = '(Phạm vi trang đang xem)';
         let { danhSachDonViLop, trangHienTai, kichThuocTrang } = _quanLyPhanTrangKTSDB;
         let cacDonViTrongTrang = [];
 
@@ -1260,8 +1283,53 @@ window.inBaoCaoKiemTraSoDauBai = function() {
                 `);
             });
         });
+
+    } else if (cheDoIn === '1000') {
+        // 2. Chế độ in 1.000 dòng (~30 lớp trọn vẹn, không cắt nửa chừng lớp nào)
+        let daLay = 0;
+        let soLopLay = 0;
+        for (let tuan of danhSachTuan) {
+            let cacLop = Object.keys(baoCao[tuan]).sort();
+            for (let lop of cacLop) {
+                let dsTiet = baoCao[tuan][lop].slice();
+                dsTiet.sort((a, b) => {
+                    let thA = _thuTuThuKTSDB[a.thu] || 99;
+                    let thB = _thuTuThuKTSDB[b.thu] || 99;
+                    if (thA !== thB) return thA - thB;
+                    let bA = (a.buoi === 'sáng' || a.buoi === 'Sáng') ? 1 : 2;
+                    let bB = (b.buoi === 'sáng' || b.buoi === 'Sáng') ? 1 : 2;
+                    if (bA !== bB) return bA - bB;
+                    return (parseInt(a.tiet, 10) || 0) - (parseInt(b.tiet, 10) || 0);
+                });
+
+                dsTiet.forEach(item => {
+                    tongTietIn++;
+                    let thoiDiemText = `${item.thu}, ${item.buoi} - Tiết ${item.tiet}${item.ngay ? ' (' + item.ngay + ')' : ''}`;
+                    let gvText = item.maGv ? `GV: ${item.maGv}` : 'Chưa xếp GV';
+                    let lyDoBadges = item.lyDo.map(l => l.text).join('; ');
+                    rowsHTML.push(`
+                        <tr>
+                            <td class="text-center">${stt++}</td>
+                            <td class="text-center font-bold">Tuần ${tuan}</td>
+                            <td class="text-center font-bold">${lop}</td>
+                            <td class="text-center">${thoiDiemText}</td>
+                            <td class="text-center"><b>${item.monHoc}</b><br><span style="font-size:9pt;color:#555;">${gvText}</span></td>
+                            <td class="text-left">${lyDoBadges}</td>
+                        </tr>
+                    `);
+                    daLay++;
+                });
+
+                soLopLay++;
+                if (daLay >= 1000) break;
+            }
+            if (daLay >= 1000) break;
+        }
+        moTaPhamVi = `(Bản in nâng cấp: ${tongTietIn} tiết của ${soLopLay} lượt lớp đầu tiên / Tổng ${tongTiet} tiết)`;
+
     } else {
-        // In toàn bộ dữ liệu dưới dạng bảng phẳng (Flat Table) siêu nhẹ, tuyệt đối không dùng rowspan khổng lồ làm treo Chrome
+        // 3. In toàn bộ dữ liệu dưới dạng bảng phẳng siêu nhẹ chống treo
+        moTaPhamVi = `(Toàn bộ ${tongTiet} tiết toàn trường)`;
         danhSachTuan.forEach(tuan => {
             let cacLop = Object.keys(baoCao[tuan]).sort();
             cacLop.forEach(lop => {
@@ -1330,7 +1398,7 @@ window.inBaoCaoKiemTraSoDauBai = function() {
         <body>
             <h2>BÁO CÁO DANH SÁCH LỚP CHƯA HOÀN THÀNH SỔ ĐẦU BÀI</h2>
             <h3>Năm học: ${namHoc} (Từ Tuần ${tuTuan} đến Tuần ${denTuan})</h3>
-            <p class="sub">Thời điểm in: ${new Date().toLocaleString('vi-VN')} • Tổng số: ${tongTietIn} tiết vi phạm ${cheDoIn === 'trang' ? '(Phạm vi trang đang xem)' : '(Toàn bộ)'}</p>
+            <p class="sub">Thời điểm in: ${new Date().toLocaleString('vi-VN')} • Tổng số: ${tongTietIn} tiết vi phạm ${moTaPhamVi}</p>
             <table>
                 <thead>
                     <tr>
