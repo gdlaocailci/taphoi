@@ -1458,9 +1458,14 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 
     setTimeout(() => {
         let cacOVanBan = vungHienThi.querySelectorAll('textarea');
+        // Tối ưu hóa: Loại bỏ Layout Thrashing bằng cách tách pha style reset và đọc scrollHeight
         cacOVanBan.forEach(ta => {
             ta.style.height = 'auto';
-            ta.style.height = (ta.scrollHeight) + 'px';
+        });
+        requestAnimationFrame(() => {
+            cacOVanBan.forEach(ta => {
+                ta.style.height = (ta.scrollHeight) + 'px';
+            });
         });
 
         // Chỉ gắn sự kiện bắt thay đổi khi tuần CHƯA BỊ KHÓA
