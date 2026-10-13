@@ -144,7 +144,7 @@ function taoKhungGiaoDienKiemTraSDB() {
 
             <!-- NÚT THỰC THI KIỂM TRA -->
             <button onclick="thucThiKiemTraSoDauBai()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-1.5 px-6 rounded shadow transition duration-200 text-sm flex items-center gap-2 h-[34px] ml-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <svg class="w-4 h-4 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 Kiểm tra
             </button>
 
@@ -174,8 +174,8 @@ function taoKhungGiaoDienKiemTraSDB() {
         <!-- THẺ THỐNG KÊ NHANH TỔNG HỢP -->
         <div id="theThongKeTongHop_KTSDB" class="mb-3 hidden"></div>
 
-        <!-- BẢNG KẾT QUẢ DỮ LIỆU -->
-        <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative rounded">
+        <!-- BẢNG KẾT QUẢ DỮ LIỆU (TỐI ƯU HÓA GPU VÀ CUỘN MƯỢT KHI DỮ LIỆU KHỔNG LỒ) -->
+        <div id="khungCuonBangKTSDB" style="transform: translateZ(0); will-change: scroll-position; -webkit-overflow-scrolling: touch;" class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative rounded">
             <table id="bangKiemTraSDB" class="bang-excel w-full text-center border-collapse">
                 <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm border-b-2 border-slate-400" style="font-family:'Times New Roman',Times,serif;">
                     <tr>
@@ -288,7 +288,7 @@ function taoBoLocVuaGoVuaChon_KTSDB(config) {
                class="w-full px-2.5 py-1.5 pr-7 text-xs border border-blue-400 rounded shadow-sm outline-none focus:ring-2 focus:ring-blue-600 transition-colors bg-white font-extrabold text-blue-900 placeholder-slate-400 cursor-pointer text-center" 
                placeholder="${placeholder || 'Chọn...'}">
         <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
-            <svg class="w-4 h-4 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </div>
         <ul id="${idList}" class="absolute z-[999] w-full mt-1 max-h-56 overflow-y-auto overscroll-contain bg-white border border-blue-400 rounded-md shadow-2xl hidden divide-y divide-slate-100 left-0 text-left"></ul>
     `;
@@ -786,10 +786,136 @@ function renderThongKeTongHop(tuTuan, denTuan, soLopChuaXong, tongTiet, thieuTen
     divTK.classList.remove('hidden');
 }
 
+let duLieuBaoCaoDangHienThi_KTSDB = {}; // Lưu trữ báo cáo hiện thời đang vẽ
+let _trangThaiCuonKTSDB = window._trangThaiCuonKTSDB = {
+    danhSachTuan: [],
+    baoCao: {},
+    viTriHienTai: 0,
+    dangNapThem: false,
+    daGanScroll: false
+};
+
+const _thuTuThuKTSDB = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
+
+// Hàm tạo HTML của một tuần đơn lẻ (Tối ưu hóa bỏ transition-colors để lướt siêu mượt)
+function taoHtmlCuaTuanKTSDB(tuan, cacLopCuaTuan) {
+    let cacLop = Object.keys(cacLopCuaTuan).sort();
+    let tongDongCuaTuan = 0;
+    cacLop.forEach(lop => {
+        tongDongCuaTuan += cacLopCuaTuan[lop].length;
+    });
+
+    let buffer = [];
+    let daInCotTuan = false;
+
+    cacLop.forEach(lop => {
+        let dsTietLoi = cacLopCuaTuan[lop].slice();
+        dsTietLoi.sort((a, b) => {
+            let thA = _thuTuThuKTSDB[a.thu] || 99;
+            let thB = _thuTuThuKTSDB[b.thu] || 99;
+            if (thA !== thB) return thA - thB;
+            let bA = (a.buoi === 'sáng' || a.buoi === 'Sáng') ? 1 : 2;
+            let bB = (b.buoi === 'sáng' || b.buoi === 'Sáng') ? 1 : 2;
+            if (bA !== bB) return bA - bB;
+            return (parseInt(a.tiet, 10) || 0) - (parseInt(b.tiet, 10) || 0);
+        });
+
+        let soDongCuaLop = dsTietLoi.length;
+        let daInCotLop = false;
+
+        dsTietLoi.forEach((item, index) => {
+            let isCuoiCungCuaLop = (index === soDongCuaLop - 1);
+            let vienDayLop = isCuoiCungCuaLop ? 'border-b-2 border-slate-500' : 'border-b border-gray-300';
+
+            // [TỐI ƯU QUAN TRỌNG]: Bỏ transition-colors trên tr để triệt tiêu hoàn toàn giật lag khi cuộn qua hàng ngàn dòng
+            buffer.push(`<tr class="dong-du-lieu-ktsdb bg-white hover:bg-slate-50 ${vienDayLop}" data-lop="${lop}" data-mon="${item.monHoc}" data-gv="${item.maGv}">`);
+
+            // 1. CỘT TUẦN
+            if (!daInCotTuan) {
+                buffer.push(`
+                    <td rowspan="${tongDongCuaTuan}" class="text-center align-top font-extrabold text-blue-900 bg-slate-100 border-r-2 border-b-2 border-slate-500 p-2.5">
+                        <div class="sticky top-12">
+                            <span class="text-sm font-black text-blue-900 uppercase block">Tuần ${tuan}</span>
+                        </div>
+                    </td>
+                `);
+                daInCotTuan = true;
+            }
+
+            // 2. CỘT LỚP
+            if (!daInCotLop) {
+                buffer.push(`
+                    <td rowspan="${soDongCuaLop}" class="text-center align-top font-black text-slate-800 bg-purple-50/30 border-r border-b-2 border-slate-500 p-2.5">
+                        <div class="sticky top-12">
+                            <div class="text-base text-purple-900 font-black">${lop}</div>
+                            <div class="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1 inline-block whitespace-nowrap shadow-2xs">
+                                Thiếu ${soDongCuaLop} tiết
+                            </div>
+                        </div>
+                    </td>
+                `);
+                daInCotLop = true;
+            }
+
+            // 3. CỘT TIẾT HỌC / THỜI ĐIỂM
+            let textNgay = item.ngay ? `<span class="text-[11px] font-semibold text-slate-500 block">(${item.ngay})</span>` : '';
+            buffer.push(`
+                <td class="text-center align-middle border-r border-gray-300 p-2">
+                    <div class="font-bold text-slate-800 text-sm">${item.thu}, ${item.buoi}</div>
+                    <div class="font-extrabold text-blue-700 text-sm mt-0.5">Tiết ${item.tiet}</div>
+                    ${textNgay}
+                </td>
+            `);
+
+            // 4. CỘT MÔN & GIÁO VIÊN
+            let textGV = item.maGv ? `<div class="text-xs font-bold text-slate-700 mt-0.5">GV: <span class="text-indigo-900 font-extrabold">${item.maGv}</span></div>` : '<div class="text-xs text-red-500 italic">Chưa xếp GV trong TKB</div>';
+            buffer.push(`
+                <td class="text-center align-middle border-r border-gray-300 p-2">
+                    <div class="font-black text-slate-900 text-sm">${item.monHoc}</div>
+                    ${textGV}
+                </td>
+            `);
+
+            // 5. CỘT LÝ DO CHƯA HOÀN THÀNH SỔ
+            let badgesLyDo = item.lyDo.map(ld => `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-extrabold border ${ld.mau} shadow-xs">
+                    <svg class="w-3 h-3 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    ${ld.text}
+                </span>
+            `).join(' ');
+
+            buffer.push(`
+                <td class="text-left align-middle border-r border-gray-300 p-2.5">
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        ${badgesLyDo}
+                    </div>
+                </td>
+            `);
+
+            // 6. CỘT TÁC VỤ
+            buffer.push(`
+                <td class="text-center align-middle p-2">
+                    <button onclick="chuyenHuongXemSDB(${tuan}, '${lop}')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded border border-blue-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1 mx-auto" title="Mở Sổ đầu bài Tuần ${tuan} của Lớp ${lop}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Xem SĐB
+                    </button>
+                </td>
+            `);
+
+            buffer.push(`</tr>`);
+        });
+    });
+
+    return buffer.join('');
+}
+
+// [NÂNG CẤP ĐỘT PHÁ]: Thuật toán tải phân đoạn thông minh (Lazy Chunk Rendering)
+// Khi dữ liệu khổng lồ (hàng ngàn dòng), hiển thị ngay 100 dòng đầu trong 10ms và tự động tải tiếp khi cuộn
 function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
     const tbody = document.getElementById('vungDuLieuKiemTraSDB');
     if (!tbody) return;
 
+    duLieuBaoCaoDangHienThi_KTSDB = baoCao;
     let danhSachTuanCoLoi = Object.keys(baoCao).map(Number).sort((a, b) => a - b);
 
     if (danhSachTuanCoLoi.length === 0) {
@@ -803,118 +929,100 @@ function renderBangKetQuaKTSDB(baoCao, tuTuan, denTuan) {
         return;
     }
 
-    let bufferHTML = [];
-    const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
+    _trangThaiCuonKTSDB.danhSachTuan = danhSachTuanCoLoi;
+    _trangThaiCuonKTSDB.baoCao = baoCao;
+    _trangThaiCuonKTSDB.viTriHienTai = 0;
+    _trangThaiCuonKTSDB.dangNapThem = false;
 
-    danhSachTuanCoLoi.forEach(tuan => {
-        let cacLopTrongTuan = Object.keys(baoCao[tuan]).sort();
-        
-        let tongDongCuaTuan = 0;
-        cacLopTrongTuan.forEach(lop => {
-            tongDongCuaTuan += baoCao[tuan][lop].length;
-        });
-
-        let daInCotTuan = false;
-
-        cacLopTrongTuan.forEach(lop => {
-            let dsTietLoi = baoCao[tuan][lop];
-            dsTietLoi.sort((a, b) => {
-                let thA = thuTuThu[a.thu] || 99;
-                let thB = thuTuThu[b.thu] || 99;
-                if (thA !== thB) return thA - thB;
-                let bA = a.buoi === 'sáng' || a.buoi === 'Sáng' ? 1 : 2;
-                let bB = b.buoi === 'sáng' || b.buoi === 'Sáng' ? 1 : 2;
-                if (bA !== bB) return bA - bB;
-                return (parseInt(a.tiet, 10) || 0) - (parseInt(b.tiet, 10) || 0);
-            });
-
-            let soDongCuaLop = dsTietLoi.length;
-            let daInCotLop = false;
-
-            dsTietLoi.forEach((item, index) => {
-                let isCuoiCungCuaLop = (index === soDongCuaLop - 1);
-                let vienDayLop = isCuoiCungCuaLop ? 'border-b-2 border-slate-500' : 'border-b border-gray-300';
-
-                bufferHTML.push(`<tr class="dong-du-lieu-ktsdb bg-white hover:bg-slate-50 transition-colors ${vienDayLop}" data-lop="${lop}" data-mon="${item.monHoc}" data-gv="${item.maGv}">`);
-
-                // 1. CỘT TUẦN (Rowspan gộp dòng theo Tuần - Căn đỉnh top để luôn nhìn thấy rõ)
-                if (!daInCotTuan) {
-                    bufferHTML.push(`
-                        <td rowspan="${tongDongCuaTuan}" class="text-center align-top font-extrabold text-blue-900 bg-slate-100 border-r-2 border-b-2 border-slate-500 p-2.5">
-                            <div class="sticky top-12">
-                                <span class="text-sm font-black text-blue-900 uppercase block">Tuần ${tuan}</span>
-                            </div>
-                        </td>
-                    `);
-                    daInCotTuan = true;
-                }
-
-                // 2. CỘT LỚP (Rowspan gộp dòng theo Lớp - Căn đỉnh top để luôn nhìn thấy rõ)
-                if (!daInCotLop) {
-                    bufferHTML.push(`
-                        <td rowspan="${soDongCuaLop}" class="text-center align-top font-black text-slate-800 bg-purple-50/30 border-r border-b-2 border-slate-500 p-2.5">
-                            <div class="sticky top-12">
-                                <div class="text-base text-purple-900 font-black">${lop}</div>
-                                <div class="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 mt-1 inline-block whitespace-nowrap shadow-2xs">
-                                    Thiếu ${soDongCuaLop} tiết
-                                </div>
-                            </div>
-                        </td>
-                    `);
-                    daInCotLop = true;
-                }
-
-                // 3. CỘT TIẾT HỌC / THỜI ĐIỂM
-                let textNgay = item.ngay ? `<span class="text-[11px] font-semibold text-slate-500 block">(${item.ngay})</span>` : '';
-                bufferHTML.push(`
-                    <td class="text-center align-middle border-r border-gray-300 p-2">
-                        <div class="font-bold text-slate-800 text-sm">${item.thu}, ${item.buoi}</div>
-                        <div class="font-extrabold text-blue-700 text-sm mt-0.5">Tiết ${item.tiet}</div>
-                        ${textNgay}
-                    </td>
-                `);
-
-                // 4. CỘT MÔN & GIÁO VIÊN
-                let textGV = item.maGv ? `<div class="text-xs font-bold text-slate-700 mt-0.5">GV: <span class="text-indigo-900 font-extrabold">${item.maGv}</span></div>` : '<div class="text-xs text-red-500 italic">Chưa xếp GV trong TKB</div>';
-                bufferHTML.push(`
-                    <td class="text-center align-middle border-r border-gray-300 p-2">
-                        <div class="font-black text-slate-900 text-sm">${item.monHoc}</div>
-                        ${textGV}
-                    </td>
-                `);
-
-                // 5. CỘT LÝ DO CHƯA HOÀN THÀNH SỔ
-                let badgesLyDo = item.lyDo.map(ld => `
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-extrabold border ${ld.mau} shadow-xs">
-                        <svg class="w-3 h-3 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        ${ld.text}
-                    </span>
-                `).join(' ');
-
-                bufferHTML.push(`
-                    <td class="text-left align-middle border-r border-gray-300 p-2.5">
-                        <div class="flex flex-wrap gap-1.5 items-center">
-                            ${badgesLyDo}
-                        </div>
-                    </td>
-                `);
-
-                // 6. CỘT TÁC VỤ: XEM TRỰC TIẾP TẠI SỔ ĐẦU BÀI ĐIỆN TỬ
-                bufferHTML.push(`
-                    <td class="text-center align-middle p-2">
-                        <button onclick="chuyenHuongXemSDB(${tuan}, '${lop}')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded border border-blue-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1 mx-auto" title="Mở Sổ đầu bài Tuần ${tuan} của Lớp ${lop}">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                            Xem SĐB
-                        </button>
-                    </td>
-                `);
-
-                bufferHTML.push(`</tr>`);
-            });
+    // Đếm tổng số dòng
+    let tongSoDong = 0;
+    danhSachTuanCoLoi.forEach(t => {
+        Object.keys(baoCao[t]).forEach(l => {
+            tongSoDong += baoCao[t][l].length;
         });
     });
 
-    tbody.innerHTML = bufferHTML.join('');
+    // Nếu dữ liệu vừa phải (<= 150 dòng), vẽ toàn bộ ngay lập tức
+    if (tongSoDong <= 150) {
+        let fullHTML = danhSachTuanCoLoi.map(t => taoHtmlCuaTuanKTSDB(t, baoCao[t])).join('');
+        tbody.innerHTML = fullHTML;
+        return;
+    }
+
+    // Nếu dữ liệu lớn khổng lồ: Vẽ ngay đợt đầu tiên (~100 dòng) để phản hồi trong 10ms
+    let bufferDau = [];
+    let soDongDaVe = 0;
+    let idx = 0;
+    while (idx < danhSachTuanCoLoi.length && (soDongDaVe < 100 || idx < 2)) {
+        let t = danhSachTuanCoLoi[idx];
+        bufferDau.push(taoHtmlCuaTuanKTSDB(t, baoCao[t]));
+        Object.keys(baoCao[t]).forEach(l => { soDongDaVe += baoCao[t][l].length; });
+        idx++;
+    }
+    _trangThaiCuonKTSDB.viTriHienTai = idx;
+
+    let htmlBaoNapThem = '';
+    if (idx < danhSachTuanCoLoi.length) {
+        htmlBaoNapThem = `<tr id="dongBaoNapThemKTSDB"><td colspan="6" class="py-2.5 text-center text-xs font-bold text-slate-400 italic bg-slate-50 border-t border-slate-300">Đang hiển thị ${soDongDaVe}/${tongSoDong} dòng (Đang tự động nạp tiếp khi lướt cuộn)...</td></tr>`;
+    }
+
+    tbody.innerHTML = bufferDau.join('') + htmlBaoNapThem;
+
+    // Gắn sự kiện cuộn tự động nạp tiếp
+    const khungScroll = tbody.closest('.overflow-auto');
+    if (khungScroll && !_trangThaiCuonKTSDB.daGanScroll) {
+        _trangThaiCuonKTSDB.daGanScroll = true;
+        khungScroll.addEventListener('scroll', () => {
+            if (_trangThaiCuonKTSDB.dangNapThem) return;
+            if (_trangThaiCuonKTSDB.viTriHienTai >= _trangThaiCuonKTSDB.danhSachTuan.length) return;
+
+            let khoangCachDuoi = khungScroll.scrollHeight - (khungScroll.scrollTop + khungScroll.clientHeight);
+            if (khoangCachDuoi < 500) {
+                _trangThaiCuonKTSDB.dangNapThem = true;
+                requestAnimationFrame(() => {
+                    napThemPhanDoanKTSDB();
+                });
+            }
+        }, { passive: true });
+    }
+}
+
+function napThemPhanDoanKTSDB() {
+    const tbody = document.getElementById('vungDuLieuKiemTraSDB');
+    if (!tbody) { _trangThaiCuonKTSDB.dangNapThem = false; return; }
+
+    let { danhSachTuan, baoCao, viTriHienTai } = _trangThaiCuonKTSDB;
+    if (viTriHienTai >= danhSachTuan.length) {
+        let dongBao = document.getElementById('dongBaoNapThemKTSDB');
+        if (dongBao) { if (typeof dongBao.remove === "function") dongBao.remove(); else if (dongBao.parentNode) dongBao.parentNode.removeChild(dongBao); }
+        _trangThaiCuonKTSDB.dangNapThem = false;
+        return;
+    }
+
+    let bufferTiep = [];
+    let soDongThem = 0;
+    let idx = viTriHienTai;
+    while (idx < danhSachTuan.length && (soDongThem < 100 || idx === viTriHienTai)) {
+        let t = danhSachTuan[idx];
+        bufferTiep.push(taoHtmlCuaTuanKTSDB(t, baoCao[t]));
+        Object.keys(baoCao[t]).forEach(l => { soDongThem += baoCao[t][l].length; });
+        idx++;
+    }
+    _trangThaiCuonKTSDB.viTriHienTai = idx;
+
+    let dongBao = document.getElementById('dongBaoNapThemKTSDB');
+    if (dongBao) { if (typeof dongBao.remove === "function") dongBao.remove(); else if (dongBao.parentNode) dongBao.parentNode.removeChild(dongBao); }
+
+    tbody.insertAdjacentHTML('beforeend', bufferTiep.join(''));
+
+    if (idx < danhSachTuan.length) {
+        let tongDong = 0;
+        danhSachTuan.forEach(t => { Object.keys(baoCao[t]).forEach(l => { tongDong += baoCao[t][l].length; }); });
+        let soDongHienTai = tbody.querySelectorAll('tr.dong-du-lieu-ktsdb').length;
+        tbody.insertAdjacentHTML('beforeend', `<tr id="dongBaoNapThemKTSDB"><td colspan="6" class="py-2.5 text-center text-xs font-bold text-slate-400 italic bg-slate-50 border-t border-slate-300">Đang hiển thị ${soDongHienTai}/${tongDong} dòng (Đang tự động nạp tiếp khi lướt cuộn)...</td></tr>`);
+    }
+
+    _trangThaiCuonKTSDB.dangNapThem = false;
 }
 
 // Chuyển hướng trực tiếp sang Sổ đầu bài điện tử của đúng Tuần và Lớp đó
@@ -1051,8 +1159,11 @@ window.xoaTimNhanhKTSDB = function() {
 // KHỐI 7: XUẤT EXCEL & IN ẤN BÁO CÁO CHUYÊN NGHIỆP
 // =========================================================================
 window.xuatExcelKiemTraSoDauBai = async function() {
-    let cacDong = document.querySelectorAll('#bangKiemTraSDB tbody tr.dong-du-lieu-ktsdb');
-    if (cacDong.length === 0) {
+    let baoCao = (typeof duLieuBaoCaoDangHienThi_KTSDB !== 'undefined' && Object.keys(duLieuBaoCaoDangHienThi_KTSDB).length > 0)
+        ? duLieuBaoCaoDangHienThi_KTSDB 
+        : duLieuBaoCaoHienTai_KTSDB;
+
+    if (!baoCao || Object.keys(baoCao).length === 0) {
         alert("Không có dữ liệu lớp chưa hoàn thành để xuất Excel!");
         return;
     }
@@ -1076,25 +1187,35 @@ window.xuatExcelKiemTraSoDauBai = async function() {
         ];
 
         let stt = 1;
-        cacDong.forEach(dong => {
-            if (dong.style.display === 'none') return;
+        let danhSachTuan = Object.keys(baoCao).map(Number).sort((a, b) => a - b);
+        const thuTuThu = { "Thứ 2": 2, "Thứ 3": 3, "Thứ 4": 4, "Thứ 5": 5, "Thứ 6": 6, "Thứ 7": 7, "Chủ nhật": 8 };
 
-            let lop = dong.getAttribute('data-lop') || '';
-            let mon = dong.getAttribute('data-mon') || '';
-            let gv = dong.getAttribute('data-gv') || '';
-            
-            let tuanCell = dong.querySelector('td:nth-child(1)');
-            let tuan = tuanCell ? tuanCell.innerText.trim() : '';
+        danhSachTuan.forEach(tuan => {
+            let cacLop = Object.keys(baoCao[tuan]).sort();
+            cacLop.forEach(lop => {
+                let dsTiet = baoCao[tuan][lop].slice();
+                dsTiet.sort((a, b) => {
+                    let thA = thuTuThu[a.thu] || 99;
+                    let thB = thuTuThu[b.thu] || 99;
+                    if (thA !== thB) return thA - thB;
+                    let bA = (a.buoi === 'sáng' || a.buoi === 'Sáng') ? 1 : 2;
+                    let bB = (b.buoi === 'sáng' || b.buoi === 'Sáng') ? 1 : 2;
+                    if (bA !== bB) return bA - bB;
+                    return (parseInt(a.tiet, 10) || 0) - (parseInt(b.tiet, 10) || 0);
+                });
 
-            let cacCell = dong.querySelectorAll('td');
-            let cellThoiDiem = cacCell[cacCell.length - 4];
-            let thoiDiemText = cellThoiDiem ? cellThoiDiem.innerText.replace(/\n/g, ' - ').trim() : '';
-
-            let cellLyDo = cacCell[cacCell.length - 2];
-            let lyDoText = cellLyDo ? cellLyDo.innerText.replace(/\n/g, '; ').trim() : '';
-
-            rowsArr.push([stt++, tuan, lop, thoiDiemText, mon, gv, lyDoText]);
+                dsTiet.forEach(item => {
+                    let thoiDiemText = `${item.thu}, ${item.buoi} - Tiết ${item.tiet}${item.ngay ? ' - (' + item.ngay + ')' : ''}`;
+                    let lyDoText = item.lyDo.map(l => l.text).join('; ');
+                    rowsArr.push([stt++, `Tuần ${tuan}`, lop, thoiDiemText, item.monHoc, item.maGv || 'Chưa xếp GV', lyDoText]);
+                });
+            });
         });
+
+        if (rowsArr.length <= 5) {
+            alert("Không có dữ liệu lớp chưa hoàn thành để xuất Excel!");
+            return;
+        }
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(rowsArr);
@@ -1119,12 +1240,20 @@ window.xuatExcelKiemTraSoDauBai = async function() {
 };
 
 window.inBaoCaoKiemTraSoDauBai = function() {
-    let bang = document.getElementById('bangKiemTraSDB');
-    if (!bang) return;
-
     let tuTuan = boLocHienTai_KTSDB.tuTuan;
     let denTuan = boLocHienTai_KTSDB.denTuan;
     let namHoc = boLocHienTai_KTSDB.namHoc;
+    let baoCao = (typeof duLieuBaoCaoDangHienThi_KTSDB !== 'undefined' && Object.keys(duLieuBaoCaoDangHienThi_KTSDB).length > 0)
+        ? duLieuBaoCaoDangHienThi_KTSDB 
+        : duLieuBaoCaoHienTai_KTSDB;
+
+    if (!baoCao || Object.keys(baoCao).length === 0) {
+        alert("Không có dữ liệu để in báo cáo!");
+        return;
+    }
+
+    let danhSachTuan = Object.keys(baoCao).map(Number).sort((a, b) => a - b);
+    let fullHTMLRows = danhSachTuan.map(t => taoHtmlCuaTuanKTSDB(t, baoCao[t])).join('');
 
     let cuaSoIn = window.open('', '_blank');
     cuaSoIn.document.write(`
@@ -1149,10 +1278,25 @@ window.inBaoCaoKiemTraSoDauBai = function() {
             <h2>BÁO CÁO DANH SÁCH LỚP CHƯA HOÀN THÀNH SỔ ĐẦU BÀI</h2>
             <h3>Năm học: ${namHoc} (Từ Tuần ${tuTuan} đến Tuần ${denTuan})</h3>
             <p>Thời điểm rà soát: ${new Date().toLocaleString('vi-VN')}</p>
-            ${bang.outerHTML}
+            <table class="w-full text-center border-collapse">
+                <thead>
+                    <tr>
+                        <th class="py-2.5 px-2 border border-black w-20 text-center font-bold">Tuần</th>
+                        <th class="py-2.5 px-3 border border-black w-28 text-center font-bold">Lớp</th>
+                        <th class="py-2.5 px-3 border border-black w-44 text-center font-bold">Tiết học (Thời điểm)</th>
+                        <th class="py-2.5 px-3 border border-black w-60 text-center font-bold">Môn & Giáo viên phụ trách</th>
+                        <th class="py-2.5 px-4 border border-black text-left font-bold min-w-[320px]">Lý do chưa hoàn thành sổ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${fullHTMLRows}
+                </tbody>
+            </table>
             <script>
                 window.onload = function() {
-                    document.querySelectorAll('th:last-child, td:last-child').forEach(el => el.remove());
+                    document.querySelectorAll('th:last-child, td:last-child').forEach(el => {
+                        if (el.innerText.includes('Tác vụ') || el.querySelector('button')) el.remove();
+                    });
                     window.print();
                 };
             <\/script>
