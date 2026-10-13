@@ -608,9 +608,18 @@ async function khoiTaoGiaoDien() {
         }
         
         if (thongSoHocVu.TKB_TUAN && thongSoHocVu.TKB_TUAN.length > 0) {
-            duLieuTkbHienTai = thongSoHocVu.TKB_TUAN;
+            let duLieuMoi = thongSoHocVu.TKB_TUAN;
+            let canVeLai = !daVeLuoiRam;
+            if (daVeLuoiRam) {
+                let strCu = JSON.stringify(duLieuTkbHienTai || []);
+                let strMoi = JSON.stringify(duLieuMoi || []);
+                if (strCu !== strMoi) canVeLai = true;
+            }
+            duLieuTkbHienTai = duLieuMoi;
             localStorage.setItem(KEY_TKB, JSON.stringify(duLieuTkbHienTai));
-            xuatMaTranBang(duLieuTkbHienTai);
+            if (canVeLai) {
+                xuatMaTranBang(duLieuTkbHienTai);
+            }
             if (spinnerTuan) spinnerTuan.classList.add('hidden');
         } else if (!daVeLuoiRam) {
             await taiDuLieuTKB(false); 
@@ -644,12 +653,19 @@ async function khoiTaoGiaoDien() {
 }
 
 window.kichHoatTaiNgamCacPhanHeKhac = function() {
+    // Phân bổ tải ngầm lệch pha (Staggered Loading) để không nghẽn máy chủ GAS và không đơ UI
     setTimeout(() => {
         if (typeof taiDuLieuSoDauBaiTuMayChu === 'function') taiDuLieuSoDauBaiTuMayChu();
+    }, 2000);
+    setTimeout(() => {
         if (typeof taiCayDanhMucThongKe === 'function' && (!window.cayDanhMucThongKe || Object.keys(window.cayDanhMucThongKe).length === 0)) taiCayDanhMucThongKe();
+    }, 4500);
+    setTimeout(() => {
         if (typeof taiDuLieuPhanCongTuMayChu === 'function' && (!window.danhSachGV || window.danhSachGV.length === 0)) taiDuLieuPhanCongTuMayChu();
+    }, 7000);
+    setTimeout(() => {
         if (typeof taiDuLieuKhungChuongTrinhTuMayChu === 'function' && (!window.duLieuBangKCT || window.duLieuBangKCT.length === 0)) taiDuLieuKhungChuongTrinhTuMayChu();
-    }, 1500);
+    }, 9500);
 };
 
 let khoaTaiTKB = false;
@@ -1967,7 +1983,9 @@ document.addEventListener('click', function(suKien) {
     }
 });
 
-window.kiemTraTrungGiaoVienToanBang = function() {
+let _timerKiemTraTrungGV = null;
+
+function thucThiKiemTraTrungGiaoVienToanBang() {
     const thuMacDinh = window.layDanhSachThuDong(ngayDauTuanUI);
     const buoiMacDinh = ["Sáng", "Chiều"];
     const khung = thongSoHocVu.KHUNG_CHUONG_TRINH || {};
@@ -1979,55 +1997,75 @@ window.kiemTraTrungGiaoVienToanBang = function() {
 
     let setLopUI = new Set();
     document.querySelectorAll('th[data-cotlop]').forEach(th => setLopUI.add(th.getAttribute('data-cotlop')));
-    
+
+    // [TỐI ƯU HÓA ĐỘT PHÁ]: Quét 1 lần duy nhất toàn bộ ô GV trên DOM thay vì 60 lần quét lặp lại
+    const mapGvTheoTiet = {};
+    const tatCaOGv = document.querySelectorAll('input[id^="gv_"]');
+    tatCaOGv.forEach(oGv => {
+        let tenGv = oGv.value.trim();
+        if (tenGv !== "" && tenGv !== "--") {
+            let parts = oGv.id.split('_');
+            if (parts.length >= 5) {
+                let slotKey = `${parts[1]}_${parts[2]}_${parts[3]}`;
+                if (!mapGvTheoTiet[slotKey]) mapGvTheoTiet[slotKey] = [];
+                let theMon = document.getElementById(`mon_${parts[1]}_${parts[2]}_${parts[3]}_${parts.slice(4).join('_')}`);
+                let monHoc = theMon ? theMon.value.trim() : "";
+                mapGvTheoTiet[slotKey].push({ tenGv, monHoc, lop: parts.slice(4).join('_') });
+            }
+        }
+    });
+
+    const mapTkbAnTheoTiet = {};
+    if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
+        duLieuTkbHienTai.forEach(tietGoc => {
+            if (tietGoc.maGv && !setLopUI.has(tietGoc.maLop)) {
+                let slotKey = `${tietGoc.thu}_${tietGoc.buoi}_${parseInt(tietGoc.tiet)}`;
+                if (!mapTkbAnTheoTiet[slotKey]) mapTkbAnTheoTiet[slotKey] = [];
+                mapTkbAnTheoTiet[slotKey].push(tietGoc);
+            }
+        });
+    }
+
     thuMacDinh.forEach(thu => {
         buoiMacDinh.forEach(buoi => {
-            for(let tiet = 1; tiet <= 5; tiet++) {
+            for (let tiet = 1; tiet <= 5; tiet++) {
                 let oTiet = document.getElementById(`oTiet_${thu}_${buoi}_${tiet}`);
-                if (!oTiet) continue; 
-                
-                let demGv = {}; let chiTietLop = {}; 
+                if (!oTiet) continue;
 
-                if (duLieuTkbHienTai && duLieuTkbHienTai.length > 0) {
-                    duLieuTkbHienTai.forEach(tietGoc => {
-                        if (tietGoc.thu === thu && tietGoc.buoi === buoi && parseInt(tietGoc.tiet) === tiet) {
-                            if (!setLopUI.has(tietGoc.maLop)) { 
-                                let tenGv = tietGoc.maGv ? tietGoc.maGv.trim() : "";
-                                let monHoc = tietGoc.monHoc ? tietGoc.monHoc.trim() : "";
-                                if (tenGv !== "" && tenGv !== "--") {
-                                    let ut = parseInt(uuTienMon[monHoc]) || 99;
-                                    if (ut !== 1 && ut !== 6) {
-                                        demGv[tenGv] = (demGv[tenGv] || 0) + 1;
-                                        if (!chiTietLop[tenGv]) chiTietLop[tenGv] = [];
-                                        chiTietLop[tenGv].push(`${tietGoc.maLop}(ẩn)`);
-                                    }
-                                }
+                let slotKey = `${thu}_${buoi}_${tiet}`;
+                let demGv = {}; let chiTietLop = {};
+
+                let dsAn = mapTkbAnTheoTiet[slotKey];
+                if (dsAn) {
+                    dsAn.forEach(tietGoc => {
+                        let tenGv = tietGoc.maGv ? tietGoc.maGv.trim() : "";
+                        let monHoc = tietGoc.monHoc ? tietGoc.monHoc.trim() : "";
+                        if (tenGv !== "" && tenGv !== "--") {
+                            let ut = parseInt(uuTienMon[monHoc]) || 99;
+                            if (ut !== 1 && ut !== 6) {
+                                demGv[tenGv] = (demGv[tenGv] || 0) + 1;
+                                if (!chiTietLop[tenGv]) chiTietLop[tenGv] = [];
+                                chiTietLop[tenGv].push(`${tietGoc.maLop}(ẩn)`);
                             }
                         }
                     });
                 }
 
-                let cacOGiaoVien = document.querySelectorAll(`input[id^="gv_${thu}_${buoi}_${tiet}_"]`);
-                cacOGiaoVien.forEach(oGv => {
-                    let tenGv = oGv.value.trim();
-                    if (tenGv !== "" && tenGv !== "--") {
-                        let parts = oGv.id.split('_'); let lop = parts.slice(4).join('_'); 
-                        let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`;
-                        let theMon = document.getElementById(idMon);
-                        let monHoc = theMon ? theMon.value.trim() : "";
-                        let ut = parseInt(uuTienMon[monHoc]) || 99;
-
+                let dsHien = mapGvTheoTiet[slotKey];
+                if (dsHien) {
+                    dsHien.forEach(item => {
+                        let ut = parseInt(uuTienMon[item.monHoc]) || 99;
                         if (ut !== 1 && ut !== 6) {
-                            demGv[tenGv] = (demGv[tenGv] || 0) + 1;
-                            if (!chiTietLop[tenGv]) chiTietLop[tenGv] = [];
-                            chiTietLop[tenGv].push(lop);
+                            demGv[item.tenGv] = (demGv[item.tenGv] || 0) + 1;
+                            if (!chiTietLop[item.tenGv]) chiTietLop[item.tenGv] = [];
+                            chiTietLop[item.tenGv].push(item.lop);
                         }
-                    }
-                });
-                
+                    });
+                }
+
                 let mangTrung = [];
                 for (let gv in demGv) { if (demGv[gv] > 1) mangTrung.push(`${gv} (${chiTietLop[gv].join(', ')})`); }
-                
+
                 let vungCanhBao = oTiet.querySelector('.vung-canh-bao-gv');
                 if (vungCanhBao) {
                     if (mangTrung.length > 0) {
@@ -2038,6 +2076,17 @@ window.kiemTraTrungGiaoVienToanBang = function() {
             }
         });
     });
+}
+
+// Hàm chuẩn hóa toàn cục: Hỗ trợ cả gọi ngay lập tức lẫn trễ nhịp 150ms chống giật khi đang gõ phím
+window.kiemTraTrungGiaoVienToanBang = function(ngayLapTuc = false) {
+    if (ngayLapTuc) {
+        if (_timerKiemTraTrungGV) clearTimeout(_timerKiemTraTrungGV);
+        thucThiKiemTraTrungGiaoVienToanBang();
+        return;
+    }
+    if (_timerKiemTraTrungGV) clearTimeout(_timerKiemTraTrungGV);
+    _timerKiemTraTrungGV = setTimeout(thucThiKiemTraTrungGiaoVienToanBang, 150);
 };
 
 async function nhapExcelTKB(event) {
@@ -2435,33 +2484,37 @@ window.dongBoChuanHoaDuLieuUI = async function() {
     }
 };
 
+let _timerLocLop = null;
 window.locTheoLop = function() {
-    let theLocLop = document.getElementById('locLopHoc');
-    if (!theLocLop) return;
-    
-    let chuoiLoc = theLocLop.value.trim().toUpperCase(); 
-    let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
+    if (_timerLocLop) clearTimeout(_timerLocLop);
+    _timerLocLop = setTimeout(() => {
+        let theLocLop = document.getElementById('locLopHoc');
+        if (!theLocLop) return;
+        
+        let chuoiLoc = theLocLop.value.trim().toUpperCase(); 
+        let tatCaCacCot = document.querySelectorAll('[data-cotlop]');
 
-    if (chuoiLoc === "") {
-        tatCaCacCot.forEach(cot => cot.classList.remove('hidden'));
-        let locGV = document.getElementById('locGiaoVien');
-        if (locGV && locGV.value.trim() !== "" && locGV.value.trim() !== "Toàn trường") {
-            if (typeof locTheoGiaoVien === 'function') locTheoGiaoVien();
+        if (chuoiLoc === "") {
+            tatCaCacCot.forEach(cot => cot.classList.remove('hidden'));
+            let locGV = document.getElementById('locGiaoVien');
+            if (locGV && locGV.value.trim() !== "" && locGV.value.trim() !== "Toàn trường") {
+                if (typeof locTheoGiaoVien === 'function') locTheoGiaoVien();
+            }
+            return;
         }
-        return;
-    }
 
-    let chuoiAnToan = chuoiLoc.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&'));
-    let regexHinhThai = new RegExp("^" + chuoiAnToan.join('.*') + "$");
+        let chuoiAnToan = chuoiLoc.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&'));
+        let regexHinhThai = new RegExp("^" + chuoiAnToan.join('.*') + "$");
 
-    tatCaCacCot.forEach(cot => {
-        let tenLopCuaCot = cot.getAttribute('data-cotlop').toUpperCase();
-        if (regexHinhThai.test(tenLopCuaCot)) {
-            cot.classList.remove('hidden'); 
-        } else {
-            cot.classList.add('hidden');    
-        }
-    });
+        tatCaCacCot.forEach(cot => {
+            let tenLopCuaCot = cot.getAttribute('data-cotlop').toUpperCase();
+            if (regexHinhThai.test(tenLopCuaCot)) {
+                cot.classList.remove('hidden'); 
+            } else {
+                cot.classList.add('hidden');    
+            }
+        });
+    }, 100);
 };
 
 async function thucThiChuyenTuanTiepTheo(event) {
@@ -2524,7 +2577,7 @@ let thoiGianThaoTacCuoi = Date.now();
 const THOI_GIAN_DONG_BO = 60000; 
 let dangChoTaiLaiNgam = false; 
 
-['keydown', 'input', 'click', 'scroll', 'mousemove'].forEach(evt => {
+['keydown', 'input', 'click', 'scroll'].forEach(evt => {
     document.addEventListener(evt, () => { thoiGianThaoTacCuoi = Date.now(); }, { passive: true });
 });
 
