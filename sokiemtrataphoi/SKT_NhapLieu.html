@@ -81,6 +81,13 @@
   #mainTable td {
       vertical-align: middle !important;
   }
+  /* Căn lề trên đồng nhất cho 4 cột văn bản dài (Nội dung, Ưu điểm, Tồn tại, Biện pháp) */
+  #mainTable td:nth-child(4),
+  #mainTable td:nth-child(5),
+  #mainTable td:nth-child(6),
+  #mainTable td:nth-child(7) {
+      vertical-align: top !important;
+  }
   #mainTable td:has(.cell-input:disabled) {
       background-color: #f1f5f9 !important;
   }
@@ -987,7 +994,62 @@ function thuchms(ha, nt, ch) {
 }
   function hienhth(tb) { document.getElementById('modal_message_nhap').innerText=tb; document.getElementById('modal_overlay_nhap').style.display='flex'; }
   function donghth() { document.getElementById('modal_overlay_nhap').style.display='none'; }
-  function tudochk(ph) { ph.style.height='auto'; ph.style.height=ph.scrollHeight+'px'; }
+  // --- BẮT ĐẦU NÂNG CẤP: TỰ ĐỘNG CO GIÃN CHIỀU CAO DÒNG THEO ĐỘ RỘNG MÀN HÌNH (RESIZE OBSERVER) ---
+  function tudochk(ph) {
+      if (!ph) return;
+      const dg = ph.closest('tr');
+      if (dg) {
+          const dsTa = dg.querySelectorAll('textarea.cell-input');
+          dsTa.forEach(ta => { ta.style.height = '0px'; });
+          dsTa.forEach(ta => { ta.style.height = Math.max(36, ta.scrollHeight) + 'px'; });
+      } else {
+          ph.style.height = '0px';
+          ph.style.height = Math.max(36, ph.scrollHeight) + 'px';
+      }
+  }
+
+  function capNhatChieuCaoBang() {
+      const dsTextarea = document.querySelectorAll('#mainTable textarea.cell-input');
+      if (!dsTextarea.length) return;
+      const khungBang = document.querySelector('#main_content .table-container');
+      const viTriCuon = khungBang ? khungBang.scrollTop : 0;
+
+      // Bước 1: Thu toàn bộ textarea về 0px cùng lúc để giải phóng chiều cao dòng <tr> cũ
+      dsTextarea.forEach(ta => {
+          ta.style.height = '0px';
+      });
+      // Bước 2: Đo lại chính xác scrollHeight theo độ rộng cột mới và gán lại
+      dsTextarea.forEach(ta => {
+          ta.style.height = Math.max(36, ta.scrollHeight) + 'px';
+      });
+
+      if (khungBang) khungBang.scrollTop = viTriCuon;
+  }
+
+  (function khoiTaoTuDongCoGianDong() {
+      let resizeTimer = null;
+      let chieuRongCu = 0;
+      const xuLyCoGian = () => {
+          const bang = document.getElementById('mainTable');
+          const chieuRongMoi = bang ? bang.clientWidth : window.innerWidth;
+          if (chieuRongMoi > 0 && chieuRongMoi !== chieuRongCu) {
+              chieuRongCu = chieuRongMoi;
+              if (resizeTimer) cancelAnimationFrame(resizeTimer);
+              resizeTimer = requestAnimationFrame(() => {
+                  capNhatChieuCaoBang();
+              });
+          }
+      };
+      window.addEventListener('resize', xuLyCoGian);
+      setTimeout(() => {
+          const bang = document.getElementById('mainTable');
+          if (bang && typeof ResizeObserver !== 'undefined') {
+              const ro = new ResizeObserver(xuLyCoGian);
+              ro.observe(bang);
+          }
+      }, 100);
+  })();
+  // --- KẾT THÚC NÂNG CẤP ---
   function dinhdng(s1) { let gi = s1.target.value.replace(/\D/g,''); if(gi.length>8)gi=gi.substring(0,8); let r1=""; if(gi.length>0)r1+=gi.substring(0,2); if(gi.length>2)r1+='/'+gi.substring(2,4); if(gi.length>4)r1+='/'+gi.substring(4,8); s1.target.value=r1; }
   function chuyentxo(lo, ht) { document.querySelectorAll('.f-input, .cell-input').forEach(ptu=>ptu.classList[ht?'add':'remove']('loading-spin')); }
   function dattr(tt) { for(let iso=1;iso<=4;iso++){ let p1=document.getElementById('step'+iso); if(p1){ p1.className='step'; if(iso<tt)p1.classList.add('completed'); if(iso===tt)p1.classList.add('active'); }}}
