@@ -448,7 +448,17 @@ window.capNhatDatalistTKB = function() {
     });
     dlGv.innerHTML = htmlGv;
 
-    // 3. Cập nhật bộ lọc Giáo viên trên thanh công cụ TKB
+    // 3. Bổ sung màu phân biệt nếu có giáo viên mới (giữ nguyên biến liên kết cho các phân hệ khác như PhanCong.js)
+    if (typeof bangMauPhanBiet !== 'undefined' && Array.isArray(dsGv)) {
+        if (typeof mauGiaoVien === 'undefined' || !mauGiaoVien) mauGiaoVien = {};
+        dsGv.forEach((gv, idx) => {
+            if (!mauGiaoVien[gv]) {
+                mauGiaoVien[gv] = bangMauPhanBiet[idx % bangMauPhanBiet.length];
+            }
+        });
+    }
+
+    // 4. Cập nhật bộ lọc Giáo viên trên thanh công cụ TKB
     if (typeof napDuLieuBoLocGiaoVien === 'function') {
         napDuLieuBoLocGiaoVien();
     }
@@ -1033,7 +1043,7 @@ function kiemTraDinhMuc() {
             let soTiet = Math.max(parseInt(thongSoHocVu[(buoi==="Sáng")?"SO_TIET_SANG":"SO_TIET_CHIEU"]) || 4, soTietToiThieu);
             for(let t=1; t<=soTiet; t++) {
                 mangLop.forEach(lop => {
-                    let theSelectMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
+                    let theSelectMon = document.getElementById(`mon_${thu}_${buoi}_${t}_${lop}`);
                     if(theSelectMon && theSelectMon.value) {
                         let tenMon = theSelectMon.value;
                         if(!thongKeUI[lop][tenMon]) thongKeUI[lop][tenMon] = 0; thongKeUI[lop][tenMon]++;
@@ -1362,23 +1372,17 @@ function xuatMaTranBang(danhSachTiet) {
                     const duLieuO = mapDuLieu.get(cellKey); 
                     const duocSuaLopNay = mapQuyenSuaLop.get(lop); 
                     
-                    let monGoc = (duLieuO && duLieuO.monHoc) ? String(duLieuO.monHoc) : ((duLieuO && duLieuO.mon) ? String(duLieuO.mon) : "");
-                    let gvGoc = (duLieuO && duLieuO.maGv) ? String(duLieuO.maGv) : "";
+                    let monGoc = (duLieuO && duLieuO.monHoc) ? String(duLieuO.monHoc) : ((duLieuO && duLieuO.mon) ? String(duLieuO.mon) : ""); let gvGoc = (duLieuO && duLieuO.maGv) ? String(duLieuO.maGv) : "";
 
-                    let bgLop = 'bg-white';
-                    let textClass = 'text-slate-900';
-                    if (monGoc.includes('CẤN LỊCH')) {
-                        bgLop = 'bg-yellow-400';
-                        textClass = 'text-red-700 font-extrabold';
-                    }
+                    let bgLop = 'bg-white'; let textClass = 'text-slate-900';
+                    if (monGoc.includes('CẤN LỊCH')) { bgLop = 'bg-yellow-400'; textClass = 'text-red-700 font-extrabold'; }
 
-                    let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`;
-                    let idGv = `gv_${thu}_${buoi}_${tiet}_${lop}`;
+                    let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`; let idGv = `gv_${thu}_${buoi}_${tiet}_${lop}`;
                     
                     let dropdownMon = taoTuyChonDong(thongSoHocVu.DANH_SACH_MON_HOC, monGoc, textClass, idMon, true, 'mon', duocSuaLopNay);
                     let dropdownGV = taoTuyChonDong(thongSoHocVu.DANH_SACH_GIAO_VIEN, gvGoc, textClass, idGv, true, 'gv', duocSuaLopNay);
 
-                    // Các cột Môn và GV nhận styleVienChung (Bỏ tạo màu theo GV và bỏ transition-all khi khởi tạo để tăng tốc)
+                    // Các cột Môn và GV nhận styleVienChung (Bỏ tạo màu theo GV khi khởi tạo để tăng tốc)
                     bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop}" style="${styleVienChung}">${dropdownMon}</td>`);
                     bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop}" style="${styleVienChung}">${dropdownGV}</td>`);
                 });
