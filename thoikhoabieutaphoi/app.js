@@ -363,7 +363,6 @@ function capNhatNgayDauTuan() {
 }
 
 // =========================================================================
-// =========================================================================
 // KHỐI ĐIỀU KHIỂN MENU 3 GẠCH NGANG THAO TÁC THỜI KHÓA BIỂU
 // =========================================================================
 window.toggleMenuThaoTacTKB = function(event) {
@@ -449,17 +448,7 @@ window.capNhatDatalistTKB = function() {
     });
     dlGv.innerHTML = htmlGv;
 
-    // 3. Bổ sung màu phân biệt nếu có giáo viên mới
-    if (typeof bangMauPhanBiet !== 'undefined' && Array.isArray(dsGv)) {
-        if (typeof mauGiaoVien === 'undefined' || !mauGiaoVien) mauGiaoVien = {};
-        dsGv.forEach((gv, idx) => {
-            if (!mauGiaoVien[gv]) {
-                mauGiaoVien[gv] = bangMauPhanBiet[idx % bangMauPhanBiet.length];
-            }
-        });
-    }
-
-    // 4. Cập nhật bộ lọc Giáo viên trên thanh công cụ TKB
+    // 3. Cập nhật bộ lọc Giáo viên trên thanh công cụ TKB
     if (typeof napDuLieuBoLocGiaoVien === 'function') {
         napDuLieuBoLocGiaoVien();
     }
@@ -516,6 +505,7 @@ window.dongBoDanhMucMonVaGiaoVien = async function(hienThongBao = false) {
     };
 })();
 
+// =========================================================================
 // KHỐI 1: KHỞI TẠO TỨC THÌ (LAZY LOADING CAO CẤP)
 // =========================================================================
 async function khoiTaoGiaoDien() {
@@ -1043,7 +1033,7 @@ function kiemTraDinhMuc() {
             let soTiet = Math.max(parseInt(thongSoHocVu[(buoi==="Sáng")?"SO_TIET_SANG":"SO_TIET_CHIEU"]) || 4, soTietToiThieu);
             for(let t=1; t<=soTiet; t++) {
                 mangLop.forEach(lop => {
-                    let theSelectMon = document.getElementById(`mon_${thu}_${buoi}_${t}_${lop}`);
+                    let theSelectMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
                     if(theSelectMon && theSelectMon.value) {
                         let tenMon = theSelectMon.value;
                         if(!thongKeUI[lop][tenMon]) thongKeUI[lop][tenMon] = 0; thongKeUI[lop][tenMon]++;
@@ -1261,31 +1251,11 @@ function xuatMaTranBang(danhSachTiet) {
     thead.innerHTML = theadHTML;
 
     const mapDuLieu = new Map();
-    const demTietGV = {}; 
 
     duLieuTiet.forEach(t => {
         const thu = t.thu.trim(); const buoi = t.buoi.trim();
         const key = `${thu}_${buoi}_${t.tiet}_${t.maLop}`;
         mapDuLieu.set(key, t);
-        
-        if (t.maGv && mangLopHienThi.includes(t.maLop)) {
-            const gvKey = `${t.maLop}_${t.maGv}`;
-            demTietGV[gvKey] = (demTietGV[gvKey] || 0) + 1;
-        }
-    });
-
-    const bangMauGV = ['bg-red-200', 'bg-blue-200', 'bg-green-200', 'bg-yellow-200', 'bg-purple-200', 'bg-pink-200', 'bg-teal-200', 'bg-orange-200', 'bg-cyan-200', 'bg-lime-200', 'bg-fuchsia-200', 'bg-rose-200'];
-    let mauGiaoVien = {}; 
-    if (thongSoHocVu.DANH_SACH_GIAO_VIEN) { thongSoHocVu.DANH_SACH_GIAO_VIEN.forEach((gv, idx) => { mauGiaoVien[gv] = bangMauGV[idx % bangMauGV.length]; }); }
-    
-    let gvcnLop = {};
-    mangLopHienThi.forEach(lop => {
-        let maxTiet = 0, gvcn = ""; 
-        (thongSoHocVu.DANH_SACH_GIAO_VIEN || []).forEach(gv => {
-            let soTiet = demTietGV[`${lop}_${gv}`] || 0;
-            if (soTiet > maxTiet) { maxTiet = soTiet; gvcn = gv; }
-        });
-        gvcnLop[lop] = gvcn;
     });
 
     const thongTinNgayCache = {};
@@ -1392,20 +1362,25 @@ function xuatMaTranBang(danhSachTiet) {
                     const duLieuO = mapDuLieu.get(cellKey); 
                     const duocSuaLopNay = mapQuyenSuaLop.get(lop); 
                     
-                    let monGoc = (duLieuO && duLieuO.monHoc) ? String(duLieuO.monHoc) : ((duLieuO && duLieuO.mon) ? String(duLieuO.mon) : ""); let gvGoc = (duLieuO && duLieuO.maGv) ? String(duLieuO.maGv) : "";
+                    let monGoc = (duLieuO && duLieuO.monHoc) ? String(duLieuO.monHoc) : ((duLieuO && duLieuO.mon) ? String(duLieuO.mon) : "");
+                    let gvGoc = (duLieuO && duLieuO.maGv) ? String(duLieuO.maGv) : "";
 
-                    let bgLop = 'bg-white'; let textClass = 'text-slate-900';
-                    if (monGoc.includes('CẤN LỊCH')) { bgLop = 'bg-yellow-400'; textClass = 'text-red-700 font-extrabold'; } 
-                    else if (gvGoc && gvGoc !== gvcnLop[lop]) { bgLop = mauGiaoVien[gvGoc] || 'bg-gray-200'; textClass = 'text-slate-900 font-semibold'; }
+                    let bgLop = 'bg-white';
+                    let textClass = 'text-slate-900';
+                    if (monGoc.includes('CẤN LỊCH')) {
+                        bgLop = 'bg-yellow-400';
+                        textClass = 'text-red-700 font-extrabold';
+                    }
 
-                    let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`; let idGv = `gv_${thu}_${buoi}_${tiet}_${lop}`;
+                    let idMon = `mon_${thu}_${buoi}_${tiet}_${lop}`;
+                    let idGv = `gv_${thu}_${buoi}_${tiet}_${lop}`;
                     
                     let dropdownMon = taoTuyChonDong(thongSoHocVu.DANH_SACH_MON_HOC, monGoc, textClass, idMon, true, 'mon', duocSuaLopNay);
                     let dropdownGV = taoTuyChonDong(thongSoHocVu.DANH_SACH_GIAO_VIEN, gvGoc, textClass, idGv, true, 'gv', duocSuaLopNay);
 
-                    // Các cột Môn và GV nhận styleVienChung (Gỡ bỏ class border cũ của Tailwind)
-                    bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop} transition-all duration-300" style="${styleVienChung}">${dropdownMon}</td>`);
-                    bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop} transition-all duration-300" style="${styleVienChung}">${dropdownGV}</td>`);
+                    // Các cột Môn và GV nhận styleVienChung (Bỏ tạo màu theo GV và bỏ transition-all khi khởi tạo để tăng tốc)
+                    bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop}" style="${styleVienChung}">${dropdownMon}</td>`);
+                    bufferHTML.push(`<td data-cotlop="${lop}" class="text-center p-0 align-middle ${bgLop}" style="${styleVienChung}">${dropdownGV}</td>`);
                 });
                 bufferHTML.push(`</tr>`);
             }
@@ -1897,7 +1872,7 @@ async function xuatExcel() {
             if (currentRow - 1 > startRowThu) worksheet.mergeCells(startRowThu, 1, currentRow - 1, 1); 
         });
 
-      // =========================================================================
+        // =========================================================================
         // NÂNG CẤP: ĐỊNH DẠNG NÉT KẺ BẢNG EXCEL TKB (Màu đen, Nét đứt tiết, Nét liền buổi)
         // =========================================================================
         worksheet.eachRow({ includeEmpty: true }, function(row, rowNumber) {
@@ -2669,9 +2644,9 @@ function hienThiThongBaoTaiNgam(dangTai) {
         theThongBao.classList.add('translate-y-20', 'opacity-0');
     }
 }
+
 // =========================================================================
 // HÀM BỔ SUNG: XỬ LÝ PHÓNG TO / THU NHỎ CỬA SỔ MODAL
-// Vị trí: Thay thế hàm toggleToanManHinhModal bị lỗi trong app.js
 // =========================================================================
 window.toggleToanManHinhModal = function(idModal, nutBam) {
     let modal = document.getElementById(idModal);
@@ -2705,7 +2680,6 @@ window.toggleToanManHinhModal = function(idModal, nutBam) {
         nutBam.title = "Thu nhỏ";
     }
 };
-
 
 // =========================================================================
 // PHÂN HỆ: KHÓA / MỞ KHÓA THỜI KHÓA BIỂU THEO TUẦN (CLIENT)
@@ -2795,8 +2769,6 @@ window.thaoTacKhoaMoTKB = async function() {
         btn.innerHTML = `<div class="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div> <span>Đang xử lý...</span>`;
         btn.disabled = true;
     }
-
-
 
     try {
         let payload = {
