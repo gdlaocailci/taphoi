@@ -2843,7 +2843,7 @@ window.DANH_SACH_MENU_HE_THONG = [
 window.DANH_SACH_NUT_CHUC_NANG = [
     { id: 'btnNhapExcelTKB', ten: 'Nhập Excel' },
     { id: 'btnKhoiPhuc', ten: 'Tuần mới' },
-    { id: 'btnLuuTuan', ten: 'Lưu TKB Tuần' },
+   // { id: 'btnLuuTuan', ten: 'Lưu TKB Tuần' },
     { id: 'btnLuuCoDinh', ten: 'TKB Cố Định' },
     { id: 'btnXepTuDong', ten: 'Xếp Tự Động' },
     { id: 'btnKiemTra', ten: 'Định Mức tiết' },
