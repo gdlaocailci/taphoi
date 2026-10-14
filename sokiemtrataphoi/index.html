@@ -44,7 +44,7 @@
             withSuccessHandler: function(cb) { return createRunner(cb, onFailure); },
             withFailureHandler: function(cb) { return createRunner(onSuccess, cb); },
          
-_call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đếm số lần thử lại
+_call: function(hdong, tso) {
                 const sysId = window.skttktoanc || sessionStorage.getItem("SKT_DINHDANH_TAIK") || ""; 
                 const maDonVi = sessionStorage.getItem("SKT_MA_DON_VI") || "TRUONG_1"; 
                 const endpoint = typeof SKT_GAS_URL !== 'undefined' ? SKT_GAS_URL : "";
@@ -62,6 +62,7 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
                     redirect: 'follow',
                     credentials: 'omit'
                 })
+                // --- BẮT ĐẦU VỊ TRÍ NÂNG CẤP BẮT LỖI UNEXPECTED TOKEN '<' ---
                 .then(res => {
                     const kieuDuLieu = res.headers.get("content-type");
                     if (kieuDuLieu && kieuDuLieu.includes("application/json")) {
@@ -70,6 +71,7 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
                         throw new Error("LỖI TRIỂN KHAI: Máy chủ Google từ chối quyền truy cập API (Trả về trang HTML thay vì dữ liệu JSON). Yêu cầu kiểm tra lại cấu hình Deploy (Who has access: Anyone).");
                     }
                 })
+                // --- KẾT THÚC VỊ TRÍ NÂNG CẤP ---
                 .then(res => {
                     if (res.trth === "tcon") { 
                         if (onSuccess) onSuccess(res.dliu); 
@@ -81,14 +83,6 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
                     }
                 })
                 .catch(err => {
-                    // NÂNG CẤP: Tự động thử lại ngầm khi gặp sự cố mạng chập chờn
-                    if (lan_thu > 0) {
-                        setTimeout(() => {
-                            this._call(hdong, tso, lan_thu - 1);
-                        }, 1500); // Tạm nghỉ 1.5 giây trước khi tự động kết nối lại
-                        return;
-                    }
-                    
                     const lder = document.getElementById('instant-loader');
                     if (lder) lder.style.display = 'none';
                     if (onFailure) onFailure(err);
@@ -102,7 +96,7 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
             skt_nopbg_cuo: function(mdl) { this._call('skt_nopbg_cuo', { mdl: mdl }); },
             skt_layds_mhs_cn: function() { this._call('skt_layds_mhs_cn', {}); },
             skt_xoadon_nki_thc: function(mhso) { this._call('skt_xoadon_nki_thc', { mhso: mhso }); },
-            skt_laytm_con: function() { this._call('skt_laytm_con', {}); },
+            skt_laytm_con: function(ep_moi) { this._call('skt_laytm_con', { ep_moi: !!ep_moi }); },
             skt_tainhiu_tep: function(dltep, mhso, idtm, ddcu, cdghi) { this._call('skt_tainhiu_tep', { dltep: dltep, mhso: mhso, idtm: idtm, ddcu: ddcu, cdghi: cdghi }); },
             skt_taitm_minhc: function(idcha, tentmu, dltep, ddcu, cdghi) { this._call('skt_taitm_minhc', { idcha: idcha, tentmu: tentmu, dltep: dltep, ddcu: ddcu, cdghi: cdghi }); },
             skt_tk_laydl_loc: function() { this._call('skt_tk_laydl_loc', {}); },
@@ -118,11 +112,11 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
             skt_lay_phanquyen: function() { this._call('skt_lay_phanquyen', {}); },
             skt_luu_phanquyen: function(phamvi, cai_chau, mangdl) { this._call('skt_luu_phanquyen', { phamvi: phamvi, cai_chau: cai_chau, mangdl: mangdl }); },
             skt_lay_bophan: function() { this._call('skt_lay_bophan', {}); },
-            skt_luu_bophan: function(mangdl) { this._call('skt_luu_bophan', { mangdl: mangdl }); }
+            skt_luu_bophan: function(mangdl) { this._call('skt_luu_bophan', { mangdl: mangdl }); },
+            skt_xoatep_dd: function(ddan) { this._call('skt_xoatep_dd', { ddan: ddan }); }
         };
     }
     const google = { script: { get run() { return createRunner(null, null); } } };
-   
   </script>
 
   <style>
@@ -291,72 +285,6 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
     border-color: #ff4d4f;
     box-shadow: 0 0 8px rgba(255, 77, 79, 0.6); /* Tỏa sáng nhẹ */
 }
-
-   /* ========================================================== */
-    /* NÂNG CẤP: THUẬT TOÁN RESPONSIVE MENU OFF-CANVAS CHO MOBILE */
-    /* ========================================================== */
-    
-    /* Nút gọi menu trên điện thoại (Mặc định ẩn) */
-    .btn-toggle-menu {
-        display: none; 
-        background: var(--primary-blue);
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 4px;
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        align-self: flex-start;
-    }
-    
-    /* Lớp phủ tối màu khi mở menu */
-    #overlay-menu-mobile {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 999; /* Nằm dưới menu nhưng trên nội dung */
-    }
-
-    /* Kích hoạt thiết kế di động khi màn hình nhỏ hơn 768px */
-    @media screen and (max-width: 768px) {
-        .btn-toggle-menu {
-            display: inline-flex; /* Hiện nút trên điện thoại */
-            align-items: center;
-            gap: 5px;
-        }
-        
-        #MenuContainer {
-            position: fixed;
-            top: 0;
-            left: -280px; /* Ẩn menu ra ngoài lề trái */
-            width: 260px;
-            height: 100vh;
-            z-index: 1000;
-            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Hiệu ứng trượt mượt mà */
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-        }
-        
-        #MenuContainer.mo-menu {
-            left: 0; /* Đưa menu vào màn hình khi có class này */
-        }
-        
-        #ContentContainer {
-            padding: 10px; /* Giảm lề để tối ưu diện tích điện thoại */
-        }
-        
-        /* Chỉnh lại phần bộ lọc tìm kiếm xếp dọc trên điện thoại */
-        .filter-section {
-            grid-template-columns: 1fr; 
-        }
-        .f-item:nth-child(5) { 
-            grid-column: 1; 
-            justify-self: stretch; 
-        }
-        .f-item:nth-child(5) .f-input { width: 100%; }
-    }
   </style>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -452,11 +380,6 @@ _call: function(hdong, tso, lan_thu = 1) { // NÂNG CẤP: Thêm tham số đế
     <div id="MenuContainer"></div>
 
     <div id="ContentContainer">
-     <button id="btnToggleMobile" class="btn-toggle-menu" onclick="dongMoMenuMobile()">
-            <i class="bi bi-list"></i> MENU TÍNH NĂNG
-        </button>
-        <div id="overlay-menu-mobile" onclick="dongMoMenuMobile()"></div>
-     
         <div id="so_wrapper">
           <div class="tab-container">
             <button class="tab-button active" onclick="chuyentth('TabNhapLieu', this)">📝 GHI SỔ</button>
@@ -881,9 +804,8 @@ function dangxg() {
 
 /* ========================================================================== */
 /* KHỐI XỬ LÝ KHỞI ĐỘNG BẤT ĐỒNG BỘ: CHẠY SONG SONG TẢI UI VÀ KIỂM TRA QUYỀN  */
-/* NÂNG CẤP: Tích hợp cơ chế Auto-Retry (Thử lại ngầm) chống lỗi đường truyền */
 /* ========================================================================== */
-function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
+function kiemtqvata(tk_chuyen_den = null) {
     let taikht = tk_chuyen_den || window.skttktoanc || layluutrant("SKT_DINHDANH_TAIK") || "";
     taikht = String(taikht).toLowerCase().trim();
     window.sktquyenht = "";
@@ -944,6 +866,7 @@ function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
                         dangxg(); // Gọi hàm reset hệ thống
                     };
 
+                    // Lắng nghe sự kiện để trả nút về nguyên bản khi đóng (tránh ảnh hưởng thông báo khác)
                     const overlay = document.getElementById('custom-alert-overlay');
                     const observer = new MutationObserver((mutations) => {
                         if (overlay.style.display === 'none') {
@@ -974,6 +897,7 @@ function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
                 el.disabled = false;
             });
             
+            // Khóa chờ UI cấp 2 (Thống kê)
             document.querySelectorAll('#s_gv, #s_nkt, #s_bp, #cbMaHoSo').forEach(el => {
                 el.classList.add('reactbits-skeleton');
                 el.disabled = true;
@@ -1035,28 +959,28 @@ function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
                         if(el) { el.classList.remove('reactbits-skeleton'); el.disabled = false; }
                     });
                     try { if (typeof khoitti === 'function') khoitti(); } catch(loie) {}
+
+                    // --- BẮT ĐẦU NÂNG CẤP: ĐỒNG BỘ TẢI NGẦM DANH SÁCH THƯ MỤC MINH CHỨNG ---
+                    if (Array.isArray(dl_tk.dstm)) {
+                        window.skt_ds_thumuc = dl_tk.dstm;
+                        try { if (typeof nap_ds_thumuc_tu_ram === 'function') nap_ds_thumuc_tu_ram(dl_tk.dstm); } catch(e) {}
+                    } else if (q_c_t !== 'xx') {
+                        try { if (typeof taithu === 'function') taithu(false); } catch(e) {}
+                    }
+                    // --- KẾT THÚC NÂNG CẤP ---
                 }
             })
              .withFailureHandler(err => {
-                console.log("Cảnh báo tải ngầm: " + err.message);
-            })
+    console.log("Cảnh báo tải ngầm: " + err.message); // Bắt lỗi âm thầm, không bung popup
+})
             .skt_gopgio_thanhbao({ cucgach: taikht, uu_tien: 2 });
 
         }, 50);
 
     }).catch(err => {
-        // NÂNG CẤP: Tự động thử lại nếu đường truyền bị gián đoạn lần đầu
-        if (so_lan_thu > 0) {
-            setTimeout(() => {
-                kiemtqvata(tk_chuyen_den, so_lan_thu - 1);
-            }, 1500);
-            return;
-        }
-        
         const lder = document.getElementById('instant-loader');
         if (lder) lder.style.display = 'none'; 
         alert("LỖI KHỞI ĐỘNG GIAO DIỆN HOẶC MẤT KẾT NỐI MÁY CHỦ: " + err.message);
-        document.getElementById('login-overlay').style.display = 'flex';
     });
 }
 
@@ -1225,6 +1149,7 @@ function yeuCauDonDepHeThong() {
     })
     .then(function(ketQua) {
         if (ketQua.trth === "tcon") {
+            window.skt_ds_thumuc = null;
             alert(ketQua.dliu); // In ra câu thông báo thành công từ máy chủ
         } else {
             alert("Lỗi từ máy chủ: " + ketQua.tbao);
@@ -1274,42 +1199,7 @@ function yeuCauDonDepHeThong() {
             }
         });
     }
-/* ========================================================== */
-/* KHỐI XỬ LÝ ĐÓNG/MỞ MENU TRÊN THIẾT BỊ DI ĐỘNG              */
-/* ========================================================== */
-function dongMoMenuMobile() {
-    var menu = document.getElementById('MenuContainer');
-    var lopPhu = document.getElementById('overlay-menu-mobile');
-    
-    // Kiểm tra trạng thái hiện tại
-    var dangMo = menu.classList.contains('mo-menu');
-    
-    if (dangMo) {
-        // Đang mở -> Thực hiện đóng
-        menu.classList.remove('mo-menu');
-        lopPhu.style.display = 'none';
-    } else {
-        // Đang đóng -> Thực hiện mở
-        menu.classList.add('mo-menu');
-        lopPhu.style.display = 'block';
-    }
-}
 
-// Bổ sung luồng: Tự động đóng menu khi nhấp vào một liên kết menu (nếu đang ở giao diện điện thoại)
-document.addEventListener("DOMContentLoaded", function() {
-    var menuContainer = document.getElementById('MenuContainer');
-    if(menuContainer) {
-        menuContainer.addEventListener('click', function(e) {
-            // Nếu click trúng thẻ button hoặc thẻ a trong menu
-            if(e.target.closest('button') || e.target.closest('a')) {
-                if(window.innerWidth <= 768) {
-                    dongMoMenuMobile();
-                }
-            }
-        });
-    }
-});
-   
     khoaTruyCapMaNguon();
   </script>
 
