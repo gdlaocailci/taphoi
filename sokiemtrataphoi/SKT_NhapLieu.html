@@ -12,6 +12,13 @@
       opacity: 1;
   }
   .cell-input::placeholder { color: #94a3b8 !important; opacity: 0.5; font-style: italic; font-size: 13px; }
+  /* Hiệu ứng làm mờ giá trị hiện tại khi ấn chuột vào ô Combobox (Giáo viên, NKT, Bộ phận, Mã hồ sơ) */
+  .f-input.input-dim-value::placeholder {
+      color: #64748b !important;
+      opacity: 0.55 !important;
+      font-style: italic !important;
+      font-weight: normal !important;
+  }
   #mainTable .cell-input::placeholder { opacity: 0.45; }
   select.cell-input { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231e3a8a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 5px top 50%; background-size: 8px auto; padding-right: 15px; text-align-last: center; }
     th { text-align: center !important; vertical-align: middle !important; }
@@ -281,17 +288,17 @@
 <div class="filter-section">
       <div class="f-item">
         <span>Giáo viên</span>
-        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('GV')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbGiaoVien" list="list_cbGiaoVien" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onfocus="moDanhSachChon(this)" onclick="moDanhSachChon(this)" oninput="kiemTraChonNhanh(this, 'GV')" onblur="dongDanhSachChon(this, 'GV')" onkeydown="xuLyPhimChon(event, this)" autocomplete="off">
         <datalist id="list_cbGiaoVien"></datalist>
       </div>
       <div class="f-item">
         <span>Người kiểm tra</span>
-        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('NKT')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbNguoiKiemTra" list="list_cbNguoiKiemTra" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onfocus="moDanhSachChon(this)" onclick="moDanhSachChon(this)" oninput="kiemTraChonNhanh(this, 'NKT')" onblur="dongDanhSachChon(this, 'NKT')" onkeydown="xuLyPhimChon(event, this)" autocomplete="off">
         <datalist id="list_cbNguoiKiemTra"></datalist>
       </div>
       <div class="f-item">
         <span>Bộ phận</span>
-        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="capnmab()" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbBoPhan" list="list_cbBoPhan" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onfocus="moDanhSachChon(this)" onclick="moDanhSachChon(this)" oninput="kiemTraChonNhanh(this, 'BP')" onblur="dongDanhSachChon(this, 'BP')" onkeydown="xuLyPhimChon(event, this)" autocomplete="off">
         <datalist id="list_cbBoPhan"></datalist>
       </div>
       <div class="f-item">
@@ -300,7 +307,7 @@
       </div>
       <div class="f-item">
         <span>Mã hồ sơ <button id="btnRefreshMaHoSo" class="refresh-btn" title="Cập nhật danh sách" onclick="lammdsm()">↻</button></span>
-        <input id="cbMaHoSo" list="list_cbMaHoSo" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onchange="khindthd('MAHS')" onclick="this.select(); try{this.showPicker();}catch(e){}" autocomplete="off">
+        <input id="cbMaHoSo" list="list_cbMaHoSo" class="f-input" placeholder="-- Chọn / Nhập tìm kiếm --" onfocus="moDanhSachChon(this)" onclick="moDanhSachChon(this)" oninput="kiemTraChonNhanh(this, 'MAHS')" onblur="dongDanhSachChon(this, 'MAHS')" onkeydown="xuLyPhimChon(event, this)" autocomplete="off">
         <datalist id="list_cbMaHoSo"></datalist>
       </div>
     </div>
@@ -415,11 +422,110 @@
       return String(ch).normalize("NFC").toLowerCase().replace(/[\s\uFEFF\xA0]+/g, '');
   }
 
+  // --- BẮT ĐẦU NÂNG CẤP: XỔ DANH SÁCH KHI ĐANG CÓ GIÁ TRỊ, LÀM MỜ GIÁ TRỊ CŨ & TỰ THOÁT CHUỘT KHI CHỌN ---
+  function moDanhSachChon(el) {
+      if (!el || el.disabled || el.readOnly) return;
+      if (!el.dataset.origPlaceholder) {
+          el.dataset.origPlaceholder = el.placeholder || "-- Chọn / Nhập tìm kiếm --";
+      }
+      // Nếu ô đang có giá trị -> Chuyển giá trị sang placeholder mờ và làm rỗng tạm thời để xổ toàn bộ danh sách
+      if (el.value.trim() !== "") {
+          el.dataset.oldValue = el.value;
+          el.placeholder = el.value;
+          el.classList.add('input-dim-value');
+          el.value = "";
+      }
+      try { if (typeof el.showPicker === 'function') el.showPicker(); } catch (e) {}
+      setTimeout(() => {
+          try { if (typeof el.showPicker === 'function') el.showPicker(); } catch (e) {}
+      }, 15);
+  }
+
+  function kiemTraChonNhanh(el, loai) {
+      if (!el || !el.list) return;
+      const gtriHienTai = el.value.trim();
+      if (!gtriHienTai) return;
+
+      // Kiểm tra xem giá trị vừa chọn có khớp với 1 mục trong datalist không
+      const khopDanhSach = Array.from(el.list.options).some(opt => opt.value === gtriHienTai);
+      if (khopDanhSach) {
+          const gtriCu = el.dataset.oldValue !== undefined ? el.dataset.oldValue : "";
+          el.placeholder = el.dataset.origPlaceholder || "-- Chọn / Nhập tìm kiếm --";
+          el.classList.remove('input-dim-value');
+          delete el.dataset.oldValue;
+          el.dataset.justSelected = "1";
+
+          // Tự động thoát con trỏ chuột ra ngoài ngay khi chọn xong
+          el.blur();
+
+          // Chỉ kích hoạt cập nhật dữ liệu nếu chọn giá trị mới (hoặc chọn lại Mã hồ sơ lịch sử)
+          if (gtriHienTai !== gtriCu || loai === 'MAHS') {
+              if (loai === 'BP') capnmab();
+              else khindthd(loai);
+          }
+      }
+  }
+
+  function dongDanhSachChon(el, loai) {
+      if (!el) return;
+      if (el.dataset.justSelected === "1") {
+          delete el.dataset.justSelected;
+          return;
+      }
+      const gtriMoi = el.value.trim();
+      const coGiaTriCu = el.dataset.oldValue !== undefined;
+      const gtriCu = coGiaTriCu ? el.dataset.oldValue : "";
+
+      el.placeholder = el.dataset.origPlaceholder || "-- Chọn / Nhập tìm kiếm --";
+      el.classList.remove('input-dim-value');
+      delete el.dataset.oldValue;
+
+      if (gtriMoi === "") {
+          // Nếu bấm vào xem danh sách rồi bấm ra ngoài mà không chọn gì -> Khôi phục lại giá trị cũ
+          if (coGiaTriCu) {
+              el.value = gtriCu;
+          }
+          return;
+      }
+
+      // Trường hợp người dùng tự gõ tay một giá trị rồi bấm ra ngoài
+      if (gtriMoi !== gtriCu || loai === 'MAHS') {
+          if (loai === 'BP') capnmab();
+          else khindthd(loai);
+      }
+  }
+
+  function xuLyPhimChon(ev, el) {
+      if (!el) return;
+      if (ev.key === 'Escape') {
+          // Nhấn Esc -> Trả lại giá trị cũ và thoát chuột
+          if (el.dataset.oldValue !== undefined) {
+              el.value = el.dataset.oldValue;
+              delete el.dataset.oldValue;
+          }
+          el.placeholder = el.dataset.origPlaceholder || "-- Chọn / Nhập tìm kiếm --";
+          el.classList.remove('input-dim-value');
+          el.dataset.justSelected = "1";
+          el.blur();
+      } else if (ev.key === 'Enter') {
+          el.blur();
+      } else if ((ev.key === 'Backspace' || ev.key === 'Delete') && el.value === "" && el.dataset.oldValue !== undefined) {
+          // Nếu người dùng chủ động nhấn Backspace/Delete khi giá trị đang mờ -> Xóa hẳn giá trị cũ
+          delete el.dataset.oldValue;
+          el.placeholder = el.dataset.origPlaceholder || "-- Chọn / Nhập tìm kiếm --";
+          el.classList.remove('input-dim-value');
+      }
+  }
+  // --- KẾT THÚC NÂNG CẤP ---
+
 // 4. Nâng cấp hàm set dữ liệu tự động (Nhận diện tự động Input hoặc Select)
   function dathopc(idd, gt) {
       const pht = document.getElementById(idd);
       if(!pht) return;
       if (pht.tagName.toLowerCase() === 'input') {
+          delete pht.dataset.oldValue;
+          pht.classList.remove('input-dim-value');
+          if (pht.dataset.origPlaceholder) pht.placeholder = pht.dataset.origPlaceholder;
           pht.value = gt || ""; // Trả thẳng giá trị vào thẻ input
       } else {
           // Tương thích ngược với các thẻ select cũ nếu còn
@@ -1158,6 +1264,14 @@ function thuchms(ha, nt, ch) {
   function dattr(tt) { for(let iso=1;iso<=4;iso++){ let p1=document.getElementById('step'+iso); if(p1){ p1.className='step'; if(iso<tt)p1.classList.add('completed'); if(iso===tt)p1.classList.add('active'); }}}
   
 function datlbie() {
+    ['cbGiaoVien', 'cbNguoiKiemTra', 'cbBoPhan', 'cbMaHoSo'].forEach(idd => {
+      const p1 = document.getElementById(idd);
+      if (p1) {
+          delete p1.dataset.oldValue;
+          p1.classList.remove('input-dim-value');
+          if (p1.dataset.origPlaceholder) p1.placeholder = p1.dataset.origPlaceholder;
+      }
+    });
     ['cbNguoiKiemTra', 'cbBoPhan', 'cbMaHoSo'].forEach(idd => {
       const p1 = document.getElementById(idd); if(p1) { p1.value = ""; p1.disabled = false; }
     });
