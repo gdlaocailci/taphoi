@@ -92,7 +92,8 @@
     text-align: center;
     color: #555;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.6;
+    white-space: pre-line;
   }
   .gv-modal-footer {
     padding: 16px 24px 24px;
@@ -606,6 +607,41 @@ function gvTaiCanb() {
         return { isAll: false, ids: mangId, names: mangTen };
     }
 
+    // Hàm tiện ích: Quét toàn bộ bảng giao việc hiện tại để tìm tất cả các ID đã được giao cùng nội dung công việc
+    function gvLayTapIdDaGiaoTheoNoiDung(noiDungCongViec) {
+        const dsHopLe = gvLayDsGiaoVienHopLe();
+        const tapIdDaGiao = new Set();
+        let isAllDaGiao = false;
+        const ndChuan = String(noiDungCongViec || "").trim().toLowerCase();
+        if (!ndChuan) return { isAll: false, tapId: tapIdDaGiao };
+
+        const cacDong = document.querySelectorAll('#gvThanBang tr');
+        cacDong.forEach(tr => {
+            const oNd = tr.querySelector('.oNdGv');
+            if (!oNd) return;
+            if (oNd.value.trim().toLowerCase() === ndChuan) {
+                const oNgn = tr.querySelector('.oNnghanGv');
+                const oGc = tr.querySelector('.oGchuGv');
+                const daGiaoAttr = oNgn ? String(oNgn.getAttribute('data-da-giao') || "").trim() : "";
+                if (daGiaoAttr === "ALL") {
+                    isAllDaGiao = true;
+                    dsHopLe.forEach(s => tapIdDaGiao.add(s.ttrg));
+                } else if (daGiaoAttr !== "") {
+                    daGiaoAttr.split(",").map(x => x.trim()).filter(x => x !== "").forEach(id => tapIdDaGiao.add(id));
+                }
+                const pt = gvPhanTichNguoiNhan(oNgn ? oNgn.value : "", oGc ? oGc.value : "");
+                if (pt.isAll) {
+                    isAllDaGiao = true;
+                    dsHopLe.forEach(s => tapIdDaGiao.add(s.ttrg));
+                } else {
+                    pt.ids.forEach(id => tapIdDaGiao.add(id));
+                }
+            }
+        });
+
+        return { isAll: isAllDaGiao, tapId: tapIdDaGiao };
+    }
+
     function gvLaydlGoc() { 
         gvDatTai(true, "✨ Đang cập nhật nhiệm vụ mới ✨"); 
         if (typeof khachApi === 'undefined' || !khachApi.gvLaydlBdau) {
@@ -900,7 +936,7 @@ function gvVeDong(dong = null) {
         setTimeout(() => gvAutoResizeAllTextareas(), 50);
     }
 
-    // NÂNG CẤP: UI Modal Chọn Người Thực Hiện (Họ tên + ID đầy đủ + Checkbox + Chọn tất cả)
+    // NÂNG CẤP: UI Modal Chọn Người Thực Hiện (Họ tên + ID đầy đủ + Checkbox + Chọn tất cả + Nhận diện ID đã giao)
     function gvMoModalChonNguoi(ptu) {
         if (!ptu || ptu.disabled) return;
         const dong = ptu.closest('tr');
@@ -921,18 +957,16 @@ function gvVeDong(dong = null) {
             return;
         }
 
-        // Xác định những người đã được chọn / đã giao trên dòng này
+        // Quét toàn bộ các dòng có cùng nội dung công việc để nhận diện chính xác mọi ID đã được giao trước đó
+        const thongTinDaGiao = gvLayTapIdDaGiaoTheoNoiDung(ndg);
+        const tapDaGiao = thongTinDaGiao.tapId;
+        const isAllDaGiao = thongTinDaGiao.isAll;
+
         const gchuInput = dong.querySelector('.oGchuGv');
         const kqHienTai = gvPhanTichNguoiNhan(ptu.value, gchuInput ? gchuInput.value : "");
-        const daGiaoAttr = String(ptu.getAttribute('data-da-giao') || "").trim();
-        const tapDaGiao = new Set(
-            daGiaoAttr === "ALL"
-                ? dsHopLe.map(s => s.ttrg)
-                : daGiaoAttr.split(",").map(x => x.trim()).filter(x => x !== "")
-        );
 
         const tapDangChon = new Set();
-        if (kqHienTai.isAll) {
+        if (kqHienTai.isAll || isAllDaGiao) {
             dsHopLe.forEach(s => tapDangChon.add(s.ttrg));
         } else {
             kqHienTai.ids.forEach(id => tapDangChon.add(id));
@@ -949,7 +983,7 @@ function gvVeDong(dong = null) {
         let listHtml = '';
         dsHopLe.forEach((s, idx) => {
             const isChecked = tapDangChon.has(s.ttrg);
-            const isDaGiao = tapDaGiao.has(s.ttrg) || daGiaoAttr === "ALL";
+            const isDaGiao = tapDaGiao.has(s.ttrg) || isAllDaGiao;
             const safeName = String(s.tenn || "").replace(/"/g, '&quot;');
             const safeId = String(s.ttrg || "").replace(/"/g, '&quot;');
             listHtml += `
@@ -959,7 +993,7 @@ function gvVeDong(dong = null) {
                         <span class="gv-chon-item-name" title="${safeName}">${idx + 1}. ${s.tenn || ''}</span>
                     </div>
                     <div class="gv-chon-item-right">
-                        ${isDaGiao ? '<span class="gv-chon-dagiao-badge">Đã giao</span>' : ''}
+                        ${isDaGiao ? '<span class="gv-chon-dagiao-badge" title="ID này đã được giao trước đó, hệ thống sẽ tự động bỏ qua không giao lặp">Đã giao</span>' : ''}
                         <span class="gv-chon-id-badge">ID: ${s.ttrg || ''}</span>
                     </div>
                 </label>
@@ -1147,7 +1181,7 @@ function gvVeDong(dong = null) {
 
         let tbht = laToanTruong
             ? "🚀 Đang giao cho TOÀN TRƯỜNG 🚀"
-            : `⏳ Đang giao việc cho ${dsNguoiChon.length} giáo viên (${ten_hien_thi})...`;
+            : `⏳ Đang kiểm tra & giao việc cho ${dsNguoiChon.length} giáo viên...`;
         gvDatTai(true, tbht);
         gvGoiMayChu(nm, th_htai, newTask, ptu, gth);
     }
@@ -1248,13 +1282,30 @@ function gvVeDong(dong = null) {
         khachApi.gvXulyNviec( { nam: n, thang: t, nviec: nv }, function(kq) { 
             gvDatTai(false); 
             if (kq && kq.ttai === 'tcong') { 
-                gvTbaoNhanh('tc', kq.tbao || "✓ Giao việc thành công!");
+                let noiDungThongBao = kq.tbao || "✓ Giao việc thành công!";
+                if (typeof kq.soMoiGiao === 'number') {
+                    noiDungThongBao = `✅ Đã giao việc cho: <b>${kq.soMoiGiao} người</b>.`;
+                    if (typeof kq.soDaGiaoTruoc === 'number' && kq.soDaGiaoTruoc > 0) {
+                        noiDungThongBao += `<br>ℹ️ Đã giao trước đó (bỏ qua): <b>${kq.soDaGiaoTruoc} người</b>.`;
+                    }
+                }
+                gvTbaoNhanh('tc', noiDungThongBao);
                 if (ptu) {
                     ptu.style.backgroundColor = '#d1e7dd'; 
                     ptu.style.borderColor = '#badbcc'; 
                     ptu.style.fontWeight = 'bold'; 
-                    const curSelected = ptu.getAttribute('data-selected-ids') || '';
-                    ptu.setAttribute('data-da-giao', curSelected);
+                    if (kq.dsIdDaNhan && Array.isArray(kq.dsIdDaNhan) && kq.dsIdDaNhan.length > 0) {
+                        const chuoiId = kq.dsIdDaNhan.join(",");
+                        ptu.setAttribute('data-selected-ids', chuoiId);
+                        ptu.setAttribute('data-da-giao', chuoiId);
+                    } else {
+                        const curSelected = ptu.getAttribute('data-selected-ids') || '';
+                        ptu.setAttribute('data-da-giao', curSelected);
+                    }
+                    if (kq.nguoiNhan && hth !== 'ALL') {
+                        ptu.value = kq.nguoiNhan;
+                        ptu.title = kq.nguoiNhan;
+                    }
                     const dong = ptu.closest('tr');
                     if (dong) {
                         const oGchu = dong.querySelector('.oGchuGv');
