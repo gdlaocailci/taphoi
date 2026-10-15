@@ -1844,10 +1844,16 @@ $(document).ready(function() {
         }
     }
 
+    let dangChonTuDanhSach = false;
+
     function selectOption(val, text, boQuaLoading = false) {
        if (originalSelect.value === val) {
             input.value = val === "" ? "" : text;
             dropdown.style.display = "none";
+            dangChonTuDanhSach = true;
+            input.blur();
+            originalSelect.blur();
+            dangChonTuDanhSach = false;
             return; 
         }
 
@@ -1870,9 +1876,18 @@ $(document).ready(function() {
                 taiDlBdau(); 
             }
         }
+
+        dangChonTuDanhSach = true;
+        input.blur();
+        originalSelect.blur();
+        dangChonTuDanhSach = false;
     }
 
     input.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+            input.blur();
+            return;
+        }
         dropdown.style.display = "block";
         filterDropdown(e.target.value);
     });
@@ -1884,6 +1899,7 @@ $(document).ready(function() {
     });
 
     input.addEventListener("blur", () => {
+        if (dangChonTuDanhSach) return;
         const typedVal = input.value.trim().toLowerCase();
         
         if (typedVal === "") {
