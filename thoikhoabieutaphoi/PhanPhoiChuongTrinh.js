@@ -86,9 +86,8 @@ function taoKhungGiaoDienPPCT() {
                 <div class="flex flex-col w-24">
                     <label class="text-[11px] text-gray-500 uppercase font-bold mb-1">Tuần học</label>
                     <input type="number" id="locTuanUI" min="1" max="52" value="1" 
-                           onfocus="this.dataset.oldValue = this.value; this.value = '';" 
-                           onblur="if(this.value === '') this.value = this.dataset.oldValue;" 
-                           onchange="this.blur()" 
+                           onfocus="this.dataset.oldValue = this.value; this.select();" 
+                           onblur="if(this.value === '') this.value = this.dataset.oldValue || '1';" 
                            class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-extrabold text-blue-900 bg-blue-50 text-center">
                 </div>
                 <div class="flex flex-col w-32">
