@@ -161,6 +161,11 @@
             </button>
             <p class="text-xs text-blue-200 font-bold uppercase tracking-widest">Thiết kế và phát triển</p>
             <p class="text-sm font-bold text-white mt-1">Hoàng Ngọc Lâm</p>
+
+            <!-- NÚT TRÒN NHỎ ! XÓA BỘ NHỚ ĐỆM (GÓC DƯỚI PHẢI MENU DỌC) -->
+            <button id="btnXoaBoNhoDem" onclick="xoaBoNhoDemHeThong()" title="Xóa bộ nhớ đệm và làm mới hệ thống" class="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold text-xs flex items-center justify-center shadow-lg border border-amber-300 cursor-pointer transition-all duration-150 z-30" aria-label="Xóa bộ nhớ đệm">
+                !
+            </button>
         </div>
     </div>
 
@@ -772,6 +777,23 @@
     </div>
     
     <script>
+    // =========================================================================
+    // HÀM XÓA BỘ NHỚ ĐỆM KHI BẤM NÚT TRÒN ! TRÊN MENU DỌC
+    // =========================================================================
+    async function xoaBoNhoDemHeThong() {
+        if (!confirm("Bạn có chắc chắn muốn xóa bộ nhớ đệm và tải lại ứng dụng không?")) return;
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
+        } catch (e) {
+            console.warn("Lỗi khi xóa bộ nhớ đệm:", e);
+        }
+        window.location.reload(true);
+    }
         
     // =========================================================================
     // KHỐI ĐIỀU KHIỂN MENU 3 GẠCH (THAO TÁC TKB) TRỰC TIẾP TRÊN HTML
@@ -861,9 +883,9 @@
     <script src="PhanQuyenAdmin.js"></script>
     <script src="KiemTraSoDauBai.js"></script>
     <script src="TienDoDayHoc.js"></script>
-  //  <script src="checkonline.js"></script>
+    <script src="checkonline.js"></script>
    <script>
-async function thucThiLamMoiNgam() {
+ async function thucThiLamMoiNgam() {
         let vungHienThi = document.getElementById('vungHienThiSoDauBai');
         
         // KHÓA BẢO VỆ 1: Đang tải lần đầu
@@ -873,59 +895,54 @@ async function thucThiLamMoiNgam() {
         let tabSDB = document.getElementById('khungSoDauBai');
         if (!tabSDB || tabSDB.classList.contains('hidden')) return;
 
-        // KHÓA BẢO VỆ 2: Đang gõ dở TRƯỚC KHI kết nối (kiểm tra cả tr và td)
+        // KHÓA BẢO VỆ 2: Đang gõ dở TRƯỚC KHI kết nối
         if (typeof coThayDoiChuaLuu_SDB !== 'undefined' && coThayDoiChuaLuu_SDB === true) return;
-        if (tabSDB.querySelector('[data-thaydoi="true"]')) return;
+        if (tabSDB.querySelector('td[data-thaydoi="true"]')) return;
 
+        // An toàn biến định danh
         let idGiaoVienGoiLen = typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' ? window.dinhDanhGiaoVienToanCuc : (typeof window.emailGiaoVienToanCuc !== 'undefined' ? window.emailGiaoVienToanCuc : '');
         if (!idGiaoVienGoiLen || typeof CAU_HINH_FRONTEND === 'undefined') return;
 
         try {
-            let cacheKey = typeof window.layKhoaCachLy === 'function' ? window.layKhoaCachLy(`SDB_DATA_STATIC_${idGiaoVienGoiLen}`) : `SDB_DATA_STATIC_${idGiaoVienGoiLen}`;
-            let duLieuTinhCache = sessionStorage.getItem(cacheKey);
-            let yeuCauTaiToanBo = duLieuTinhCache ? false : true;
-
+            // Dùng fetchVoiCoCheThuLai phá vỡ Cache (Kế thừa nguyên vẹn nâng cấp trước đó)
             const phanHoi = await fetchVoiCoCheThuLai(
-                `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(idGiaoVienGoiLen)}&taiToanBo=${yeuCauTaiToanBo}`,
+                `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layDuLieuSoDauBai&emailTruyCap=${encodeURIComponent(idGiaoVienGoiLen)}`,
                 {}, 3, 60000
             );
             
+            // =========================================================================
+            // [NHẬN DIỆN THÔNG MINH 2]: KIỂM TRA LẠI CỜ CHỈNH SỬA SAU KHI TẢI MẠNG XONG
+            // =========================================================================
+            // Trọng tâm bảo vệ: Trong thời gian mạng tải (1-3 giây), nếu người dùng vừa kịp gõ 
+            // thêm dữ liệu (cờ bật lên) -> HỦY NGAY TIẾN TRÌNH GÁN DỮ LIỆU ĐỂ BẢO VỆ CÔNG SỨC!
             let coThayDoiSDB_SauTai = (typeof coThayDoiChuaLuu_SDB !== 'undefined' && coThayDoiChuaLuu_SDB === true);
-            let coOThayDoiDOM_SauTai = tabSDB.querySelector('[data-thaydoi="true"]');
+            let coOThayDoiDOM_SauTai = tabSDB.querySelector('td[data-thaydoi="true"]');
             
             if (coThayDoiSDB_SauTai || coOThayDoiDOM_SauTai) {
                 console.warn("Hủy đồng bộ: Bắt được tín hiệu chỉnh sửa trong lúc đang tải ngầm. Dữ liệu gõ dở đã được bảo vệ!");
-                return;
+                return; // Ngắt luồng lập tức, bỏ qua gói dữ liệu vừa lấy về
             }
 
             const phanHoiText = await phanHoi.text();
-            let duLieuMoi;
+            let duLieuSever;
             try { 
-                duLieuMoi = JSON.parse(phanHoiText); 
+                duLieuSever = JSON.parse(phanHoiText); 
             } catch (loiParse) { 
                 throw new Error("Dữ liệu JSON máy chủ trả về bị nhiễu."); 
             }
             
-            if (duLieuMoi && duLieuMoi.trangThai !== 'loi_he_thong') {
-                let duLieuSever = duLieuMoi;
-                if (!yeuCauTaiToanBo && duLieuTinhCache) {
-                    let cacheParsed = JSON.parse(duLieuTinhCache);
-                    duLieuSever = {
-                        ...duLieuMoi,
-                        KHUNG_CHUONG_TRINH: cacheParsed.KHUNG_CHUONG_TRINH,
-                        PPCT: cacheParsed.PPCT
-                    };
-                }
-
+            if (duLieuSever && duLieuSever.trangThai !== 'loi_he_thong') {
                 if (vungHienThi) vungHienThi.id = 'vungHienThiSoDauBai_DangDongBoNgam';
                 
                 if (typeof khoiTaoDuLieuSoDauBai === 'function') {
                     khoiTaoDuLieuSoDauBai(duLieuSever);
                 }
                 
+                // Trả lại ID trước khi render (Khắc phục lỗi không vẽ lại UI)
                 let vungTemp = document.getElementById('vungHienThiSoDauBai_DangDongBoNgam');
                 if (vungTemp) vungTemp.id = 'vungHienThiSoDauBai';
 
+                // Kích hoạt vẽ UI
                 let theTuan = document.getElementById('chonTuanSo');
                 let theLop = document.getElementById('chonLopSo');
                 if (theTuan && theTuan.value && theLop && theLop.value) {
