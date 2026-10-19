@@ -992,6 +992,11 @@ function napDuLieuBoLocGiaoVien() {
             if (typeof locTheoGiaoVien === 'function') locTheoGiaoVien();
         });
     }
+
+    // [KÍCH HOẠT KÉP]: Gọi khởi tạo bộ lọc lớp ngay sau khi bộ lọc giáo viên đã sẵn sàng
+    if (typeof window.napDuLieuBoLocLop === 'function') {
+        window.napDuLieuBoLocLop();
+    }
 }
 
 async function goiThuatToanXepLich() {
