@@ -2322,22 +2322,31 @@ async function nhapExcelTKB(event) {
                         let theMon = document.getElementById(`mon_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
                         let theGv = document.getElementById(`gv_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
 
-                        // [LÕI SỬA LỖI]: Bắt buộc đánh dấu cờ thay đổi (danhDauDongThayDoiTKB) để hệ thống nhận diện thao tác Lưu
+                        // [LÕI SỬA LỖI]: Bắt buộc đánh dấu cờ thay đổi để hệ thống nhận diện thao tác Lưu (Chỉ áp dụng với ô được sửa đổi)
+                        let oBiDoi = false;
                         if (theMon && !theMon.disabled && theMon.value !== monVal) {
                             theMon.value = monVal;
                             if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(theMon);
-                            soOThayDoi++;
+                            oBiDoi = true;
                         }
                         if (theGv && !theGv.disabled && theGv.value !== gvVal) {
                             theGv.value = gvVal;
                             if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(theGv);
+                            oBiDoi = true;
+                        }
+                        
+                        if (oBiDoi) {
                             soOThayDoi++;
+                            if (typeof window.xacThucGiaTriHopLe === 'function') {
+                                if (theMon) window.xacThucGiaTriHopLe(theMon, 'mon');
+                                if (theGv) window.xacThucGiaTriHopLe(theGv, 'gv');
+                            }
                         }
                     });
                 }
                 
                 if (typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang(true);
-                alert(`✅ Đã kết xuất dữ liệu từ Excel lên giao diện thành công!\n- Số vị trí ô được cập nhật: ${soOThayDoi}\n\nĐồng chí vui lòng kiểm tra lại trên lưới và bấm [Lưu Sửa] hoặc [Lưu TKB Tuần] để lưu vào hệ thống.`);
+                alert(`✅ Đã kết xuất dữ liệu từ Excel lên giao diện thành công!\n- Số vị trí ô được cập nhật: ${soOThayDoi}\n\nĐồng chí vui lòng kiểm tra lại trên lưới và bấm [Lưu Sửa] hoặc [Lưu TKB Tuần] để chốt dữ liệu vào máy chủ.`);
             } catch (errParse) { console.error("Lỗi phân tích cú pháp tệp Excel: ", errParse); alert("Sự cố xảy ra khi trích xuất dữ liệu biểu mẫu."); }
         };
         reader.readAsArrayBuffer(file);
