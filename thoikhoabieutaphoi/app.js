@@ -3409,3 +3409,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+// =========================================================================
+// HÀM BỔ SUNG: TỰ ĐỘNG KHỞI TẠO NÚT NHẬP EXCEL TRÊN GIAO DIỆN TKB (UI)
+// =========================================================================
+window.khoiTaoNutNhapExcelTKBUI = function() {
+    // 1. Kiểm tra và tạo thẻ input[type="file"] ẩn để chọn tệp Excel nếu chưa có
+    let inputExcel = document.getElementById('fileInputExcelTKB');
+    if (!inputExcel) {
+        inputExcel = document.createElement('input');
+        inputExcel.type = 'file';
+        inputExcel.id = 'fileInputExcelTKB';
+        inputExcel.accept = '.xlsx, .xls';
+        inputExcel.className = 'hidden';
+        inputExcel.setAttribute('onchange', 'nhapExcelTKB(event)');
+        document.body.appendChild(inputExcel);
+    }
+
+    // 2. Kiểm tra xem nút btnNhapExcelTKB đã có trên giao diện chưa, nếu chưa thì chèn vào menu thao tác TKB
+    let btnNhap = document.getElementById('btnNhapExcelTKB');
+    if (!btnNhap) {
+        let dropdown = document.getElementById('dropdownMenuThaoTacTKB');
+        if (dropdown) {
+            btnNhap = document.createElement('button');
+            btnNhap.id = 'btnNhapExcelTKB';
+            btnNhap.type = 'button';
+            // Mặc định ban đầu ẩn (để hàm kiemSoatGiaoDien kiểm soát quyền sau)
+            btnNhap.style.display = 'none'; 
+            btnNhap.className = 'w-full text-left px-3 py-2 text-emerald-800 hover:bg-emerald-50 font-bold text-sm transition duration-150 flex items-center gap-2.5 rounded-lg whitespace-nowrap cursor-pointer group';
+            btnNhap.title = 'Tải Thời khóa biểu từ file Excel (.xlsx) lên lưới giao diện';
+            btnNhap.onclick = function() {
+                // Kiểm tra khóa TKB tuần trước khi cho chọn file
+                if (typeof window.kiemTraTuanTkbDaKhoa === 'function' && window.kiemTraTuanTkbDaKhoa(tuanDangXem)) {
+                    alert(`⚠️ Thời khóa biểu Tuần ${tuanDangXem} đang bị KHÓA (Niêm phong). Đồng chí vui lòng Mở khóa trước khi tải file Excel lên lưới!`);
+                    return;
+                }
+                if (typeof window.dongMenuThaoTacTKB === 'function') window.dongMenuThaoTacTKB();
+                let fileIn = document.getElementById('fileInputExcelTKB');
+                if (fileIn) { fileIn.value = ''; fileIn.click(); }
+            };
+            btnNhap.innerHTML = `
+                <div class="w-7 h-7 rounded-md bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center text-emerald-700 flex-none transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </div>
+                <span>Nhập Excel</span>
+            `;
+            // Chèn lên vị trí đầu tiên trong menu 3 gạch thao tác TKB
+            dropdown.insertBefore(btnNhap, dropdown.firstChild);
+        }
+    }
+};
+
+// Gọi tự động khi trang vừa nạp xong
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(window.khoiTaoNutNhapExcelTKBUI, 300);
+    });
+} else {
+    setTimeout(window.khoiTaoNutNhapExcelTKBUI, 300);
+}
