@@ -2896,6 +2896,17 @@ window.napDuLieuBoLocLop = function() {
     let locLopInput = document.getElementById('locLopHoc');
     if (!locLopInput) return;
 
+    // [NÂNG CẤP UI]: Tự động bôi đen toàn bộ dữ liệu khi nhấp chuột (Giống ô Giáo viên)
+    if (!locLopInput.dataset.daGanSuKienChonAll) {
+        locLopInput.dataset.daGanSuKienChonAll = "true";
+        locLopInput.addEventListener('click', function() {
+            this.select();
+        });
+        locLopInput.addEventListener('focus', function() {
+            this.select();
+        });
+    }
+
     // Tự động kiểm tra và gắn datalist nếu trên giao diện HTML chưa có
     let listId = locLopInput.getAttribute('list');
     let dtList = document.getElementById(listId);
