@@ -2257,6 +2257,25 @@ async function nhapExcelTKB(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // 1. Kiểm tra an ninh bảo mật kép (Chống hack mở DOM UI)
+    let quyenCongKhai = (typeof window.layQuyenCongKhaiHienTai === 'function') ? window.layQuyenCongKhaiHienTai() : { nut: [] };
+    let nutCongKhai = quyenCongKhai.nut || [];
+    let nutDuocCap = (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
+    let coQuyenNhap = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || nutDuocCap.includes('btnNhapExcelTKB') || nutCongKhai.includes('btnNhapExcelTKB');
+
+    if (!coQuyenNhap) {
+        alert("⛔ TỪ CHỐI TRUY CẬP:\nTài khoản của đồng chí chưa được cấp quyền [Nhập Excel] trong Ma trận phân quyền!");
+        event.target.value = "";
+        return;
+    }
+
+    // 2. Chặn can thiệp nếu Tuần đang bị Khóa (Niêm phong)
+    if (typeof window.kiemTraTuanTkbDaKhoa === 'function' && window.kiemTraTuanTkbDaKhoa(tuanDangXem)) {
+        alert(`⚠️ Thời khóa biểu Tuần ${tuanDangXem} đang bị KHÓA (Niêm phong). Đồng chí vui lòng Mở khóa trước khi nhập Excel!`);
+        event.target.value = "";
+        return;
+    }
+
     if (typeof window.khoaNutThaoTacTKB === 'function') window.khoaNutThaoTacTKB(true, 'Đang nạp Excel');
     try {
         if (typeof XLSX === 'undefined') { alert("Thư viện hệ thống chưa sẵn sàng."); return; }
@@ -2266,7 +2285,8 @@ async function nhapExcelTKB(event) {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0]; 
+                // Nhận diện tự động đúng sheet TKB thay vì cố định sheet 0
+                const sheetName = workbook.SheetNames.find(n => n.toUpperCase().includes('TKB')) || workbook.SheetNames[0]; 
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
 
@@ -2280,6 +2300,7 @@ async function nhapExcelTKB(event) {
                 }
 
                 let thuHienTai = ""; let buoiHienTai = "";
+                let soOThayDoi = 0;
 
                 for (let r = 2; r < jsonData.length; r++) {
                     const row = jsonData[r];
@@ -2293,17 +2314,30 @@ async function nhapExcelTKB(event) {
                     danhSachLopCol.forEach(lopInfo => {
                         let monVal = row[lopInfo.colIndex] ? row[lopInfo.colIndex].toString().trim() : "";
                         let gvVal = row[lopInfo.colIndex + 1] ? row[lopInfo.colIndex + 1].toString().trim() : "";
+                        
+                        // Nắn chỉnh khoảng trống (Dấu gạch ngang biểu diễn xóa trống)
+                        if (monVal === "---" || monVal === "--") monVal = "";
+                        if (gvVal === "---" || gvVal === "--") gvVal = "";
 
                         let theMon = document.getElementById(`mon_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
                         let theGv = document.getElementById(`gv_${thuHienTai}_${buoiHienTai}_${tiet}_${lopInfo.tenLop}`);
 
-                        if (theMon) theMon.value = monVal;
-                        if (theGv) theGv.value = gvVal;
+                        // [LÕI SỬA LỖI]: Bắt buộc đánh dấu cờ thay đổi (danhDauDongThayDoiTKB) để hệ thống nhận diện thao tác Lưu
+                        if (theMon && !theMon.disabled && theMon.value !== monVal) {
+                            theMon.value = monVal;
+                            if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(theMon);
+                            soOThayDoi++;
+                        }
+                        if (theGv && !theGv.disabled && theGv.value !== gvVal) {
+                            theGv.value = gvVal;
+                            if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(theGv);
+                            soOThayDoi++;
+                        }
                     });
                 }
                 
-                if (typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang();
-                alert("Đã kết xuất dữ liệu từ Excel lên giao diện thành công! Vui lòng kiểm tra đối chiếu và bấm [Lưu TKB Tuần] để lưu hệ thống.");
+                if (typeof kiemTraTrungGiaoVienToanBang === 'function') kiemTraTrungGiaoVienToanBang(true);
+                alert(`✅ Đã kết xuất dữ liệu từ Excel lên giao diện thành công!\n- Số vị trí ô được cập nhật: ${soOThayDoi}\n\nĐồng chí vui lòng kiểm tra lại trên lưới và bấm [Lưu Sửa] hoặc [Lưu TKB Tuần] để lưu vào hệ thống.`);
             } catch (errParse) { console.error("Lỗi phân tích cú pháp tệp Excel: ", errParse); alert("Sự cố xảy ra khi trích xuất dữ liệu biểu mẫu."); }
         };
         reader.readAsArrayBuffer(file);
