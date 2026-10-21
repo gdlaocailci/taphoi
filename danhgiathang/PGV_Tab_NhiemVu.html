@@ -1607,49 +1607,24 @@ window.tepdinhkBcao = window.tepdinhkBcao || [];
         }
     }
 
-    const oYkien = document.getElementById('nhapYkien');
+   const oYkien = document.getElementById('nhapYkien');
     if (oYkien) {
         window.yKienCuaNguoiKhac = "";
 
-        // Hàm hỗ trợ tự động tìm Họ tên thực từ danh sách cán bộ đã tải
+        // Hàm hỗ trợ tự động tìm Họ tên từ Email qua mảng dsGiaoVien đã tải
         const layTenGiamSat = () => {
-            // Lấy ID hoặc Email của người đang đăng nhập (Giám sát)
-            let idHienTai = (typeof window.PGV_ID_TC !== 'undefined' && window.PGV_ID_TC) ? window.PGV_ID_TC : "GS";
-            
-            // 1. Trích xuất mảng dữ liệu chuẩn (Xử lý trường hợp dsGiaoVien bị bọc trong thuộc tính dliu)
-            let mangGV = [];
-            if (typeof dsGiaoVien !== 'undefined' && dsGiaoVien) {
-                mangGV = Array.isArray(dsGiaoVien) ? dsGiaoVien : (dsGiaoVien.dliu || []);
-            }
-            
-            // 2. Tìm kiếm đối chiếu ID/Email trong danh sách cán bộ toàn trường
-            if (mangGV.length > 0) {
-                let thongTinGS = mangGV.find(cb => 
-                    (cb.taik && cb.taik.toLowerCase() === idHienTai.toLowerCase()) || 
-                    (cb.ttrg && cb.ttrg === idHienTai)
-                );
-                if (thongTinGS && (thongTinGS.tenn || thongTinGS.ten)) {
-                    return thongTinGS.tenn || thongTinGS.ten; // Trả về Họ tên thực (VD: TƯ LIỆU HỢP THÀNH)
+            let emailHienTai = (typeof window.PGV_ID_TC !== 'undefined') ? window.PGV_ID_TC : "";
+            let tenGS = emailHienTai;
+            if (typeof dsGiaoVien !== 'undefined' && dsGiaoVien && dsGiaoVien.length > 0) {
+                let thongTinGS = dsGiaoVien.find(cb => cb.taik === emailHienTai || cb.ttrg === emailHienTai);
+                if (thongTinGS && (thongTinGS.ten || thongTinGS.tenn)) {
+                    tenGS = thongTinGS.ten || thongTinGS.tenn;
                 }
             }
-            
-            // 3. Dự phòng: Quét lấy từ thẻ HTML của Profile Card nếu mảng bị lỗi
-            let tenTuGiaoDien = "";
-            $("div:contains('Họ tên:')").each(function() {
-                let text = $(this).text();
-                if (text.includes("Họ tên:") && text.includes("Vị trí:")) {
-                     let match = text.match(/Họ tên:\s*([^\n]+)/);
-                     if (match && match[1]) tenTuGiaoDien = match[1].trim();
-                }
-            });
-            if (tenTuGiaoDien !== "") return tenTuGiaoDien;
-            
-            // 4. Dự phòng cuối: Biến toàn cục
-            if (typeof window.PGV_TEN_TC !== 'undefined' && window.PGV_TEN_TC) {
-                return window.PGV_TEN_TC;
+            if (!tenGS || tenGS === emailHienTai) {
+                tenGS = (typeof window.PGV_TEN_TC !== 'undefined' && window.PGV_TEN_TC) ? window.PGV_TEN_TC : (emailHienTai ? emailHienTai.split('@')[0] : "Giám sát");
             }
-            
-            return idHienTai; // Lấy ID nếu mọi dự phòng đều thất bại
+            return tenGS;
         };
 
         const descriptorY = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
