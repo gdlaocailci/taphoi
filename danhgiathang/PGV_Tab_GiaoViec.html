@@ -1025,19 +1025,33 @@ function gvTaiCanb() {
 
     function gvKiemTraTieuDe(ptu) {
         if (!ptu) return;
-        let isHeader = ptu.value.trim().startsWith('*');
+        let val = ptu.value.trim();
+        let isHeader = val.startsWith('*') || val.includes('(*)');
         let tr = ptu.closest('tr');
         let tdNoiDung = ptu.closest('td');
         if (!tr || !tdNoiDung) return;
         
+        let tdHdong = tr.querySelector('.oHdong');
         if (isHeader) {
             ptu.classList.add('fw-bold', 'text-primary', 'text-uppercase');
             tdNoiDung.colSpan = 6;
             tr.querySelectorAll('td:nth-child(n+4)').forEach(td => { if (td) td.style.display = 'none'; });
+            if (tdHdong) {
+                tdHdong.innerHTML = '<i class="bi bi-lock-fill text-secondary" title="Dòng tiêu đề - Không được phép xóa"></i>';
+            }
         } else {
             ptu.classList.remove('fw-bold', 'text-primary', 'text-uppercase');
             tdNoiDung.colSpan = 1;
             tr.querySelectorAll('td:nth-child(n+4)').forEach(td => { if (td) td.style.display = ''; });
+            if (tdHdong) {
+                const oGchu = tr.querySelector('.oGchuGv');
+                const ktraSoHuu = gvLaGiaoViecCuaNguoiKhac(oGchu ? oGchu.value : '');
+                if (ktraSoHuu.biKhoa) {
+                    tdHdong.innerHTML = `<i class="bi bi-shield-lock-fill text-danger" title="Nhiệm vụ do ${ktraSoHuu.chuSoHuu} giao - Không có quyền xóa hoặc thay đổi"></i>`;
+                } else {
+                    tdHdong.innerHTML = '<button type="button" class="btn btn-danger btn-sm p-0" style="width:24px; height:24px;" onclick="gvXoaDong(this)" title="Xóa dòng nhiệm vụ này">X</button>';
+                }
+            }
         }
         gvAutoResizeAllTextareas();
     }
@@ -1047,6 +1061,8 @@ function gvVeDong(dong = null) {
     if (!tb) return;
     const tr = document.createElement('tr');
     
+    let ndungGoc = (dong && dong[1]) ? String(dong[1]).trim() : "";
+    let laTieuDe = ndungGoc.startsWith('*') || ndungGoc.includes('(*)');
     let ngnth = (dong && dong[6]) ? dong[6] : "";
     let gchuGoc = (dong && dong[8]) ? dong[8] : "";
 
@@ -1057,7 +1073,10 @@ function gvVeDong(dong = null) {
     const roKhac = biKhoaKhac ? "readonly" : "";
 
     let btnxoa = "";
-    if (biKhoaKhac) {
+    if (laTieuDe) {
+        // Dòng tiêu đề mục: Khóa cố định, tuyệt đối không cho phép xóa
+        btnxoa = `<i class="bi bi-lock-fill text-secondary" title="Dòng tiêu đề - Không được phép xóa"></i>`;
+    } else if (biKhoaKhac) {
         btnxoa = `<i class="bi bi-shield-lock-fill text-danger" title="Nhiệm vụ do ${ktraSoHuu.chuSoHuu} giao - Không có quyền xóa hoặc thay đổi"></i>`;
     } else {
         btnxoa = `<button type="button" class="btn btn-danger btn-sm p-0" style="width:24px; height:24px;" onclick="gvXoaDong(this)" title="Xóa dòng nhiệm vụ này">X</button>`;
@@ -1245,15 +1264,21 @@ function gvVeDong(dong = null) {
         if (!btn) return;
         const row = btn.closest('tr');
         if (!row) return;
+
+        const oNd = row.querySelector('.oNdGv');
+        const ndg = oNd ? oNd.value.trim() : "";
+        // Bảo vệ dòng tiêu đề: Tuyệt đối không cho phép xóa
+        if (ndg.startsWith('*') || ndg.includes('(*)')) {
+            gvTbaoNhanh('cbh', "⚠️ DÒNG TIÊU ĐỀ KHÔNG ĐƯỢC PHÉP XÓA!\nĐây là tiêu đề phân mục nhiệm vụ chung của hệ thống.");
+            return;
+        }
+
         const oGchu = row.querySelector('.oGchuGv');
         const ktraSoHuu = gvLaGiaoViecCuaNguoiKhac(oGchu ? oGchu.value : "");
         if (ktraSoHuu.biKhoa) {
             gvTbaoNhanh('loi', `⛔ KHÔNG CÓ QUYỀN XÓA!\nNhiệm vụ này do <b>${ktraSoHuu.chuSoHuu}</b> giao.\nĐồng chí không có quyền xóa hoặc thay đổi giao việc của người khác!`);
             return;
         }
-
-        const oNd = row.querySelector('.oNdGv');
-        const ndg = oNd ? oNd.value.trim() : "";
         const oNgn = row.querySelector('.oNnghanGv');
         const daGiaoAttr = oNgn ? String(oNgn.getAttribute('data-da-giao') || "").trim() : "";
         const selectedIdsAttr = oNgn ? String(oNgn.getAttribute('data-selected-ids') || "").trim() : "";
