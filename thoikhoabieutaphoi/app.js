@@ -1648,10 +1648,14 @@ function xuatMaTranBang(danhSachTiet) {
 async function luuDuLieu(event, loaiLuu, tuDongLuu = false) {
     let coQuyenThaoTac = quyenSuaChua || (quyenChiTiet && (quyenChiTiet.lop.length > 0 || quyenChiTiet.nut.length > 0));
     if (!coQuyenThaoTac) return;
+    if (loaiLuu === 'khoiphuc') {
+        if (typeof thucThiChuyenTuanTiepTheo === 'function') {
+            return await thucThiChuyenTuanTiepTheo(event);
+        }
+    }
     
     if (!tuDongLuu) {
         if (loaiLuu === 'codinh') { if (!confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ TKB hiện tại làm TKB Gốc Cố Định cho toàn trường. Bấm OK để tiếp tục.")) return; }
-        if (loaiLuu === 'khoiphuc') { if (!confirm(`Xác nhận: Lưu trữ toàn bộ TKB Tuần ${tuanDangXem}, tự động chuyển sang tuần tiếp theo?`)) return; }
         if (loaiLuu === 'tuan') { if (!confirm(`Xác nhận: Xóa trắng và ghi đè toàn bộ dữ liệu Tuần ${tuanDangXem} trên máy chủ bằng nội dung Thời khoá biểu mặc định?`)) return; }
     }
     if (loaiLuu === 'tuan' || loaiLuu === 'khoiphuc') {
@@ -2984,8 +2988,13 @@ window.napDuLieuBoLocLop = function() {
     }
 };
 async function thucThiChuyenTuanTiepTheo(event) {
-    if (!quyenSuaChua) {
-        alert("Từ chối truy cập: Đồng chí không có quyền quản trị để thực hiện tịnh tiến thời khóa biểu toàn trường.");
+    // [CẬP NHẬT QUAN TRỌNG]: Ai được check quyền Nút "Tuần mới" (btnKhoiPhuc) đều có thể chạy
+    let quyenCongKhai = (typeof window.layQuyenCongKhaiHienTai === 'function') ? window.layQuyenCongKhaiHienTai() : { nut: [] };
+    let nutDuocCap = (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut) ? quyenChiTiet.nut : [];
+    let coQuyenChuyen = quyenSuaChua || nutDuocCap.includes('btnKhoiPhuc') || quyenCongKhai.nut.includes('btnKhoiPhuc');
+
+    if (!coQuyenChuyen) {
+        alert("Từ chối truy cập: Đồng chí không có quyền để thực hiện tịnh tiến thời khóa biểu toàn trường.");
         return;
     }
 
@@ -2994,8 +3003,8 @@ async function thucThiChuyenTuanTiepTheo(event) {
 
     let canhBao = `⛔ XÁC NHẬN CHUYỂN TUẦN ${tuanMoi}:\n\n` +
                   `Hệ thống sẽ thực hiện:\n` +
-                  `1. Xóa toàn bộ dữ liệu của Tuần ${tuanHeThong} tại Sheet TKB_HIEN_TAI.\n` +
-                  `2. Chép toàn bộ TKB chuẩn từ Sheet TKB_CoDinh sang Tuần ${tuanMoi}.\n` +
+                  `1. Lưu trữ an toàn toàn bộ dữ liệu Tuần ${tuanHeThong} vào lịch sử.\n` +
+                  `2. Chép toàn bộ TKB chuẩn từ TKB Cố Định sang Tuần ${tuanMoi}.\n` +
                   `3. Tịnh tiến tuần làm việc của toàn trường lên Tuần ${tuanMoi}.\n\n` +
                   `Đồng chí có chắc chắn muốn thực hiện?`;
 
@@ -3024,10 +3033,8 @@ async function thucThiChuyenTuanTiepTheo(event) {
         const ketQua = await phanHoi.json();
         
         if (ketQua.trangThai === 'thanh_cong') {
-            // Đã bỏ thông báo thành công theo yêu cầu (chỉ giữ thông báo xác nhận lần đầu)
             localStorage.removeItem(layKhoaCachLy('SmartTKB_CauHinh'));
             localStorage.removeItem(layKhoaCachLy('SmartTKB_DuLieuTuan'));
-            
             window.location.reload(); 
         } else {
             throw new Error(ketQua.thongBao);
