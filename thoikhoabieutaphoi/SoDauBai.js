@@ -1461,7 +1461,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
             <div>- Tổng số tiết học trong tuần: <span class="font-normal italic">${tongSoTietThucHien} .</span></div>
             <div>- Tổng số tiết không thực hiện: <span class="font-normal italic">0 . (Sáng: 0, Chiều: 0)</span></div>
             <div>- Tổng số giờ xếp loại: <span class="font-normal italic">${tongGioXepLoai}/${tongSoTietThucHien} [${demTot} Tốt; ${demKha} Khá ; ${demTB} Đạt/TB; ${demYeu} Yếu]</span></div>
-            <div>- Điểm trung bình chung: <span class="font-normal italic">0</span></div>
+            
         </div>
     </div>`;
 
