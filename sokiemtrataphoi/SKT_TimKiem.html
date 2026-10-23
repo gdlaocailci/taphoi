@@ -390,7 +390,7 @@
               }
               const tkFooter = document.getElementById('footer_timkiem');
               if (tkFooter && typeof SKT_TAC_GIA !== 'undefined') {
-                  tkFooter.innerText = SKT_TAC_GIA;
+                  tkFooter.innerHTML = SKT_TAC_GIA.replace(/<br\s*[\/]?>/gi, " - ").replace(/\n/g, " - ");
               }
           } catch(e) {}
       }, 50);
