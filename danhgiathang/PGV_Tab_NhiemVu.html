@@ -306,7 +306,7 @@ function khoiTaoDropdownGiaoVien(danhSachGiaoVien) {
         ds.forEach(function(cb) { 
             var qy = String(cb.quyen || "").trim().toLowerCase();
             
-            if (qy === "" || qy === "x" || qy === "xx" || qy === "xxx") {
+            if (qy === "" || qy === "gs" || qy === "xx" || qy === "xxx") {
                 var option = document.createElement("option"); 
                 option.value = cb.id || cb.ma || cb.ttrg; 
                 option.textContent = cb.ten || cb.hoTen || cb.tenn; 
