@@ -1527,17 +1527,28 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     // [KHỐI MỚI]: TỔNG HỢP TỰ ĐỘNG & CHỮ KÝ GVCN (SH DM_LOP -> CỘT B DM_GV) / BGH (QUYỀN KHÓA SỔ)
     // =========================================================================
     let demTot = 0, demKha = 0, demTB = 0, demYeu = 0, tongSoTietThucHien = 0;
+    let khongThucHienSang = 0, khongThucHienChieu = 0;
     tkbTuanNay.forEach(d => {
         if (String(d['Môn Học'] || '').trim() !== '') {
             tongSoTietThucHien++;
+            let tenBai = String(d['TenBai_Thuc'] || '').trim();
             let xl = String(d['XepLoai_Thuc'] || '').trim();
+            let chuKy = String(d['ChuKy_Thuc'] || '').trim();
             if (xl === 'Tốt') demTot++;
             else if (xl === 'Khá') demKha++;
             else if (xl === 'TB') demTB++;
             else if (xl === 'Yếu') demYeu++;
+
+            // Số tiết không thực hiện: tiết thiếu tên bài HOẶC thiếu xếp loại HOẶC thiếu ký tên (tương ứng Sáng / Chiều)
+            if (tenBai === '' || xl === '' || xl === '-Chọn-' || chuKy === '') {
+                let buoiNorm = String(d['Buổi'] || '').trim().toLowerCase();
+                if (buoiNorm === 'sáng') khongThucHienSang++;
+                else khongThucHienChieu++;
+            }
         }
     });
     let tongGioXepLoai = demTot + demKha + demTB + demYeu;
+    let tongTietKhongThucHien = khongThucHienSang + khongThucHienChieu;
 
     let khoaTongHop = `${maxTuanChon}_${lopChon.toUpperCase()}`;
     let tongHopData = (window.duLieuTongHopSDB && window.duLieuTongHopSDB[khoaTongHop])
@@ -1608,9 +1619,8 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 
         <div class="font-bold mt-2 text-[16px]" style="line-height: 1.6;" id="khuVucThongKeSDB">
             <div>- Tổng số tiết học trong tuần: <span class="font-normal italic">${tongSoTietThucHien} .</span></div>
-            <div>- Tổng số tiết không thực hiện: <span class="font-normal italic">0 . (Sáng: 0, Chiều: 0)</span></div>
+            <div>- Tổng số tiết không thực hiện: <span class="font-normal italic">${tongTietKhongThucHien} . (Sáng: ${khongThucHienSang}, Chiều: ${khongThucHienChieu})</span></div>
             <div>- Tổng số giờ xếp loại: <span class="font-normal italic">${tongGioXepLoai}/${tongSoTietThucHien} [${demTot} Tốt; ${demKha} Khá ; ${demTB} Đạt/TB; ${demYeu} Yếu]</span></div>
-            
         </div>
     </div>`;
 
@@ -1662,6 +1672,9 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                     coThayDoiChuaLuu_SDB = true; 
                     if (e.target.id !== 'txtNxGVCN' && e.target.id !== 'txtKyGVCN' && e.target.id !== 'txtNxBGH' && e.target.id !== 'txtKyBGH') {
                         danhDauDongThayDoi(e.target.closest('tr'));
+                        if (typeof capNhatThongKeSDBTrenLuoi === 'function') {
+                            capNhatThongKeSDBTrenLuoi();
+                        }
                     }
                 });
                 oNhap.addEventListener('change', (e) => { 
@@ -2063,6 +2076,9 @@ function dongBoTenBaiHoc() {
             } 
         }); 
         
+        if (typeof capNhatThongKeSDBTrenLuoi === 'function') {
+            capNhatThongKeSDBTrenLuoi();
+        }
         if (btn) { 
             btn.innerHTML = textGoc; 
             btn.disabled = false; 
@@ -2089,6 +2105,9 @@ function chonMucPPCT(soTiet, tenBai, event) {
     // [NÂNG CẤP]: Gắn cờ và biểu tượng khi chọn từ menu thả
     if (daThayDoi && trangThaiKhungPPCT.inputTiet) {
         danhDauDongThayDoi(trangThaiKhungPPCT.inputTiet.closest('tr'));
+        if (typeof capNhatThongKeSDBTrenLuoi === 'function') {
+            capNhatThongKeSDBTrenLuoi();
+        }
     }
     
     dongKhungTruotPPCT(); 
@@ -3112,8 +3131,8 @@ window.capNhatSoDauBaiNgamLenLuoi = function(tuanChon, lopChon) {
                                 
                                 let tagMoi = td.querySelector('input, select, textarea');
                                 if(tagMoi) {
-                                    tagMoi.addEventListener('input', (e) => { coThayDoiChuaLuu_SDB = true; danhDauDongThayDoi(e.target.closest('tr')); });
-                                    tagMoi.addEventListener('change', (e) => { coThayDoiChuaLuu_SDB = true; danhDauDongThayDoi(e.target.closest('tr')); });
+                                    tagMoi.addEventListener('input', (e) => { coThayDoiChuaLuu_SDB = true; danhDauDongThayDoi(e.target.closest('tr')); if (typeof capNhatThongKeSDBTrenLuoi === 'function') capNhatThongKeSDBTrenLuoi(); });
+                                    tagMoi.addEventListener('change', (e) => { coThayDoiChuaLuu_SDB = true; danhDauDongThayDoi(e.target.closest('tr')); if (typeof capNhatThongKeSDBTrenLuoi === 'function') capNhatThongKeSDBTrenLuoi(); });
                                     if (tagMoi.tagName === 'TEXTAREA') {
                                         tagMoi.style.height = 'auto';
                                         tagMoi.style.height = (tagMoi.scrollHeight) + 'px';
@@ -3349,6 +3368,7 @@ window.capNhatThongKeSDBTrenLuoi = function() {
     let cacDong = document.querySelectorAll('#vungHienThiSoDauBai .bang-so-dau-bai-container table tbody tr');
     let tongSoTietThucHien = 0;
     let demTot = 0, demKha = 0, demTB = 0, demYeu = 0;
+    let khongThucHienSang = 0, khongThucHienChieu = 0;
 
     cacDong.forEach(dong => {
         let cellMon = dong.querySelector('td[data-loai="mon"]');
@@ -3361,25 +3381,48 @@ window.capNhatThongKeSDBTrenLuoi = function() {
         }
         if (mon !== '') {
             tongSoTietThucHien++;
+
+            let cellTenBai = dong.querySelector('td[data-loai="tenBai"]');
+            let tenBai = '';
+            if (cellTenBai) {
+                let inpTenBai = cellTenBai.querySelector('textarea, input');
+                tenBai = inpTenBai ? inpTenBai.value.trim() : cellTenBai.innerText.trim();
+            }
+
             let cellXL = dong.querySelector('td[data-loai="xepLoai"]');
             let xl = '';
             if (cellXL) {
                 let sel = cellXL.querySelector('select, input');
                 xl = sel ? sel.value.trim() : cellXL.innerText.trim();
             }
+
+            let cellChuKy = dong.querySelector('td[data-loai="chuKy"]');
+            let chuKy = '';
+            if (cellChuKy) {
+                let inpChuKy = cellChuKy.querySelector('input, textarea');
+                chuKy = inpChuKy ? inpChuKy.value.trim() : cellChuKy.innerText.trim();
+            }
+
             if (xl === 'Tốt') demTot++;
             else if (xl === 'Khá') demKha++;
             else if (xl === 'TB') demTB++;
             else if (xl === 'Yếu') demYeu++;
+
+            // Số tiết không thực hiện: tiết thiếu tên bài HOẶC thiếu xếp loại HOẶC thiếu ký tên (tương ứng Sáng / Chiều)
+            if (tenBai === '' || xl === '' || xl === '-Chọn-' || chuKy === '') {
+                let buoiNorm = String(dong.getAttribute('data-buoi') || '').trim().toLowerCase();
+                if (buoiNorm === 'sáng') khongThucHienSang++;
+                else khongThucHienChieu++;
+            }
         }
     });
 
     let tongGioXepLoai = demTot + demKha + demTB + demYeu;
+    let tongTietKhongThucHien = khongThucHienSang + khongThucHienChieu;
     vungThongKe.innerHTML = `
         <div>- Tổng số tiết học trong tuần: <span class="font-normal italic">${tongSoTietThucHien} .</span></div>
-        <div>- Tổng số tiết không thực hiện: <span class="font-normal italic">0 . (Sáng: 0, Chiều: 0)</span></div>
+        <div>- Tổng số tiết không thực hiện: <span class="font-normal italic">${tongTietKhongThucHien} . (Sáng: ${khongThucHienSang}, Chiều: ${khongThucHienChieu})</span></div>
         <div>- Tổng số giờ xếp loại: <span class="font-normal italic">${tongGioXepLoai}/${tongSoTietThucHien} [${demTot} Tốt; ${demKha} Khá ; ${demTB} Đạt/TB; ${demYeu} Yếu]</span></div>
-        <div>- Điểm trung bình chung: <span class="font-normal italic">0</span></div>
     `;
 };
 
