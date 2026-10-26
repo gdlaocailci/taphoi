@@ -381,7 +381,8 @@ function thietLapNutKhoa(trangThai, ngayKhoa = "") {
     }
 
     if (btn) {
-        if (isBGH || isGS) {
+        //if (isBGH || isGS) {
+           if (isBGH) {
             btn.style.setProperty('display', 'inline-flex', 'important');
         } else {
             btn.style.setProperty('display', 'none', 'important');
