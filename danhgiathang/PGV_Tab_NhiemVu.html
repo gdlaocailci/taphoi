@@ -542,7 +542,8 @@ function apDungKhoaGiaoDien() {
 
   if (daChonGvKhac) {
         $('#vungYkienLanhDaoToanBo').show();
-        if (isBGH || isGS) {
+       // if (isBGH || isGS) {
+           if (isBGH) {
             $('#nhapYkien, #nhapBcao').prop('disabled', true);
             $('#oNoiDungYkienLanhDao').prop('disabled', false).prop('readonly', false);
             $('#nhapSngayNghi, #nhapLdoNghi').prop('disabled', true);
