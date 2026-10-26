@@ -644,8 +644,10 @@ function xulyPhienDn(phanho) {
       window.PGV_SHOW_BATCH_UPDATE = showBatchUpdate;
       window.PGV_YEAR_MONTH_READONLY = yearMonthReadonly;
       window.PGV_SHOW_LICHSU = (quyen === 'gs' || quyen === 'xx' || quyen === 'xxx');
+      window.PGV_SHOW_YKIENGIAMSAT = (quyen === 'xx' || quyen === 'xxx');
       
       if (typeof kiemTraHienThiTabLichSu === 'function') kiemTraHienThiTabLichSu();
+      if (typeof kiemTraHienThiTabYkienGiamSat === 'function') kiemTraHienThiTabYkienGiamSat();
       
       try {
         $('#chuTenGv').text(kq.tde?.tenn || ''); 
