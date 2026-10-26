@@ -1664,6 +1664,7 @@ window.tepdinhkBcao = window.tepdinhkBcao || [];
                         let mTag;
                         let cuaToi = "";
                         let cuaNguoiKhac = "";
+                        let hienThiNguoiKhac = "";
                         let coTagNaoKhong = false;
 
                         while ((mTag = regexTag.exec(noiDungTrongNgoac)) !== null) {
@@ -1679,17 +1680,19 @@ window.tepdinhkBcao = window.tepdinhkBcao || [];
                                 cuaToi = tNd;
                             } else {
                                 cuaNguoiKhac += `[${tId}]: ${tNd}\n`;
+                                hienThiNguoiKhac += `${tNd}\n`;
                             }
                         }
 
                         if (!coTagNaoKhong && noiDungTrongNgoac.trim() !== "") {
                             cuaNguoiKhac = `[Lãnh đạo]: ${noiDungTrongNgoac.trim()}\n`;
+                            hienThiNguoiKhac = `${noiDungTrongNgoac.trim()}\n`;
                         }
 
                         if (oLanhDao) oLanhDao.value = cuaToi;
                         if (vungNguoiKhac) {
-                            if (cuaNguoiKhac.trim() !== "") {
-                                vungNguoiKhac.innerText = cuaNguoiKhac.trim();
+                            if (hienThiNguoiKhac.trim() !== "") {
+                                vungNguoiKhac.innerText = hienThiNguoiKhac.trim();
                                 vungNguoiKhac.style.display = "block";
                             } else {
                                 vungNguoiKhac.style.display = "none";
