@@ -1758,6 +1758,7 @@ function kiemTraKhacBietTkbVaSoDauBai(tuanChon, lopChon) {
                 moTaNgan: moTaNgan,
                 moTaChiTiet: moTaChiTiet
             });
+    /*
         } else if (monTKB !== '' && gvTKB !== '' && gvSDB !== '' && chuanHoaGv(gvSDB) !== chuanHoaGv(gvTKB)) {
             dsKhacBiet.push({
                 khoa: khoa,
@@ -1774,6 +1775,47 @@ function kiemTraKhacBietTkbVaSoDauBai(tuanChon, lopChon) {
                 moTaChiTiet: `${slot.thu} (${slot.buoi} - Tiết ${slot.tiet}): Môn [${monTKB}] đổi GV [${gvSDB}] ➔ [${gvTKB}]`
             });
         }
+    */
+// ĐOẠN MỚI THAY THẾ
+        } else if (monTKB !== '' && gvTKB !== '') {
+            let chuKySDB = sdbItem ? String(sdbItem['ChuKy_Thuc'] || '').trim() : '';
+            let chuKyNorm = window.chuanHoaDinhDanhGiaoVien(chuKySDB);
+
+            // Tách danh sách GV phân công trên TKB mới (hỗ trợ cả Mã GV và Họ tên đầy đủ từ DM_GIAOVIEN)
+            let dsGvTkbRaw = gvTKB.split(/[,;&-]/).map(g => g.trim()).filter(Boolean);
+            let tapHopTenVaMaGvMoi = [];
+            dsGvTkbRaw.forEach(ma => {
+                let maNorm = window.chuanHoaDinhDanhGiaoVien(ma);
+                let tenDayDu = window.layHoTenDayDuGiaoVienSDB(ma);
+                let tenNorm = window.chuanHoaDinhDanhGiaoVien(tenDayDu);
+                if (maNorm) tapHopTenVaMaGvMoi.push(maNorm);
+                if (tenNorm && !tapHopTenVaMaGvMoi.includes(tenNorm)) tapHopTenVaMaGvMoi.push(tenNorm);
+            });
+
+            // Kiểm tra: (1) Khác Mã GV trong bộ nhớ, HOẶC (2) Tiết đó đã có người cũ ký tên nhưng tên người ký không khớp với GV mới trên TKB
+            let khacMaGv = (gvSDB !== '' && chuanHoaGv(gvSDB) !== chuanHoaGv(gvTKB));
+            let daKyBoiNguoiCu = (chuKyNorm !== '' && !tapHopTenVaMaGvMoi.some(g => g === chuKyNorm || (g.length > 2 && chuKyNorm.includes(g))));
+
+            if (khacMaGv || daKyBoiNguoiCu) {
+                let tenGvCuHienThi = chuKySDB || window.layHoTenDayDuGiaoVienSDB(gvSDB) || gvSDB;
+                let tenGvMoiHienThi = dsGvTkbRaw.map(m => window.layHoTenDayDuGiaoVienSDB(m) || m).join(', ');
+                dsKhacBiet.push({
+                    khoa: khoa,
+                    thu: slot.thu,
+                    buoi: slot.buoi,
+                    dataBuoi: slot.dataBuoi,
+                    tiet: slot.tiet,
+                    monCu: monSDB,
+                    monMoi: monTKB,
+                    gvMoi: gvTKB,
+                    ngay: ngayTKB,
+                    loaiKhacBiet: 'GV',
+                    moTaNgan: `Môn [${monTKB}]: GV [${tenGvCuHienThi}] ➔ [${tenGvMoiHienThi}]`,
+                    moTaChiTiet: `${slot.thu} (${slot.buoi} - Tiết ${slot.tiet}): Môn [${monTKB}] đổi GV [${tenGvCuHienThi}] ➔ [${tenGvMoiHienThi}]`
+                });
+            }
+        }
+            
     });
 
     return dsKhacBiet;
@@ -1892,13 +1934,28 @@ function thucThiDongBoTkbVaoSoDauBai() {
             (String(d['Buổi']).trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều') === k.dataBuoi &&
             String(d['Tiết']).trim() === String(k.tiet)
         );
-
+/*
        if (index !== -1) {
             duLieuTKBGopDaMap[index]['Môn Học'] = k.monMoi;
             duLieuTKBGopDaMap[index]['Mã GV'] = k.gvMoi;
             duLieuTKBGopDaMap[index].TrangThaiThayDoi = true;
             duLieuTKBGopDaMap[index].DaDongBoTKB = true;
             // Xóa luôn chữ ký, nhận xét, xếp loại của tiết có thay đổi TKB (kể cả đổi môn hoặc đổi GV)
+            duLieuTKBGopDaMap[index]['ChuKy_Thuc'] = '';
+            duLieuTKBGopDaMap[index]['NhanXet_Thuc'] = '';
+            duLieuTKBGopDaMap[index]['XepLoai_Thuc'] = '';
+            if (k.monCu !== k.monMoi) {
+                duLieuTKBGopDaMap[index]['TietPPCT_Thuc'] = '';
+                duLieuTKBGopDaMap[index]['TenBai_Thuc'] = '';
+            }
+        }
+    */
+        if (index !== -1) {
+            duLieuTKBGopDaMap[index]['Môn Học'] = k.monMoi;
+            duLieuTKBGopDaMap[index]['Mã GV'] = k.gvMoi;
+            duLieuTKBGopDaMap[index].TrangThaiThayDoi = true;
+            duLieuTKBGopDaMap[index].DaDongBoTKB = true;
+            // Xóa sạch chữ ký, nhận xét và xếp loại của người cũ (cả khi đổi môn lẫn khi đổi người dạy cùng môn)
             duLieuTKBGopDaMap[index]['ChuKy_Thuc'] = '';
             duLieuTKBGopDaMap[index]['NhanXet_Thuc'] = '';
             duLieuTKBGopDaMap[index]['XepLoai_Thuc'] = '';
