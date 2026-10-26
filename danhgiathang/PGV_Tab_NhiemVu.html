@@ -534,7 +534,8 @@ function apDungKhoaGiaoDien() {
         $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', false);
     }
 
-    if (daChonGvKhac && (isBGH || isGS)) {
+  //  if (daChonGvKhac && (isBGH || isGS)) 
+    if (daChonGvKhac && isBGH) {
         $('#bangNviec tbody tr').find('.chonKq').prop('disabled', false); 
     }
 
