@@ -2677,7 +2677,7 @@ async function luuSoDauBaiSangMayChu() {
                 );
 
                 // Kiểm tra quyền chữ ký (đồng bộ chuẩn hóa dấu tiếng Việt)
-    /*          
+    /*    Vô hiệu hoá đoạn mã này      
                 if (chuKyGV !== '' && (isThayDoi || !isDaLuu)) {
                     if (!quyenQuanTri && indexTrongRam !== -1) {
                         let gvTkb = window.chuanHoaDinhDanhGiaoVien(duLieuTKBGopDaMap[indexTrongRam]['Mã GV']);
@@ -2689,11 +2689,31 @@ async function luuSoDauBaiSangMayChu() {
                         }
                     }
                 }
-        */
+        
 
                 // Điền tên bài tự động nếu thiếu
                 if (chuKyGV !== '' && tuanSo < tuanHeThong && tenBai === '') {
                     canThiTietThieuTenBai = true;
+                    let matchKhoi = lopChon.match(/\d+/);
+                    let khoi = matchKhoi ? matchKhoi[0] : '';
+                    let baiDayChuan = timTenBaiChuanSDB(khoi, mon, tietPPCT);
+                    
+                    if (baiDayChuan !== '') {
+                        let theTextarea = dong.querySelector('td[data-loai="tenBai"] textarea');
+                        if (theTextarea) {
+                            theTextarea.value = baiDayChuan;
+                            theTextarea.style.height = 'auto';
+                            theTextarea.style.height = (theTextarea.scrollHeight) + 'px';
+                        }
+                        tenBai = baiDayChuan.replace(/\n/g, ' ').trim(); 
+                        isThayDoi = true;
+                        if (typeof danhDauDongThayDoi === 'function') danhDauDongThayDoi(dong);
+                    }
+                }
+      Kết thúc vô hiệu hoá
+      */ 
+                // Điền tên bài tự động nếu thiếu (và lưu luôn không chặn)
+                if (chuKyGV !== '' && tenBai === '') {
                     let matchKhoi = lopChon.match(/\d+/);
                     let khoi = matchKhoi ? matchKhoi[0] : '';
                     let baiDayChuan = timTenBaiChuanSDB(khoi, mon, tietPPCT);
@@ -2829,7 +2849,7 @@ async function luuSoDauBaiSangMayChu() {
     }
 
    // if (loiPhanQuyen) return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công. Vui lòng kiểm tra lại!");
-    if (canThiTietThieuTenBai) return alert("Phát hiện sổ tuần bị bỏ trống Tên bài. Hệ thống đã điền tự động. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
+  //  if (canThiTietThieuTenBai) return alert("Phát hiện sổ tuần bị bỏ trống Tên bài. Hệ thống đã điền tự động. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
     if (soDongCoThayDoi === 0) return alert("Sổ đầu bài chưa có thay đổi nào để lưu.");
 
     let thongBaoGiaoDien = `Hệ thống ghi nhận ${soDongCoThayDoi} mục có sự thay đổi/cập nhật dữ liệu:\n\n` + 
