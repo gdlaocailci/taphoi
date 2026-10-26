@@ -1893,15 +1893,16 @@ function thucThiDongBoTkbVaoSoDauBai() {
             String(d['Tiết']).trim() === String(k.tiet)
         );
 
-        if (index !== -1) {
+       if (index !== -1) {
             duLieuTKBGopDaMap[index]['Môn Học'] = k.monMoi;
             duLieuTKBGopDaMap[index]['Mã GV'] = k.gvMoi;
             duLieuTKBGopDaMap[index].TrangThaiThayDoi = true;
             duLieuTKBGopDaMap[index].DaDongBoTKB = true;
+            // Xóa luôn chữ ký, nhận xét, xếp loại của tiết có thay đổi TKB (kể cả đổi môn hoặc đổi GV)
+            duLieuTKBGopDaMap[index]['ChuKy_Thuc'] = '';
+            duLieuTKBGopDaMap[index]['NhanXet_Thuc'] = '';
+            duLieuTKBGopDaMap[index]['XepLoai_Thuc'] = '';
             if (k.monCu !== k.monMoi) {
-                duLieuTKBGopDaMap[index]['ChuKy_Thuc'] = '';
-                duLieuTKBGopDaMap[index]['NhanXet_Thuc'] = '';
-                duLieuTKBGopDaMap[index]['XepLoai_Thuc'] = '';
                 duLieuTKBGopDaMap[index]['TietPPCT_Thuc'] = '';
                 duLieuTKBGopDaMap[index]['TenBai_Thuc'] = '';
             }
@@ -2676,6 +2677,7 @@ async function luuSoDauBaiSangMayChu() {
                 );
 
                 // Kiểm tra quyền chữ ký (đồng bộ chuẩn hóa dấu tiếng Việt)
+    /*          
                 if (chuKyGV !== '' && (isThayDoi || !isDaLuu)) {
                     if (!quyenQuanTri && indexTrongRam !== -1) {
                         let gvTkb = window.chuanHoaDinhDanhGiaoVien(duLieuTKBGopDaMap[indexTrongRam]['Mã GV']);
@@ -2687,6 +2689,7 @@ async function luuSoDauBaiSangMayChu() {
                         }
                     }
                 }
+        */
 
                 // Điền tên bài tự động nếu thiếu
                 if (chuKyGV !== '' && tuanSo < tuanHeThong && tenBai === '') {
@@ -2825,7 +2828,7 @@ async function luuSoDauBaiSangMayChu() {
         }
     }
 
-    if (loiPhanQuyen) return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công. Vui lòng kiểm tra lại!");
+   // if (loiPhanQuyen) return alert("Cảnh báo nghiệp vụ: Phát hiện Chữ ký tại Tiết học không thuộc quyền phân công. Vui lòng kiểm tra lại!");
     if (canThiTietThieuTenBai) return alert("Phát hiện sổ tuần bị bỏ trống Tên bài. Hệ thống đã điền tự động. Vui lòng kiểm tra lại trên lưới và bấm Lưu lần nữa để xác nhận!");
     if (soDongCoThayDoi === 0) return alert("Sổ đầu bài chưa có thay đổi nào để lưu.");
 
