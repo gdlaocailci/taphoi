@@ -630,7 +630,7 @@ function xulyLuuTam(ath = false, xltc = null) {
 
     khachApi.luuTam(ht, function(kq) {
         if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if(typeof mokBcao === 'function') mokBcao();
-        if (kq && kq.ttai === 'tcong') { if (!ath) { if (typeof hienThongb === 'function') hienThongb('tcong', "Đã ghi nhớ kết quả thành công!"); } if(xltc) xltc(); } 
+        if (kq && kq.ttai === 'tcong') { if (typeof cacheCanb !== 'undefined' && cacheCanb[maTrangDich] && cacheCanb[maTrangDich].tde) { cacheCanb[maTrangDich].tde.kienn = ht.kienn; } if (!ath) { if (typeof hienThongb === 'function') hienThongb('tcong', "Đã ghi nhớ kết quả thành công!"); } if(xltc) xltc(); }
         else { let ltc = kq ? kq.tbao : "Lỗi"; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi lưu: " + ltc); }
     }, function(loi) { if(!ath) anTaiDl(); if(ntl && !ath) ntl.disabled = false; if (typeof hienThongb === 'function') hienThongb('loi', "Lỗi Server: " + loi.message); });
 }
@@ -1669,21 +1669,14 @@ window.tepdinhkBcao = window.tepdinhkBcao || [];
                         let coTagNaoKhong = false;
 
                         while ((mTag = regexTag.exec(noiDungTrongNgoac)) !== null) {
-                            coTagNaoKhong = true;
-                            let tId = mTag[1].trim();
-                            let tNd = mTag[2].trim();
-                            
-                            // Nếu Tag trùng với Họ tên, Email gốc hoặc tiền tố email
-                            let emailGoc = (typeof window.PGV_ID_TC !== 'undefined' && window.PGV_ID_TC) ? String(window.PGV_ID_TC) : "";
-                            let prefixEmail = emailGoc.split('@')[0];
-                            
-                            if (tId === idHienTai || tId === emailGoc || (prefixEmail && tId === prefixEmail)) {
-                                cuaToi = tNd;
-                            } else {
-                                cuaNguoiKhac += `[${tId}]: ${tNd}\n`;
-                                hienThiNguoiKhac += `${tNd}\n`;
-                            }
-                        }
+                          coTagNaoKhong = true;
+                          let tId = mTag[1].trim();
+                          let tNd = mTag[2].trim();
+
+                          // Khóa toàn bộ ý kiến đã lưu thành dòng bên trên, để trống ô nhập bên dưới cho ý kiến tiếp theo
+                          cuaNguoiKhac += `[${tId}]: ${tNd}\n`;
+                          hienThiNguoiKhac += `${tNd}\n`;
+                      }
 
                         if (!coTagNaoKhong && noiDungTrongNgoac.trim() !== "") {
                             cuaNguoiKhac = `[Lãnh đạo]: ${noiDungTrongNgoac.trim()}\n`;
