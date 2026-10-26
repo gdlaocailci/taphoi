@@ -535,15 +535,13 @@ function apDungKhoaGiaoDien() {
         $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', false);
     }
 
-  //  if (daChonGvKhac && (isBGH || isGS)) 
-    if (daChonGvKhac && isBGH) {
-        $('#bangNviec tbody tr').find('.chonKq').prop('disabled', false); 
+    if (daChonGvKhac && (isBGH || isGS)) {
+            $('#bangNviec tbody tr').find('.chonKq').prop('disabled', false); 
     }
 
   if (daChonGvKhac) {
         $('#vungYkienLanhDaoToanBo').show();
-       // if (isBGH || isGS) {
-           if (isBGH) {
+        if (isBGH || isGS) {
             $('#nhapYkien, #nhapBcao').prop('disabled', true);
             $('#oNoiDungYkienLanhDao').prop('disabled', false).prop('readonly', false);
             $('#nhapSngayNghi, #nhapLdoNghi').prop('disabled', true);
