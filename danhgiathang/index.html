@@ -1409,11 +1409,21 @@ function taiDlNhacBaoCao() {
             
             let data = (res && res.dliu) ? res.dliu : (Array.isArray(res) ? res : []);
             danhSachChuaNopGoc = data;
+          
+           // Cập nhật số liệu thống kê chuẩn toàn trường
+            let tongToanTruong = (res.tongSo !== undefined) ? Number(res.tongSo) : 0;
+            let soChuaNop = (res.soChuaNop !== undefined) ? Number(res.soChuaNop) : data.length;
             
-            // Cập nhật số liệu thống kê
-            $('#nbc_tongSo').text(res.tongSo !== undefined ? res.tongSo : data.length);
-            $('#nbc_soDaNop').text(res.soDaNop !== undefined ? res.soDaNop : 0);
-            $('#nbc_soChuaNop').text(res.soChuaNop !== undefined ? res.soChuaNop : data.length);
+            // Dự phòng: Nếu API chưa trả kịp tongSo, tự động lấy tổng danh sách cán bộ đã tải sẵn trong hệ thống
+            if (tongToanTruong === 0 && $('#hopChonGv option').length > 1) {
+                tongToanTruong = $('#hopChonGv option').length - 1;
+            }
+            
+            let soDaNop = (res.soDaNop !== undefined) ? Number(res.soDaNop) : Math.max(0, tongToanTruong - soChuaNop);
+
+            $('#nbc_tongSo').text(tongToanTruong);
+            $('#nbc_soDaNop').text(soDaNop);
+            $('#nbc_soChuaNop').text(soChuaNop);
             
             veBangNhacBaoCao(data);
         }, function(loi) {
