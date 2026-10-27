@@ -247,6 +247,9 @@ function xulyPhienDn(phanho) {
     .nut-huong-dan span { position: absolute; top: 52px; font-size: 11px; font-weight: bold; color: #198754; white-space: nowrap; background: rgba(255,255,255,0.95); padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); pointer-events: none; }
     .nut-huong-dan:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.25); color: white; }
 
+    .cot-thang-hien-tai { background-color: #fff3cd !important; color: #856404 !important; font-weight: bold; border-left: 2px solid #ffc107 !important; border-right: 2px solid #ffc107 !important; }
+th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !important; }
+
     /* ========================================================== */
     /* NÂNG CẤP: THUẬT TOÁN RESPONSIVE MENU OFF-CANVAS CHO MOBILE */
     /* ========================================================== */
@@ -924,7 +927,50 @@ function taiDsTrang() {
         }, function(l) { if(!amtham) khiLoiMayChu(l); }); 
     }
     
-   function veBangThop() { 
+   /* ==========================================================================
+       CÁC HÀM BỔ TRỢ: XÁC ĐỊNH THÁNG HIỆN TẠI VÀ PHÂN TÍCH ĐIỂM/XẾP LOẠI
+       ========================================================================== */
+    function layThangHienTai() {
+        let tg = "";
+        if (typeof canbHientai !== 'undefined' && canbHientai && canbHientai.tde && canbHientai.tde.tgian) {
+            tg = String(canbHientai.tde.tgian);
+        } else {
+            let el = document.getElementById("chuThoiGian");
+            if (el) tg = el.innerText || el.textContent || "";
+        }
+        let m = tg.match(/(\d{1,2})/);
+        if (m) {
+            let thang = parseInt(m[1], 10);
+            if (thang >= 1 && thang <= 12) return thang;
+        }
+        return new Date().getMonth() + 1; // Mặc định tháng hệ thống
+    }
+
+    function phanTichKetQuaThang(chuoiKq) {
+        if (!chuoiKq || typeof chuoiKq !== 'string') return { rank: 0, diem: -999 };
+        let txt = chuoiKq.toLowerCase().trim();
+        if (txt === "" || txt === "-" || txt.includes("chưa đánh giá")) return { rank: 0, diem: -999 };
+        
+        let rank = 0;
+        if (txt.includes("xuất sắc")) rank = 4;
+        else if (txt.includes("tốt")) rank = 3;
+        else if (txt.includes("chưa hoàn thành")) rank = 1;
+        else if (txt.includes("hoàn thành")) rank = 2;
+        else rank = 0;
+        
+        let diem = 0;
+        let match = txt.match(/([-+]?\d+([.,]\d+)?)/);
+        if (match) {
+            diem = parseFloat(match[1].replace(',', '.'));
+            if (isNaN(diem)) diem = 0;
+        }
+        return { rank: rank, diem: diem };
+    }
+
+    /* ==========================================================================
+       HÀM VẼ BẢNG TỔNG HỢP: ĐỒNG BỘ SẮP XẾP TỪ CAO ĐẾN THẤP THEO THÁNG HIỆN TẠI
+       ========================================================================== */
+    function veBangThop() { 
         if (!Array.isArray(dlThopGoc)) dlThopGoc = [];
         const nchon = $('#locNamThop').val(), tb = $('#bangThop tbody').empty(); 
         if (!nchon) { 
@@ -940,19 +986,46 @@ function taiDsTrang() {
             if (mt) bc[r[0]].thangs[mt] = r[4]; 
         }); 
         
+        // 1. Xác định tháng hiện tại
+        let thangHt = layThangHienTai();
+
+        // 2. Chuyển thành mảng và sắp xếp từ cao đến thấp theo tháng hiện tại
+        let dsCanBo = Object.values(bc);
+        dsCanBo.sort((a, b) => {
+            let kqA = phanTichKetQuaThang(a.thangs[thangHt]);
+            let kqB = phanTichKetQuaThang(b.thangs[thangHt]);
+            
+            // Xếp loại cao hơn đứng trước
+            if (kqA.rank !== kqB.rank) return kqB.rank - kqA.rank;
+            // Cùng loại -> Điểm cao hơn đứng trước
+            if (kqA.diem !== kqB.diem) return kqB.diem - kqA.diem;
+            // Cùng điểm -> Theo vần tên
+            return a.tenn.localeCompare(b.tenn, 'vi');
+        });
+
+        // 3. Đánh dấu cột tháng hiện tại trên Header
+        $('#bangThop thead th.th-thang').each(function() {
+            let t = parseInt($(this).attr('data-thang'), 10);
+            if (t === thangHt) {
+                $(this).addClass('cot-thang-hien-tai-th').attr('title', `Đang sắp xếp ưu tiên theo Tháng ${t}`);
+                $(this).html(`T${t} <i class="bi bi-sort-down"></i>`);
+            } else {
+                $(this).removeClass('cot-thang-hien-tai-th').removeAttr('title');
+                $(this).text(`T${t}`);
+            }
+        });
+
+        // 4. Kết xuất dữ liệu ra bảng
         let stth = 1; 
         const tho = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]; 
         let chuoi_html = "";
         
-        for (const k in bc) { 
-            const gr = bc[k]; 
-            
-            // [Nâng cấp] Lấy ID từ bộ từ điển toàn cục (khắc phục độ trễ thẻ select)
+        dsCanBo.forEach(gr => { 
             let keyTimKiem = gr.tenn.trim().toLowerCase();
             let maId = (window.PGV_MAP_TEN_ID && window.PGV_MAP_TEN_ID[keyTimKiem]) ? window.PGV_MAP_TEN_ID[keyTimKiem] : "Chưa xác định";
             
             let dr = `<tr>
-                <td class="text-center align-middle">${stth++}</td>
+                <td class="text-center align-middle fw-bold">${stth++}</td>
                 <td class="ps-3 align-middle">
                     <div class="fw-bold text-primary text-uppercase" style="font-size: 13px;">${gr.tenn}</div>
                     <div class="text-secondary mt-1" style="font-size: 11px; font-style: italic; font-weight: normal;">
@@ -960,9 +1033,14 @@ function taiDsTrang() {
                     </div>
                 </td>
                 <td class="align-middle"><input type="text" class="form-control form-control-sm border-0 bg-transparent text-center fw-bold text-danger" disabled placeholder="..."></td>`; 
-            tho.forEach(m => dr += `<td class="text-center small align-middle ${gr.thangs[m] ? 'bg-light' : ''}">${gr.thangs[m] || '-'}</td>`); 
+            
+            tho.forEach(m => {
+                let val = gr.thangs[m];
+                let clsThang = (m === thangHt) ? 'cot-thang-hien-tai' : (val ? 'bg-light' : '');
+                dr += `<td class="text-center small align-middle ${clsThang}">${val || '-'}</td>`;
+            }); 
             chuoi_html += dr + '</tr>'; 
-        } 
+        }); 
         tb.html(chuoi_html); 
     }
     
