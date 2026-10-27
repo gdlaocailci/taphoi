@@ -1323,7 +1323,7 @@ function taiTepDangXem() {
                           <i class="bi bi-chat-square-quote-fill me-1"></i> Tổng hợp ý kiến tham mưu, đánh giá của Lãnh đạo và ban giám sát
                       </h4>
                       <small class="text-muted" id="chuThichCheDoYkien">
-                          <i class="bi bi-info-circle me-1"></i>Đang xem: <b>Thời gian thực</b> (Dữ liệu ô D4 các sheet riêng)
+                          <i class="bi bi-info-circle me-1"></i>Đang xem: <b>Thời gian thực</b> (Dữ liệu tháng hiện tại)
                       </small>
                   </div>
                   
@@ -1332,7 +1332,7 @@ function taiTepDangXem() {
                       <div class="d-flex align-items-center">
                           <label class="fw-bold me-1 text-secondary text-nowrap" style="font-size: 13px;">Năm học:</label>
                           <select id="locNamYkienGiamSat" class="form-select form-select-sm border-primary fw-bold text-primary shadow-sm" style="min-width: 150px;" onchange="thayDoiBoLocYkienGiamSat()">
-                              <option value="hientai">-- Hiện tại (Ô D4) --</option>
+                              <option value="hientai">-- Hiện tại --</option>
                           </select>
                       </div>
 
@@ -1340,7 +1340,7 @@ function taiTepDangXem() {
                       <div class="d-flex align-items-center">
                           <label class="fw-bold me-1 text-secondary text-nowrap" style="font-size: 13px;">Tháng:</label>
                           <select id="locThangYkienGiamSat" class="form-select form-select-sm border-primary fw-bold text-primary shadow-sm" style="min-width: 140px;" onchange="thayDoiBoLocYkienGiamSat()">
-                              <option value="hientai">-- Hiện tại (Ô D4) --</option>
+                              <option value="hientai">-- Hiện tại --</option>
                           </select>
                       </div>
 
@@ -1490,9 +1490,9 @@ function taiTepDangXem() {
       const el = document.getElementById("chuThichCheDoYkien");
       if (!el) return;
       if (laQuaKhu) {
-          el.innerHTML = `<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Lịch sử quá khứ</span> Đang trích xuất: <b>Cột G sheet DATAGV</b> (${thang} - Năm học ${nam})`;
+          el.innerHTML = `<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Lịch sử quá khứ</span> Đang trích xuất: <b>Thông tin</b> (${thang} - Năm học ${nam})`;
       } else {
-          el.innerHTML = `<span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Thời gian thực</span> Đang xem: <b>Ô D4 các sheet riêng</b> của cán bộ, giáo viên`;
+          el.innerHTML = `<span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Thời gian thực</span> Đang xem: <b>ý kiến</b> của cán bộ, giáo viên, nhân viên`;
       }
   }
 
