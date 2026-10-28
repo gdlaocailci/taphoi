@@ -368,6 +368,197 @@
                 -webkit-overflow-scrolling: touch !important;
                 max-height: calc(85vh - 120px) !important;
             }
+            /* 1. PHÂN HỆ CÀI ĐẶT HỆ THỐNG (CaiDat.js) */
+            #khungCaiDat {
+                padding: 8px !important;
+            }
+            #khungCaiDat > div.flex.justify-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            #khungCaiDat > div.flex.justify-between button {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            /* Cho phép cả 2 bảng (Thông số và Quyền Admin) cuộn dọc tự nhiên, không bị che khuất */
+            #khungCaiDat > div.flex.gap-4 {
+                flex-direction: column !important;
+                overflow-y: auto !important;
+                height: auto !important;
+                gap: 12px !important;
+            }
+            #khungCaiDat > div.flex.gap-4 > div {
+                width: 100% !important;
+                flex: none !important;
+                min-height: 250px !important;
+                max-height: 380px !important;
+            }
+
+            /* 2. PHÂN HỆ DANH MỤC GIÁO VIÊN (DanhMucGV.js) */
+            #khungDanhMucGV {
+                padding: 8px !important;
+            }
+            #khungDanhMucGV > div.flex.justify-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            #khungDanhMucGV .flex.items-center.gap-2 {
+                width: 100% !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+            #khungDanhMucGV .flex.items-center.gap-2 button {
+                flex: 1 1 calc(50% - 4px) !important;
+                justify-content: center !important;
+                font-size: 11.5px !important;
+                padding: 6px 8px !important;
+                margin-left: 0 !important;
+            }
+            #khungDanhMucGV table {
+                min-width: 820px !important; /* Đảm bảo các cột Mã, Tên, Hộp thư, Định mức không bị ép méo */
+            }
+
+            /* 3. PHÂN HỆ DANH MỤC LỚP (DanhMucLop.js) */
+            #khungDanhMucLop {
+                padding: 8px !important;
+            }
+            #khungDanhMucLop > div {
+                width: 100% !important; /* Bỏ giới hạn 1/2 màn hình trên mobile */
+            }
+            #khungDanhMucLop .flex.justify-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            #khungDanhMucLop .flex.items-center.gap-2 {
+                width: 100% !important;
+                gap: 6px !important;
+            }
+            #khungDanhMucLop .flex.items-center.gap-2 button {
+                flex: 1 1 50% !important;
+                justify-content: center !important;
+            }
+            #khungDanhMucLop table {
+                min-width: 520px !important; /* Đảm bảo cột GVCN và nút lên/xuống/xóa không bị chèn ép */
+            }
+
+            /* 4. PHÂN HỆ KIỂM TRA SỔ ĐẦU BÀI (KiemTraSoDauBai.js) */
+            #khungKiemTraSoDauBai {
+                padding: 8px !important;
+            }
+            #khungKiemTraSoDauBai > div.flex.flex-col.lg\\:flex-row:first-child {
+                gap: 8px !important;
+            }
+            #khungKiemTraSoDauBai .flex.flex-wrap.items-center.gap-2 {
+                width: 100% !important;
+            }
+            #khungKiemTraSoDauBai .flex.flex-wrap.items-center.gap-2 button {
+                flex: 1 1 auto !important;
+                justify-content: center !important;
+                padding: 6px 8px !important;
+            }
+            /* Thanh bộ lọc Năm học, Từ tuần, Đến tuần xếp lưới khoa học */
+            #khungKiemTraSoDauBai .bg-white.border.border-gray-300.shadow-sm.p-3 {
+                padding: 8px !important;
+                gap: 6px !important;
+            }
+            #container_locNamHoc_KTSDB {
+                width: 100% !important;
+            }
+            #container_locTuTuan_KTSDB,
+            #container_locDenTuan_KTSDB {
+                width: calc(50% - 4px) !important;
+            }
+            #khungKiemTraSoDauBai .bg-white.border.border-gray-300.shadow-sm.p-3 > div.flex.flex-col:nth-child(1) {
+                width: 100% !important;
+            }
+            #khungKiemTraSoDauBai .bg-white.border.border-gray-300.shadow-sm.p-3 > div.flex.flex-col:nth-child(2),
+            #khungKiemTraSoDauBai .bg-white.border.border-gray-300.shadow-sm.p-3 > div.flex.flex-col:nth-child(3) {
+                flex: 1 1 calc(50% - 4px) !important;
+                width: calc(50% - 4px) !important;
+            }
+            #khungKiemTraSoDauBai .bg-white.border.border-gray-300.shadow-sm.p-3 > button {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 4px !important;
+                justify-content: center !important;
+            }
+            #khungKiemTraSoDauBai .flex-1.min-w-\[220px\].ml-auto {
+                width: 100% !important;
+                min-width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 4px !important;
+            }
+            #bangKiemTraSDB {
+                min-width: 860px !important; /* Đảm bảo cột Tuần, Lớp, Môn, Lý do hiển thị đầy đủ */
+            }
+            /* Thanh phân trang cuối bảng kiểm tra */
+            #thanhPhanTrangKTSDB {
+                padding: 6px 8px !important;
+                gap: 6px !important;
+            }
+            #thanhPhanTrangKTSDB > div:first-child {
+                width: 100% !important;
+                justify-content: space-between !important;
+            }
+            #thanhPhanTrangKTSDB > div:last-child {
+                width: 100% !important;
+                justify-content: center !important;
+                margin-left: 0 !important;
+            }
+
+            /* 5. PHÂN HỆ KIỂM TRA TIẾN ĐỘ DẠY HỌC (TienDoDayHoc.js) */
+            #modalKiemTraTienDo {
+                padding: 6px !important;
+            }
+            #hopNoiDungModalTienDo {
+                max-width: 98vw !important;
+                max-height: 94vh !important;
+                border-radius: 12px !important;
+            }
+            #modalKiemTraTienDo .bg-gradient-to-r {
+                padding: 8px 12px !important;
+            }
+            #tieuDeModalTienDo {
+                font-size: 13.5px !important;
+            }
+            #vungTheTienDoKPI {
+                padding: 6px 8px !important;
+                gap: 6px !important;
+            }
+            #vungTheTienDoKPI > div {
+                padding: 6px !important;
+                gap: 6px !important;
+            }
+            #vungTheTienDoKPI .text-lg {
+                font-size: 14px !important;
+            }
+            #vungTheTienDoKPI .w-10.h-10 {
+                width: 28px !important;
+                height: 28px !important;
+            }
+            /* Thanh lọc lớp, môn, trạng thái trong Modal Tiến độ */
+            #modalKiemTraTienDo .bg-slate-100.px-5 {
+                padding: 6px 8px !important;
+                gap: 6px !important;
+            }
+            #modalKiemTraTienDo .bg-slate-100.px-5 > div.flex.flex-wrap {
+                width: 100% !important;
+                gap: 4px !important;
+            }
+            #modalKiemTraTienDo .bg-slate-100.px-5 select {
+                font-size: 11.5px !important;
+                padding: 4px 6px !important;
+            }
+            #modalKiemTraTienDo .relative.w-full.sm\\:w-56 {
+                width: 100% !important;
+                margin-top: 4px !important;
+            }
+            #bangTienDoDayHoc {
+                min-width: 780px !important;
+            }
         }
     </style>
 </head>
