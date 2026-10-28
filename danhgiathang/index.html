@@ -277,9 +277,35 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
     /* Kích hoạt khi xem trên điện thoại hoặc máy tính bảng nhỏ */
     @media screen and (max-width: 768px) {
-        .btn-toggle-menu { display: inline-flex; align-items: center; gap: 5px; }
-        
-        #bo-cuc-he-thong { position: relative; display: block; }
+        body { 
+            overflow-x: hidden !important; 
+            overflow-y: auto !important; 
+            height: auto !important; 
+            min-height: 100vh !important; 
+        }
+
+        .bo-cuc-tong { 
+            display: block !important; 
+            min-height: 100vh !important; 
+        }
+
+        #bo-cuc-he-thong { 
+            position: relative; 
+            display: block; 
+        }
+
+        /* Nút MENU TÍNH NĂNG luôn cố định trên màn hình điện thoại theo yêu cầu */
+        .btn-toggle-menu { 
+            display: inline-flex !important; 
+            align-items: center; 
+            gap: 5px; 
+            position: fixed !important;
+            top: 10px !important;
+            left: 10px !important;
+            z-index: 9998 !important;
+            margin-bottom: 0 !important;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important;
+        }
         
         #khuVucMenu {
             position: fixed; top: 0; left: -320px;
@@ -294,10 +320,28 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
         
         #khuVucMenu.mo-menu { left: 0; }
         
-        .k-ngoai { width: 100%; padding: 10px; } 
+        /* Chừa khoảng trống phía trên cho nút Menu cố định, không khóa cứng phần đầu */
+        .k-ngoai { 
+            width: 100% !important; 
+            padding: 10px !important; 
+            padding-top: 55px !important; 
+            overflow-y: visible !important; 
+            height: auto !important;
+            box-sizing: border-box !important;
+        } 
         
-        /* Tối ưu hiển thị bảng trên điện thoại */
-        .table-responsive { max-height: calc(100vh - 180px) !important; }
+        .tab-content {
+            min-height: auto !important;
+            height: auto !important;
+        }
+
+        /* Tối ưu hiển thị bảng trên điện thoại: Không ép cứng max-height để bảng hiển thị tự nhiên */
+        .table-responsive { 
+            max-height: none !important; 
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            -webkit-overflow-scrolling: touch;
+        }
     }
   </style>
 </head>
@@ -1238,7 +1282,7 @@ function taiTepDangXem() {
     function chuyenHuongHeThong() {
         var urlDich = (typeof PGV_LINK_TRANG_CHU !== 'undefined' && PGV_LINK_TRANG_CHU.trim() !== '') 
                       ? PGV_LINK_TRANG_CHU 
-                      : 'https://gdlaocailci.github.io/taphoi/';
+                      : 'https://gdlaocailci.github.io/thlevantam/';
                       
         window.open(urlDich, '_top');
     }
