@@ -9,10 +9,37 @@
   .vung-bang-nv { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .table-responsive { flex: 1 1 auto; overflow-y: auto !important; overflow-x: hidden; min-height: 0; }
 
-  /* Trên điện thoại: Cho phép cuộn trượt giao diện tự nhiên, không khóa cứng phần đầu */
+  /* Trên điện thoại: Cho phép cuộn trượt giao diện tự nhiên, không khóa cứng phần đầu và chống tràn ngang */
   @media screen and (max-width: 768px) {
     .bo-cuc-tab-nhiemvu { 
       height: auto !important; 
+    }
+    .hopDau > div {
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 4px !important;
+    }
+    .hopDau > div > div {
+      flex: 1 1 100% !important;
+      max-width: 100% !important;
+      text-align: center !important;
+      justify-content: center !important;
+      white-space: normal !important;
+      margin-bottom: 2px !important;
+    }
+    .hopDau > div > div:last-child {
+      text-align: center !important;
+    }
+    .hopDau > div > div:last-child .border-end {
+      border-right: none !important;
+      padding-right: 0 !important;
+      margin-right: 0 !important;
+    }
+    #nhapLdoNghi {
+      max-width: 100% !important;
+    }
+    .vung-bang-nv .table-responsive {
+      overflow-x: auto !important;
     }
   }
 
