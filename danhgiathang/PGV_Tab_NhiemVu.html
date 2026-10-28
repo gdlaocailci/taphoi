@@ -238,6 +238,21 @@
     }
   }
 
+  /* Di chuyển nút Quy chế sang bên phải (trước nút Khóa tất cả) khi hiển thị trên máy tính */
+  @media screen and (min-width: 769px) {
+    .hopDau > .d-flex > div:last-child {
+      flex: 0 0 auto !important;
+    }
+    .hopDau .tDe {
+      flex: 1 1 auto !important;
+      padding-right: 12px !important;
+    }
+    .hopDau .tDe > span:first-child {
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+  }
+
   /* --- KẾ THỪA CÁC ĐỊNH DẠNG CSS CŨ --- */
   .hopDau { background-color: #e9ecef; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; border: 1px solid #ced4da; }
   .loGo { font-weight: bold; color: #0d6efd; text-transform: uppercase; font-size: 14px; }
