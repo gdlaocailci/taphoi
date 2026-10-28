@@ -459,7 +459,7 @@ function moTabPhanPhoiChuongTrinh() {
 
     // Ẩn Header hệ thống
     const headerHeThong = document.querySelector('header');
-    if (headerHeThong) { headerHeThong.style.display = 'none'; }
+    if (headerHeThong) { headerHeThong.style.display = ''; }
 
     // 4. Hiện khung PPCT
     const khungPPCT = document.getElementById('khungPhanPhoiChuongTrinh');
