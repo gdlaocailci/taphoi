@@ -283,12 +283,12 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
         
         #khuVucMenu {
             position: fixed; top: 0; left: -320px;
-            width: 300px; max-width: 100vw; height: 100vh; height: 100dvh;
+            width: 280px; height: 100vh; 
             z-index: 10001; /* Đã nâng lên mức cao nhất, đè lên mọi giao diện */
             background: white; 
             transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 2px 0 15px rgba(0,0,0,0.3);
-            overflow: hidden;
+            overflow-y: auto;
         }
         
         #khuVucMenu.mo-menu { left: 0; }
@@ -514,20 +514,15 @@ async function taiGiaoDienUuTien(daCoSanCache = false) {
         localStorage.setItem("PGV_SWR_MENU", txtMenu);
         localStorage.setItem("PGV_SWR_TAB_NV", txtNV);
 
-        // Cập nhật DOM nếu chưa có cache hoặc nếu giao diện máy chủ mới hơn cache
-        var kvm = document.getElementById('khuVucMenu');
-        var knv = document.getElementById('khuNhiemVu');
-        if (!daCoSanCache || (kvm && kvm.innerHTML !== txtMenu)) {
-            if (kvm) {
-                kvm.innerHTML = txtMenu;
-                if (typeof PGV_LINK_LOGO !== 'undefined') { var mnLg = document.getElementById('menu_logo'); if(mnLg) mnLg.src = PGV_LINK_LOGO; }
-                if (typeof PGV_TEN_TRUONG !== 'undefined') { var mnSc = document.getElementById('menu_school_name'); if(mnSc) mnSc.innerText = PGV_TEN_TRUONG; }
-                thuchScript(kvm);
-            }
-            if (knv && (!daCoSanCache || knv.innerHTML !== txtNV)) {
-                knv.innerHTML = txtNV;
-                thuchScript(knv);
-            }
+        // Nếu lúc nãy chưa có cache thì chèn vào DOM và kích hoạt script
+        if (!daCoSanCache) {
+            document.getElementById('khuVucMenu').innerHTML = txtMenu; 
+            document.getElementById('khuNhiemVu').innerHTML = txtNV; 
+            
+            if (typeof PGV_LINK_LOGO !== 'undefined') { var mnLg = document.getElementById('menu_logo'); if(mnLg) mnLg.src = PGV_LINK_LOGO; }
+            if (typeof PGV_TEN_TRUONG !== 'undefined') { var mnSc = document.getElementById('menu_school_name'); if(mnSc) mnSc.innerText = PGV_TEN_TRUONG; }
+            
+            ['khuVucMenu', 'khuNhiemVu'].forEach(i => thuchScript(document.getElementById(i)));
             thietLapSuKienTienNhiem();
         }
     } catch (e) { 
