@@ -514,15 +514,20 @@ async function taiGiaoDienUuTien(daCoSanCache = false) {
         localStorage.setItem("PGV_SWR_MENU", txtMenu);
         localStorage.setItem("PGV_SWR_TAB_NV", txtNV);
 
-        // Nếu lúc nãy chưa có cache thì chèn vào DOM và kích hoạt script
-        if (!daCoSanCache) {
-            document.getElementById('khuVucMenu').innerHTML = txtMenu; 
-            document.getElementById('khuNhiemVu').innerHTML = txtNV; 
-            
-            if (typeof PGV_LINK_LOGO !== 'undefined') { var mnLg = document.getElementById('menu_logo'); if(mnLg) mnLg.src = PGV_LINK_LOGO; }
-            if (typeof PGV_TEN_TRUONG !== 'undefined') { var mnSc = document.getElementById('menu_school_name'); if(mnSc) mnSc.innerText = PGV_TEN_TRUONG; }
-            
-            ['khuVucMenu', 'khuNhiemVu'].forEach(i => thuchScript(document.getElementById(i)));
+        // Cập nhật DOM nếu chưa có cache hoặc nếu giao diện máy chủ mới hơn cache
+        var kvm = document.getElementById('khuVucMenu');
+        var knv = document.getElementById('khuNhiemVu');
+        if (!daCoSanCache || (kvm && kvm.innerHTML !== txtMenu)) {
+            if (kvm) {
+                kvm.innerHTML = txtMenu;
+                if (typeof PGV_LINK_LOGO !== 'undefined') { var mnLg = document.getElementById('menu_logo'); if(mnLg) mnLg.src = PGV_LINK_LOGO; }
+                if (typeof PGV_TEN_TRUONG !== 'undefined') { var mnSc = document.getElementById('menu_school_name'); if(mnSc) mnSc.innerText = PGV_TEN_TRUONG; }
+                thuchScript(kvm);
+            }
+            if (knv && (!daCoSanCache || knv.innerHTML !== txtNV)) {
+                knv.innerHTML = txtNV;
+                thuchScript(knv);
+            }
             thietLapSuKienTienNhiem();
         }
     } catch (e) { 
