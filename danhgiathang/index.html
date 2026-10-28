@@ -288,7 +288,8 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
             background: white; 
             transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 2px 0 15px rgba(0,0,0,0.3);
-            overflow-y: auto;
+            overflow-y: hidden; /* Menu_Doc đã tự quản lý thanh cuộn dọc bên trong */
+            overflow-x: hidden; /* Ngăn chặn hoàn toàn việc xuất hiện thanh trượt ngang */
         }
         
         #khuVucMenu.mo-menu { left: 0; }
