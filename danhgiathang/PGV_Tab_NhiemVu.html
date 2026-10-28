@@ -9,33 +9,10 @@
   .vung-bang-nv { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .table-responsive { flex: 1 1 auto; overflow-y: auto !important; overflow-x: hidden; min-height: 0; }
 
-  /* --- TỐI ƯU HÓA RESPONSIVE CHO THIẾT BỊ DI ĐỘNG (KHÔNG KHÓA CỨNG PHẦN ĐẦU) --- */
+  /* Trên điện thoại: Cho phép cuộn trượt giao diện tự nhiên, không khóa cứng phần đầu */
   @media screen and (max-width: 768px) {
-    /* Khi xem trên điện thoại: Không khoá cứng phần đầu, giải phóng không gian để bảng tiêu chí hiển thị toàn diện */
     .bo-cuc-tab-nhiemvu { 
       height: auto !important; 
-      min-height: auto !important; 
-      display: block !important; 
-    }
-    .vung-dieu-khien-top { 
-      flex: none !important; 
-      position: relative !important; 
-      z-index: 100 !important; 
-    } 
-    .vung-bang-nv { 
-      flex: none !important; 
-      height: auto !important; 
-      min-height: auto !important; 
-      display: block !important; 
-    }
-    .vung-bang-nv .table-responsive { 
-      flex: none !important; 
-      height: auto !important; 
-      max-height: none !important; 
-      min-height: auto !important; 
-      overflow-x: auto !important; 
-      overflow-y: visible !important; 
-      -webkit-overflow-scrolling: touch;
     }
   }
 
