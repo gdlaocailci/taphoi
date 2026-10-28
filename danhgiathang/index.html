@@ -129,24 +129,6 @@ function kiemTraPhienLamViec() {
     const daGhiLs = sessionStorage.getItem("DA_GHI_LS"); 
 
     if (tkluuhd && tokenluu) { 
-        // Tự động kiểm tra thời hạn Token Google JWT (hạn 1 giờ) để tránh lỗi danh tính và treo chậm
-        try {
-            const tdtai = giaimaJwt(tokenluu);
-            const nowSec = Math.floor(Date.now() / 1000);
-            if (tdtai && tdtai.exp && tdtai.exp <= nowSec) {
-                sessionStorage.removeItem("MA_PBAN_HT");
-                sessionStorage.removeItem("PGV_TOKEN");
-                sessionStorage.removeItem("DA_GHI_LS");
-                kiemTraPhienLamViec();
-                return;
-            }
-        } catch(e) {
-            sessionStorage.removeItem("MA_PBAN_HT");
-            sessionStorage.removeItem("PGV_TOKEN");
-            sessionStorage.removeItem("DA_GHI_LS");
-            kiemTraPhienLamViec();
-            return;
-        } 
         window.PGV_ID_TC = tkluuhd; 
         window.PGV_TOKEN = tokenluu;
         document.getElementById('manhChao').style.display = 'none'; 
@@ -295,16 +277,9 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
     /* Kích hoạt khi xem trên điện thoại hoặc máy tính bảng nhỏ */
     @media screen and (max-width: 768px) {
-        .btn-toggle-menu { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 5px; 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000;
-        }
+        .btn-toggle-menu { display: inline-flex; align-items: center; gap: 5px; }
         
-        #bo-cuc-he-thong { position: relative; display: block; height: 100vh; overflow: hidden; }
+        #bo-cuc-he-thong { position: relative; display: block; }
         
         #khuVucMenu {
             position: fixed; top: 0; left: -320px;
@@ -319,15 +294,7 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
         
         #khuVucMenu.mo-menu { left: 0; }
         
-        .k-ngoai { 
-            width: 100%; 
-            height: 100vh; 
-            padding: 10px; 
-            overflow-y: auto !important; 
-            overflow-x: hidden !important; 
-            -webkit-overflow-scrolling: touch; 
-            box-sizing: border-box; 
-        } 
+        .k-ngoai { width: 100%; padding: 10px; } 
         
         /* Tối ưu hiển thị bảng trên điện thoại */
         .table-responsive { max-height: calc(100vh - 180px) !important; }
@@ -835,20 +802,7 @@ async function taiGiaoDienUuTien(daCoSanCache = false) {
       } catch (loih) { hienThongbLoi("Lỗi cấu trúc hiển thị: " + loih.message); }
     }
     
-    function khiLoiMayChu(loih) { 
-        anTaiDl(); 
-        var thongBaoLoi = loih ? (loih.message || String(loih)) : "";
-        if (thongBaoLoi.includes("Không xác định được danh tính") || thongBaoLoi.includes("từ chối cấp quyền")) {
-            sessionStorage.removeItem("MA_PBAN_HT"); 
-            sessionStorage.removeItem("PGV_TOKEN"); 
-            sessionStorage.removeItem("DA_GHI_LS"); 
-            hienThongb('cbh', "Phiên làm việc đã hết hạn.\nVui lòng xác thực lại bằng tài khoản Google.", function() {
-                location.reload();
-            });
-            return;
-        }
-        hienThongbLoi("Kết nối đến máy chủ bị chặn hoặc gián đoạn.<br><small>Chi tiết: " + thongBaoLoi + "</small><br><em>Lưu ý: Nếu đang dùng điện thoại, vui lòng cấp quyền cho phép trình duyệt đọc Cookie chéo.</em>"); 
-    }
+    function khiLoiMayChu(loih) { anTaiDl(); hienThongbLoi("Kết nối đến máy chủ bị chặn hoặc gián đoạn.<br><small>Chi tiết: " + (loih.message || loih) + "</small><br><em>Lưu ý: Nếu đang dùng điện thoại, vui lòng cấp quyền cho phép trình duyệt đọc Cookie chéo.</em>"); }
     function hienThongbLoi(tb) { anTaiDl(); $('#hopLoi').show().html("<strong>LỖI GIAO TIẾP DỮ LIỆU:</strong><br>" + tb); }
 
     let hthongbChinh = null;
