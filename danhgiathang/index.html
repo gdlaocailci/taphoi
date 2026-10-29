@@ -213,7 +213,6 @@ function xulyPhienDn(phanho) {
   </script>
 
   <style>
-    * {font-family: 'Times New Roman', Times, serif !important;}
     body, input, select, textarea, button, table { font-family: 'Times New Roman', Times, serif !important; font-size: 14px; }
     body { background-color: transparent; min-height: 100vh; overflow: hidden; margin: 0; padding: 0; }
     body::after { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 251, 240, 0.6); z-index: -1; pointer-events: none; }
@@ -412,7 +411,6 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
@@ -1362,7 +1360,7 @@ function taiTepDangXem() {
 
               <!-- BẢNG HIỂN THỊ DỮ LIỆU -->
               <div class="table-responsive bg-white rounded shadow-sm border p-0" style="max-height: calc(100vh - 120px); overflow-y: auto;">
-                <table class="table table-hover table-bordered mb-0" id="bangYkienGiamSat" style="font-family: 'Times New Roman', Times, serif !important;">
+                <table class="table table-hover table-bordered mb-0" id="bangYkienGiamSat">
                     <thead class="table-light">
                         <tr>
                             <th class="text-center align-middle" style="width: 5%; background-color: #0d6efd !important; color: white !important; position: sticky; top: 0; z-index: 10; border: none;">STT</th>
@@ -1626,7 +1624,7 @@ function taiTepDangXem() {
   }
 
   // =========================================================================
-  // TÍNH NĂNG XUẤT FILE EXCEL Ý KIẾN THAM MƯU, ĐÁNH GIÁ (HỖ TRỢ SHEETJS & XML)
+  // TÍNH NĂNG XUẤT FILE EXCEL ĐỊNH DẠNG 100% FONT TIMES NEW ROMAN VÀ CĂN BẢNG
   // =========================================================================
   function xuatExcelYkienGiamSat() {
       let dsXuat = duLieuYkienHienHanh;
@@ -1700,42 +1698,6 @@ function taiTepDangXem() {
           });
       });
 
-      // 1. ƯU TIÊN SỬ DỤNG SHEETJS ĐỂ TẠO FILE .XLSX CHUẨN XÁC
-      if (typeof XLSX !== 'undefined') {
-          try {
-              let aoa = [
-                  ["TỔNG HỢP Ý KIẾN THAM MƯU, ĐÁNH GIÁ CỦA LÃNH ĐẠO VÀ BAN GIÁM SÁT"],
-                  ["Thời gian:", chuThichThoiGian],
-                  ["Ngày xuất báo cáo:", thoiGianXuat],
-                  [],
-                  ["STT", "Họ và tên", "Mã ID", "Thời gian", "Kết quả tự đánh giá", "Nội dung ý kiến đánh giá"]
-              ];
-
-              dsHang.forEach(r => {
-                  aoa.push([r.stt, r.tenn, r.maId, r.thang, r.diemTuCham, r.ykien]);
-              });
-
-              let wb = XLSX.utils.book_new();
-              let ws = XLSX.utils.aoa_to_sheet(aoa);
-
-              ws['!cols'] = [
-                  { wch: 6 },
-                  { wch: 25 },
-                  { wch: 15 },
-                  { wch: 15 },
-                  { wch: 30 },
-                  { wch: 80 }
-              ];
-
-              XLSX.utils.book_append_sheet(wb, ws, "Ý kiến giám sát");
-              XLSX.writeFile(wb, tenTep + ".xlsx");
-              return;
-          } catch (e) {
-              console.warn("SheetJS gặp trở ngại, tự động chuyển sang phương thức dự phòng XML:", e);
-          }
-      }
-
-      // 2. DỰ PHÒNG HOÀN TOÀN: SINH FILE XML SPREADSHEET 2003 (.XLS) ĐẦY ĐỦ ĐỊNH DẠNG KHÔNG CẦN THƯ VIỆN
       function escapeXmlText(unsafe) {
           if (!unsafe) return '';
           return String(unsafe)
@@ -1746,6 +1708,7 @@ function taiTepDangXem() {
               .replace(/'/g, '&apos;');
       }
 
+      // XUẤT FILE EXCEL XML SPREADSHEET 2003 ĐẢM BẢO 100% MỌI Ô ĐỀU LÀ FONT TIMES NEW ROMAN
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\r\n' +
           '<?mso-application progid="Excel.Sheet"?>\r\n' +
           '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\r\n' +
@@ -1760,11 +1723,11 @@ function taiTepDangXem() {
           '  </Style>\r\n' +
           '  <Style ss:ID="Title">\r\n' +
           '   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>\r\n' +
-          '   <Font ss:FontName="Times New Roman" ss:Size="13" ss:Bold="1" ss:Color="#DC3545"/>\r\n' +
+          '   <Font ss:FontName="Times New Roman" ss:Size="14" ss:Bold="1" ss:Color="#DC3545"/>\r\n' +
           '  </Style>\r\n' +
           '  <Style ss:ID="SubTitle">\r\n' +
           '   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>\r\n' +
-          '   <Font ss:FontName="Times New Roman" ss:Size="10" ss:Italic="1" ss:Color="#555555"/>\r\n' +
+          '   <Font ss:FontName="Times New Roman" ss:Size="11" ss:Italic="1" ss:Color="#333333"/>\r\n' +
           '  </Style>\r\n' +
           '  <Style ss:ID="Header">\r\n' +
           '   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>\r\n' +
@@ -1826,17 +1789,17 @@ function taiTepDangXem() {
           '   <Column ss:Width="85"/>\r\n' +
           '   <Column ss:Width="160"/>\r\n' +
           '   <Column ss:Width="420"/>\r\n' +
-          '   <Row ss:Height="28">\r\n' +
+          '   <Row ss:Height="30">\r\n' +
           '    <Cell ss:MergeAcross="5" ss:StyleID="Title"><Data ss:Type="String">TỔNG HỢP Ý KIẾN THAM MƯU, ĐÁNH GIÁ CỦA LÃNH ĐẠO VÀ BAN GIÁM SÁT</Data></Cell>\r\n' +
           '   </Row>\r\n' +
-          '   <Row ss:Height="18">\r\n' +
+          '   <Row ss:Height="20">\r\n' +
           '    <Cell ss:MergeAcross="5" ss:StyleID="SubTitle"><Data ss:Type="String">Thời gian: ' + escapeXmlText(chuThichThoiGian) + '</Data></Cell>\r\n' +
           '   </Row>\r\n' +
-          '   <Row ss:Height="18">\r\n' +
+          '   <Row ss:Height="20">\r\n' +
           '    <Cell ss:MergeAcross="5" ss:StyleID="SubTitle"><Data ss:Type="String">Ngày xuất: ' + escapeXmlText(thoiGianXuat) + '</Data></Cell>\r\n' +
           '   </Row>\r\n' +
-          '   <Row ss:Height="6"></Row>\r\n' +
-          '   <Row ss:Height="24">\r\n' +
+          '   <Row ss:Height="8"></Row>\r\n' +
+          '   <Row ss:Height="26">\r\n' +
           '    <Cell ss:StyleID="Header"><Data ss:Type="String">STT</Data></Cell>\r\n' +
           '    <Cell ss:StyleID="Header"><Data ss:Type="String">Họ và tên</Data></Cell>\r\n' +
           '    <Cell ss:StyleID="Header"><Data ss:Type="String">Mã ID</Data></Cell>\r\n' +
