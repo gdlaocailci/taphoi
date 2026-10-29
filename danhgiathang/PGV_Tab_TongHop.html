@@ -1,43 +1,45 @@
 <div class="card shadow-sm p-0 border-0">
   <div class="card-header bg-white border-bottom-0 pt-2 pb-1">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-      <h6 class="text-primary fw-bold mb-0 me-md-3 text-uppercase"><i class="bi bi-table"></i> TỔNG HỢP KẾT QUẢ</h6>
+    <div class="pgv-thop-header">
+      <h6 class="text-primary fw-bold text-uppercase pgv-thop-title"><i class="bi bi-table me-1"></i> TỔNG HỢP KẾT QUẢ</h6>
       
-      <!-- Nút Tải lại: Trên Mobile lên hàng 1 cạnh tiêu đề, trên Desktop ra góc phải -->
-      <div class="order-2 order-md-4 ms-md-auto">
+      <!-- KHỐI BỘ LỌC -->
+      <div class="pgv-thop-filters-wrap">
+        <!-- Ô CHỌN NĂM HỌC -->
+        <div class="pgv-thop-filter-group">
+           <span class="pgv-thop-filter-label">Năm học:</span>
+           <div class="pgv-thop-select-wrap">
+             <select class="form-select form-select-sm shadow-none border-primary" id="locNamThop" onchange="veBangThop()">
+               <option value="">--Chọn năm--</option>
+             </select>
+           </div>
+        </div>
+
+        <!-- [MỚI] Ô CHỌN THÁNG SẮP XẾP ƯU TIÊN -->
+        <div class="pgv-thop-filter-group">
+           <span class="pgv-thop-filter-label">Xếp theo:</span>
+           <div class="pgv-thop-select-wrap" style="min-width: 170px;">
+             <select class="form-select form-select-sm shadow-none border-primary fw-bold text-primary" id="locThangSapXep" onchange="doiThangSapXep(this.value)">
+               <option value="tudong">Tự động (Hiện tại)</option>
+               <option value="7">Tháng 7</option>
+               <option value="8">Tháng 8</option>
+               <option value="9">Tháng 9</option>
+               <option value="10">Tháng 10</option>
+               <option value="11">Tháng 11</option>
+               <option value="12">Tháng 12</option>
+               <option value="1">Tháng 1</option>
+               <option value="2">Tháng 2</option>
+               <option value="3">Tháng 3</option>
+               <option value="4">Tháng 4</option>
+               <option value="5">Tháng 5</option>
+               <option value="6">Tháng 6</option>
+             </select>
+           </div>
+        </div>
+      </div>
+
+      <div class="pgv-thop-btn-reload">
         <button class="btn btn-sm btn-outline-primary" onclick="taiDlThop(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
-      </div>
-
-      <!-- Ô CHỌN NĂM HỌC: lab luôn cùng hàng với ô giá trị -->
-      <div class="d-flex align-items-center order-3 order-md-2">
-         <span class="fw-bold me-2 text-dark text-nowrap" style="font-size: 14px;">Năm học:</span>
-         <div style="width: 140px;">
-           <select class="form-select form-select-sm shadow-none border-primary" id="locNamThop" onchange="veBangThop()">
-             <option value="">--Chọn năm--</option>
-           </select>
-         </div>
-      </div>
-
-      <!-- [MỚI] Ô CHỌN THÁNG SẮP XẾP ƯU TIÊN: lab luôn cùng hàng với ô giá trị -->
-      <div class="d-flex align-items-center order-4 order-md-3 ms-md-2">
-         <span class="fw-bold me-2 text-dark text-nowrap" style="font-size: 14px;">Xếp theo:</span>
-         <div style="width: 155px;">
-           <select class="form-select form-select-sm shadow-none border-primary fw-bold text-primary" id="locThangSapXep" onchange="doiThangSapXep(this.value)">
-             <option value="tudong">Tự động (Hiện tại)</option>
-             <option value="7">Tháng 7</option>
-             <option value="8">Tháng 8</option>
-             <option value="9">Tháng 9</option>
-             <option value="10">Tháng 10</option>
-             <option value="11">Tháng 11</option>
-             <option value="12">Tháng 12</option>
-             <option value="1">Tháng 1</option>
-             <option value="2">Tháng 2</option>
-             <option value="3">Tháng 3</option>
-             <option value="4">Tháng 4</option>
-             <option value="5">Tháng 5</option>
-             <option value="6">Tháng 6</option>
-           </select>
-         </div>
       </div>
     </div>
   </div>
@@ -93,14 +95,199 @@
   th.th-thang-bam-duoc:hover:not(.cot-thang-hien-tai-th) {
     background-color: #0b5ed7 !important;
   }
+
+  /* --- TỐI ƯU BỐ CỤC ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH (TAB TỔNG HỢP) --- */
+  .pgv-thop-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+  }
+  .pgv-thop-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  .pgv-thop-filters-wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-left: 15px;
+    margin-right: auto;
+  }
+  .pgv-thop-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pgv-thop-filter-label {
+    font-weight: bold;
+    color: #212529;
+    font-size: 14.5px;
+    white-space: nowrap;
+    margin: 0;
+  }
+  .pgv-thop-select-wrap {
+    width: 150px;
+  }
+  .pgv-thop-btn-reload {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Khung toolbar tính toán xếp loại */
+  .pgv-thop-calc-bar {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    margin: 0 10px 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pgv-thop-calc-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pgv-thop-calc-inputs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pgv-thop-calc-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  /* Giao diện di động cho Tab Tổng hợp */
+  @media (max-width: 768px) {
+    .card-header {
+      padding-top: 10px !important;
+      padding-bottom: 10px !important;
+    }
+    .pgv-thop-header {
+      display: grid !important;
+      grid-template-columns: 1fr auto !important;
+      align-items: center !important;
+      row-gap: 10px !important;
+      column-gap: 8px !important;
+    }
+    .pgv-thop-title {
+      grid-column: 1 / 2 !important;
+      font-size: 14px !important;
+      text-align: left !important;
+      justify-content: flex-start !important;
+    }
+    .pgv-thop-btn-reload {
+      grid-column: 2 / 3 !important;
+      justify-self: end !important;
+      margin: 0 !important;
+    }
+    .pgv-thop-btn-reload button, .pgv-thop-btn-reload .btn {
+      padding: 3px 10px !important;
+      font-size: 12.5px !important;
+      white-space: nowrap !important;
+    }
+    .pgv-thop-filters-wrap {
+      grid-column: 1 / -1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 8px !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    .pgv-thop-filter-group {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      width: 100% !important;
+      gap: 8px !important;
+      margin: 0 !important;
+    }
+    .pgv-thop-filter-label {
+      min-width: 72px !important;
+      font-size: 14px !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      text-align: left !important;
+    }
+    .pgv-thop-select-wrap {
+      flex: 1 !important;
+      width: auto !important;
+    }
+    .pgv-thop-select-wrap select {
+      width: 100% !important;
+      height: 33px !important;
+      font-size: 13.5px !important;
+    }
+
+    /* Toolbar tính toán trên di động */
+    .pgv-thop-calc-bar {
+      margin: 0 4px 8px 4px !important;
+      padding: 10px !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 10px !important;
+    }
+    .pgv-thop-calc-time {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      gap: 6px !important;
+      margin: 0 !important;
+    }
+    .pgv-thop-calc-time > span {
+      white-space: nowrap !important;
+      font-size: 13.5px !important;
+      flex-shrink: 0 !important;
+    }
+    .pgv-thop-calc-inputs {
+      flex: 1 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+      gap: 4px !important;
+    }
+    .pgv-thop-calc-inputs select {
+      flex: 1 !important;
+      min-width: 90px !important;
+      height: 33px !important;
+      font-size: 13px !important;
+    }
+    .pgv-thop-calc-btns {
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      margin: 0 !important;
+    }
+    .pgv-thop-calc-btns button, .pgv-thop-calc-btns .btn {
+      flex: 1 !important;
+      padding: 7px 4px !important;
+      font-size: 13px !important;
+      text-align: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+    }
+  }
 </style>
 
-<div class="bg-light p-2 mb-1 mx-2 rounded border d-flex flex-wrap align-items-center justify-content-between gap-2">
-  <!-- Cụm Thời gian tính: Lab luôn cùng hàng với các ô giá trị -->
-  <div class="d-flex align-items-center gap-1 flex-wrap flex-sm-nowrap">
-    <span class="fw-bold text-secondary text-nowrap me-1" style="font-size: 14px;">Thời gian tính:</span>
-    <div class="d-inline-flex align-items-center gap-1">
-      <select id="tuThang" class="form-select form-select-sm" style="width: auto; min-width: 105px; font-family: 'Times New Roman', serif;">
+<div class="pgv-thop-calc-bar">
+  <div class="pgv-thop-calc-time">
+    <span class="fw-bold text-secondary">Thời gian tính:</span>
+    <div class="pgv-thop-calc-inputs">
+      <select id="tuThang" class="form-select form-select-sm" style="font-family: 'Times New Roman', serif;">
         <option value="">Từ tháng...</option>
         <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
         <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
@@ -110,7 +297,7 @@
       
       <span class="fw-bold text-secondary px-1">-</span>
       
-      <select id="denThang" class="form-select form-select-sm" style="width: auto; min-width: 105px; font-family: 'Times New Roman', serif;">
+      <select id="denThang" class="form-select form-select-sm" style="font-family: 'Times New Roman', serif;">
         <option value="">Đến tháng...</option>
         <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
         <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
@@ -120,10 +307,9 @@
     </div>
   </div>
 
-  <!-- Cụm các nút thao tác: Trên Mobile dàn đều dễ bấm, trên Desktop xếp gọn gàng -->
-  <div class="d-flex align-items-center gap-2 w-100 w-md-auto ms-md-auto">
-    <button type="button" class="btn btn-sm btn-success fw-bold btn-reactbits-shiny flex-fill flex-md-grow-0" onclick="runAIAssistant()" style="white-space: nowrap;">⚡ Tính toán xếp loại</button>
-    <button type="button" id="btnGhiKq" class="btn btn-sm btn-primary fw-bold btn-reactbits-shiny flex-fill flex-md-grow-0" onclick="ghiKetQuaAI()" style="white-space: nowrap;">💾 Ghi kết quả</button>
+  <div class="pgv-thop-calc-btns">
+    <button type="button" class="btn btn-sm btn-success fw-bold btn-reactbits-shiny" onclick="runAIAssistant()">⚡ Tính toán xếp loại</button>
+    <button type="button" id="btnGhiKq" class="btn btn-sm btn-primary fw-bold btn-reactbits-shiny" onclick="ghiKetQuaAI()">💾 Ghi kết quả</button>
   </div>
 </div>
   
