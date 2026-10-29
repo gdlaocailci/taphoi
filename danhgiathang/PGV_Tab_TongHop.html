@@ -1,22 +1,27 @@
 <div class="card shadow-sm p-0 border-0">
   <div class="card-header bg-white border-bottom-0 pt-2 pb-1">
-    <div class="d-flex align-items-center flex-wrap gap-2">
-      <h6 class="text-primary fw-bold mb-0 me-3 text-uppercase"><i class="bi bi-table"></i> TỔNG HỢP KẾT QUẢ</h6>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <h6 class="text-primary fw-bold mb-0 me-md-3 text-uppercase"><i class="bi bi-table"></i> TỔNG HỢP KẾT QUẢ</h6>
       
-      <!-- Ô CHỌN NĂM HỌC -->
-      <div class="d-flex align-items-center">
-         <span class="fw-bold me-2 text-dark" style="font-size: 15px;">Năm học:</span>
-         <div style="width: 150px;">
+      <!-- Nút Tải lại: Trên Mobile lên hàng 1 cạnh tiêu đề, trên Desktop ra góc phải -->
+      <div class="order-2 order-md-4 ms-md-auto">
+        <button class="btn btn-sm btn-outline-primary" onclick="taiDlThop(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
+      </div>
+
+      <!-- Ô CHỌN NĂM HỌC: lab luôn cùng hàng với ô giá trị -->
+      <div class="d-flex align-items-center order-3 order-md-2">
+         <span class="fw-bold me-2 text-dark text-nowrap" style="font-size: 14px;">Năm học:</span>
+         <div style="width: 140px;">
            <select class="form-select form-select-sm shadow-none border-primary" id="locNamThop" onchange="veBangThop()">
              <option value="">--Chọn năm--</option>
            </select>
          </div>
       </div>
 
-      <!-- [MỚI] Ô CHỌN THÁNG SẮP XẾP ƯU TIÊN -->
-      <div class="d-flex align-items-center ms-md-2">
-         <span class="fw-bold me-2 text-dark" style="font-size: 14px;">Xếp theo:</span>
-         <div style="width: 160px;">
+      <!-- [MỚI] Ô CHỌN THÁNG SẮP XẾP ƯU TIÊN: lab luôn cùng hàng với ô giá trị -->
+      <div class="d-flex align-items-center order-4 order-md-3 ms-md-2">
+         <span class="fw-bold me-2 text-dark text-nowrap" style="font-size: 14px;">Xếp theo:</span>
+         <div style="width: 155px;">
            <select class="form-select form-select-sm shadow-none border-primary fw-bold text-primary" id="locThangSapXep" onchange="doiThangSapXep(this.value)">
              <option value="tudong">Tự động (Hiện tại)</option>
              <option value="7">Tháng 7</option>
@@ -33,10 +38,6 @@
              <option value="6">Tháng 6</option>
            </select>
          </div>
-      </div>
-
-      <div class="ms-auto">
-        <button class="btn btn-sm btn-outline-primary" onclick="taiDlThop(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
       </div>
     </div>
   </div>
@@ -92,63 +93,38 @@
   th.th-thang-bam-duoc:hover:not(.cot-thang-hien-tai-th) {
     background-color: #0b5ed7 !important;
   }
-    @media (max-width: 768px) {
-    .card-header .d-flex.align-items-center {
-      flex-direction: column !important;
-      align-items: stretch !important;
-      gap: 8px !important;
-      text-align: center;
-    }
-    .card-header .d-flex.align-items-center > div {
-      justify-content: center !important;
-    }
-    .card-header h6 {
-      margin-right: 0 !important;
-      font-size: 16px !important;
-    }
-    .card-header .ms-auto {
-      margin-left: 0 !important;
-      text-align: center !important;
-    }
-    .bg-light.p-2.mb-1.mx-2 {
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-      justify-content: center !important;
-      gap: 6px !important;
-    }
-    .table-responsive {
-      width: 100% !important;
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch !important;
-    }
-    #bangThop {
-      min-width: 1100px !important;
-    }
-  }
 </style>
 
-<div class="bg-light p-2 mb-1 mx-2 rounded border" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-  <span class="fw-bold text-secondary" style="font-size: 14px;">Thời gian tính:</span>
-  <select id="tuThang" class="form-select form-select-sm" style="width: auto; font-family: 'Times New Roman', serif;">
-    <option value="">Từ tháng...</option>
-    <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
-    <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
-    <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
-    <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
-  </select>
-  
-  <span class="fw-bold text-secondary" style="font-size: 14px;">-</span>
-  
-  <select id="denThang" class="form-select form-select-sm" style="width: auto; font-family: 'Times New Roman', serif;">
-    <option value="">Đến tháng...</option>
-    <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
-    <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
-    <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
-    <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
-  </select>
+<div class="bg-light p-2 mb-1 mx-2 rounded border d-flex flex-wrap align-items-center justify-content-between gap-2">
+  <!-- Cụm Thời gian tính: Lab luôn cùng hàng với các ô giá trị -->
+  <div class="d-flex align-items-center gap-1 flex-wrap flex-sm-nowrap">
+    <span class="fw-bold text-secondary text-nowrap me-1" style="font-size: 14px;">Thời gian tính:</span>
+    <div class="d-inline-flex align-items-center gap-1">
+      <select id="tuThang" class="form-select form-select-sm" style="width: auto; min-width: 105px; font-family: 'Times New Roman', serif;">
+        <option value="">Từ tháng...</option>
+        <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+        <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+        <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+        <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+      </select>
+      
+      <span class="fw-bold text-secondary px-1">-</span>
+      
+      <select id="denThang" class="form-select form-select-sm" style="width: auto; min-width: 105px; font-family: 'Times New Roman', serif;">
+        <option value="">Đến tháng...</option>
+        <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+        <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+        <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+        <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+      </select>
+    </div>
+  </div>
 
-  <button type="button" class="btn btn-sm btn-success fw-bold btn-reactbits-shiny" onclick="runAIAssistant()" style="white-space: nowrap;">⚡ Tính toán xếp loại</button>
-  <button type="button" id="btnGhiKq" class="btn btn-sm btn-primary fw-bold btn-reactbits-shiny" onclick="ghiKetQuaAI()" style="white-space: nowrap;">💾 Ghi kết quả</button>
+  <!-- Cụm các nút thao tác: Trên Mobile dàn đều dễ bấm, trên Desktop xếp gọn gàng -->
+  <div class="d-flex align-items-center gap-2 w-100 w-md-auto ms-md-auto">
+    <button type="button" class="btn btn-sm btn-success fw-bold btn-reactbits-shiny flex-fill flex-md-grow-0" onclick="runAIAssistant()" style="white-space: nowrap;">⚡ Tính toán xếp loại</button>
+    <button type="button" id="btnGhiKq" class="btn btn-sm btn-primary fw-bold btn-reactbits-shiny flex-fill flex-md-grow-0" onclick="ghiKetQuaAI()" style="white-space: nowrap;">💾 Ghi kết quả</button>
+  </div>
 </div>
   
   <div class="card-body p-0">
