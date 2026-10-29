@@ -1,9 +1,15 @@
 <div class="card shadow-sm p-0 border-0">
   <div class="card-header bg-white border-bottom-0 pt-2 pb-1">
     <div class="pgv-thop-header">
-      <h6 class="text-primary fw-bold text-uppercase pgv-thop-title"><i class="bi bi-table me-1"></i> TỔNG HỢP KẾT QUẢ</h6>
+      <!-- Dòng 1 trên Mobile: Tiêu đề bên trái, nút Tải lại bên phải cùng hàng -->
+      <div class="pgv-thop-title-reload-row">
+        <h6 class="text-primary fw-bold text-uppercase pgv-thop-title"><i class="bi bi-table me-1"></i> TỔNG HỢP KẾT QUẢ</h6>
+        <div class="pgv-thop-btn-reload">
+          <button class="btn btn-sm btn-outline-primary" onclick="taiDlThop(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
+        </div>
+      </div>
       
-      <!-- KHỐI BỘ LỌC -->
+      <!-- KHỐI BỘ LỌC (Các nhãn luôn cùng hàng với ô giá trị) -->
       <div class="pgv-thop-filters-wrap">
         <!-- Ô CHỌN NĂM HỌC -->
         <div class="pgv-thop-filter-group">
@@ -36,10 +42,6 @@
              </select>
            </div>
         </div>
-      </div>
-
-      <div class="pgv-thop-btn-reload">
-        <button class="btn btn-sm btn-outline-primary" onclick="taiDlThop(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
       </div>
     </div>
   </div>
@@ -96,12 +98,19 @@
     background-color: #0b5ed7 !important;
   }
 
-  /* --- TỐI ƯU BỐ CỤC ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH (TAB TỔNG HỢP) --- */
+  /* --- TỐI ƯU GIAO DIỆN PHẦN ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH (TAB TỔNG HỢP) --- */
   .pgv-thop-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 12px;
+    width: 100%;
+  }
+  .pgv-thop-title-reload-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
   }
   .pgv-thop-title {
@@ -116,8 +125,6 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 14px;
-    margin-left: 15px;
-    margin-right: auto;
   }
   .pgv-thop-filter-group {
     display: flex;
@@ -135,7 +142,6 @@
     width: 150px;
   }
   .pgv-thop-btn-reload {
-    margin-left: auto;
     white-space: nowrap;
   }
 
@@ -169,42 +175,55 @@
     margin-left: auto;
   }
 
-  /* Giao diện di động cho Tab Tổng hợp */
+  /* Trên máy tính (Desktop >= 769px): Dàn ngang 1 hàng hoàn chỉnh */
+  @media (min-width: 769px) {
+    .pgv-thop-header {
+      flex-wrap: nowrap !important;
+    }
+    .pgv-thop-title-reload-row {
+      width: auto !important;
+      display: contents !important;
+    }
+    .pgv-thop-title {
+      margin-right: 15px !important;
+    }
+    .pgv-thop-filters-wrap {
+      margin-right: auto !important;
+    }
+    .pgv-thop-btn-reload {
+      margin-left: auto !important;
+    }
+  }
+
+  /* Trên điện thoại (Mobile <= 768px):
+     - Hàng 1: Tiêu đề (bên trái) và Nút Tải lại (bên phải) CÙNG HÀNG 1!
+     - Hàng 2: Nhãn "Năm học:" cùng hàng với ô chọn Năm học!
+     - Hàng 3: Nhãn "Xếp theo:" cùng hàng với ô chọn Tháng xếp!
+  */
   @media (max-width: 768px) {
     .card-header {
       padding-top: 10px !important;
       padding-bottom: 10px !important;
     }
-    .pgv-thop-header {
-      display: grid !important;
-      grid-template-columns: 1fr auto !important;
+    .pgv-thop-title-reload-row {
+      display: flex !important;
       align-items: center !important;
-      row-gap: 10px !important;
-      column-gap: 8px !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      margin-bottom: 8px !important;
     }
     .pgv-thop-title {
-      grid-column: 1 / 2 !important;
       font-size: 14px !important;
-      text-align: left !important;
-      justify-content: flex-start !important;
-    }
-    .pgv-thop-btn-reload {
-      grid-column: 2 / 3 !important;
-      justify-self: end !important;
-      margin: 0 !important;
     }
     .pgv-thop-btn-reload button, .pgv-thop-btn-reload .btn {
       padding: 3px 10px !important;
       font-size: 12.5px !important;
-      white-space: nowrap !important;
     }
     .pgv-thop-filters-wrap {
-      grid-column: 1 / -1 !important;
       display: flex !important;
       flex-direction: column !important;
       gap: 8px !important;
       width: 100% !important;
-      margin: 0 !important;
     }
     .pgv-thop-filter-group {
       display: flex !important;
@@ -212,7 +231,6 @@
       align-items: center !important;
       width: 100% !important;
       gap: 8px !important;
-      margin: 0 !important;
     }
     .pgv-thop-filter-label {
       min-width: 72px !important;
@@ -314,8 +332,8 @@
 </div>
   
   <div class="card-body p-0">
-    <div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
-      <table class="table table-bordered table-hover mb-0 align-middle" id="bangThop">
+    <div class="table-responsive" style="max-height: 80vh; overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch;">
+      <table class="table table-bordered table-hover mb-0 align-middle" id="bangThop" style="min-width: 1550px; width: 100%;">
         <thead>
           <tr>
             <th class="text-center align-middle" style="width: 50px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">STT</th>
