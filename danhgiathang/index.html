@@ -1671,22 +1671,34 @@ function taiTepDangXem() {
           }
 
           let rawYkien = String(item.ykien || "").trim();
-          let arrYkien = rawYkien.split(/\r?\n/);
+          // Chuẩn hóa ngắt dòng: tách các ý kiến ghép nếu có
+          rawYkien = rawYkien.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          rawYkien = rawYkien.replace(/\s+-\s*\[/g, '\n['); // Tách ý kiến có mã định danh [Ten]:
+          rawYkien = rawYkien.replace(/\s+•\s*/g, '\n');    // Tách các ký tự bullet tròn
+
+          let arrYkien = rawYkien.split('\n');
           let dsDongYkien = [];
           
           arrYkien.forEach(dong => {
               let strDong = dong.trim();
               if (strDong !== "") {
-                  strDong = strDong.replace(/^[-*•+]\s*/, '');
+                  // Xóa ký tự gạch hoặc bullet cũ ở đầu dòng nếu có
+                  strDong = strDong.replace(/^[-*•+–—]\s*/, '');
+                  // Ánh xạ đối chiếu Email/Tên viết tắt sang Mã ID chuẩn xác
                   strDong = strDong.replace(/\[([^\[\]]+)\]:/g, function(match, p1) {
                       let key = String(p1 || "").trim().toLowerCase();
                       return (window.PGV_MAP_EMAIL_ID && window.PGV_MAP_EMAIL_ID[key]) ? `[${window.PGV_MAP_EMAIL_ID[key]}]:` : match;
                   });
-                  dsDongYkien.push("- " + strDong);
+                  // Bỏ dấu gạch trùng sau mã ID nếu có (vd: [H.ThuyA2]: - Đồng chí... -> [H.ThuyA2]: Đồng chí...)
+                  strDong = strDong.replace(/:\s*[-*•+–—]\s*/, ': ');
+                  strDong = strDong.trim();
+                  if (strDong !== "") {
+                      dsDongYkien.push("- " + strDong);
+                  }
               }
           });
 
-          let ndYkienXuat = dsDongYkien.join("\r\n");
+          let ndYkienXuat = dsDongYkien.join('\n');
 
           dsHang.push({
               stt: stt++,
@@ -1705,7 +1717,8 @@ function taiTepDangXem() {
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;')
-              .replace(/'/g, '&apos;');
+              .replace(/'/g, '&apos;')
+              .replace(/\r?\n/g, '&#10;');
       }
 
       // XUẤT FILE EXCEL XML SPREADSHEET 2003 ĐẢM BẢO 100% MỌI Ô ĐỀU LÀ FONT TIMES NEW ROMAN
