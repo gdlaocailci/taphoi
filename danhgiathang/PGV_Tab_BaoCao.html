@@ -1,13 +1,18 @@
 <style>
-  /* ==========================================================================
-     CSS TỐI ƯU GIAO DIỆN PHẦN ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH
-     ========================================================================== */
-  .pgv-top-header {
+  /* --- TỐI ƯU GIAO DIỆN PHẦN ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH --- */
+  .pgv-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+  }
+  .pgv-title-reload-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 12px;
   }
   .pgv-top-title {
     margin: 0;
@@ -20,8 +25,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-left: 20px;
-    margin-right: auto;
   }
   .pgv-filter-label {
     font-weight: bold;
@@ -34,54 +37,60 @@
     width: 170px;
   }
   .pgv-btn-reload {
-    margin-left: auto;
     white-space: nowrap;
   }
 
-  /* Định dạng chuẩn nét trên màn hình điện thoại di động */
+  /* Trên máy tính (Desktop >= 769px): Tất cả dàn ngang trên 1 hàng */
+  @media (min-width: 769px) {
+    .pgv-header-top {
+      flex-wrap: nowrap !important;
+    }
+    .pgv-title-reload-row {
+      width: auto !important;
+      display: contents !important;
+    }
+    .pgv-top-title {
+      margin-right: 20px !important;
+    }
+    .pgv-filter-group {
+      margin-right: auto !important;
+    }
+    .pgv-btn-reload {
+      margin-left: auto !important;
+    }
+  }
+
+  /* Trên điện thoại (Mobile <= 768px):
+     - Hàng 1: Tiêu đề (bên trái) và Nút Tải lại (bên phải) CÙNG HÀNG!
+     - Hàng 2: Nhãn "Năm học:" cùng hàng với ô chọn Năm học!
+  */
   @media (max-width: 768px) {
     .card-header {
       padding-top: 10px !important;
       padding-bottom: 10px !important;
     }
-    .pgv-top-header {
-      display: grid !important;
-      grid-template-columns: 1fr auto !important;
+    .pgv-title-reload-row {
+      display: flex !important;
       align-items: center !important;
-      row-gap: 10px !important;
-      column-gap: 8px !important;
-      margin: 0 !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      margin-bottom: 8px !important;
     }
     .pgv-top-title {
-      grid-column: 1 / 2 !important;
       font-size: 14px !important;
-      text-align: left !important;
-      justify-content: flex-start !important;
-    }
-    .pgv-btn-reload {
-      grid-column: 2 / 3 !important;
-      justify-self: end !important;
-      margin: 0 !important;
     }
     .pgv-btn-reload button, .pgv-btn-reload .btn {
       padding: 3px 10px !important;
       font-size: 12.5px !important;
-      white-space: nowrap !important;
     }
     .pgv-filter-group {
-      grid-column: 1 / -1 !important;
       display: flex !important;
-      flex-direction: row !important;
       align-items: center !important;
-      justify-content: flex-start !important;
       width: 100% !important;
-      margin: 0 !important;
       gap: 10px !important;
     }
     .pgv-filter-label {
       font-size: 14.5px !important;
-      white-space: nowrap !important;
-      margin: 0 !important;
       flex-shrink: 0 !important;
     }
     .pgv-filter-select {
@@ -96,9 +105,17 @@
   }
 </style>
 <div class="card shadow-sm p-0 border-0">
-  <div class="card-header bg-white border-bottom-0 pt-3 pb-3">
-    <div class="pgv-top-header">
-      <h6 class="text-primary fw-bold text-uppercase pgv-top-title"><i class="bi bi-file-earmark-text me-1"></i> TỔNG HỢP BÁO CÁO</h6>
+  <div class="card-header bg-white border-bottom-0 pt-2 pb-2 pt-md-3 pb-md-3">
+    <div class="pgv-header-top">
+      <!-- Dòng 1 trên Mobile: Tiêu đề bên trái, nút Tải lại bên phải cùng hàng -->
+      <div class="pgv-title-reload-row">
+        <h6 class="text-primary fw-bold text-uppercase pgv-top-title"><i class="bi bi-file-earmark-text me-1"></i> TỔNG HỢP BÁO CÁO</h6>
+        <div class="pgv-btn-reload">
+          <button class="btn btn-sm btn-outline-primary" onclick="taidlBcao(true, false)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
+        </div>
+      </div>
+      
+      <!-- Cụm chọn năm học (lab cùng hàng với ô giá trị) -->
       <div class="pgv-filter-group">
          <span class="pgv-filter-label">Năm học:</span>
          <div class="pgv-filter-select">
@@ -107,31 +124,28 @@
             </select>
          </div>
       </div>
-      <div class="pgv-btn-reload">
-         <button class="btn btn-sm btn-outline-primary" onclick="taidlBcao(true, false)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
-      </div>
     </div>
   </div>
   
   <div class="card-body p-0">
-    <div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
-      <table class="table table-bordered table-hover mb-0 align-middle" id="bangBcao" style="table-layout: fixed; width: 100%;">
+    <div class="table-responsive" style="max-height: 80vh; overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch;">
+      <table class="table table-bordered table-hover mb-0 align-middle" id="bangBcao" style="min-width: 1300px; width: 100%;">
         <thead>
           <tr>
-            <th class="text-center align-middle" style="width: 3%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">#</th>
-            <th class="text-center align-middle" style="width: 19%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">Họ và tên</th> 
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T7</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T8</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T9</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T10</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T11</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T12</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T1</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T2</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T3</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T4</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T5</th>
-            <th class="text-center align-middle" style="width: 6.5%; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T6</th>
+            <th class="text-center align-middle" style="width: 50px; min-width: 50px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">#</th>
+            <th class="text-center align-middle" style="min-width: 180px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">Họ và tên</th> 
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T7</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T8</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T9</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T10</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T11</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T12</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T1</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T2</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T3</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T4</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T5</th>
+            <th class="text-center align-middle" style="min-width: 90px; position: sticky; top: 0; z-index: 10; background-color: #0d6efd !important; color: white !important;">T6</th>
           </tr>
         </thead>
         <tbody>
