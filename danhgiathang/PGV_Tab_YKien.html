@@ -52,17 +52,117 @@
   .voBocYk:hover .ndYk::-webkit-scrollbar-thumb:hover {
       background: #0b5ed7;
   }
+
+  /* --- TỐI ƯU BỐ CỤC ĐẦU TRANG CHO DI ĐỘNG & MÁY TÍNH --- */
+  .pgv-top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+  }
+  .pgv-top-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  .pgv-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 20px;
+    margin-right: auto;
+  }
+  .pgv-filter-label {
+    font-weight: bold;
+    color: #212529;
+    font-size: 15px;
+    white-space: nowrap;
+    margin: 0;
+  }
+  .pgv-filter-select {
+    width: 170px;
+  }
+  .pgv-btn-reload {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Định dạng chuẩn nét trên màn hình điện thoại di động */
+  @media (max-width: 768px) {
+    .card-header {
+      padding-top: 10px !important;
+      padding-bottom: 10px !important;
+    }
+    .pgv-top-header {
+      display: grid !important;
+      grid-template-columns: 1fr auto !important;
+      align-items: center !important;
+      row-gap: 10px !important;
+      column-gap: 8px !important;
+      margin: 0 !important;
+    }
+    .pgv-top-title {
+      grid-column: 1 / 2 !important;
+      font-size: 14px !important;
+      text-align: left !important;
+      justify-content: flex-start !important;
+    }
+    .pgv-btn-reload {
+      grid-column: 2 / 3 !important;
+      justify-self: end !important;
+      margin: 0 !important;
+    }
+    .pgv-btn-reload button, .pgv-btn-reload .btn {
+      padding: 3px 10px !important;
+      font-size: 12.5px !important;
+      white-space: nowrap !important;
+    }
+    .pgv-filter-group {
+      grid-column: 1 / -1 !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      width: 100% !important;
+      margin: 0 !important;
+      gap: 10px !important;
+    }
+    .pgv-filter-label {
+      font-size: 14.5px !important;
+      white-space: nowrap !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+    }
+    .pgv-filter-select {
+      flex: 1 !important;
+      max-width: 220px !important;
+      width: auto !important;
+    }
+    .pgv-filter-select select {
+      height: 33px !important;
+      font-size: 13.5px !important;
+    }
+  }
 </style>
 
 <div class="card shadow-sm p-0 border-0">
   <div class="card-header bg-white border-bottom-0 pt-3 pb-3">
-    <div class="d-flex align-items-center">
-      <div class="fw-bold text-primary me-4 text-uppercase fs-6"><i class="bi bi-chat-text"></i> TỔNG HỢP Ý KIẾN</div>
-      <div class="d-flex align-items-center">
-         <span class="fw-bold me-2 text-dark" style="font-size: 18px;">Năm học:</span>
-         <div style="width: 180px;"><select id="locNamYkien" class="form-select form-select-sm shadow-none border-primary" onchange="veBangYkien()"><option value="">--Chọn năm--</option></select></div>
+    <div class="pgv-top-header">
+      <div class="fw-bold text-primary text-uppercase pgv-top-title"><i class="bi bi-chat-text me-1"></i> TỔNG HỢP Ý KIẾN</div>
+      <div class="pgv-filter-group">
+         <span class="pgv-filter-label">Năm học:</span>
+         <div class="pgv-filter-select">
+            <select id="locNamYkien" class="form-select form-select-sm shadow-none border-primary" onchange="veBangYkien()">
+              <option value="">--Chọn năm--</option>
+            </select>
+         </div>
       </div>
-      <div class="ms-auto"><button class="btn btn-sm btn-outline-primary" onclick="taiDlYkien(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button></div>
+      <div class="pgv-btn-reload">
+         <button class="btn btn-sm btn-outline-primary" onclick="taiDlYkien(true)" title="Tải lại dữ liệu"><i class="bi bi-arrow-clockwise"></i> Tải lại</button>
+      </div>
     </div>
   </div>
 
