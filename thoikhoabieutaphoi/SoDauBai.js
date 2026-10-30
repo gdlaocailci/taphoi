@@ -2651,6 +2651,25 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
 }
 
 async function luuSoDauBaiSangMayChu() {
+    let daDangNhap = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') || (maGvDangNhapHeThong !== '');
+    if (!daDangNhap) {
+        return alert("⚠️ Vui lòng đăng nhập qua nút Đăng nhập để thực hiện thao tác chỉnh sửa và lưu Sổ đầu bài!");
+    }
+    let tuanChon = document.getElementById('chonTuanSo')?.value;
+    let lopChon = document.getElementById('chonLopSo')?.value;
+    if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
+    if (window.kiemTraTuanDaKhoa(tuanChon)) {
+        return alert(`⛔ TỪ CHỐI THAO TÁC:\n\nSổ đầu bài TUẦN ${tuanChon.replace(/\D/g, '')} của toàn trường ĐÃ BỊ KHÓA bởi Quản lý chuyên môn.\n\nĐồng chí không thể sửa đổi hoặc lưu đè dữ liệu!`);
+    }
+
+    let tuanSo = parseInt(tuanChon.replace(/\D/g, ''));
+    let tuanHeThong = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(window.thongSoHocVu.TUAN_HIEN_TAI) : 999;
+    
+    let theChotQuyen = document.getElementById('theChotQuyenSDB');
+    let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
+    let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
+    let maGvDangNhapLC = window.chuanHoaDinhDanhGiaoVien(madinhdanhGV);
+
     // =========================================================================
     // [ĐIỀU KIỆN QUYỀN GHI MÁY CHỦ]: Người ấn nút phải là người có tiết được phân công giảng dạy ở lớp đó
     // (Cho dù tiết người đó không có thay đổi nhưng vẫn có quyền ấn lưu những thay đổi của tiết khác, người khác)
@@ -2712,24 +2731,6 @@ async function luuSoDauBaiSangMayChu() {
     if (!coQuyenLuuLopNay) {
         return alert(`⛔ TỪ CHỐI TRUY CẬP:\n\nĐồng chí không có tiết được phân công giảng dạy tại Lớp ${lopChon} nên không có quyền thực hiện Lưu sổ đầu bài của lớp này!`);
     }
-    let daDangNhap = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') || (maGvDangNhapHeThong !== '');
-    if (!daDangNhap) {
-        return alert("⚠️ Vui lòng đăng nhập qua nút Đăng nhập để thực hiện thao tác chỉnh sửa và lưu Sổ đầu bài!");
-    }
-    let tuanChon = document.getElementById('chonTuanSo')?.value;
-    let lopChon = document.getElementById('chonLopSo')?.value;
-    if (!tuanChon || !lopChon) return alert("Vui lòng chọn Tuần và Lớp trước khi lưu!");
-    if (window.kiemTraTuanDaKhoa(tuanChon)) {
-        return alert(`⛔ TỪ CHỐI THAO TÁC:\n\nSổ đầu bài TUẦN ${tuanChon.replace(/\D/g, '')} của toàn trường ĐÃ BỊ KHÓA bởi Quản lý chuyên môn.\n\nĐồng chí không thể sửa đổi hoặc lưu đè dữ liệu!`);
-    }
-
-    let tuanSo = parseInt(tuanChon.replace(/\D/g, ''));
-    let tuanHeThong = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu.TUAN_HIEN_TAI) ? parseInt(window.thongSoHocVu.TUAN_HIEN_TAI) : 999;
-    
-    let theChotQuyen = document.getElementById('theChotQuyenSDB');
-    let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
-    let quyenQuanTri = coToanQuyenSDB || (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false);
-    let maGvDangNhapLC = window.chuanHoaDinhDanhGiaoVien(madinhdanhGV);
 
     let duLieuQuetDuoc = [];
     let danhSachThongBao = []; 
