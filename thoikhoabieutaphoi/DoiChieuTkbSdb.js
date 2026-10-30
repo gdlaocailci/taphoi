@@ -989,6 +989,9 @@
         if (typeof window.kiemTraTuanDaKhoa === 'function' && window.kiemTraTuanDaKhoa(tuanSo)) {
             return alert(`⛔ Sổ đầu bài Tuần ${tuanSo} đã bị khóa toàn trường. Vui lòng mở khóa trước khi khắc phục!`);
         }
+        if (typeof window.kiemTraQuyenLienQuanLopSDB === 'function' && !window.kiemTraQuyenLienQuanLopSDB(lopUpper, tuanSo)) {
+            return alert(`⛔ TỪ CHỐI THAO TÁC:\n\nĐồng chí không được phân công giảng dạy tại Lớp ${lopUpper} nên không có quyền khắc phục và lưu thay đổi của lớp này!`);
+        }
 
         // 1. Đồng bộ TKB mới nhất từ lưới UI & Cache đa tuần vào mapTkbToanTap
         const mapTkbChuan = dongBoTkbMoiNhatSangBoNhoSDB();
