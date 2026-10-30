@@ -116,14 +116,14 @@
                             </div>
                         </div>
 
-                        <!-- DÒNG 2: TÌM KIẾM & CÁC NÚT THỐNG KÊ -->
-                        <div class="flex flex-wrap items-center justify-between gap-3">
+                       <!-- DÒNG 2: TÌM KIẾM & CÁC NÚT THỐNG KÊ -->
+                        <div class="flex flex-wrap items-center gap-3">
                             <div class="relative w-full sm:w-[320px]">
                                 <input type="text" id="timKiemDoiChieu" oninput="ketXuatBangDoiChieu()" placeholder="Tìm môn, tên GV, bài dạy..." class="w-full pl-7 pr-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500">
                                 <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
-
-                            <div id="vungThongKeNhanhDoiChieu" class="flex flex-wrap items-center gap-2 justify-end"></div>
+                        
+                            <div id="vungThongKeNhanhDoiChieu" class="flex flex-wrap items-center gap-2"></div>
                         </div>
                     </div>
 
