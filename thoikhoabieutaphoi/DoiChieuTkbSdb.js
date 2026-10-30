@@ -100,8 +100,9 @@
                     </div>
 
                     <!-- BỘ LỌC & THỐNG KÊ NHANH -->
-                    <div class="bg-slate-100 p-3 border-b border-slate-300 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 flex-none">
-                        <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                    <div class="bg-slate-100 p-3 border-b border-slate-300 flex flex-col gap-2.5 flex-none">
+                        <!-- DÒNG 1: CÁC BỘ LỌC CHỌN (TUẦN, LỚP, LOẠI LỆCH) -->
+                        <div class="flex flex-wrap items-center gap-2.5">
                             <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 shadow-xs">
                                 <span class="text-xs font-bold text-slate-600">Tuần:</span>
                                 <select id="locTuanDoiChieu" onchange="thucThiQuetDoiChieuTrenRAM()" class="text-xs font-extrabold text-teal-900 bg-transparent outline-none cursor-pointer">
@@ -128,14 +129,17 @@
                                     <option value="CHUA_LUU_SDB">6. Lớp chưa lưu Sổ đầu bài tuần</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="relative flex-1 min-w-[180px]">
+                        <!-- DÒNG 2: Ô TÌM KIẾM THU GỌN VÀ CÁC Ô TỔNG HỢP CÙNG HÀNG -->
+                        <div class="flex flex-wrap justify-between items-center gap-2.5">
+                            <div class="relative w-56 sm:w-64 flex-none">
                                 <input type="text" id="timKiemDoiChieu" oninput="ketXuatBangDoiChieu()" placeholder="Tìm môn, tên GV, bài dạy..." class="w-full pl-7 pr-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500">
                                 <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
-                        </div>
 
-                        <div id="vungThongKeNhanhDoiChieu" class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end"></div>
+                            <div id="vungThongKeNhanhDoiChieu" class="flex flex-wrap items-center gap-2 justify-end"></div>
+                        </div>
                     </div>
 
                     <!-- BẢNG KẾT QUẢ CHI TIẾT -->
