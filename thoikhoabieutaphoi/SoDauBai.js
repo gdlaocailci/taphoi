@@ -1124,6 +1124,12 @@ async function thucThiTaiDuLieuVaVeLuoi(vungHienThi, cheDoTaiNgam = false) {
             }
         } else {
             khoiTaoDuLieuSoDauBai(duLieuSever);
+            // [KHẮC PHỤC CHỜ LÂU]: Nếu người dùng đang mở xem 1 Tuần & Lớp, cập nhật lại ngay trạng thái Mới nhất vừa tải từ Server (không cần đợi 60s)
+            let elTuanDangXem = document.getElementById('chonTuanSo');
+            let elLopDangXem = document.getElementById('chonLopSo');
+            if (elTuanDangXem && elTuanDangXem.value && elLopDangXem && elLopDangXem.value) {
+                thucThiKetXuatSoDauBaiLenLuoi();
+            }
         }
 
         daTaiDuLieuSoDauBai = true;
@@ -3135,9 +3141,41 @@ async function luuSoDauBaiSangMayChu() {
             if (typeof window.xayDungChiMucNhanhSDB === 'function') {
                 window.xayDungChiMucNhanhSDB();
             }
-            if (typeof capNhatSoDauBaiNgamLenLuoi === 'function') {
-                capNhatSoDauBaiNgamLenLuoi(tuanChon, lopChon);
-            }
+
+            // [CẬP NHẬT SNAPSHOT TỨC THÌ]: Ghi ngay các tiết vừa lưu vào SDB_SNAPSHOT_FAST_V2 để lần sau mở lại nhận diện ĐÃ LƯU ngay lập tức (0ms)
+            try {
+                let layKhoaAnToan = (tenKhoa) => (typeof window.layKhoaCachLy === 'function') ? window.layKhoaCachLy(tenKhoa) : tenKhoa;
+                let snapshotKey = layKhoaAnToan('SDB_SNAPSHOT_FAST_V2');
+                let rawSnap = sessionStorage.getItem(snapshotKey) || localStorage.getItem(snapshotKey);
+                if (rawSnap) {
+                    let snapObj = JSON.parse(rawSnap);
+                    if (!Array.isArray(snapObj.SO_DAU_BAI)) snapObj.SO_DAU_BAI = [];
+                    duLieuQuetDuoc.forEach(itemLuu => {
+                        let idxSnap = snapObj.SO_DAU_BAI.findIndex(r =>
+                            String(r.A || '') === String(itemLuu.maLuuTru || '') ||
+                            (String(r.B || '') === String(itemLuu.tuan) &&
+                             String(r.C || '').toUpperCase() === String(itemLuu.maLop).toUpperCase() &&
+                             String(r.D || '').toLowerCase() === String(itemLuu.thu).toLowerCase() &&
+                             String(r.F || '').toLowerCase() === String(itemLuu.buoi).toLowerCase() &&
+                             String(r.G || '') === String(itemLuu.tiet))
+                        );
+                        let banGhiSnap = {
+                            A: itemLuu.maLuuTru, B: String(itemLuu.tuan), C: itemLuu.maLop,
+                            D: itemLuu.thu, E: itemLuu.ngay || '', F: itemLuu.buoi, G: String(itemLuu.tiet),
+                            H: itemLuu.mon || '', I: String(itemLuu.tietPPCT || ''), J: itemLuu.tenBai || '',
+                            K: itemLuu.nhanXet || '', L: itemLuu.xepLoai || '', M: itemLuu.chuKy || '', N: itemLuu.chuyenCan || ''
+                        };
+                        if (idxSnap !== -1) snapObj.SO_DAU_BAI[idxSnap] = banGhiSnap;
+                        else snapObj.SO_DAU_BAI.push(banGhiSnap);
+                    });
+                    let strSnapMoi = JSON.stringify(snapObj);
+                    try { sessionStorage.setItem(snapshotKey, strSnapMoi); } catch (e1) {}
+                    try { localStorage.setItem(snapshotKey, strSnapMoi); } catch (e2) {}
+                }
+            } catch (eSnapLuu) {}
+
+            // Vẽ lại thanh trạng thái ngay lập tức sang màu xanh "CÓ DỮ LIỆU ĐÃ ĐƯỢC CHỐT SỔ"
+            thucThiKetXuatSoDauBaiLenLuoi();
         } else throw new Error(ketQua.thongBao);
     } catch (loi) { 
         alert("Lưu thất bại: " + loi.message); 
