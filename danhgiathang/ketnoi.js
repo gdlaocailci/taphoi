@@ -2,7 +2,7 @@
 var ddungApi = "https://script.google.com/macros/s/AKfycbzpamXlYMj4jjw80iIFRFnk7Ct1Xi7dJDvcKa4_I3Y8Wq2SSa_5riYj9GDiR6dN63vT/exec"; 
 
 // --- CÁC BIẾN CẤU HÌNH ĐỊNH DANH HỆ THỐNG ---
-var PGV_LINK_LOGO = "https://i.postimg.cc/xjzpvXCm/Logo-HL.png"; 
+var PGV_LINK_LOGO = "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png"; 
 var PGV_TEN_TRUONG = "Trường TH&THCS Tả Phời";
 var PGV_TEN_TRUONG_UP = "TRƯỜNG TH&THCS TẢ PHỜI";
 var PGV_TEN_PM = "Quản lý Nhiệm vụ";
