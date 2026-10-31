@@ -238,7 +238,7 @@
     }
   }
 
-  /* Di chuyển nút Quy chế sang bên phải (trước nút Khóa tất cả) khi hiển thị trên máy tính */
+/* Di chuyển nút Quy chế sang bên phải (trước nút Khóa tất cả) khi hiển thị trên máy tính */
   @media screen and (min-width: 769px) {
     .hopDau > .d-flex > div:last-child {
       flex: 0 0 auto !important;
@@ -246,10 +246,14 @@
     .hopDau .tDe {
       flex: 1 1 auto !important;
       padding-right: 12px !important;
+      justify-content: flex-end !important; /* Đẩy các nút sang phải */
     }
+    /* Ép tiêu đề "NHIỆM VỤ CỦA TÔI" vào chính giữa thanh ngang */
     .hopDau .tDe > span:first-child {
-      margin-left: auto !important;
-      margin-right: auto !important;
+      position: absolute !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      margin: 0 !important;
     }
   }
 
