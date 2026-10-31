@@ -238,7 +238,7 @@
     }
   }
 
-/* Di chuyển nút Quy chế sang bên phải (trước nút Khóa tất cả) khi hiển thị trên máy tính */
+/* Di chuyển nút Quy chế sang bên phải và ép Tiêu đề vào chính giữa khung trên máy tính */
   @media screen and (min-width: 769px) {
     .hopDau > .d-flex > div:last-child {
       flex: 0 0 auto !important;
@@ -246,14 +246,18 @@
     .hopDau .tDe {
       flex: 1 1 auto !important;
       padding-right: 12px !important;
-      justify-content: flex-end !important; /* Đẩy các nút sang phải */
+      justify-content: flex-end !important; /* Đẩy nút QUY CHẾ sát sang bên phải */
+      position: static !important; /* Đảm bảo khối này không làm lệch tọa độ */
     }
-    /* Ép tiêu đề "NHIỆM VỤ CỦA TÔI" vào chính giữa thanh ngang */
+    
+    /* Ép chữ "NHIỆM VỤ CỦA TÔI" vào đúng tâm điểm của toàn bộ khung ngang */
     .hopDau .tDe > span:first-child {
       position: absolute !important;
       left: 50% !important;
-      transform: translateX(-50%) !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
       margin: 0 !important;
+      width: max-content !important;
     }
   }
 
