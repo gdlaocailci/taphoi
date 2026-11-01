@@ -222,11 +222,24 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
         : `input[id^="mon_"]`;
     const cacOMon = document.querySelectorAll(selector);
 
+    let tongCoDayLop = {};
+    let tongCoTheLop = {};
+
     cacOMon.forEach(oMon => {
         let parts = oMon.id.split('_');
         if (parts.length < 5) return;
         let thu = parts[1], buoi = parts[2], tiet = parts[3], lop = parts.slice(4).join('_');
         if (!demThucTe[lop]) return;
+
+        if (tongCoDayLop[lop] === undefined) {
+            tongCoDayLop[lop] = 0;
+            tongCoTheLop[lop] = 0;
+        }
+
+        let maO = `${namHoc}_${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`;
+        let loaiCo = window.trangThaiDacBietTKB[maO] || '';
+        if (loaiCo === 'DAY_TIET') tongCoDayLop[lop]++;
+        if (loaiCo === 'THE_TIET') tongCoTheLop[lop]++;
 
         let tenMon = window.chuanHoaTenMonKCT(oMon.value);
         if (tenMon !== '' && tenMon !== '--' && tenMon !== '---') {
@@ -235,8 +248,6 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
             if (!viTriMonTheoLop[lop][tenMon]) viTriMonTheoLop[lop][tenMon] = [];
             viTriMonTheoLop[lop][tenMon].push(`${thu} (${buoi} T${tiet})`);
 
-            let maO = `${namHoc}_${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`;
-            let loaiCo = window.trangThaiDacBietTKB[maO] || '';
             if (loaiCo === 'DAY_TIET') {
                 demDayTiet[lop][tenMon] = (demDayTiet[lop][tenMon] || 0) + 1;
             } else if (loaiCo === 'THE_TIET') {
@@ -376,6 +387,32 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
         let conLechLuyKe = Object.values(chiTietTungMon).some(m => m.soDuSauTuanNay !== 0);
         let laTheTietNoiBo = (tongTietDaXep === tongTietChuan && dsMonThieu.length > 0 && dsMonThua.length > 0);
 
+        let tongCoDay = tongCoDayLop[lop] || 0;
+        let tongCoThe = tongCoTheLop[lop] || 0;
+        let tongCoDacBietLop = tongCoDay + tongCoThe;
+        let tongSoTietThieu = dsMonThieu.reduce((s, x) => s + x.soThieu, 0);
+        let tongSoTietThua = dsMonThua.reduce((s, x) => s + x.soThua, 0);
+
+        // [QUAN TRỌNG]: Nếu người dùng đã chủ động gán cờ ĐẨY hoặc THẾ thì các chênh lệch này đã được giải trình hợp lệ
+        let daGiaiTrinhDayThe = (tongCoDacBietLop > 0 && (
+            tongCoDacBietLop >= Math.max(tongSoTietThieu, tongSoTietThua) ||
+            (tongTietDaXep + tongCoDay >= tongTietChuan) ||
+            laTheTietNoiBo
+        ));
+
+        // Nếu đã gán cờ giải trình thì chuyển trạng thái môn thiếu/thừa thành hợp lệ
+        if (daGiaiTrinhDayThe) {
+            Object.values(chiTietTungMon).forEach(m => {
+                if (m.trangThai === 'THIEU') {
+                    m.trangThai = 'DA_GIAI_TRINH';
+                    m.dienGiaiLuyKe = `✔ Đã giải trình qua cờ Đẩy/Thế tiết của lớp`;
+                } else if (m.trangThai === 'THUA') {
+                    m.trangThai = 'DA_GIAI_TRINH';
+                    m.dienGiaiLuyKe = `✔ Đã giải trình qua cờ Đẩy/Thế tiết của lớp`;
+                }
+            });
+        }
+
         ketQuaToanTruong[lop] = {
             lop: lop,
             tongChuan: tongTietChuan,
@@ -389,7 +426,9 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
             chiTietTungMon: chiTietTungMon,
             laTheTietNoiBo: laTheTietNoiBo,
             conLechLuyKe: conLechLuyKe,
-            hoanHao: (dsMonThieu.length === 0 && dsMonThua.length === 0 && tongTietChuan > 0),
+            tongCoDacBietLop: tongCoDacBietLop,
+            daGiaiTrinhDayThe: daGiaiTrinhDayThe,
+            hoanHao: ((dsMonThieu.length === 0 && dsMonThua.length === 0 && tongTietChuan > 0) || daGiaiTrinhDayThe),
             daCanBangLuyKe: (dsMonThieu.length === 0 && dsMonThua.length === 0 && dsMonDaTraBuKhop.length > 0 && !conLechLuyKe)
         };
     });
@@ -428,9 +467,10 @@ window.capNhatCanhBaoChiTietMonTrenLuoi = function(lopCuThe = null) {
                     <div onclick="window.moPopupChiTietMonCuaLop('${lop}')" class="vung-chi-tiet-mon-header mt-0.5 px-1.5 py-0.5 bg-teal-100 hover:bg-teal-200 text-teal-900 border border-teal-500 rounded text-[10px] font-extrabold cursor-pointer transition-colors leading-tight mx-1 truncate" title="Lớp ${lop}: Đã Bù/Trả tiết khớp 100% với tuần trước (${chuoiTraKhop}). Bấm để xem chi tiết.">
                         ✔ Đã bù/trả khớp (${kqLop.tongDaXep}/${kqLop.tongChuan})
                     </div>`;
-            } else if (kqLop.dsMonThieu.length === 0 && kqLop.dsMonThua.length === 0 && kqLop.dsMonDayTiet.length === 0) {
+            } else if ((kqLop.dsMonThieu.length === 0 && kqLop.dsMonThua.length === 0) || kqLop.daGiaiTrinhDayThe) {
+                let chuThichDayThe = kqLop.daGiaiTrinhDayThe ? ` (Có ${kqLop.tongCoDacBietLop} tiết Đẩy/Thế)` : '';
                 htmlHeader = `
-                    <div onclick="window.moPopupChiTietMonCuaLop('${lop}')" class="vung-chi-tiet-mon-header mt-0.5 px-1.5 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-400 rounded text-[10px] font-bold cursor-pointer transition-colors leading-tight mx-1" title="Bấm để xem chi tiết từng môn của lớp ${lop}">
+                    <div onclick="window.moPopupChiTietMonCuaLop('${lop}')" class="vung-chi-tiet-mon-header mt-0.5 px-1.5 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-500 rounded text-[10px] font-extrabold cursor-pointer transition-colors leading-tight mx-1 truncate" title="Lớp ${lop}: Đã kiểm soát ĐỦ CHUẨN${chuThichDayThe}. Bấm để xem chi tiết.">
                         ✔ Đủ chuẩn (${kqLop.tongDaXep}/${kqLop.tongChuan} tiết)
                     </div>`;
             } else {
@@ -841,7 +881,9 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
                 dsCanhBao.push(`• Lớp ${lop} (${kq.tongDaXep}/${kq.tongChuan} tiết): ${[pThieu, pThua].filter(Boolean).join(' | ')}`);
             }
         } else {
-            if (kq.dsMonDaTraBuKhop.length > 0 && kq.dsMonThieu.length === 0 && kq.dsMonThua.length === 0) {
+            if (kq.daGiaiTrinhDayThe) {
+                dsDaTraKhop.push(`✔ Lớp ${lop}: Đã gán cờ Đẩy/Thế tiết hợp lệ (${kq.tongDaXep}/${kq.tongChuan} tiết)`);
+            } else if (kq.dsMonDaTraBuKhop.length > 0 && kq.dsMonThieu.length === 0 && kq.dsMonThua.length === 0) {
                 dsDaTraKhop.push(`✔ Lớp ${lop}: Đã bù/trả khớp [${kq.dsMonDaTraBuKhop.map(x => `${x.mon} (${x.chenhLech > 0 ? '+' + x.chenhLech : x.chenhLech})`).join(', ')}]`);
             } else if (kq.dsMonThieu.length > 0 || kq.dsMonThua.length > 0) {
                 let phanThieu = kq.dsMonThieu.length > 0
