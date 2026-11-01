@@ -83,12 +83,6 @@ window.chuyenDoiCheDoDayTheTiet = function(thu, buoi, tiet, lop) {
         alert(`⚠️ Thời khóa biểu Tuần ${tuanDangXem} đang bị KHÓA. Không thể thay đổi trạng thái tiết học!`);
         return;
     }
-    let oMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
-    let valMon = oMon ? String(oMon.value || '').trim() : '';
-    if (!valMon || valMon === '--' || valMon === '---') {
-        alert("⚠️ Tiết học đang để trống (chưa có môn học). Không thể gán cờ ĐẨY hoặc THẾ!");
-        return;
-    }
     let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
     let tSo = (typeof tuanDangXem !== 'undefined') ? parseInt(String(tuanDangXem).replace(/\D/g, ''), 10) || 1 : 1;
     let maO = `${namHoc}_${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
@@ -213,15 +207,7 @@ window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
     let maOKhongNH = `${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
     let maOTuanRaw = `${namHoc}_${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`;
 
-    let valMon = String(oMon.value || '').trim();
-    if (!valMon || valMon === '--' || valMon === '---') {
-        // Môn học rỗng hoặc -- thì tự động xóa cờ
-        delete window.trangThaiDacBietTKB[maO];
-        delete window.trangThaiDacBietTKB[maOKhongNH];
-        delete window.trangThaiDacBietTKB[maOTuanRaw];
-        delete window.trangThaiDacBietTKB[`${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`];
-        return;
-    }
+    
 
     let co = window.trangThaiDacBietTKB[maO] || window.trangThaiDacBietTKB[maOKhongNH] || window.trangThaiDacBietTKB[maOTuanRaw] || '';
 
@@ -1201,21 +1187,6 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
             let lop = parts.length >= 5 ? parts.slice(4).join('_') : null;
             window.capNhatCanhBaoChiTietMonTrenLuoi(lop);
             setTimeout(() => window.hienThiGoiYMonConThieuKhiFocus(e.target), 120);
-        }
-    });
-
-    document.addEventListener('input', function(e) {
-        if (e.target && e.target.id && e.target.id.startsWith('mon_')) {
-            let parts = e.target.id.split('_');
-            if (parts.length >= 5) {
-                let thu = parts[1], buoi = parts[2], tiet = parts[3], lop = parts.slice(4).join('_');
-                let v = String(e.target.value || '').trim();
-                if (v === '' || v === '--' || v === '---') {
-                    if (typeof window.xoaCoDayTheTietTKB === 'function') {
-                        window.xoaCoDayTheTietTKB(thu, buoi, tiet, lop);
-                    }
-                }
-            }
         }
     });
 
