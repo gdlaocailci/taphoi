@@ -70,6 +70,35 @@ window.chuyenDoiCheDoDayTheTiet = function(thu, buoi, tiet, lop) {
     }
 };
 
+window.chuanHoaLoaiCo = function(raw) {
+    if (!raw) return '';
+    let s = String(raw).trim().toUpperCase();
+    if (s === 'DAY_TIET' || s === 'ĐẨY' || s === 'DAY' || s.indexOf('DAY') !== -1 || s.indexOf('ĐẨY') !== -1) return 'DAY_TIET';
+    if (s === 'THE_TIET' || s === 'THẾ' || s === 'THE' || s === 'THAY' || s.indexOf('THE') !== -1 || s.indexOf('THẾ') !== -1) return 'THE_TIET';
+    return '';
+};
+
+window.ganCoTuBanGhiTKB = function(t) {
+    if (!t) return;
+    let loaiCo = window.chuanHoaLoaiCo(t.trangThai || t.ghiChu || t.tietPpc);
+    if (!loaiCo) return;
+
+    let thu = String(t.thu || '').trim();
+    let buoi = String(t.buoi || '').trim();
+    let tiet = String(t.tiet || '').trim();
+    let lop = String(t.maLop || t.lop || '').trim();
+    let tuanSo = parseInt(String(t.tuan || (typeof tuanDangXem !== 'undefined' ? tuanDangXem : 1)).replace(/\D/g, ''), 10) || 1;
+    let namHoc = String(t.namHoc || ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH')).trim();
+
+    // Lưu vào bộ nhớ theo tất cả các biến thể khóa để tra cứu O(1) không bao giờ lệch
+    window.trangThaiDacBietTKB[`${thu}_${buoi}_${tiet}_${lop}`] = loaiCo;
+    window.trangThaiDacBietTKB[`${tuanSo}_${thu}_${buoi}_${tiet}_${lop}`] = loaiCo;
+    window.trangThaiDacBietTKB[`${namHoc}_${tuanSo}_${thu}_${buoi}_${tiet}_${lop}`] = loaiCo;
+    if (t.maTiet) {
+        window.trangThaiDacBietTKB[String(t.maTiet).trim()] = loaiCo;
+    }
+};
+
 window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
     let oMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
     let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
@@ -81,32 +110,29 @@ window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
 
     let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
     let tSo = (typeof tuanDangXem !== 'undefined') ? parseInt(String(tuanDangXem).replace(/\D/g, ''), 10) || 1 : 1;
-    let maO = `${namHoc}_${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
-    let maOKhongNH = `${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
 
-    let co = window.trangThaiDacBietTKB[maO] || window.trangThaiDacBietTKB[maOKhongNH];
+    // Tra cứu cờ theo tất cả các biến thể khóa:
+    let co = window.trangThaiDacBietTKB[`${namHoc}_${tSo}_${thu}_${buoi}_${tiet}_${lop}`] ||
+             window.trangThaiDacBietTKB[`${tSo}_${thu}_${buoi}_${tiet}_${lop}`] ||
+             window.trangThaiDacBietTKB[`${thu}_${buoi}_${tiet}_${lop}`];
 
-    // [TỰ ĐỘNG PHỤC HỒI CỜ TỪ CỘT L SERVER KHI LÀM MỚI TRANG]:
+    // [TỰ ĐỘNG PHỤC HỒI CỜ TỪ CỘT L SERVER KHI MỞ MỚI / LÀM MỚI TRANG]:
     if (!co) {
         let nguonTKB = (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0)
             ? duLieuTkbHienTai
             : ((typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN)) ? thongSoHocVu.TKB_TUAN : []);
         
         let timBanGhi = nguonTKB.find(t => 
-            parseInt(String(t.tuan).replace(/\D/g, ''), 10) === tSo &&
-            String(t.maLop).trim().toUpperCase() === String(lop).trim().toUpperCase() &&
-            String(t.thu).trim().toLowerCase() === String(thu).trim().toLowerCase() &&
-            String(t.buoi).trim().toLowerCase() === String(buoi).trim().toLowerCase() &&
-            String(t.tiet).trim() === String(tiet).trim()
+            parseInt(String(t.tuan || tSo).replace(/\D/g, ''), 10) === tSo &&
+            String(t.maLop || t.lop || '').trim().toUpperCase() === String(lop).trim().toUpperCase() &&
+            String(t.thu || '').trim().toLowerCase() === String(thu).trim().toLowerCase() &&
+            String(t.buoi || '').trim().toLowerCase() === String(buoi).trim().toLowerCase() &&
+            String(t.tiet || '').trim() === String(tiet).trim()
         );
         if (timBanGhi) {
-            let tt = String(timBanGhi.trangThai || timBanGhi.ghiChu || '').trim();
-            if (tt === 'DAY_TIET' || tt === 'ĐẨY') {
-                co = 'DAY_TIET';
-                window.trangThaiDacBietTKB[maO] = co;
-            } else if (tt === 'THE_TIET' || tt === 'THẾ') {
-                co = 'THE_TIET';
-                window.trangThaiDacBietTKB[maO] = co;
+            co = window.chuanHoaLoaiCo(timBanGhi.trangThai || timBanGhi.ghiChu || timBanGhi.tietPpc);
+            if (co) {
+                window.ganCoTuBanGhiTKB(timBanGhi);
             }
         }
     }
@@ -122,13 +148,19 @@ window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
         tdMon.classList.add('relative');
         tdMon.insertAdjacentHTML(
             'beforeend',
-            `<span class="badge-day-the absolute top-0.5 left-0.5 px-1 py-0 text-[9px] font-extrabold bg-blue-600 text-white rounded shadow pointer-events-none leading-tight" title="Tiết dạy đẩy tiến độ / dạy bù">ĐẨY</span>`
+            `<span class="badge-day-the absolute top-0.5 left-0.5 px-1 py-0 text-[9px] font-extrabold bg-blue-600 text-white rounded shadow pointer-events-none leading-tight z-10" title="Tiết dạy đẩy tiến độ / dạy bù">ĐẨY</span>`
         );
     } else if (co === 'THE_TIET' && tdGv) {
         tdGv.classList.add('relative');
         tdGv.insertAdjacentHTML(
             'beforeend',
-            `<span class="badge-day-the absolute top-0.5 left-0.5 px-1 py-0 text-[9px] font-extrabold bg-purple-600 text-white rounded shadow pointer-events-none leading-tight" title="Tiết dạy thế / dạy thay giáo viên">THẾ</span>`
+            `<span class="badge-day-the absolute top-0.5 left-0.5 px-1 py-0 text-[9px] font-extrabold bg-purple-600 text-white rounded shadow pointer-events-none leading-tight z-10" title="Tiết dạy thế / dạy thay giáo viên">THẾ</span>`
+        );
+    } else if (co === 'THE_TIET') {
+        tdMon.classList.add('relative');
+        tdMon.insertAdjacentHTML(
+            'beforeend',
+            `<span class="badge-day-the absolute top-0.5 left-0.5 px-1 py-0 text-[9px] font-extrabold bg-purple-600 text-white rounded shadow pointer-events-none leading-tight z-10" title="Tiết dạy thế môn / thay giáo viên">THẾ</span>`
         );
     }
 };
@@ -361,15 +393,25 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
                     trangThaiMon = 'DA_TRA_BU_KHOP';
                     dienGiaiLuyKe = `✔ Tăng +${chenhLech} tiết để dạy bù khớp cho ${lichSuTuan}`;
                     dsMonDaTraBuKhop.push({ mon, chuan: soTietChuan, daXep: soTietXep, chenhLech, lichSuTuan });
-                } else if (soTietDay >= chenhLech && soTietChuan > 0) {
-                    trangThaiMon = 'DAY_TIET';
-                    dienGiaiLuyKe = `Đã gắn nhãn [ĐẨY +${chenhLech} tiết]`;
+                } else if (soTietDay >= chenhLech || (soTietDay + soTietThe) >= chenhLech) {
+                    trangThaiMon = (soTietDay >= chenhLech) ? 'DAY_TIET' : 'THE_TIET';
+                    dienGiaiLuyKe = `Đã gắn nhãn [${trangThaiMon === 'DAY_TIET' ? 'ĐẨY' : 'THẾ'} +${chenhLech} tiết]`;
                     dsMonDayTiet.push({
                         mon: mon,
                         chuan: soTietChuan,
                         daXep: soTietXep,
                         soThua: chenhLech,
-                        soDay: soTietDay
+                        soDay: soTietDay || soTietThe
+                    });
+                } else if (soTietThe >= chenhLech) {
+                    trangThaiMon = 'THE_TIET';
+                    dienGiaiLuyKe = `Đã gắn nhãn [THẾ +${chenhLech} tiết]`;
+                    dsMonDayTiet.push({
+                        mon: mon,
+                        chuan: soTietChuan,
+                        daXep: soTietXep,
+                        soThua: chenhLech,
+                        soDay: soTietThe
                     });
                 } else {
                     trangThaiMon = 'THUA';
@@ -421,12 +463,13 @@ window.phanTichChiTietDinhMucTungMon = function(lopMucTieu = null) {
         let tongSoTietThieu = dsMonThieu.reduce((s, x) => s + x.soThieu, 0);
         let tongSoTietThua = dsMonThua.reduce((s, x) => s + x.soThua, 0);
 
-        // [QUAN TRỌNG]: Nếu người dùng đã chủ động gán cờ ĐẨY hoặc THẾ thì các chênh lệch này đã được giải trình hợp lệ
-        let daGiaiTrinhDayThe = (tongCoDacBietLop > 0 && (
-            tongCoDacBietLop >= Math.max(tongSoTietThieu, tongSoTietThua) ||
-            (tongTietDaXep + tongCoDay >= tongTietChuan) ||
-            laTheTietNoiBo
-        ));
+        // [QUAN TRỌNG]: Nếu người dùng đã gán cờ ĐẨY hoặc THẾ, hoặc lớp đã xếp đủ 32/32 tiết (Thế tiết nội bộ):
+        let daGiaiTrinhDayThe = (
+            (tongCoDacBietLop > 0) ||
+            (laTheTietNoiBo && tongTietDaXep >= tongTietChuan) ||
+            (tongTietDaXep + tongCoDay >= tongTietChuan && tongSoTietThieu <= tongCoDay) ||
+            (dsMonThua.length === 0 && dsMonDayTiet.length > 0 && tongTietDaXep >= tongTietChuan)
+        );
 
         // Nếu đã gán cờ giải trình thì chuyển trạng thái môn thiếu/thừa thành hợp lệ
         if (daGiaiTrinhDayThe) {
@@ -538,8 +581,16 @@ window.capNhatCanhBaoChiTietMonTrenLuoi = function(lopCuThe = null) {
 
                 let thongTinMon = kqLop.chiTietTungMon[tenMon];
                 if (tenMon && thongTinMon && thongTinMon.trangThai === 'THUA') {
-                    oMon.title = `⚠️ Môn [${tenMon}] của lớp ${lop} đang xếp ${thongTinMon.daXep}/${thongTinMon.chuan} tiết (Thừa +${thongTinMon.chenhLech} tiết).\n- Nếu là dạy đẩy tiết/dạy bù: Giữ phím Alt + Click chuột trái vào ô này để đánh dấu [ĐẨY].`;
-                    td.style.boxShadow = 'inset 0 0 0 2px #f59e0b';
+                    if (kqLop.daGiaiTrinhDayThe || thongTinMon.soDayTiet > 0 || thongTinMon.soTheTiet > 0) {
+                        oMon.title = `✔ Môn [${tenMon}] - Lớp ${lop}: Đã xếp ${thongTinMon.daXep}/${thongTinMon.chuan} tiết (Đã gán cờ Đẩy/Thế tiết hợp lệ).`;
+                        td.style.boxShadow = '';
+                    } else {
+                        oMon.title = `⚠️ Môn [${tenMon}] của lớp ${lop} đang xếp ${thongTinMon.daXep}/${thongTinMon.chuan} tiết (Thừa +${thongTinMon.chenhLech} tiết).\n- Nếu là dạy đẩy tiết/dạy bù: Giữ phím Alt + Click chuột trái vào ô này để đánh dấu [ĐẨY].`;
+                        td.style.boxShadow = 'inset 0 0 0 2px #f59e0b';
+                    }
+                } else if (tenMon && thongTinMon && (thongTinMon.trangThai === 'DAY_TIET' || thongTinMon.trangThai === 'THE_TIET' || thongTinMon.trangThai === 'DA_GIAI_TRINH')) {
+                    oMon.title = `✔ Môn [${tenMon}] - Lớp ${lop}: Đã xếp ${thongTinMon.daXep}/${thongTinMon.chuan} tiết (Hợp lệ qua cờ Đẩy/Thế).`;
+                    td.style.boxShadow = '';
                 } else if (tenMon && thongTinMon && thongTinMon.trangThai === 'DA_TRA_BU_KHOP') {
                     oMon.title = `✔ Môn [${tenMon}] - Lớp ${lop}: ${thongTinMon.dienGiaiLuyKe}`;
                     td.style.boxShadow = 'inset 0 0 0 2px #14b8a6';
