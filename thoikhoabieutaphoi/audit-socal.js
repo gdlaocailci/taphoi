@@ -40,28 +40,80 @@ window.luuCoDayTheTietTKB = function() {
     } catch (e) {}
 };
 
+window.tapODaXoaCo = window.tapODaXoaCo || new Set();
+
 window.chuyenDoiCheDoDayTheTiet = function(thu, buoi, tiet, lop) {
     if (typeof window.kiemTraTuanTkbDaKhoa === 'function' && window.kiemTraTuanTkbDaKhoa(tuanDangXem)) {
         alert(`⚠️ Thời khóa biểu Tuần ${tuanDangXem} đang bị KHÓA. Không thể thay đổi trạng thái tiết học!`);
         return;
     }
     let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
-    let maO = `${namHoc}_${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`;
-    let trangThaiHienTai = window.trangThaiDacBietTKB[maO] || '';
+    let tSo = (typeof tuanDangXem !== 'undefined') ? parseInt(String(tuanDangXem).replace(/\D/g, ''), 10) || 1 : 1;
+    
+    let k1 = `${namHoc}_${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
+    let k2 = `${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
+    let k3 = `${thu}_${buoi}_${tiet}_${lop}`;
 
+    let nguonTKB = (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0)
+        ? duLieuTkbHienTai
+        : ((typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN)) ? thongSoHocVu.TKB_TUAN : []);
+    
+    let banGhiRAM = nguonTKB.find(t => 
+        parseInt(String(t.tuan || tSo).replace(/\D/g, ''), 10) === tSo &&
+        String(t.maLop || t.lop || '').trim().toUpperCase() === String(lop).trim().toUpperCase() &&
+        String(t.thu || '').trim().toLowerCase() === String(thu).trim().toLowerCase() &&
+        String(t.buoi || '').trim().toLowerCase() === String(buoi).trim().toLowerCase() &&
+        String(t.tiet || '').trim() === String(tiet).trim()
+    );
+
+    // Xác định trạng thái hiện tại từ tất cả các khóa và từ RAM
+    let trangThaiHienTai = window.trangThaiDacBietTKB[k1] || window.trangThaiDacBietTKB[k2] || window.trangThaiDacBietTKB[k3] || '';
+    if (!trangThaiHienTai && banGhiRAM && !window.tapODaXoaCo.has(k3)) {
+        trangThaiHienTai = window.chuanHoaLoaiCo(banGhiRAM.trangThai || banGhiRAM.ghiChu || banGhiRAM.tietPpc);
+    }
+
+    // VÒNG LẶP CHUYỂN ĐỔI 3 NẤC:
+    // "" (Không cờ) -> "DAY_TIET" (ĐẨY) -> "THE_TIET" (THẾ) -> "" (BỎ CỜ HOÀN TOÀN)
+    let trangThaiMoi = '';
     if (trangThaiHienTai === '') {
-        window.trangThaiDacBietTKB[maO] = 'DAY_TIET';
+        trangThaiMoi = 'DAY_TIET';
     } else if (trangThaiHienTai === 'DAY_TIET') {
-        window.trangThaiDacBietTKB[maO] = 'THE_TIET';
+        trangThaiMoi = 'THE_TIET';
     } else {
-        delete window.trangThaiDacBietTKB[maO];
+        trangThaiMoi = ''; // GỠ BỎ HOÀN TOÀN TRẠNG THÁI ĐẨY/THẾ!
+    }
+
+    let cacKhoaLienQuan = [k1, k2, k3];
+    if (banGhiRAM && banGhiRAM.maTiet) cacKhoaLienQuan.push(String(banGhiRAM.maTiet).trim());
+
+    if (trangThaiMoi === '') {
+        // GỠ BỎ TRIỆT ĐỂ KHỎI TẤT CẢ CÁC BỘ NHỚ VÀ RAM:
+        cacKhoaLienQuan.forEach(k => {
+            delete window.trangThaiDacBietTKB[k];
+        });
+        cacKhoaLienQuan.forEach(k => window.tapODaXoaCo.add(k));
+
+        if (banGhiRAM) {
+            banGhiRAM.trangThai = '';
+            banGhiRAM.ghiChu = '';
+            banGhiRAM.tietPpc = '';
+        }
+    } else {
+        cacKhoaLienQuan.forEach(k => {
+            window.trangThaiDacBietTKB[k] = trangThaiMoi;
+            window.tapODaXoaCo.delete(k);
+        });
+        if (banGhiRAM) {
+            banGhiRAM.trangThai = trangThaiMoi;
+            banGhiRAM.ghiChu = trangThaiMoi;
+        }
     }
 
     window.luuCoDayTheTietTKB();
     window.veNhanDayTheTietTrenO(thu, buoi, tiet, lop);
     window.capNhatCanhBaoChiTietMonTrenLuoi(lop);
 
-    // [BẮT BUỘC ĐỂ LƯU SỬA]: Đánh dấu ô này đã bị thay đổi cờ trạng thái để luuSuaCucBoTKB thu thập vào dsThayDoi
+    // [BẮT BUỘC ĐỂ LƯU SỬA]: Đánh dấu ô này đã bị thay đổi để nút "Lưu sửa" gửi trạng thái rỗng/mới lên Cột L
     let oMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
     if (oMon) {
         let tdMon = oMon.closest('td');
@@ -117,7 +169,7 @@ window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
              window.trangThaiDacBietTKB[`${thu}_${buoi}_${tiet}_${lop}`];
 
     // [TỰ ĐỘNG PHỤC HỒI CỜ TỪ CỘT L SERVER KHI MỞ MỚI / LÀM MỚI TRANG]:
-    if (!co) {
+    if (!co && (!window.tapODaXoaCo || (!window.tapODaXoaCo.has(maO) && !window.tapODaXoaCo.has(maOKhongNH)))) {
         let nguonTKB = (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0)
             ? duLieuTkbHienTai
             : ((typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN)) ? thongSoHocVu.TKB_TUAN : []);
@@ -1095,8 +1147,15 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
                         let nh = item.namHoc || namHoc;
                         let t = item.tuan || tDangXem;
                         let maO = `${nh}_${t}_${item.thu}_${item.buoi}_${item.tiet}_${item.maLop}`;
-                        let co = window.trangThaiDacBietTKB[maO] || '';
-                        item.trangThai = co;
+                        let kShort = `${item.thu}_${item.buoi}_${item.tiet}_${item.maLop}`;
+                        
+                        if (window.tapODaXoaCo && (window.tapODaXoaCo.has(maO) || window.tapODaXoaCo.has(kShort))) {
+                            item.trangThai = '';
+                            item.ghiChu = '';
+                        } else {
+                            let co = window.trangThaiDacBietTKB[maO] || window.trangThaiDacBietTKB[kShort] || '';
+                            item.trangThai = co;
+                        }
                     }
 
                     if (Array.isArray(bodyObj.duLieu)) {
