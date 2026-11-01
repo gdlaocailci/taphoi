@@ -60,6 +60,14 @@ window.chuyenDoiCheDoDayTheTiet = function(thu, buoi, tiet, lop) {
     window.luuCoDayTheTietTKB();
     window.veNhanDayTheTietTrenO(thu, buoi, tiet, lop);
     window.capNhatCanhBaoChiTietMonTrenLuoi(lop);
+
+    // [BẮT BUỘC ĐỂ LƯU SỬA]: Đánh dấu ô này đã bị thay đổi cờ trạng thái để luuSuaCucBoTKB thu thập vào dsThayDoi
+    let oMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
+    if (oMon) {
+        let tdMon = oMon.closest('td');
+        if (tdMon) tdMon.setAttribute('data-thaydoi', 'true');
+        if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oMon);
+    }
 };
 
 window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
@@ -873,6 +881,20 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
     if (typeof xuatMaTranGoc === 'function' && !window._daHookKiemToanChiTietMon) {
         window._daHookKiemToanChiTietMon = true;
         window.xuatMaTranBang = function(danhSachTiet) {
+            // [ĐỒNG BỘ 2 CHIỀU TỪ SERVER]: Tự động nạp cờ ĐẨY / THẾ từ Cột L máy chủ trả về
+            if (Array.isArray(danhSachTiet)) {
+                let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
+                danhSachTiet.forEach(t => {
+                    let tt = String(t.trangThai || '').trim();
+                    if (tt === 'DAY_TIET' || tt === 'THE_TIET' || tt === 'ĐẨY' || tt === 'THẾ') {
+                        let nh = t.namHoc || namHoc;
+                        let maO = `${nh}_${t.tuan}_${t.thu}_${t.buoi}_${t.tiet}_${t.maLop}`;
+                        window.trangThaiDacBietTKB[maO] = (tt === 'ĐẨY' || tt === 'DAY_TIET') ? 'DAY_TIET' : 'THE_TIET';
+                    }
+                });
+                window.luuCoDayTheTietTKB();
+            }
+
             xuatMaTranGoc.apply(this, arguments);
             setTimeout(() => {
                 const cacOMon = document.querySelectorAll('input[id^="mon_"]');
@@ -932,4 +954,43 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
             }
         }
     }, true);
+})();
+
+// -------------------------------------------------------------------------
+// BỘ ĐỆM GẮN CỜ TRẠNG THÁI (ĐẨY / THẾ) VÀO DỮ LIỆU GỬI LÊN SERVER
+// -------------------------------------------------------------------------
+(function() {
+    const fetchGoc = window.fetch;
+    window.fetch = async function(url, options) {
+        try {
+            if (options && options.body && typeof options.body === 'string') {
+                let bodyObj = JSON.parse(options.body);
+                if (bodyObj && (bodyObj.thaoTac === 'luuSuaTkbHienTai' || bodyObj.thaoTac === 'luuDuLieu')) {
+                    let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
+                    let tDangXem = (typeof tuanDangXem !== 'undefined' && tuanDangXem) ? tuanDangXem : '1';
+                    
+                    function ganTrangThaiChoItem(item) {
+                        if (!item) return;
+                        let nh = item.namHoc || namHoc;
+                        let t = item.tuan || tDangXem;
+                        let maO = `${nh}_${t}_${item.thu}_${item.buoi}_${item.tiet}_${item.maLop}`;
+                        let co = window.trangThaiDacBietTKB[maO] || '';
+                        item.trangThai = co;
+                    }
+
+                    if (Array.isArray(bodyObj.duLieu)) {
+                        bodyObj.duLieu.forEach(ganTrangThaiChoItem);
+                    }
+                    if (Array.isArray(bodyObj.dsThayDoi)) {
+                        bodyObj.dsThayDoi.forEach(ganTrangThaiChoItem);
+                    }
+                    if (Array.isArray(bodyObj.dsToanLuoi)) {
+                        bodyObj.dsToanLuoi.forEach(ganTrangThaiChoItem);
+                    }
+                    options.body = JSON.stringify(bodyObj);
+                }
+            }
+        } catch(e) {}
+        return await fetchGoc.apply(this, arguments);
+    };
 })();
