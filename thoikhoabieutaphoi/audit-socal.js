@@ -80,8 +80,36 @@ window.veNhanDayTheTietTrenO = function(thu, buoi, tiet, lop) {
     if (!tdMon) return;
 
     let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
-    let maO = `${namHoc}_${tuanDangXem}_${thu}_${buoi}_${tiet}_${lop}`;
-    let co = window.trangThaiDacBietTKB[maO];
+    let tSo = (typeof tuanDangXem !== 'undefined') ? parseInt(String(tuanDangXem).replace(/\D/g, ''), 10) || 1 : 1;
+    let maO = `${namHoc}_${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
+    let maOKhongNH = `${tSo}_${thu}_${buoi}_${tiet}_${lop}`;
+
+    let co = window.trangThaiDacBietTKB[maO] || window.trangThaiDacBietTKB[maOKhongNH];
+
+    // [TỰ ĐỘNG PHỤC HỒI CỜ TỪ CỘT L SERVER KHI LÀM MỚI TRANG]:
+    if (!co) {
+        let nguonTKB = (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0)
+            ? duLieuTkbHienTai
+            : ((typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN)) ? thongSoHocVu.TKB_TUAN : []);
+        
+        let timBanGhi = nguonTKB.find(t => 
+            parseInt(String(t.tuan).replace(/\D/g, ''), 10) === tSo &&
+            String(t.maLop).trim().toUpperCase() === String(lop).trim().toUpperCase() &&
+            String(t.thu).trim().toLowerCase() === String(thu).trim().toLowerCase() &&
+            String(t.buoi).trim().toLowerCase() === String(buoi).trim().toLowerCase() &&
+            String(t.tiet).trim() === String(tiet).trim()
+        );
+        if (timBanGhi) {
+            let tt = String(timBanGhi.trangThai || timBanGhi.ghiChu || '').trim();
+            if (tt === 'DAY_TIET' || tt === 'ĐẨY') {
+                co = 'DAY_TIET';
+                window.trangThaiDacBietTKB[maO] = co;
+            } else if (tt === 'THE_TIET' || tt === 'THẾ') {
+                co = 'THE_TIET';
+                window.trangThaiDacBietTKB[maO] = co;
+            }
+        }
+    }
 
     let nhanMonCu = tdMon.querySelector('.badge-day-the');
     if (nhanMonCu) nhanMonCu.remove();
@@ -1036,3 +1064,49 @@ window.kiemTraTruocKhiLuuTKB = function(loaiLuu) {
         return await fetchGoc.apply(this, arguments);
     };
 })();
+// -------------------------------------------------------------------------
+// HÀM TỰ ĐỘNG ĐỒNG BỘ CỜ TỪ CỘT L MÁY CHỦ NGAY KHI LÀM MỚI TRANG
+// -------------------------------------------------------------------------
+window.quetVaDongBoToanBoCoDayTheTuServer = function() {
+    let nguonTKB = (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0)
+        ? duLieuTkbHienTai
+        : ((typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN)) ? thongSoHocVu.TKB_TUAN : []);
+    
+    if (Array.isArray(nguonTKB) && nguonTKB.length > 0) {
+        let namHoc = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.NAM_HOC) ? thongSoHocVu.NAM_HOC : 'NH';
+        let tSo = (typeof tuanDangXem !== 'undefined') ? parseInt(String(tuanDangXem).replace(/\D/g, ''), 10) || 1 : 1;
+        let coThayDoi = false;
+
+        nguonTKB.forEach(t => {
+            let tt = String(t.trangThai || t.ghiChu || '').trim();
+            if (tt === 'DAY_TIET' || tt === 'THE_TIET' || tt === 'ĐẨY' || tt === 'THẾ') {
+                let nh = t.namHoc || namHoc;
+                let tBanGhi = parseInt(String(t.tuan || tSo).replace(/\D/g, ''), 10) || tSo;
+                let maO = `${nh}_${tBanGhi}_${t.thu}_${t.buoi}_${t.tiet}_${t.maLop}`;
+                let coChuan = (tt === 'ĐẨY' || tt === 'DAY_TIET') ? 'DAY_TIET' : 'THE_TIET';
+                if (window.trangThaiDacBietTKB[maO] !== coChuan) {
+                    window.trangThaiDacBietTKB[maO] = coChuan;
+                    coThayDoi = true;
+                }
+            }
+        });
+        if (coThayDoi) {
+            window.luuCoDayTheTietTKB();
+        }
+    }
+};
+
+// Gọi đồng bộ ngay lập tức và theo chu kỳ khởi động
+window.quetVaDongBoToanBoCoDayTheTuServer();
+setTimeout(() => window.quetVaDongBoToanBoCoDayTheTuServer(), 300);
+setTimeout(() => {
+    window.quetVaDongBoToanBoCoDayTheTuServer();
+    const cacOMon = document.querySelectorAll('input[id^="mon_"]');
+    cacOMon.forEach(oMon => {
+        let parts = oMon.id.split('_');
+        if (parts.length >= 5) {
+            window.veNhanDayTheTietTrenO(parts[1], parts[2], parts[3], parts.slice(4).join('_'));
+        }
+    });
+    window.capNhatCanhBaoChiTietMonTrenLuoi();
+}, 800);
