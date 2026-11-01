@@ -1206,17 +1206,62 @@ window.quetVaDongBoToanBoCoDayTheTuServer = function() {
     }
 };
 
-// Gọi đồng bộ ngay lập tức và theo chu kỳ khởi động
-window.quetVaDongBoToanBoCoDayTheTuServer();
-setTimeout(() => window.quetVaDongBoToanBoCoDayTheTuServer(), 300);
-setTimeout(() => {
+// =========================================================================
+// KHỐI THỰC THI TOÀN DIỆN: TỰ ĐỘNG VẼ CỜ & CẬP NHẬT HEADER LIÊN TỤC
+// =========================================================================
+window.thucThiVeLaiToanBoCoVaCanhBao = function() {
     window.quetVaDongBoToanBoCoDayTheTuServer();
     const cacOMon = document.querySelectorAll('input[id^="mon_"]');
-    cacOMon.forEach(oMon => {
-        let parts = oMon.id.split('_');
-        if (parts.length >= 5) {
-            window.veNhanDayTheTietTrenO(parts[1], parts[2], parts[3], parts.slice(4).join('_'));
+    if (cacOMon.length > 0) {
+        cacOMon.forEach(oMon => {
+            let parts = oMon.id.split('_');
+            if (parts.length >= 5) {
+                window.veNhanDayTheTietTrenO(parts[1], parts[2], parts[3], parts.slice(4).join('_'));
+            }
+        });
+        window.capNhatCanhBaoChiTietMonTrenLuoi();
+    }
+};
+
+// 1. Tự động quan sát biến động DOM (Bất cứ khi nào app.js vẽ lại bảng TKB trên web)
+let _observerDebounceTimer = null;
+(function khoiTaoMutationObserverTKB() {
+    try {
+        const observer = new MutationObserver(function(mutations) {
+            let coThayDoiBang = false;
+            for (let i = 0; i < mutations.length; i++) {
+                let m = mutations[i];
+                if (m.target) {
+                    let tid = m.target.id || '';
+                    let tag = (m.target.tagName || '').toLowerCase();
+                    if (tid === 'vungHienThiDuLieu' || tid === 'tieuDeBang' || tag === 'tbody' || tag === 'table' || tid === 'khungTKB') {
+                        coThayDoiBang = true; break;
+                    }
+                }
+            }
+            if (coThayDoiBang) {
+                if (_observerDebounceTimer) clearTimeout(_observerDebounceTimer);
+                _observerDebounceTimer = setTimeout(() => {
+                    window.thucThiVeLaiToanBoCoVaCanhBao();
+                }, 100);
+            }
+        });
+
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                observer.observe(document.body, { childList: true, subtree: true });
+            });
         }
-    });
-    window.capNhatCanhBaoChiTietMonTrenLuoi();
-}, 800);
+    } catch (e) {}
+})();
+
+// 2. Chạy đa chu kỳ khởi động đón đầu mọi độ trễ mạng từ Google Apps Script (100ms -> 5000ms)
+window.thucThiVeLaiToanBoCoVaCanhBao();
+[100, 300, 700, 1500, 2500, 4000].forEach(ms => {
+    setTimeout(() => {
+        window.thucThiVeLaiToanBoCoDayTheTuServer();
+        window.thucThiVeLaiToanBoCoVaCanhBao();
+    }, ms);
+});
