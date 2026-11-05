@@ -74,15 +74,23 @@
                 width: 32px !important;
                 height: 32px !important;
             }
-            /* Nút "Ai đang online": Tối giản hiển thị trên màn hình nhỏ, giữ nguyên icon và chấm xanh nhấp nháy */
-            #btnAiDangOnline {
-                padding: 4px 8px !important;
-                font-size: 11px !important;
-                gap: 4px !important;
+            /* Cụm điều khiển cửa sổ góc trên bên phải trên Mobile */
+            #cumDieuKhienCuaSo {
+                gap: 2px !important;
+                margin-left: 4px !important;
+                padding-left: 4px !important;
             }
-            #btnAiDangOnline span.font-sans {
-                display: none !important; /* Ẩn chữ dài để không chèn ép tiêu đề trường */
+            #cumDieuKhienCuaSo button {
+                width: 28px !important;
+                height: 28px !important;
+                border-radius: 6px !important;
             }
+            #cumDieuKhienCuaSo svg {
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+
 
             /* 3. THANH CÔNG CỤ TKB (#thanhCongCuTKB) */
             #thanhCongCuTKB {
@@ -713,17 +721,38 @@
                         <h1 id="tenHeThong" class="text-[15px] md:text-xl font-bold text-blue-900 uppercase tracking-wide leading-tight truncate">Đang nạp dữ liệu...</h1>
                         <p id="tenDonVi" class="text-slate-600 font-semibold text-[11px] md:text-sm truncate">SMART CURRICULUM MANAGEMENT</p>
                     </div>
-                    <!-- NÚT AI ĐANG ONLINE? (BÊN PHẢI HEADER) -->
-                    <button id="btnAiDangOnline" type="button" onclick="if(typeof moModalCheckOnline === 'function') moModalCheckOnline();" title="Xem danh sách tên và ID những người đang online theo thời gian thực" class="ml-auto flex-none inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs md:text-sm px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-md hover:shadow-lg border border-emerald-500 transition-all duration-200 cursor-pointer group">
-                        <span class="relative flex h-2.5 w-2.5 flex-none">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-90"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-                        </span>
-                        <svg class="w-4 h-4 md:w-5 md:h-5 flex-none group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <span class="whitespace-nowrap tracking-wide font-sans">Ai đang online?</span>
-                    </button>
+                    <!-- CỤM NÚT ĐIỀU KHIỂN CỬA SỔ: THU NHỎ, PHÓNG TO FULL, CLOSE (GÓC TRÊN BÊN PHẢI) -->
+                    <div id="cumDieuKhienCuaSo" class="ml-auto flex items-center gap-1 md:gap-1.5 flex-none">
+                        <!-- 1. THU NHỎ (MINIMIZE / THOÁT TOÀN MÀN HÌNH) -->
+                        <button id="btnThuNhoCuaSo" type="button" onclick="thaoTacThuNhoCuaSo(event)" title="Thu nhỏ (Thoát toàn màn hình)" 
+                            class="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 hover:text-slate-900 border border-slate-300 shadow-sm transition-all duration-150 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+
+                        <!-- 2. PHÓNG TO FULL (MAXIMIZE / FULLSCREEN) -->
+                        <button id="btnPhongToFullCuaSo" type="button" onclick="thaoTacPhongToFull(event)" title="Phóng to Full màn hình" 
+                            class="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white active:bg-blue-700 text-slate-600 border border-slate-300 shadow-sm transition-all duration-150 cursor-pointer group">
+                            <!-- Icon ô vuông phóng to (khi chưa full) -->
+                            <svg id="iconMaxSquare" class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+                                <rect x="3.5" y="3.5" width="17" height="17" rx="2"></rect>
+                            </svg>
+                            <!-- Icon khôi phục cửa sổ (khi đang full) -->
+                            <svg id="iconRestoreSquare" class="w-3.5 h-3.5 md:w-4 md:h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                        </button>
+
+                        <!-- 3. CLOSE (ĐÓNG CỬA SỔ / THOÁT HỆ THỐNG) -->
+                        <button id="btnDongCuaSo" type="button" onclick="thaoTacDongHeThong(event)" title="Đóng cửa sổ / Thoát hệ thống" 
+                            class="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-rose-600 hover:text-white active:bg-rose-700 text-slate-600 border border-slate-300 shadow-sm transition-all duration-150 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -1523,8 +1552,93 @@
             }
         }
 
+        // Cờ tạm dừng tự động kích hoạt khi người dùng chủ động bấm nút Thu nhỏ
+        var tamDungAutoFullscreen = false;
+
+        // XỬ LÝ 1: THU NHỎ CỬA SỔ (THOÁT TOÀN MÀN HÌNH)
+        function thaoTacThuNhoCuaSo(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            tamDungAutoFullscreen = true;
+            setTimeout(function() {
+                tamDungAutoFullscreen = false;
+            }, 1500);
+
+            var daFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            if (daFull) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(function() {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // XỬ LÝ 2: PHÓNG TO FULL MÀN HÌNH (MAXIMIZE / RESTORE)
+        function thaoTacPhongToFull(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            var daFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            if (daFull) {
+                thaoTacThuNhoCuaSo(e);
+            } else {
+                tamDungAutoFullscreen = false;
+                kichHoatToanManHinhHeThong();
+            }
+        }
+
+        // Cập nhật biểu tượng ô vuông Maximize / Restore khi trạng thái màn hình thay đổi
+        function capNhatIconCuaSo() {
+            var isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            var iconMax = document.getElementById('iconMaxSquare');
+            var iconRestore = document.getElementById('iconRestoreSquare');
+            var btnPhongTo = document.getElementById('btnPhongToFullCuaSo');
+            if (iconMax && iconRestore) {
+                if (isFull) {
+                    iconMax.classList.add('hidden');
+                    iconRestore.classList.remove('hidden');
+                    if (btnPhongTo) btnPhongTo.title = "Thu nhỏ kích thước (Restore)";
+                } else {
+                    iconMax.classList.remove('hidden');
+                    iconRestore.classList.add('hidden');
+                    if (btnPhongTo) btnPhongTo.title = "Phóng to Full màn hình";
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', capNhatIconCuaSo);
+        document.addEventListener('webkitfullscreenchange', capNhatIconCuaSo);
+
+        // XỬ LÝ 3: ĐÓNG CỬA SỔ / THOÁT HỆ THỐNG (CLOSE)
+        function thaoTacDongHeThong(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            if (confirm("Bạn có chắc chắn muốn đóng và thoát khỏi hệ thống quản lý không?")) {
+                window.close();
+                setTimeout(function() {
+                    window.location.href = "https://gdlaocailci.github.io/taphoi/";
+                }, 150);
+            }
+        }
+
+        // Xuất hàm ra phạm vi toàn cục
+        window.thaoTacThuNhoCuaSo = thaoTacThuNhoCuaSo;
+        window.thaoTacPhongToFull = thaoTacPhongToFull;
+        window.thaoTacDongHeThong = thaoTacDongHeThong;
+
         // 1. TỰ ĐỘNG CHẠY KHI KHỞI ĐỘNG (NGAY CÚ CHẠM / CLICK / GÕ PHÍM ĐẦU TIÊN CỦA NGƯỜI DÙNG)
         function tuDongChayKhiTuongTacDauTien() {
+            if (tamDungAutoFullscreen) return;
             kichHoatToanManHinhHeThong();
         }
 
