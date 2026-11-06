@@ -1691,5 +1691,223 @@
         });
     })();
     </script>
+
+    <!-- ========================================================================= -->
+    <!-- [NÂNG CẤP MỚI]: ĐỘNG CƠ TỰ ĐỘNG THU NHỎ MÀN HÌNH SAU KHI CHỌN TRÊN MOBILE -->
+    <!-- Khi chạm vào ô chọn: Cho phép tự động zoom to để dễ chọn                  -->
+    <!-- Khi chọn xong mục: Tự động đóng con trỏ và thu nhỏ màn hình về 100%       -->
+    <!-- ========================================================================= -->
+    <script>
+    (function() {
+        function laDienThoaiDiDong() {
+            return (window.innerWidth <= 768) || /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function layTheMetaViewport() {
+            var meta = document.querySelector('meta[name="viewport"]');
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.name = 'viewport';
+                document.head.appendChild(meta);
+            }
+            return meta;
+        }
+
+        var boDemThuNho = [];
+        var dangChamDanhSach = false;
+        var viTriChamDau = { x: 0, y: 0 };
+
+        function xoaBoDemThuNho() {
+            while (boDemThuNho.length > 0) {
+                clearTimeout(boDemThuNho.pop());
+            }
+        }
+
+        // Mở khóa zoom khi người dùng bắt đầu chạm vào ô chọn / ô nhập
+        function moKhoaZoomKhiChamOChon() {
+            if (!laDienThoaiDiDong()) return;
+            xoaBoDemThuNho();
+            var meta = layTheMetaViewport();
+            meta.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+        }
+
+        // Ép trình duyệt trên điện thoại thu nhỏ (zoom out) về đúng tỷ lệ 1.0 ban đầu
+        function epTyLeKhungNhinVe100() {
+            if (!laDienThoaiDiDong()) return;
+            var meta = layTheMetaViewport();
+            // Bước 1: Đặt 0.999 để phá bộ nhớ đệm tỷ lệ của nhân trình duyệt (Blink/WebKit)
+            meta.setAttribute('content', 'width=device-width, initial-scale=0.999, minimum-scale=0.999, maximum-scale=0.999, user-scalable=no');
+            
+            // Bước 2: Khóa chuẩn về 1.0 sau 25ms
+            setTimeout(function() {
+                meta.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                if (window.scrollX !== 0 || window.scrollY !== 0) {
+                    window.scrollTo(0, 0);
+                }
+            }, 25);
+        }
+
+        // Hàm chính: Tự động thu nhỏ màn hình ngay sau khi chọn xong
+        function tuDongThuNhoSauKhiChon() {
+            if (!laDienThoaiDiDong()) return;
+            xoaBoDemThuNho();
+
+            // 1. Nhả tiêu điểm (blur) khỏi ô chọn để tắt bàn phím ảo và ẩn giọt nước con trỏ
+            var phanTuDangChon = document.activeElement;
+            if (phanTuDangChon && (phanTuDangChon.tagName === 'INPUT' || phanTuDangChon.tagName === 'SELECT' || phanTuDangChon.tagName === 'TEXTAREA')) {
+                var coChuCu = phanTuDangChon.style.fontSize;
+                // Tạm thời gán 16px trong tích tắc khi blur để trình duyệt nhả khóa focus-zoom, sau đó trả lại nguyên trạng cỡ chữ cũ
+                phanTuDangChon.style.setProperty('font-size', '16px', 'important');
+                phanTuDangChon.blur();
+                setTimeout(function() {
+                    if (coChuCu) {
+                        phanTuDangChon.style.fontSize = coChuCu;
+                    } else {
+                        phanTuDangChon.style.removeProperty('font-size');
+                    }
+                }, 300);
+            }
+
+            // Xóa vùng bôi đen / giọt nước con trỏ trên Android
+            if (window.getSelection) {
+                try { window.getSelection().removeAllRanges(); } catch (err) {}
+            }
+
+            // 2. Thực hiện thu nhỏ khung nhìn theo các nhịp (ngay lập tức, khi bàn phím đang đóng và sau khi đóng xong)
+            epTyLeKhungNhinVe100();
+            boDemThuNho.push(setTimeout(epTyLeKhungNhinVe100, 160));
+            boDemThuNho.push(setTimeout(epTyLeKhungNhinVe100, 360));
+        }
+
+        // Xuất hàm ra toàn cục để có thể gọi trực tiếp nếu cần
+        window.tuDongThuNhoSauKhiChon = tuDongThuNhoSauKhiChon;
+
+        // Lắng nghe khi chạm vào ô input / select -> cho phép zoom to tự nhiên
+        document.addEventListener('touchstart', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            if (e.touches && e.touches.length === 1) {
+                viTriChamDau.x = e.touches[0].clientX;
+                viTriChamDau.y = e.touches[0].clientY;
+            }
+            var mucTieu = e.target;
+            if (!mucTieu) return;
+
+            // Nếu người dùng dùng 2 ngón tay để zoom thủ công thì mở khóa zoom
+            if (e.touches && e.touches.length > 1) {
+                moKhoaZoomKhiChamOChon();
+                return;
+            }
+
+            if (mucTieu.closest && mucTieu.closest('input, select, textarea')) {
+                moKhoaZoomKhiChamOChon();
+            }
+            if (mucTieu.closest && mucTieu.closest('ul, [id^="wrapper_chon"], [id^="khungHienThi"], [id^="container_loc"]')) {
+                dangChamDanhSach = true;
+            } else {
+                dangChamDanhSach = false;
+            }
+        }, { passive: true, capture: true });
+
+        // Bắt sự kiện KHI CHỌN XONG mục trong danh sách xổ xuống ( thẻ <li> hoặc mục chọn )
+        document.addEventListener('click', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            var mucTieu = e.target;
+            if (!mucTieu || !mucTieu.closest) return;
+
+            // Kiểm tra nếu bấm vào 1 dòng <li> trong các danh sách xổ xuống (Tuần, Lớp, PPCT, Chữ ký, Thống kê, Kiểm tra SĐB...)
+            var dongChon = mucTieu.closest('ul li, [id^="wrapper_chon"] li, [id^="khungHienThi"] li, [id^="container_loc"] li');
+            if (dongChon) {
+                dangChamDanhSach = false;
+                setTimeout(tuDongThuNhoSauKhiChon, 60);
+            }
+        }, false);
+
+        // Hỗ trợ thêm sự kiện touchend cho các danh sách dùng onmousedown/ontouchend
+        document.addEventListener('touchend', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                var dx = Math.abs(e.changedTouches[0].clientX - viTriChamDau.x);
+                var dy = Math.abs(e.changedTouches[0].clientY - viTriChamDau.y);
+                // Chỉ tính là chạm chọn nếu không phải thao tác vuốt cuộn danh sách (< 10px)
+                if (dx < 10 && dy < 10) {
+                    var mucTieu = e.target;
+                    if (mucTieu && mucTieu.closest) {
+                        var dongChon = mucTieu.closest('ul li, [id^="wrapper_chon"] li, [id^="khungHienThi"] li, [id^="container_loc"] li');
+                        if (dongChon) {
+                            dangChamDanhSach = false;
+                            setTimeout(tuDongThuNhoSauKhiChon, 80);
+                        }
+                    }
+                }
+            }
+        }, { passive: true });
+
+        // Bắt sự kiện KHI CHỌN XONG trên các thẻ <select>, <input type="date">, <input list="...">
+        document.addEventListener('change', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            var mucTieu = e.target;
+            if (mucTieu && (mucTieu.tagName === 'SELECT' || mucTieu.tagName === 'INPUT')) {
+                setTimeout(tuDongThuNhoSauKhiChon, 50);
+            }
+        }, false);
+
+        // Bắt sự kiện khi ấn phím Enter / Hoàn tất trên bàn phím điện thoại
+        document.addEventListener('keydown', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                var mucTieu = e.target;
+                if (mucTieu && (mucTieu.tagName === 'INPUT' || mucTieu.tagName === 'SELECT')) {
+                    setTimeout(tuDongThuNhoSauKhiChon, 50);
+                }
+            }
+        }, false);
+
+        // Bắt sự kiện khi thoát khỏi ô chọn (focusout / blur)
+        document.addEventListener('focusout', function(e) {
+            if (!laDienThoaiDiDong()) return;
+            setTimeout(function() {
+                if (dangChamDanhSach) return;
+                var hienTai = document.activeElement;
+                if (!hienTai || (hienTai.tagName !== 'INPUT' && hienTai.tagName !== 'SELECT' && hienTai.tagName !== 'TEXTAREA')) {
+                    tuDongThuNhoSauKhiChon();
+                }
+            }, 150);
+        }, false);
+
+        // Khi bàn phím ảo trên Android/iOS vừa đóng xuống (visualViewport thay đổi kích thước), đảm bảo khung nhìn trả về 1.0
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', function() {
+                if (!laDienThoaiDiDong()) return;
+                var hienTai = document.activeElement;
+                var khongConFocusInput = !hienTai || (hienTai.tagName !== 'INPUT' && hienTai.tagName !== 'SELECT' && hienTai.tagName !== 'TEXTAREA');
+                if (khongConFocusInput && window.visualViewport.scale > 1.01) {
+                    epTyLeKhungNhinVe100();
+                }
+            });
+        }
+
+        // Bọc các hàm kết xuất / lọc chính để tự động thu nhỏ ngay khi dữ liệu tuần/lớp được nạp
+        window.addEventListener('load', function() {
+            var danhSachHamCanBoc = [
+                'ketXuatSoDauBaiLenLuoi',
+                'locTheoGiaoVien',
+                'capNhatNgayDauTuan',
+                'locBangThongKeGV'
+            ];
+            danhSachHamCanBoc.forEach(function(tenHam) {
+                if (typeof window[tenHam] === 'function') {
+                    var hamGoc = window[tenHam];
+                    window[tenHam] = function() {
+                        var kq = hamGoc.apply(this, arguments);
+                        if (laDienThoaiDiDong()) {
+                            setTimeout(tuDongThuNhoSauKhiChon, 60);
+                        }
+                        return kq;
+                    };
+                }
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
