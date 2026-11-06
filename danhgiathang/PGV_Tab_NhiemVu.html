@@ -238,30 +238,30 @@
     }
   }
 
-/* Bố cục thanh tiêu đề chuẩn mực, sang trọng trên máy tính:
+/* Bố cục thanh tiêu đề thẳng hàng chuẩn mực trong vùng màu xám:
      - Trái: Thời gian, Năm học
-     - Giữa: Tiêu đề NHIỆM VỤ CỦA TÔI
-     - Phải: Cụm nút Quy chế & Quản trị (né vùng nút cửa sổ bằng padding-right 125px) */
+     - Giữa: Tiêu đề NHIỆM VỤ CỦA TÔI + Nút QUY CHẾ thẳng hàng
+     - Phải: Khóa tất cả + Điểm cộng/trừ thẳng hàng (né vùng nút cửa sổ bằng padding-right 125px) */
   @media screen and (min-width: 769px) {
     .hopDau {
-      padding-right: 130px !important; /* Khoảng đệm an toàn tuyệt đối cho cụm nút điều khiển cửa sổ */
-      padding-left: 12px !important;
+      padding-right: 125px !important; /* Vùng an toàn chống che khuất bởi nút Minimize/Maximize/Close */
+      padding-left: 10px !important;
+      padding-top: 5px !important;
+      padding-bottom: 5px !important;
       position: relative;
     }
     .hopDau > .d-flex {
       justify-content: space-between !important;
       align-items: center !important;
     }
-    .hopDau > .d-flex > div:first-child {
-      flex: 0 0 auto !important;
-    }
     .hopDau .tDe {
       flex: 1 1 auto !important;
-      padding-left: 10px !important;
-      padding-right: 10px !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
       justify-content: center !important;
+      gap: 6px !important;
       position: static !important;
-      font-size: 19px !important;
+      font-size: 18px !important;
       letter-spacing: 0.5px !important;
     }
     .hopDau .tDe > span:first-child {
@@ -270,18 +270,19 @@
       margin: 0 !important;
       width: auto !important;
     }
+    .hopDau > .d-flex > div:first-child,
     .hopDau > .d-flex > div:last-child {
       flex: 0 0 auto !important;
-      text-align: right !important;
     }
   }
 
   @media screen and (min-width: 769px) and (max-width: 1100px) {
     .hopDau .tDe {
-      font-size: 16px !important;
+      font-size: 15.5px !important;
+      gap: 4px !important;
     }
     .hopDau .nhanNhiemVu, .hopDau .chuThongTin {
-      font-size: 12.5px !important;
+      font-size: 12px !important;
     }
     #btnXemQuyChe, #btnTaiQuyChe, #nutKhoaTatCa {
       font-size: 11px !important;
@@ -400,52 +401,48 @@
     <!-- VÙNG 1: ĐIỀU KHIỂN TOP (Bảo vệ tuyệt đối khỏi việc bị lấp nhờ z-index) -->
     <div class="vung-dieu-khien-top">
         <div class="hopDau">
-          <div class="d-flex align-items-center mb-1 w-100 position-relative">
-            <div class="text-nowrap" style="flex: 0 0 auto;">
+          <div class="d-flex align-items-center mb-1 w-100 position-relative" style="min-height: 32px;">
+            <!-- Khối 1 (Trái): Thời gian & Năm học -->
+            <div class="text-nowrap flex-shrink-0" style="flex: 0 0 auto;">
               <span class="nhanNhiemVu">Thời gian:</span><span id="chuThoiGian" class="chuThongTin me-3">...</span>
               <span class="nhanNhiemVu border-start ps-3">Năm học:</span><span id="chuNamHoc" class="chuThongTin">...</span>
             </div>
             
-            <div class="tDe text-center text-nowrap d-flex align-items-center justify-content-center" style="flex: 1 1 auto;">
+            <!-- Khối 2 (Giữa): Tiêu đề và Nút Quy chế thẳng hàng cạnh nhau trong vùng màu xám -->
+            <div class="tDe text-center text-nowrap d-flex align-items-center justify-content-center gap-2" style="flex: 1 1 auto;">
               <span>NHIỆM VỤ CỦA TÔI</span>
+              
+              <!-- NÚT QUY CHẾ: NẰM THẲNG HÀNG CẠNH TIÊU ĐỀ -->
+              <button type="button" id="btnXemQuyChe" class="btn btn-sm btn-danger fw-bold align-middle shadow-sm btn-reactbits-shiny text-nowrap" style="height: 26px; line-height: 1; font-size: 12px; background-color: #dc3545; color: #ffffff; border: none; border-radius: 4px; padding: 2px 10px; display: inline-flex; align-items: center;" onclick="xemBanQuyChe()" title="Xem bản Quy chế đánh giá">
+                <i class="bi bi-journal-bookmark-fill me-1"></i> QUY CHẾ
+              </button>
+
+              <!-- NÚT TẢI QUY CHẾ (CHỈ HIỆN KHI LÀ QUYỀN 'XXX') -->
+              <button type="button" id="btnTaiQuyChe" class="btn btn-sm btn-outline-danger fw-bold align-middle shadow-sm btn-reactbits-shiny text-nowrap" style="display: none; height: 26px; line-height: 1; font-size: 11px; border-radius: 4px; padding: 2px 8px; align-items: center;" onclick="document.getElementById('tepDinhKemQuyChe').click()" title="Quyền Quản trị (xxx): Tải lên / Cập nhật bản Quy chế mới">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Tải quy chế
+              </button>
+              <input type="file" id="tepDinhKemQuyChe" accept=".pdf,.docx,.doc" style="display: none;" onchange="thucHienTaiLenQuyChe(this)">
             </div>
             
-            <div class="text-end text-nowrap" style="flex: 0 0 auto;"> 
+            <!-- Khối 3 (Phải): Khóa tất cả & Điểm cộng/trừ thẳng hàng trong vùng màu xám -->
+            <div class="text-end text-nowrap flex-shrink-0" style="flex: 0 0 auto;"> 
               <div class="d-inline-flex align-items-center gap-2">
-                <!-- NÚT QUY CHẾ -->
-                <button type="button" id="btnXemQuyChe" class="btn btn-sm btn-danger fw-bold align-middle shadow-sm btn-reactbits-shiny text-nowrap" style="height: 26px; line-height: 1; font-size: 12px; background-color: #dc3545; color: #ffffff; border: none; border-radius: 4px; padding: 2px 10px; display: inline-flex; align-items: center;" onclick="xemBanQuyChe()" title="Xem bản Quy chế đánh giá">
-                  <i class="bi bi-journal-bookmark-fill me-1"></i> QUY CHẾ
-                </button>
-
-                <!-- NÚT TẢI QUY CHẾ (CHỈ HIỆN KHI LÀ QUYỀN 'XXX') -->
-                <button type="button" id="btnTaiQuyChe" class="btn btn-sm btn-outline-danger fw-bold align-middle shadow-sm btn-reactbits-shiny text-nowrap" style="display: none; height: 26px; line-height: 1; font-size: 11px; border-radius: 4px; padding: 2px 8px; align-items: center;" onclick="document.getElementById('tepDinhKemQuyChe').click()" title="Quyền Quản trị (xxx): Tải lên / Cập nhật bản Quy chế mới">
-                  <i class="bi bi-cloud-arrow-up-fill me-1"></i> Tải quy chế
-                </button>
-                <input type="file" id="tepDinhKemQuyChe" accept=".pdf,.docx,.doc" style="display: none;" onchange="thucHienTaiLenQuyChe(this)">
-
                 <!-- NÚT KHÓA TẤT CẢ (QUYỀN XXX) -->
                 <button id="nutKhoaTatCa" class="btn btn-sm btn-outline-danger fw-bold align-middle btn-reactbits-shiny text-nowrap" style="display: none; height: 26px; font-size: 11px; border-radius: 4px; padding: 2px 8px;" onclick="doiTrangThaiKhoaTatCa()" data-tt="Khóa"><i class="bi bi-lock-fill me-1"></i> Khóa tất cả</button>
+                
+                <div class="d-inline-flex align-items-center border-start ps-2">
+                  <label class="me-1 fw-bold nhanNhiemVu text-nowrap" style="font-size:13px; margin-bottom: 0;">Điểm cộng/trừ:</label>
+                  <input type="number" id="nhapDiemThuong" oninput="capnhTdong()" class="nhapTuyChinh text-center fw-bold diemKhong shadow-sm" style="width: 50px; height: 26px; border-radius: 4px; display:inline-block;" value="0">
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="d-flex align-items-center mb-2 px-2 py-1 gap-2 flex-wrap" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; min-height: 42px;">
-             <!-- Vùng thông số đánh giá tháng: Số ngày nghỉ, Lý do nghỉ & Điểm cộng/trừ -->
-             <div class="d-flex align-items-center justify-content-start px-2 gap-2 flex-wrap" style="flex: 1 1 auto;">
-                 <div class="d-inline-flex align-items-center">
-                     <span class="nhanNhiemVu me-1 text-nowrap">Số ngày nghỉ:</span>
-                     <input type="number" id="nhapSngayNghi" class="nhapTuyChinh text-center me-2" style="width: 45px; font-weight: bold;" placeholder="0">
-                     <textarea id="nhapLdoNghi" class="form-control" placeholder="Nhập lý do..." style="height: 30px; min-height: 30px; font-size: 13px; border-radius: 4px; width: 220px; resize: none; overflow: hidden; white-space: pre-wrap; padding: 4px 8px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '30px')"></textarea>
-                 </div>
-                 
-                 <div class="vr d-none d-md-block opacity-25" style="height: 22px;"></div>
-                 
-                 <!-- Điểm cộng/trừ: Nằm cân đối, chuẩn mực ngay cạnh các thông số phụ trợ -->
-                 <div class="d-inline-flex align-items-center">
-                     <span class="nhanNhiemVu me-1 text-nowrap">Điểm cộng/trừ:</span>
-                     <input type="number" id="nhapDiemThuong" oninput="capnhTdong()" class="nhapTuyChinh text-center fw-bold diemKhong shadow-sm" style="width: 50px; height: 30px; border-radius: 4px; display:inline-block;" value="0" title="Chỉ tài khoản Quản trị (xxx) được điều chỉnh khi chưa khóa">
-                 </div>
+             <div class="d-flex align-items-center justify-content-start px-3" style="flex: 1;">
+                 <span class="nhanNhiemVu me-2 text-nowrap">Số ngày nghỉ:</span><input type="number" id="nhapSngayNghi" class="nhapTuyChinh text-center me-2" style="width: 45px; font-weight: bold;" placeholder="0">
+                 <textarea id="nhapLdoNghi" class="form-control me-3" placeholder="Nhập lý do..." style="height: 30px; min-height: 30px; font-size: 13px; border-radius: 4px; width: 300px; resize: none; overflow: hidden; white-space: pre-wrap; padding: 4px 8px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '30px')"></textarea>
              </div>
              <div class="d-flex align-items-center justify-content-end gap-2" style="flex: auto;">
                <span id="hienThiNgayKhoa" class="badge bg-warning text-dark border me-2" style="display: none !important; height: 30px; font-size: 12px; align-items: center;"></span>
