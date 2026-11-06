@@ -239,20 +239,27 @@
   }
 
 /* Bố cục thanh tiêu đề thẳng hàng chuẩn mực trong vùng màu xám:
-     - Trái: Thời gian, Năm học
-     - Giữa: Tiêu đề NHIỆM VỤ CỦA TÔI + Nút QUY CHẾ thẳng hàng
-     - Phải: Khóa tất cả + Điểm cộng/trừ thẳng hàng (né vùng nút cửa sổ bằng padding-right 125px) */
+     - Kéo nền xám lên sát mép trên (margin-top: -8px) để ôm trọn 100% cụm nút tắt, phóng vào trong vùng nền xám
+     - Căn giữa chiều dọc hoàn hảo (align-items: center, min-height: 48px) để thẳng hàng tăm tắp với cụm nút tắt phóng
+     - Dành khoảng đệm an toàn padding-right: 140px để cụm nút tắt phóng nằm vừa vặn bên phải */
   @media screen and (min-width: 769px) {
     .hopDau {
-      padding-right: 125px !important; /* Vùng an toàn chống che khuất bởi nút Minimize/Maximize/Close */
-      padding-left: 10px !important;
-      padding-top: 5px !important;
-      padding-bottom: 5px !important;
+      margin-top: -8px !important; /* Đẩy sát đỉnh để nền xám ôm trọn 100% cụm nút tắt, phóng */
+      padding-top: 8px !important;
+      padding-bottom: 8px !important;
+      padding-left: 12px !important;
+      padding-right: 140px !important; /* Khoảng đệm an toàn chuẩn xác cho cụm nút tắt, phóng */
+      min-height: 48px !important;
+      display: flex !important;
+      align-items: center !important;
       position: relative;
     }
     .hopDau > .d-flex {
+      width: 100% !important;
+      min-height: 32px !important;
       justify-content: space-between !important;
-      align-items: center !important;
+      align-items: center !important; /* Căn giữa hoàn hảo theo chiều dọc */
+      margin-bottom: 0 !important;
     }
     .hopDau .tDe {
       flex: 1 1 auto !important;
@@ -274,6 +281,15 @@
     .hopDau > .d-flex > div:last-child {
       flex: 0 0 auto !important;
     }
+    /* Đồng bộ chiều cao chuẩn 28px cho các nút và ô input để thẳng hàng tuyệt đối với tâm cụm nút tắt phóng */
+    .hopDau #nhapDiemThuong {
+      height: 28px !important;
+      line-height: 28px !important;
+    }
+    .hopDau #btnXemQuyChe, .hopDau #btnTaiQuyChe, .hopDau #nutKhoaTatCa {
+      height: 28px !important;
+      line-height: 1 !important;
+    }
   }
 
   @media screen and (min-width: 769px) and (max-width: 1100px) {
@@ -287,6 +303,10 @@
     #btnXemQuyChe, #btnTaiQuyChe, #nutKhoaTatCa {
       font-size: 11px !important;
       padding: 2px 6px !important;
+      height: 26px !important;
+    }
+    .hopDau #nhapDiemThuong {
+      height: 26px !important;
     }
   }
 
@@ -401,7 +421,7 @@
     <!-- VÙNG 1: ĐIỀU KHIỂN TOP (Bảo vệ tuyệt đối khỏi việc bị lấp nhờ z-index) -->
     <div class="vung-dieu-khien-top">
         <div class="hopDau">
-          <div class="d-flex align-items-center mb-1 w-100 position-relative" style="min-height: 32px;">
+          <div class="d-flex align-items-center mb-0 w-100 position-relative" style="min-height: 32px;">
             <!-- Khối 1 (Trái): Thời gian & Năm học -->
             <div class="text-nowrap flex-shrink-0" style="flex: 0 0 auto;">
               <span class="nhanNhiemVu">Thời gian:</span><span id="chuThoiGian" class="chuThongTin me-3">...</span>
