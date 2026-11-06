@@ -306,6 +306,10 @@
   .diemKhong, .diemKhong:disabled { background-color: #28a745 !important; color: black !important; font-weight: bold; opacity: 1 !important; -webkit-text-fill-color: black !important; }
   button:disabled { cursor: not-allowed !important; opacity: 0.5 !important; filter: grayscale(100%) !important; pointer-events: none !important; box-shadow: none !important; }
   
+  #bangNviec .vung-chon-diem input.chonKq {
+      cursor: text !important;
+      padding-right: 22px !important;
+  }
  #bangNviec select.form-select.chonKq,
   #bangNviec input.chonKq {
       border: 1px solid #adb5bd !important;
@@ -800,13 +804,17 @@ function apDungKhoaGiaoDien() {
     $('.bi-paperclip').closest('button').prop('disabled', isLocked);
     $('#bangNviec tbody tr').find('input:not(.chonKq), textarea, button').prop('disabled', isLocked);
     
-    if (daChonGvKhac || (typeof window.PGV_IS_SELF !== 'undefined' && window.PGV_IS_SELF === false)) {
-        $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', true);
+    if (isLocked) {
+        $('#bangNviec tbody tr').find('input.chonKq').prop('disabled', true).prop('readonly', true);
     } else {
-        $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', false);
+        if (daChonGvKhac || (typeof window.PGV_IS_SELF !== 'undefined' && window.PGV_IS_SELF === false)) {
+            $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', true).prop('disabled', false);
+        } else {
+            $('#bangNviec tbody tr').find('input.chonKq').prop('readonly', false).prop('disabled', false);
+        }
     }
 
-    if (daChonGvKhac && (isBGH || isGS)) {
+    if (daChonGvKhac && (isBGH || isGS) && !isLocked) {
         $('#bangNviec tbody tr').find('.chonKq').prop('disabled', false); 
     }
 
@@ -1210,7 +1218,7 @@ function veBangNviec(db) {
         let vTgGiao = (tGiao.toLowerCase() === "dd/mm/yyyy") ? "" : tGiao;
         let vTgHt   = (tHt.toLowerCase() === "dd/mm/yyyy") ? "" : tHt;
 
-        let htmlDiem = `<input type="text" class="form-control form-control-sm text-center fw-bold chonKq" data-config="${safeConfig}" value="${valChon}" style="color:red; ${dsp}" onchange="tinhtTdong()">`;
+        let htmlDiem = `<input type="text" class="form-control form-control-sm text-center fw-bold chonKq" data-config="${safeConfig}" value="${valChon}" placeholder="-- Nhập điểm --" style="color:red; ${dsp}" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)">`;
         
         if (valConfig.includes("|") || valConfig.includes(";") || valConfig.includes("\n")) {
             let optsArray = [];
@@ -1258,7 +1266,7 @@ function veBangNviec(db) {
                 }
             }
 
-            if (valChon !== "" && !isMatched) {
+            if (valChon !== "" && !isMatched && valChonFloat === null) {
                 valChon = ""; 
             }
 
@@ -1284,9 +1292,23 @@ function veBangNviec(db) {
 
             htmlDiem = `
             <div class="vung-chon-diem" style="position: relative; width: 100%; ${dsp}">
-                <input type="text" class="chonKq" data-config="${safeConfig}" value="${valChon}" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; ${dsp}">
-                <div class="form-control form-control-sm text-center fw-bold bg-white shadow-sm" style="color:red; cursor:pointer; min-height:30px; height:auto; display:flex; align-items:center; justify-content:center; white-space:normal; word-wrap:break-word;" onclick="moDanhSachDiem(event, this)">
-                    <span class="chu-diem-chon">${textHienThi}</span>
+                <div class="position-relative w-100 d-flex align-items-center">
+                    <input type="text" 
+                           class="form-control form-control-sm text-center fw-bold chonKq" 
+                           data-config="${safeConfig}" 
+                           value="${valChon}" 
+                           placeholder="-- Chọn / Nhập --"
+                           style="color:red; min-height:30px; height:auto; padding-right:22px; cursor:text; ${dsp}" 
+                           onclick="moDanhSachDiem(event, this)"
+                           oninput="xuLyNhapDiem(this)" 
+                           onblur="xuLyBlurNhapDiem(this)"
+                           onkeydown="xuLyKeydownDiem(event, this)">
+                    <span class="position-absolute nut-mo-ds" 
+                          style="right: 5px; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 5; color: #6c757d; font-size: 11px; padding: 2px 4px;" 
+                          onclick="moDanhSachDiem(event, this)" 
+                          title="Chọn từ danh sách">
+                        <i class="bi bi-chevron-down"></i>
+                    </span>
                 </div>
                 <div class="khung-danh-sach shadow" style="display:none; position:absolute; top:100%; right:0; width: 350px; max-height:280px; overflow-y:auto; background:#ffffff; border:1px solid #adb5bd; z-index:9999; border-radius:4px; font-size:13px; text-align:left;">
                     ${danhSachHtml}
@@ -1366,6 +1388,105 @@ function tuDongDinhDangNgayOnBlur(ptu) {
     }
 }
 
+function kiemTraThoiGianHtHopLe(dongHienTai, thongBao = true) {
+    if (!dongHienTai) return false;
+    let theTgHt = dongHienTai.querySelector('.nhapTgHt');
+    let gtriTgHt = theTgHt ? theTgHt.value.trim() : "";
+    let ngayHt = phanTichNgayVN(gtriTgHt);
+    if (!gtriTgHt || ngayHt === null) {
+        if (thongBao) {
+            if (typeof hienThongb === 'function') {
+                hienThongb('cbh', '⚠️ Đồng chí cần nhập đầy đủ và đúng định dạng [Thời gian hoàn thành] (VD: 08/09/2026) trước khi đánh giá kết quả.');
+            } else {
+                alert('⚠️ Đồng chí cần nhập đầy đủ và đúng định dạng [Thời gian hoàn thành] (VD: 08/09/2026) trước khi đánh giá kết quả.');
+            }
+            if (theTgHt) setTimeout(() => theTgHt.focus(), 100);
+        }
+        return false;
+    }
+    return true;
+}
+
+function xuLyNhapDiem(input) {
+    if (input.readOnly || input.disabled) return;
+    let dongHienTai = input.closest('tr');
+    if (!kiemTraThoiGianHtHopLe(dongHienTai, true)) {
+        input.value = "";
+        return;
+    }
+
+    let val = input.value;
+    let cleanVal = "";
+    let coDauThapPhan = false;
+    for (let i = 0; i < val.length; i++) {
+        let ch = val[i];
+        if (ch === '-' && i === 0 && cleanVal === "") {
+            cleanVal += ch;
+        } else if (ch >= '0' && ch <= '9') {
+            cleanVal += ch;
+        } else if ((ch === '.' || ch === ',') && !coDauThapPhan) {
+            cleanVal += ch;
+            coDauThapPhan = true;
+        }
+    }
+    
+    if (val !== cleanVal) {
+        input.value = cleanVal;
+    }
+    
+    let vungChon = input.closest('.vung-chon-diem');
+    if (vungChon) {
+        let danhSach = vungChon.querySelector('.khung-danh-sach');
+        if (danhSach) {
+            let valFloat = isNaN(parseFloat(cleanVal.replace(/,/g, '.'))) ? null : parseFloat(cleanVal.replace(/,/g, '.'));
+            let cacMuc = danhSach.querySelectorAll('.muc-chon');
+            cacMuc.forEach((muc, idx) => {
+                muc.classList.remove('bg-light', 'fw-bold', 'text-primary');
+                if (idx === 0) {
+                    if (cleanVal === "") muc.classList.add('bg-light', 'fw-bold', 'text-primary');
+                } else {
+                    let valClick = muc.getAttribute('onclick');
+                    if (valClick) {
+                        let match = valClick.match(/'([^']*)'/);
+                        if (match && match[1]) {
+                            let mFloat = isNaN(parseFloat(match[1].replace(/,/g, '.'))) ? null : parseFloat(match[1].replace(/,/g, '.'));
+                            if (valFloat !== null && mFloat !== null && valFloat === mFloat) {
+                                muc.classList.add('bg-light', 'fw-bold', 'text-primary');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    tinhtTdong();
+}
+
+function xuLyBlurNhapDiem(input) {
+    let val = input.value.trim();
+    if (val === "" || val === "-") {
+        input.value = "";
+    } else {
+        if (val.endsWith('.') || val.endsWith(',')) {
+            val = val.slice(0, -1);
+            input.value = val;
+        }
+    }
+    tinhtTdong();
+}
+
+function xuLyKeydownDiem(e, input) {
+    if (e.key === 'Enter') {
+        input.blur();
+        let vungChon = input.closest('.vung-chon-diem');
+        if (vungChon) {
+            let ds = vungChon.querySelector('.khung-danh-sach');
+            if (ds) ds.style.display = 'none';
+        }
+    }
+}
+
 function moDanhSachDiem(suKien, ptu) {
     if (typeof trangThaiKhoa !== 'undefined' && trangThaiKhoa === "Khóa") return;
     
@@ -1386,14 +1507,20 @@ function moDanhSachDiem(suKien, ptu) {
         return; 
     }
 
+    let vungChon = ptu.closest('.vung-chon-diem');
+    let danhSach = vungChon ? vungChon.querySelector('.khung-danh-sach') : null;
+    if (!danhSach) return;
+
+    if (ptu.tagName === 'INPUT' && danhSach.style.display === 'block') {
+        suKien.stopPropagation();
+        return;
+    }
+
     document.querySelectorAll('.khung-danh-sach').forEach(ds => {
-        if (ds !== ptu.closest('.vung-chon-diem').querySelector('.khung-danh-sach')) {
+        if (ds !== danhSach) {
             ds.style.display = 'none';
         }
     });
-    
-    let vungChon = ptu.closest('.vung-chon-diem');
-    let danhSach = vungChon.querySelector('.khung-danh-sach');
     
     if (danhSach.style.display === 'none' || danhSach.style.display === '') {
         let theTgGiao = dongHienTai.querySelector('.nhapTgGiao');
@@ -1485,7 +1612,7 @@ function moDanhSachDiem(suKien, ptu) {
         danhSach.style.visibility = 'hidden';
         danhSach.style.display = 'block';
         
-        let toaDoNut = ptu.getBoundingClientRect();
+        let toaDoNut = vungChon ? vungChon.getBoundingClientRect() : ptu.getBoundingClientRect();
         let chieuCaoDanhSach = danhSach.getBoundingClientRect().height;
         let vungCuonBang = ptu.closest('.table-responsive');
         let khoangTrongBenDuoi = 0;
@@ -1545,7 +1672,7 @@ function chonGiaTriDiem(ptu, giaTriDiem) {
     let danhSach = vungChon.querySelector('.khung-danh-sach');
 
     theDauVao.value = giaTriDiem;
-    theHienThi.innerText = (giaTriDiem === '') ? '-- Trống --' : giaTriDiem;
+    if (theHienThi) theHienThi.innerText = (giaTriDiem === '') ? '-- Trống --' : giaTriDiem;
     
     danhSach.style.display = 'none';
     let cacMuc = danhSach.querySelectorAll('.muc-chon');
@@ -1600,7 +1727,7 @@ function addNv() {
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTgGiao" placeholder="dd/mm/yyyy"></td>
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTdo"></td>
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTgHt" placeholder="dd/mm/yyyy" onclick="ganNgayMacDinh(this)" oninput="tuDongDinhDangNgay(this)"></td>
-            <td class="align-middle"><input type="text" class="form-control form-control-sm text-center chonKq" data-config=""></td>
+            <td class="align-middle"><input type="text" class="form-control form-control-sm text-center chonKq" data-config="" placeholder="-- Nhập điểm --" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)"></td>
             <td class="text-center align-middle" style="${dspXoa}">${nutx}</td>
         </tr>`;
         tbody.append(defaultRow);
@@ -1629,9 +1756,9 @@ function addNv() {
         var $chuDiem = $newRow.find('.chu-diem-chon');
         if ($chuDiem.length > 0) {
             $chuDiem.text('-- Trống --');
-            $newRow.find('.muc-chon').removeClass('bg-light fw-bold text-primary');
-            $newRow.find('.khung-danh-sach').css('display', 'none');
         }
+        $newRow.find('.muc-chon').removeClass('bg-light fw-bold text-primary');
+        $newRow.find('.khung-danh-sach').css('display', 'none');
         
         var $tdNoiDung = $newRow.find('td:first-child');
         if ($tdNoiDung.attr('colspan') && $tdNoiDung.attr('colspan') !== '1') {
