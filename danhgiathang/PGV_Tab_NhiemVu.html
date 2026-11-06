@@ -515,6 +515,7 @@
 </div>
 
 <script>
+
 // Toàn bộ logic hệ thống gốc được giữ nguyên an toàn 100%
 let mbcMo = false; let cotETonTai = false; let giaTriCotE = ""; let dsGiaoVien = [];
 let trangThaiKhoa = "Mở";
@@ -936,9 +937,14 @@ function xulyLuuTam(ath = false, xltc = null) {
         let m_val = $(this).find('.oColM').val() || "";
         
         let inpH = $(this).find('.chonKq');
-        let valChon = inpH.val() || "";
+        let valChon = (inpH.val() || "").trim();
+        // Chuẩn hóa dấu (.) thành (,) khi lưu để Google Sheets (locale VN) hiểu đúng là số thập phân, tránh bị đổi thành ngày tháng
+        if (valChon.includes('.')) {
+            valChon = valChon.replace(/\./g, ',');
+        }
         let cfgGoc = inpH.attr('data-config') || "";
-        let diemLuu = cfgGoc.includes("|") ? (valChon + "@@@" + cfgGoc) : valChon;
+        let coCauHinh = cfgGoc && cfgGoc.trim() !== "" && (cfgGoc.includes('|') || cfgGoc.includes(';') || cfgGoc.includes('\n'));
+        let diemLuu = coCauHinh ? (valChon + "@@@" + cfgGoc) : valChon;
         
         dlbg.push([ntt, ndc, dMax, tGiao, lTdo, tHt, nTH, diemLuu, gc, j_val, k_val, l_val, m_val]);
     });
@@ -1209,6 +1215,60 @@ document.addEventListener('focusout', function(e) {
     }
 });
 
+// Hàm khôi phục số điểm và cấu hình: chống triệt để lỗi Google Sheets tự chuyển đổi số thập phân dấu chấm (.) thành Ngày Tháng
+function phucHoiDiemVaCauHinh(rawH) {
+    if (rawH === undefined || rawH === null || rawH === "") return { valChon: "", valConfig: "" };
+    
+    let rawStr = "";
+    // Nếu Google Sheet / Apps Script trả về đối tượng Date
+    if (rawH instanceof Date) {
+        if (!isNaN(rawH.getTime())) {
+            rawStr = rawH.getDate() + "," + (rawH.getMonth() + 1);
+        }
+    } else {
+        rawStr = String(rawH).trim();
+    }
+    
+    let valChon = "";
+    let valConfig = "";
+    
+    if (rawStr.includes("@@@")) {
+        let p = rawStr.split("@@@");
+        valChon = p[0].trim();
+        valConfig = p.slice(1).join("@@@").trim();
+    } else if (rawStr.includes("|") || rawStr.includes(";") || rawStr.includes("\n")) {
+        valChon = "";
+        valConfig = rawStr;
+    } else {
+        valChon = rawStr;
+        valConfig = rawStr;
+    }
+    
+    // Khôi phục nếu valChon đã lỡ bị Google Sheet lưu thành định dạng ngày tháng trước đó
+    if (valChon !== "") {
+        // Trường hợp 1: ISO date string hoặc Date string tiếng Anh (chứa GMT, UTC, hoặc T...Z)
+        if (valChon.includes("GMT") || (valChon.includes("T") && valChon.includes("Z")) || /[a-zA-Z]{3}\s+[a-zA-Z]{3}/.test(valChon)) {
+            let dt = new Date(valChon);
+            if (!isNaN(dt.getTime())) {
+                valChon = dt.getDate() + "," + (dt.getMonth() + 1);
+            }
+        } else {
+            // Trường hợp 2: Chuỗi ngày dd/MM/yyyy hoặc dd.MM.yyyy hoặc dd-MM-yyyy (Google Sheet biến 8.5 thành 08/05/2026)
+            let mDate = valChon.match(/^0?(\d{1,2})[\/\.-]0?(\d{1,2})(?:[\/\.-]\d{2,4})?$/);
+            if (mDate) {
+                let d = parseInt(mDate[1], 10);
+                let m = parseInt(mDate[2], 10);
+                valChon = d + "," + m;
+            } else if (valChon.includes(".")) {
+                // Chuẩn hóa dấu chấm thành dấu phẩy
+                valChon = valChon.replace(/\./g, ',');
+            }
+        }
+    }
+    
+    return { valChon: valChon, valConfig: valConfig };
+}
+
 function veBangNviec(db) {
     khaBcao(); const bg = $('#bangNviec tbody').empty();
     
@@ -1245,9 +1305,9 @@ function veBangNviec(db) {
         
         let j_val = dong[9] || ""; let k_val = dong[10] || ""; let l_val = dong[11] || ""; let m_val = dong[12] || "";
         
-        let valChon = ""; let valConfig = rawH;
-        if(rawH.includes("@@@")) { let p = rawH.split("@@@"); valChon = p[0]; valConfig = p[1]; } 
-        else if(!rawH.includes("|") && !rawH.includes(";") && !rawH.includes("\n") && rawH !== "") { valChon = rawH; valConfig = rawH; }
+        let resH = phucHoiDiemVaCauHinh(dong[7]);
+        let valChon = resH.valChon;
+        let valConfig = resH.valConfig;
         
         let safeConfig = valConfig.replace(/"/g, '&quot;');
         let isTitle = ndc.trim().startsWith('*');
@@ -1293,22 +1353,19 @@ function veBangNviec(db) {
                 }
             });
 
-            // Đã xử lý: Đồng bộ hóa giá trị thực (float) để đối chiếu, tránh lệch định dạng giữa Sheets (8.5) và cấu hình (8,5)
-            let valChonFloat = isNaN(parseFloat(valChon.replace(/,/g, '.'))) ? null : parseFloat(valChon.replace(/,/g, '.'));
+            // Đồng bộ hóa giá trị thực (float) để đối chiếu, tránh lệch định dạng giữa Sheets và cấu hình (8.5 vs 8,5)
+            let valChonFloat = isNaN(parseFloat(String(valChon).replace(/,/g, '.'))) ? null : parseFloat(String(valChon).replace(/,/g, '.'));
             let isMatched = false;
             for (let i = 0; i < mangGiaTriDiem.length; i++) {
                 let v = mangGiaTriDiem[i];
-                let vFloat = isNaN(parseFloat(v.replace(/,/g, '.'))) ? null : parseFloat(v.replace(/,/g, '.'));
-                if (v === valChon || (valChonFloat !== null && vFloat !== null && vFloat === valChonFloat)) {
+                let vFloat = isNaN(parseFloat(String(v).replace(/,/g, '.'))) ? null : parseFloat(String(v).replace(/,/g, '.'));
+                if (v === valChon || (valChonFloat !== null && vFloat !== null && Math.abs(valChonFloat - vFloat) < 1e-6)) {
                     isMatched = true;
-                    valChon = v; // Đồng bộ lại biến giao diện theo định dạng cấu hình
+                    valChon = v; // Đồng bộ lại theo định dạng cấu hình nếu khớp
                     break;
                 }
             }
-
-            if (valChon !== "" && !isMatched && valChonFloat === null) {
-                valChon = ""; 
-            }
+            // Tuyệt đối không xóa valChon: dù nhập (,) hay (.) vẫn hiển thị đúng giá trị số
 
             let textHienThi = (valChon !== "") ? valChon : "-- Chọn hoặc nhập giá trị --";
             
@@ -1510,8 +1567,10 @@ function xuLyBlurNhapDiem(input) {
     } else {
         if (val.endsWith('.') || val.endsWith(',')) {
             val = val.slice(0, -1);
-            input.value = val;
         }
+        // Chuẩn hóa dấu (.) thành dấu (,) để hiển thị chuẩn số Việt Nam và tránh bị Google Sheets biến thành ngày tháng
+        val = val.replace(/\./g, ',');
+        input.value = val;
     }
     tinhtTdong();
 }
@@ -2791,4 +2850,5 @@ function thucHienTaiLenQuyChe(input) {
 $(document).ready(function() {
     setTimeout(kiemTraHienThiNutQuyChe, 600);
 });
+
 </script>
