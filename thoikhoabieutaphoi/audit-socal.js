@@ -160,6 +160,7 @@ window.chuyenDoiCheDoDayTheTiet = function(thu, buoi, tiet, lop) {
     window.capNhatCanhBaoChiTietMonTrenLuoi(); // Cập nhật lại cảnh báo ngay lập tức trên dòng lớp
 
     // [BẮT BUỘC ĐỂ LƯU SỬA (MAP)]: Đánh dấu ô này đã bị thay đổi cờ trạng thái để luuSuaCucBoTKB thu thập vào dsThayDoi
+    let oMon = document.getElementById(`mon_${thu}_${buoi}_${tiet}_${lop}`);
     let oGv = document.getElementById(`gv_${thu}_${buoi}_${tiet}_${lop}`);
     if (oMon) {
         let tdMon = oMon.closest('td');
@@ -277,8 +278,25 @@ window.tinhSoDuLuyKeCacTuanTruoc = function(tuanHienTaiXet, mangLop, khungChuanT
 
         let demTuanT = {};
         let lopCoTietTuanT = new Set();
+        let banDoO = {};
 
+        // Khử trùng lặp theo đúng tọa độ (Lớp - Thứ - Buổi - Tiết) để lấy bản ghi mới nhất của ô đó trong tuần t
         kqTuanCu.ds.forEach(banGhi => {
+            if (!banGhi) return;
+            let lop = String(banGhi.maLop || '').trim();
+            let thu = String(banGhi.thu || '').trim().toLowerCase();
+            let buoi = String(banGhi.buoi || '').trim().toLowerCase();
+            let tiet = String(banGhi.tiet || '').trim();
+            if (!lop || !thu || !buoi || !tiet) return;
+            let khoaO = `${lop}__${thu}__${buoi}__${tiet}`;
+            if (banGhi.xoa === true || banGhi.daXoa === true) {
+                delete banDoO[khoaO];
+                return;
+            }
+            banDoO[khoaO] = banGhi;
+        });
+
+        Object.values(banDoO).forEach(banGhi => {
             let lop = String(banGhi.maLop || '').trim();
             let mon = window.chuanHoaTenMonKCT(banGhi.monHoc || banGhi.mon);
             if (lop && mon && mon !== '--' && mon !== '---') {
@@ -840,7 +858,7 @@ window.moPopupChiTietMonCuaLop = function(lop) {
     if (!kq) return;
 
     let dsMon = Object.values(kq.chiTietTungMon).sort((a, b) => {
-        const thuTu = { 'THIEU': 1, 'THUA': 2, 'DA_TRA_BU_KHOP': 3, 'DAY_TIET': 4, 'KHOP': 5 };
+        const thuTu = { 'THIEU': 1, 'THUA': 2, 'DA_TRA_BU_KHOP': 3, 'DAY_TIET': 4, 'DA_GIAI_TRINH': 5, 'KHOP': 6 };
         return (thuTu[a.trangThai] || 9) - (thuTu[b.trangThai] || 9);
     });
 
