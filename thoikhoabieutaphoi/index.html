@@ -14,6 +14,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
+        @media screen and (max-width: 768px) {
+      input, select, textarea {
+            font-size: 16px !important;
+        }
+    }
         .reactbits-fade-in { animation: fadeInBlur 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; opacity: 0; filter: blur(8px); transform: translateY(15px); }
         @keyframes fadeInBlur { to { opacity: 1; filter: blur(0); transform: translateY(0); } }
         .delay-100 { animation-delay: 100ms; } .delay-200 { animation-delay: 200ms; } .delay-300 { animation-delay: 300ms; }
