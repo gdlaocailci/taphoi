@@ -1232,12 +1232,11 @@ document.addEventListener('focusout', function(e) {
     }
 });
 
-// Hàm khôi phục số điểm và cấu hình: chống triệt để lỗi Google Sheets tự chuyển đổi số thập phân dấu chấm (.) thành Ngày Tháng
+// Hàm khôi phục số điểm và cấu hình: phân biệt chính xác giữa số điểm đã đánh giá và tiêu chí gợi ý
 function phucHoiDiemVaCauHinh(rawH) {
     if (rawH === undefined || rawH === null || rawH === "") return { valChon: "", valConfig: "" };
     
     let rawStr = "";
-    // Nếu Google Sheet / Apps Script trả về đối tượng Date
     if (rawH instanceof Date) {
         if (!isNaN(rawH.getTime())) {
             rawStr = rawH.getDate() + "," + (rawH.getMonth() + 1);
@@ -1253,33 +1252,42 @@ function phucHoiDiemVaCauHinh(rawH) {
         let p = rawStr.split("@@@");
         valChon = p[0].trim();
         valConfig = p.slice(1).join("@@@").trim();
-    } else if (rawStr.includes("|") || rawStr.includes(";") || rawStr.includes("\n")) {
-        valChon = "";
-        valConfig = rawStr;
     } else {
-        valChon = rawStr;
-        valConfig = rawStr;
+        // Kiểm tra xem rawStr có phải là số thuần túy hoặc chuỗi ngày bị Google Sheet convert từ số điểm hay không
+        let laSoThuanTuy = /^[-+]?\d+([.,]\d+)?$/.test(rawStr);
+        let laNgayConvert = /^0?(\d{1,2})[\/\.-]0?(\d{1,2})(?:[\/\.-]\d{2,4})?$/.test(rawStr);
+        
+        if (laSoThuanTuy || laNgayConvert) {
+            valChon = rawStr;
+            valConfig = "";
+        } else {
+            // Đây là chuỗi mô tả tiêu chí / cấu hình lựa chọn khi CHƯA chấm điểm -> valChon phải để rỗng
+            valChon = "";
+            valConfig = rawStr;
+        }
     }
     
-    // Khôi phục nếu valChon đã lỡ bị Google Sheet lưu thành định dạng ngày tháng trước đó
+    // Chuẩn hóa và phục hồi số điểm nếu valChon là ngày tháng
     if (valChon !== "") {
-        // Trường hợp 1: ISO date string hoặc Date string tiếng Anh (chứa GMT, UTC, hoặc T...Z)
         if (valChon.includes("GMT") || (valChon.includes("T") && valChon.includes("Z")) || /[a-zA-Z]{3}\s+[a-zA-Z]{3}/.test(valChon)) {
             let dt = new Date(valChon);
             if (!isNaN(dt.getTime())) {
                 valChon = dt.getDate() + "," + (dt.getMonth() + 1);
             }
         } else {
-            // Trường hợp 2: Chuỗi ngày dd/MM/yyyy hoặc dd.MM.yyyy hoặc dd-MM-yyyy (Google Sheet biến 8.5 thành 08/05/2026)
             let mDate = valChon.match(/^0?(\d{1,2})[\/\.-]0?(\d{1,2})(?:[\/\.-]\d{2,4})?$/);
             if (mDate) {
                 let d = parseInt(mDate[1], 10);
                 let m = parseInt(mDate[2], 10);
                 valChon = d + "," + m;
             } else if (valChon.includes(".")) {
-                // Chuẩn hóa dấu chấm thành dấu phẩy
                 valChon = valChon.replace(/\./g, ',');
             }
+        }
+        
+        // Khử triệt để trường hợp valChon bị dính chữ cái văn bản tiêu chí (nếu có từ dữ liệu cũ)
+        if (/[a-zA-Z\u00C0-\u024F\u1EA0-\u1EF9]/.test(valChon)) {
+            valChon = "";
         }
     }
     
@@ -1335,9 +1343,9 @@ function veBangNviec(db) {
         let vTgGiao = (tGiao.toLowerCase() === "dd/mm/yyyy") ? "" : tGiao;
         let vTgHt   = (tHt.toLowerCase() === "dd/mm/yyyy") ? "" : tHt;
 
-        let htmlDiem = `<input type="text" class="form-control form-control-sm text-center fw-bold chonKq" data-config="${safeConfig}" value="${valChon}" placeholder="-- Nhập điểm --" style="color:red; ${dsp}" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)">`;
+        let htmlDiem = `<input type="text" class="form-control form-control-sm text-center fw-bold chonKq" data-config="${safeConfig}" value="${valChon}" placeholder="-- Chọn hoặc nhập giá trị --" style="color:red; ${dsp}" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)">`;
         
-        if (valConfig.includes("|") || valConfig.includes(";") || valConfig.includes("\n")) {
+        if (valConfig.includes("|") || valConfig.includes(";") || valConfig.includes("\n") || valConfig.trim().startsWith("-")) {
             let optsArray = [];
             if (valConfig.includes(";")) {
                 optsArray = valConfig.split(";");
@@ -1411,7 +1419,7 @@ function veBangNviec(db) {
                            class="form-control form-control-sm text-center fw-bold chonKq" 
                            data-config="${safeConfig}" 
                            value="${valChon}" 
-                           placeholder="-- Chọn / Nhập --"
+                           placeholder="-- Chọn hoặc nhập giá trị --"
                            style="color:red; min-height:30px; height:auto; padding-right:22px; cursor:text; ${dsp}" 
                            onclick="moDanhSachDiem(event, this)"
                            oninput="xuLyNhapDiem(this)" 
@@ -1843,7 +1851,7 @@ function addNv() {
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTgGiao" placeholder="dd/mm/yyyy"></td>
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTdo"></td>
             <td class="align-middle"><input type="text" class="form-control form-control-sm text-center nhapTgHt" placeholder="dd/mm/yyyy" onclick="ganNgayMacDinh(this)" oninput="tuDongDinhDangNgay(this)"></td>
-            <td class="align-middle"><input type="text" class="form-control form-control-sm text-center chonKq" data-config="" placeholder="-- Nhập điểm --" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)"></td>
+            <td class="align-middle"><input type="text" class="form-control form-control-sm text-center chonKq" data-config="" placeholder="-- Chọn hoặc nhập giá trị --" oninput="xuLyNhapDiem(this)" onblur="xuLyBlurNhapDiem(this)" onkeydown="xuLyKeydownDiem(event, this)"></td>
             <td class="text-center align-middle" style="${dspXoa}">${nutx}</td>
         </tr>`;
         tbody.append(defaultRow);
