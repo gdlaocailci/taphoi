@@ -238,18 +238,19 @@
     }
   }
 
-/* Bố cục thanh tiêu đề thẳng hàng chuẩn mực trong vùng màu xám:
-     - Kéo nền xám lên sát mép trên (margin-top: -8px) để ôm trọn 100% cụm nút tắt, phóng vào trong vùng nền xám
-     - Căn giữa chiều dọc hoàn hảo (align-items: center, min-height: 48px) để thẳng hàng tăm tắp với cụm nút tắt phóng
-     - Dành khoảng đệm an toàn padding-right: 140px để cụm nút tắt phóng nằm vừa vặn bên phải */
+/* Bố cục thanh tiêu đề chuẩn mực trong vùng màu xám:
+     - Nút QUY CHẾ và Tải quy chế nằm ngay cạnh Tiêu đề NHIỆM VỤ CỦA TÔI theo vị trí ban đầu
+     - Khóa tất cả và Điểm cộng/trừ nằm thẳng hàng ở phía bên phải
+     - Dành khoảng đệm an toàn padding-right: 145px để cụm nút điều khiển cửa sổ của file Index nằm vừa vặn, không che khuất */
   @media screen and (min-width: 769px) {
     .hopDau {
-      margin-top: -8px !important; /* Đẩy sát đỉnh để nền xám ôm trọn 100% cụm nút tắt, phóng */
-      padding-top: 8px !important;
-      padding-bottom: 8px !important;
+      margin-top: 0 !important;
+      margin-bottom: 5px !important;
+      padding-top: 6px !important;
+      padding-bottom: 6px !important;
       padding-left: 12px !important;
-      padding-right: 140px !important; /* Khoảng đệm an toàn chuẩn xác cho cụm nút tắt, phóng */
-      min-height: 48px !important;
+      padding-right: 145px !important; /* Vùng an toàn chuẩn xác cho cụm nút điều khiển cửa sổ của Index */
+      min-height: 44px !important;
       display: flex !important;
       align-items: center !important;
       position: relative;
@@ -258,7 +259,7 @@
       width: 100% !important;
       min-height: 32px !important;
       justify-content: space-between !important;
-      align-items: center !important; /* Căn giữa hoàn hảo theo chiều dọc */
+      align-items: center !important;
       margin-bottom: 0 !important;
     }
     .hopDau .tDe {
@@ -281,7 +282,6 @@
     .hopDau > .d-flex > div:last-child {
       flex: 0 0 auto !important;
     }
-    /* Đồng bộ chiều cao chuẩn 28px cho các nút và ô input để thẳng hàng tuyệt đối với tâm cụm nút tắt phóng */
     .hopDau #nhapDiemThuong {
       height: 28px !important;
       line-height: 28px !important;
