@@ -1529,6 +1529,111 @@ function kiemTraThoiGianHtHopLe(dongHienTai, thongBao = true) {
     return true;
 }
 
+function layGiaTriChonLonNhat(input) {
+    if (!input) return null;
+    let dongHienTai = input.closest('tr');
+    let vungChon = input.closest('.vung-chon-diem');
+    let danhSach = vungChon ? vungChon.querySelector('.khung-danh-sach') : null;
+    
+    let dsGiaTriSo = [];
+    if (danhSach) {
+        let cacMucChon = danhSach.querySelectorAll('.muc-chon');
+        cacMucChon.forEach((muc, index) => {
+            if (index > 0) {
+                let valClick = muc.getAttribute('onclick');
+                if (valClick) {
+                    let match = valClick.match(/'([^']*)'/);
+                    if (match && match[1]) {
+                        let num = parseFloat(match[1].replace(/,/g, '.'));
+                        if (!isNaN(num) && !dsGiaTriSo.includes(num)) {
+                            dsGiaTriSo.push(num);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    if (dsGiaTriSo.length === 0) {
+        let cfgGoc = input.getAttribute('data-config') || "";
+        if (cfgGoc && (cfgGoc.includes('|') || cfgGoc.includes(';') || cfgGoc.includes('\n') || cfgGoc.trim().startsWith('-'))) {
+            let optsArray = [];
+            if (cfgGoc.includes(";")) optsArray = cfgGoc.split(";");
+            else if (cfgGoc.includes("\n")) optsArray = cfgGoc.split("\n");
+            else optsArray = cfgGoc.split("|");
+            
+            optsArray.forEach(opt => {
+                let kv = opt.includes("|") ? opt.split("|") : [opt];
+                let txt = kv[0].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+                let val = kv.length > 1 ? kv[1].replace(/[\r\n]+/g, '').trim() : txt;
+                if (txt !== "") {
+                    let matchNum = txt.match(/[-+]?\d+([.,]\d+)?/);
+                    if (matchNum && kv.length === 1) { val = matchNum[0]; }
+                    let num = parseFloat(val.replace(/,/g, '.'));
+                    if (!isNaN(num) && !dsGiaTriSo.includes(num)) {
+                        dsGiaTriSo.push(num);
+                    }
+                }
+            });
+        }
+    }
+    
+    if (dsGiaTriSo.length > 0) {
+        dsGiaTriSo.sort((a, b) => a - b);
+        let tongSoMuc = dsGiaTriSo.length;
+        let mucToiDaDuocChon = tongSoMuc - 1;
+        
+        if (dongHienTai) {
+            let theTgGiao = dongHienTai.querySelector('.nhapTgGiao');
+            let theTdo = dongHienTai.querySelector('.nhapTdo');
+            let theTgHt = dongHienTai.querySelector('.nhapTgHt');
+            
+            let gtriTgGiao = theTgGiao ? theTgGiao.value.trim() : "";
+            let gtriTdo = theTdo ? theTdo.value.trim() : "";
+            let gtriTgHt = theTgHt ? theTgHt.value.trim() : "";
+            
+            let ngayGiao = phanTichNgayVN(gtriTgGiao);
+            let ngayHt = phanTichNgayVN(gtriTgHt);
+            
+            if (ngayGiao !== null && ngayHt !== null) {
+                let timeGiao = Date.UTC(ngayGiao.getFullYear(), ngayGiao.getMonth(), ngayGiao.getDate());
+                let timeHt = Date.UTC(ngayHt.getFullYear(), ngayHt.getMonth(), ngayHt.getDate());
+                let msMotNgay = 1000 * 60 * 60 * 24;
+                let khoangCachNgay = (timeGiao - timeHt) / msMotNgay;
+                
+                if (khoangCachNgay < 0) {
+                    let viTriLonHon0 = dsGiaTriSo.findIndex(v => v > 0);
+                    if (viTriLonHon0 !== -1) {
+                        mucToiDaDuocChon = viTriLonHon0;
+                    } else {
+                        mucToiDaDuocChon = 0;
+                    }
+                } else {
+                    if (gtriTdo !== "") {
+                        if (khoangCachNgay >= 1) {
+                            mucToiDaDuocChon = tongSoMuc - 1;
+                        } else if (khoangCachNgay === 0) {
+                            mucToiDaDuocChon = Math.max(0, tongSoMuc - 2);
+                        }
+                    } else {
+                        mucToiDaDuocChon = tongSoMuc - 1;
+                    }
+                }
+            }
+        }
+        return dsGiaTriSo[mucToiDaDuocChon];
+    }
+    
+    if (dongHienTai) {
+        let theDiemMax = dongHienTai.querySelector('.nhapDiemMax');
+        if (theDiemMax && theDiemMax.value) {
+            let maxVal = parseFloat(theDiemMax.value.replace(/,/g, '.'));
+            if (!isNaN(maxVal)) return maxVal;
+        }
+    }
+    return null;
+}
+
 function xuLyNhapDiem(input) {
     if (input.readOnly || input.disabled) return;
     let dongHienTai = input.closest('tr');
@@ -1549,6 +1654,14 @@ function xuLyNhapDiem(input) {
         } else if ((ch === '.' || ch === ',') && !coDauThapPhan) {
             cleanVal += ch;
             coDauThapPhan = true;
+        }
+    }
+    
+    let maxVal = layGiaTriChonLonNhat(input);
+    if (maxVal !== null && cleanVal !== "" && cleanVal !== "-") {
+        let valFloat = parseFloat(cleanVal.replace(/,/g, '.'));
+        if (!isNaN(valFloat) && valFloat > maxVal) {
+            cleanVal = String(maxVal).replace(/\./g, ',');
         }
     }
     
@@ -1595,6 +1708,14 @@ function xuLyBlurNhapDiem(input) {
         }
         // Chuẩn hóa dấu (.) thành dấu (,) để hiển thị chuẩn số Việt Nam và tránh bị Google Sheets biến thành ngày tháng
         val = val.replace(/\./g, ',');
+        
+        let maxVal = layGiaTriChonLonNhat(input);
+        if (maxVal !== null && val !== "") {
+            let valFloat = parseFloat(val.replace(/,/g, '.'));
+            if (!isNaN(valFloat) && valFloat > maxVal) {
+                val = String(maxVal).replace(/\./g, ',');
+            }
+        }
         input.value = val;
     }
     tinhtTdong();
