@@ -678,7 +678,7 @@
                 <img id="logoMenuDoc" src="" alt="Logo" class="w-20 h-20 rounded-full object-cover">
             </div>
             <h2 id="tenDonViMenu" class="text-center text-white font-bold text-base uppercase tracking-wide leading-relaxed">
-                Trường TH&THCS<br>Tả Phời
+                Trường TH&THCS Tả Phời<br>Cấp Tiểu học
             </h2>
         </div>
         <div class="px-6 my-2 flex-none"><hr class="border-dashed border-blue-300 opacity-40"></div>
@@ -1600,8 +1600,7 @@
         }
 
         // Hàm kích hoạt toàn màn hình (CHỈ ÁP DỤNG TRÊN MÁY TÍNH / DESKTOP / LAPTOP)
-        function kichHoatToanManHinhHeThong() {
-            if (laThietBiDiDong()) return; // Điện thoại: Thoát ngay, giữ nguyên bản 100%
+        function kichHoatToanManHinhHeThong() { // Điện thoại: Thoát ngay, giữ nguyên bản 100%
 
             var daFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
             if (!daFull) {
@@ -1693,7 +1692,7 @@
             if (confirm("Bạn có chắc chắn muốn đóng và thoát khỏi hệ thống quản lý không?")) {
                 window.close();
                 setTimeout(function() {
-                    window.location.href = "https://gdlaocailci.github.io/taphoi/";
+                    window.location.href = "https://gdlaocailci.github.io/thlevantam/";
                 }, 150);
             }
         }
@@ -1703,6 +1702,7 @@
         window.thaoTacPhongToFull = thaoTacPhongToFull;
         window.thaoTacDongHeThong = thaoTacDongHeThong;
         window.kichHoatToanManHinhHeThong = kichHoatToanManHinhHeThong;
+    })();
     </script>
 </body>
 </html>
