@@ -258,24 +258,26 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
    /* ========================================================== */
     /* CỤM NÚT ĐIỀU KHIỂN CỬA SỔ - DẠNG VẠCH ĐẬM MÉP TỰ BUNG     */
+    /* CĂN THẲNG MÉP TRÁI & PHẢI VỚI KHỐI ĐỐI TƯỢNG BÊN DƯỚI   */
     /* ========================================================== */
     #cumDieuKhienCuaSo {
         position: fixed;
         top: 0;
-        right: 40px;
+        right: 36px; /* Căn thẳng hàng mép phải với khối đối tượng nội dung */
         z-index: 10002;
         padding-top: 0;
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
-    /* 1. Vạch đậm bám sát mép trên khi ở trạng thái nghỉ */
+    /* 1. Vạch đậm bám sát mép trên: Chiều rộng phủ 100% thẳng đều 2 mép */
     #cumDieuKhienCuaSo .vach-mep-dam {
-        width: 60px;
+        width: 100%;
+        min-width: 98px; /* Khớp vừa vặn chiều rộng 3 nút chức năng */
         height: 6px;
         background: #0d6efd; /* Màu xanh đậm nổi bật theo mép */
         border-radius: 0 0 4px 4px;
-        margin: 0 auto;
+        margin: 0; /* Xóa margin auto để hai mép gióng thẳng đứng tuyệt đối */
         box-shadow: 0 2px 6px rgba(13, 110, 253, 0.45);
         transition: all 0.25s ease;
     }
@@ -284,9 +286,10 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
     #cumDieuKhienCuaSo .hop-nut-chuc-nang {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 4px;
         height: 0;
-        padding: 0 8px;
+        padding: 0 6px;
         opacity: 0;
         overflow: hidden;
         pointer-events: none;
@@ -303,7 +306,6 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
     /* HIỆU ỨNG: KHI RÊ CHUỘT VÀO VẠCH THÌ TỰ ĐỘNG BUNG RA      */
     /* ========================================================== */
     #cumDieuKhienCuaSo:hover .vach-mep-dam {
-        width: 100%;
         height: 3px;
         border-radius: 0;
         background: #0d6efd;
@@ -311,7 +313,7 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
     #cumDieuKhienCuaSo:hover .hop-nut-chuc-nang {
         height: 36px;
-        padding: 4px 8px;
+        padding: 4px 6px;
         opacity: 1;
         pointer-events: auto;
         border-color: #ced4da;
