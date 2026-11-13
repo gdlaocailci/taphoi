@@ -4,12 +4,12 @@ const KETNOI = {
     TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Tả Phời",
     
     // 2. Tài nguyên hình ảnh đại diện (Logo & Giao diện)
-    LINK_LOGO: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
+    LINK_LOGO: "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png",
     LINK_HINH_NEN: "https://www.wallpaperalchemy.com/storage/wallpapers/2256/windows-10-colorful-3d-logo-wallpaper-card.jpg",
     LINK_AVATAR_NAM: "https://i.postimg.cc/N22XJ7Lz/Nam.png",
     LINK_AVATAR_NU: "https://i.postimg.cc/9DC4Zjt2/NU.png",
     LINK_AVATAR_NU_THU_KY: "https://i.postimg.cc/KYCGvkbp/Nu-thu-ky.png",
-    LINK_ICON_TRANG_CHU: "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png",
+    LINK_ICON_TRANG_CHU: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
     // Bổ sung liên kết YouTube Hướng dẫn
     LINK_YOUTUBE: "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q",
     
