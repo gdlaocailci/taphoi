@@ -9,7 +9,7 @@ const KETNOI = {
     LINK_AVATAR_NAM: "https://i.postimg.cc/N22XJ7Lz/Nam.png",
     LINK_AVATAR_NU: "https://i.postimg.cc/9DC4Zjt2/NU.png",
     LINK_AVATAR_NU_THU_KY: "https://i.postimg.cc/KYCGvkbp/Nu-thu-ky.png",
-    LINK_ICON_TRANG_CHU: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
+    LINK_ICON_TRANG_CHU: "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png",
     // Bổ sung liên kết YouTube Hướng dẫn
     LINK_YOUTUBE: "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q",
     
