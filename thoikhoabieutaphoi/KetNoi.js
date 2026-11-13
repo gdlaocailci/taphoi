@@ -7,9 +7,9 @@ const CAU_HINH_FRONTEND = {
     TAC_GIA_THIET_KE: 'Hoàng Ngọc Lâm',
 
     LINK_LOGO_TRANG_CHU: 'https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png',
-    LINK_ICON_BANG: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png',
+    LINK_ICON_BANG: 'https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png',
     LINK_ICON_DANG_TAI: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png',
-    LINK_ICON_TRONG: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png',
+    LINK_ICON_TRONG: 'https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png',
     LINK_ICON_LAM_MOI: 'https://i.postimg.cc/xjzpvXCm/Logo-HL.png'
 };
 // =========================================================================
