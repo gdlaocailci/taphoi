@@ -19,7 +19,7 @@ const MA_TRAN_UI_CLIENT = {
   "TRUONG_1": {
     TEN_TRUONG: "TRƯỜNG TH&THCS TẢ PHỜI",
     TEN_TRUONG_UP: "TRƯỜNG TH&THCS TẢ PHỜI",
-    LOGO_URL: "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png"
+    LOGO_URL: "https://i.ibb.co/RpbMSrzj/Logo-nh-tr-ng-s-a.png"
   },
   "TRUONG_2": {
     TEN_TRUONG: "",
