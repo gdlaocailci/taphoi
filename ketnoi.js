@@ -4,7 +4,7 @@ const KETNOI = {
     TIEU_DE_TRANG: "Cổng thông tin Quản trị - Trường TH&THCS Tả Phời",
     
     // 2. Tài nguyên hình ảnh đại diện (Logo & Giao diện)
-    LINK_LOGO: "https://i.ibb.co/7t5NnvSD/Logo-nh-tr-ng.png",
+    LINK_LOGO: "https://i.ibb.co/RpbMSrzj/Logo-nh-tr-ng-s-a.png",
     LINK_HINH_NEN: "https://www.wallpaperalchemy.com/storage/wallpapers/2256/windows-10-colorful-3d-logo-wallpaper-card.jpg",
     LINK_AVATAR_NAM: "https://i.postimg.cc/N22XJ7Lz/Nam.png",
     LINK_AVATAR_NU: "https://i.postimg.cc/9DC4Zjt2/NU.png",
