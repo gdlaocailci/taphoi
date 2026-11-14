@@ -3763,10 +3763,7 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
         ? window.thongSoHocVu
         : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
 
-    // CHỈ kiểm tra đúng quyền Quản trị viên (Admin):
-    // 1. Có trong DANH_SACH_QUAN_TRI (sheet CAI_DAT) hoặc tài khoản gốc
-    // 2. Hoặc coToanQuyenSDB === true / quyenSuaChua === true
-    // (Tuyệt đối KHÔNG gộp quyenKhoaSdbServer hay btnKhoaSoDauBai vào đây để tránh tài khoản giáo viên bị lọt qua bộ lọc)
+    // Kiểm tra quyền Quản trị viên (Admin) & Ban Giám Hiệu (những người được cấp quyền Khóa Sổ đầu bài)
     let laAdminTheoDanhSach = false;
     if (emailDangNhapLC) {
         if (emailDangNhapLC === 'tulieuhopthanh@gmail.com') laAdminTheoDanhSach = true;
@@ -3784,6 +3781,14 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
         (theChotQuyen && (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true)) ||
         (typeof quyenSuaChua !== 'undefined' && quyenSuaChua === true) ||
         (typeof window.quyenSuaChua !== 'undefined' && window.quyenSuaChua === true)
+    );
+
+    let quyenBGH = Boolean(
+        quyenQuanTri ||
+        quyenKhoaSdbServer ||
+        (theChotQuyen && theChotQuyen.getAttribute('data-quyenkhoasdb') === 'true') ||
+        (typeof quyenChiTiet !== 'undefined' && quyenChiTiet && Array.isArray(quyenChiTiet.nut) && quyenChiTiet.nut.includes('btnKhoaSoDauBai')) ||
+        (typeof window.quyenChiTiet !== 'undefined' && window.quyenChiTiet && Array.isArray(window.quyenChiTiet.nut) && window.quyenChiTiet.nut.includes('btnKhoaSoDauBai'))
     );
 
     // Nhưng nếu trên giao diện đã định danh rõ ràng một Mã Giáo viên cụ thể (VD: "Lâm A1") mà người đó KHÔNG nằm trong DANH_SACH_QUAN_TRI (hoặc coToanQuyenSDB === false),
@@ -3811,7 +3816,7 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
             }
         });
     }
-    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP) && (quyenQuanTri || tapHopTatCaLop.size === 0)) {
+    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP) && (quyenBGH || tapHopTatCaLop.size === 0)) {
         nguonHV.DANH_SACH_LOP.forEach(l => {
             let lop = String(l || '').trim().toUpperCase();
             if (lop) tapHopTatCaLop.add(lop);
@@ -3826,8 +3831,8 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
 
     const sapXepTenLop = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 
-    // Nếu chưa đăng nhập hoặc là Quản trị viên (Admin): được phép xem đầy đủ tất cả các lớp
-    if (!daDangNhap || quyenQuanTri) {
+    // Nếu chưa đăng nhập, hoặc là Quản trị viên (Admin) / Ban Giám Hiệu (có quyền Khóa sổ đầu bài): hiển thị đầy đủ tất cả các lớp không lọc
+    if (!daDangNhap || quyenBGH) {
         return Array.from(tapHopTatCaLop).sort(sapXepTenLop);
     }
 
