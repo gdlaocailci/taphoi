@@ -3796,92 +3796,48 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
     let daDangNhap = (emailDangNhapLC !== '') || (madinhdanhGV !== '');
     let tuanSo = tuanChon ? (parseInt(String(tuanChon).replace(/\D/g, ''), 10) || 0) : 0;
 
-    // 1. Tập hợp toàn bộ các lớp có dữ liệu trong tuần đang xét (hoặc toàn trường nếu chưa chọn tuần)
-    let tapHopTatCaLop = new Set();
-    if (Array.isArray(duLieuTKBGopDaMap)) {
-        duLieuTKBGopDaMap.forEach(dong => {
+    const sapXepTenLop = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+    const nguonTkbHopNhat = [
+        ...(Array.isArray(duLieuTKBGopDaMap) ? duLieuTKBGopDaMap : []),
+        ...(mapTkbToanTapToanCuc && typeof mapTkbToanTapToanCuc === 'object' ? Object.values(mapTkbToanTapToanCuc) : [])
+    ];
+
+    // 1. Nếu chưa đăng nhập, hoặc thuộc nhóm Admin / BGH (có quyền Khóa sổ): hiển thị đầy đủ các lớp không lọc
+    if (!daDangNhap || quyenBGH) {
+        let tapHopTatCaLop = new Set();
+        nguonTkbHopNhat.forEach(dong => {
             let t = dong._tuanSo !== undefined ? dong._tuanSo : (parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
             let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            if (lop && (!tuanSo || t === tuanSo)) {
-                tapHopTatCaLop.add(lop);
-            }
+            if (lop && (!tuanSo || t === tuanSo)) tapHopTatCaLop.add(lop);
         });
-    }
-    if (mapTkbToanTapToanCuc && typeof mapTkbToanTapToanCuc === 'object') {
-        Object.values(mapTkbToanTapToanCuc).forEach(dong => {
-            let t = parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
-            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            if (lop && (!tuanSo || t === tuanSo)) {
-                tapHopTatCaLop.add(lop);
-            }
-        });
-    }
-    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP) && (quyenBGH || tapHopTatCaLop.size === 0)) {
-        nguonHV.DANH_SACH_LOP.forEach(l => {
-            let lop = String(l || '').trim().toUpperCase();
-            if (lop) tapHopTatCaLop.add(lop);
-        });
-    }
-    if (tapHopTatCaLop.size === 0 && Array.isArray(duLieuTKBGopDaMap)) {
-        duLieuTKBGopDaMap.forEach(dong => {
-            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            if (lop) tapHopTatCaLop.add(lop);
-        });
-    }
-
-    const sapXepTenLop = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
-
-    // Nếu chưa đăng nhập, hoặc là Quản trị viên (Admin) / Ban Giám Hiệu (có quyền Khóa sổ đầu bài): hiển thị đầy đủ tất cả các lớp không lọc
-    if (!daDangNhap || quyenBGH) {
+        if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP)) {
+            nguonHV.DANH_SACH_LOP.forEach(l => {
+                let lop = String(l || '').trim().toUpperCase();
+                if (lop) tapHopTatCaLop.add(lop);
+            });
+        }
         return Array.from(tapHopTatCaLop).sort(sapXepTenLop);
     }
 
-    // Nếu chưa xác định được Mã GV (đang tải): trả về mảng rỗng hoặc danh sách tạm
-    if (!madinhdanhGV || String(madinhdanhGV).includes('@')) {
-        return [];
-    }
-
-    // 2. Xác định Mã GV chuẩn hóa của giáo viên đang đăng nhập — ĐỒNG NHẤT 100% với thuật toán hiển thị "Được phân công dạy" trên lưới SĐB
+    if (!madinhdanhGV || String(madinhdanhGV).includes('@')) return [];
     let maGvDangNhapLC = window.chuanHoaDinhDanhGiaoVien(madinhdanhGV);
     if (!maGvDangNhapLC) return [];
 
-    const kiemTraKhopGiaoVien = (chuoiGvTkb) => {
-        if (!chuoiGvTkb) return false;
-        let gvTkb = window.chuanHoaDinhDanhGiaoVien(chuoiGvTkb);
-        if (!gvTkb) return false;
-        let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim()).filter(Boolean);
-        return tapHopGvTkb.includes(maGvDangNhapLC) ||
-               tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2);
-    };
-
+    // 2. Giáo viên thường: lọc đúng các lớp được phân công dạy trong tuần đang chọn (từ TKB_HIEN_TAI & DATA_TKB)
     let tapHopLopDuocDay = new Set();
+    nguonTkbHopNhat.forEach(dong => {
+        let t = dong._tuanSo !== undefined ? dong._tuanSo : (parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
+        if (tuanSo > 0 && t !== tuanSo) return;
+        let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
+        let mon = String(dong['Môn Học'] || '').trim();
+        let gv = window.chuanHoaDinhDanhGiaoVien(dong['Mã GV']);
+        if (!lop || !mon || mon === '--' || mon === '---' || !gv) return;
 
-    // 3. Quét trực tiếp từ dữ liệu của tuần đang chọn (từ cả duLieuTKBGopDaMap và mapTkbToanTapToanCuc bao gồm DATA_TKB & TKB_HIEN_TAI)
-    if (Array.isArray(duLieuTKBGopDaMap)) {
-        duLieuTKBGopDaMap.forEach(dong => {
-            let t = dong._tuanSo !== undefined ? dong._tuanSo : (parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
-            if (tuanSo > 0 && t !== tuanSo) return;
-            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            let mon = String(dong['Môn Học'] || '').trim();
-            let gv = String(dong['Mã GV'] || '').trim();
-            if (lop && mon !== '' && mon !== '--' && mon !== '---' && kiemTraKhopGiaoVien(gv)) {
-                tapHopLopDuocDay.add(lop);
-            }
-        });
-    }
-
-    if (mapTkbToanTapToanCuc && typeof mapTkbToanTapToanCuc === 'object') {
-        Object.values(mapTkbToanTapToanCuc).forEach(dong => {
-            let t = parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
-            if (tuanSo > 0 && t !== tuanSo) return;
-            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            let mon = String(dong['Môn Học'] || '').trim();
-            let gv = String(dong['Mã GV'] || '').trim();
-            if (lop && mon !== '' && mon !== '--' && mon !== '---' && kiemTraKhopGiaoVien(gv)) {
-                tapHopLopDuocDay.add(lop);
-            }
-        });
-    }
+        let tapHopGvTkb = gv.split(/[,;&-]/).map(g => g.trim()).filter(Boolean);
+        if (tapHopGvTkb.includes(maGvDangNhapLC) || tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2)) {
+            tapHopLopDuocDay.add(lop);
+        }
+    });
 
     return Array.from(tapHopLopDuocDay).sort(sapXepTenLop);
 };
