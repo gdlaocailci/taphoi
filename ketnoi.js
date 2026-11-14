@@ -11,7 +11,7 @@ const KETNOI = {
     LINK_AVATAR_NU_THU_KY: "https://i.postimg.cc/KYCGvkbp/Nu-thu-ky.png",
     LINK_ICON_TRANG_CHU: "https://i.postimg.cc/xjzpvXCm/Logo-HL.png",
     // Bổ sung liên kết YouTube Hướng dẫn
-    LINK_YOUTUBE: "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q",
+    LINK_YOUTUBE: "https://www.youtube.com/playlist?list=PLMq1_OeEpM9Y",
     
     // 3. Đường dẫn máy chủ xử lý dữ liệu (Google Apps Script API)
     WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxn7jCAUwrPTcQE_FZaK8p8sYPRDeX2WrS3_hirPUWkKsnlM5mkNjzG3foSOgjwm94HaQ/exec",
