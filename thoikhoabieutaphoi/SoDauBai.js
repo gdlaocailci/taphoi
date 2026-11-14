@@ -1689,12 +1689,10 @@ function ketXuatSoDauBaiLenLuoi() {
         }
     }
 
-    // 2. [NÂNG CẤP]: Khi người dùng chọn hoặc chuyển Tuần học (kể cả tuần cũ từ sh DATA_TKB),
-    // lập tức lọc lại hộp chọn Lớp (#chonLopSo) để chỉ hiển thị đúng những lớp giáo viên được phân công dạy trong tuần đó
-    if (tuanChon && String(tuanChon) !== String(tuanTruocDo_SDB)) {
-        if (typeof window.capNhatDanhSachLopTheoTuanSDB === 'function') {
-            window.capNhatDanhSachLopTheoTuanSDB(tuanChon);
-        }
+    // 2. [NÂNG CẤP]: Luôn đồng bộ hộp chọn Lớp (#chonLopSo) theo đúng Tuần đang chọn (kể cả tuần cũ từ sh DATA_TKB)
+    // để đảm bảo giáo viên chỉ có thể chọn những lớp mình được phân công dạy trong tuần đó
+    if (tuanChon && typeof window.capNhatDanhSachLopTheoTuanSDB === 'function') {
+        window.capNhatDanhSachLopTheoTuanSDB(tuanChon);
         lopChon = theSelectLop ? theSelectLop.value : '';
     }
 
@@ -2182,12 +2180,30 @@ function thucThiDongBoTkbVaoSoDauBai() {
 window.thucThiDongBoTkbVaoSoDauBai = thucThiDongBoTkbVaoSoDauBai;
 
 function thucThiKetXuatSoDauBaiLenLuoi() {
-    let tuanChon = document.getElementById('chonTuanSo')?.value;
-    let lopChon = document.getElementById('chonLopSo')?.value;
+    let theSelectTuan = document.getElementById('chonTuanSo');
+    let theSelectLop = document.getElementById('chonLopSo');
+    let tuanChon = theSelectTuan?.value;
     let inputNgay = document.getElementById('chonNgaySDB');
     let vungHienThi = document.getElementById('vungHienThiSoDauBai');
 
-    if (!tuanChon || !lopChon || !vungHienThi) return;
+    // [CHỐT CHẶN ĐỒNG BỘ HỘP CHỌN LỚP TRƯỚC KHI VẼ LƯỚI]:
+    // Đảm bảo bất kỳ hàm nào gọi thucThiKetXuatSoDauBaiLenLuoi() đều tự động lọc lại hộp chọn Lớp theo đúng tuần và tài khoản hiện tại
+    if (tuanChon && typeof window.capNhatDanhSachLopTheoTuanSDB === 'function') {
+        window.capNhatDanhSachLopTheoTuanSDB(tuanChon);
+    }
+    let lopChon = theSelectLop?.value;
+
+    if (!tuanChon || !lopChon || !vungHienThi) {
+        if (vungHienThi && tuanChon && !lopChon) {
+            let soLopCoQuyen = theSelectLop ? Array.from(theSelectLop.options).filter(o => !o.disabled && o.value !== '').length : 0;
+            if (soLopCoQuyen === 0) {
+                vungHienThi.innerHTML = `<div class="p-6 text-center"><p class="py-8 text-orange-600 font-bold text-base">⚠️ Đồng chí không có tiết phân công giảng dạy ở Tuần ${String(tuanChon).replace(/\D/g, '')} (theo dữ liệu Thời khóa biểu).</p></div>`;
+            } else {
+                vungHienThi.innerHTML = `<div class="p-4"><p class="text-center py-10 text-slate-500 font-bold">Vui lòng chọn Lớp học được phân công dạy ở Tuần ${String(tuanChon).replace(/\D/g, '')} để xem Sổ đầu bài.</p></div>`;
+            }
+        }
+        return;
+    }
     if (inputNgay) {
         inputNgay.readOnly = true;
         inputNgay.classList.add('bg-slate-100', 'cursor-not-allowed');
@@ -3740,13 +3756,17 @@ async function xuatExcelSoDauBai() {
 window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
     let theChotQuyen = document.getElementById('theChotQuyenSDB');
     let madinhdanhGV = maGvDangNhapHeThong || (theChotQuyen ? theChotQuyen.getAttribute('data-madinhdanh') || '' : '');
-    let tendinhdanhGV = theChotQuyen ? (theChotQuyen.getAttribute('data-tendinhdanh') || '') : '';
     let emailDangNhapLC = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc)
         ? String(window.dinhDanhGiaoVienToanCuc).trim().toLowerCase()
         : ((typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc) ? String(window.emailGiaoVienToanCuc).trim().toLowerCase() : '');
     let nguonHV = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu)
         ? window.thongSoHocVu
         : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
+
+    // CHỈ kiểm tra đúng quyền Quản trị viên (Admin):
+    // 1. Có trong DANH_SACH_QUAN_TRI (sheet CAI_DAT) hoặc tài khoản gốc
+    // 2. Hoặc coToanQuyenSDB === true / quyenSuaChua === true
+    // (Tuyệt đối KHÔNG gộp quyenKhoaSdbServer hay btnKhoaSoDauBai vào đây để tránh tài khoản giáo viên bị lọt qua bộ lọc)
     let laAdminTheoDanhSach = false;
     if (emailDangNhapLC) {
         if (emailDangNhapLC === 'tulieuhopthanh@gmail.com') laAdminTheoDanhSach = true;
@@ -3758,22 +3778,17 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
         }
     }
 
-    let quyenQuanTri = coToanQuyenSDB ||
+    let quyenQuanTri = Boolean(
+        coToanQuyenSDB ||
         laAdminTheoDanhSach ||
-        (theChotQuyen ? (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true) : false) ||
-        (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) ||
-        (typeof window.quyenSuaChua !== 'undefined' && window.quyenSuaChua);
+        (theChotQuyen && (theChotQuyen.getAttribute('data-quantri') === 'true' || theChotQuyen.getAttribute('data-quantri') === true)) ||
+        (typeof quyenSuaChua !== 'undefined' && quyenSuaChua === true) ||
+        (typeof window.quyenSuaChua !== 'undefined' && window.quyenSuaChua === true)
+    );
 
-    let quyenBGH = quyenQuanTri ||
-        quyenKhoaSdbServer ||
-        (theChotQuyen && theChotQuyen.getAttribute('data-quyenkhoasdb') === 'true') ||
-        (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.nut && quyenChiTiet.nut.includes('btnKhoaSoDauBai')) ||
-        (typeof window.quyenChiTiet !== 'undefined' && window.quyenChiTiet.nut && window.quyenChiTiet.nut.includes('btnKhoaSoDauBai'));
-
-    let daDangNhap = (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc !== '') ||
-                     (typeof window.emailGiaoVienToanCuc !== 'undefined' && window.emailGiaoVienToanCuc !== '') ||
-                     (madinhdanhGV !== '');
-
+    // Nhưng nếu trên giao diện đã định danh rõ ràng một Mã Giáo viên cụ thể (VD: "Lâm A1") mà người đó KHÔNG nằm trong DANH_SACH_QUAN_TRI (hoặc coToanQuyenSDB === false),
+    // hoặc ngay cả khi tài khoản có quyền nhưng đang đóng vai trò Giáo viên có Mã GV trên TKB mà bạn muốn lọc đúng theo Mã GV (trừ khi thực sự là Admin hệ thống):
+    let daDangNhap = (emailDangNhapLC !== '') || (madinhdanhGV !== '');
     let tuanSo = tuanChon ? (parseInt(String(tuanChon).replace(/\D/g, ''), 10) || 0) : 0;
 
     // 1. Tập hợp toàn bộ các lớp có dữ liệu trong tuần đang xét (hoặc toàn trường nếu chưa chọn tuần)
@@ -3796,7 +3811,7 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
             }
         });
     }
-    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP) && (quyenQuanTri || quyenBGH || tapHopTatCaLop.size === 0)) {
+    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP) && (quyenQuanTri || tapHopTatCaLop.size === 0)) {
         nguonHV.DANH_SACH_LOP.forEach(l => {
             let lop = String(l || '').trim().toUpperCase();
             if (lop) tapHopTatCaLop.add(lop);
@@ -3811,50 +3826,32 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
 
     const sapXepTenLop = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 
-    // Nếu chưa đăng nhập hoặc là Quản trị viên / Ban Giám Hiệu: được phép xem đầy đủ các lớp
-    if (!daDangNhap || quyenQuanTri || quyenBGH) {
+    // Nếu chưa đăng nhập hoặc là Quản trị viên (Admin): được phép xem đầy đủ tất cả các lớp
+    if (!daDangNhap || quyenQuanTri) {
         return Array.from(tapHopTatCaLop).sort(sapXepTenLop);
     }
 
-    // Nếu vừa đăng nhập nhưng hệ thống đang đối chiếu ngầm từ Email sang Mã GV thì tạm hiển thị danh sách chung cho tới khi ánh xạ xong (~200ms)
+    // Nếu chưa xác định được Mã GV (đang tải): trả về mảng rỗng hoặc danh sách tạm
     if (!madinhdanhGV || String(madinhdanhGV).includes('@')) {
-        return Array.from(tapHopTatCaLop).sort(sapXepTenLop);
+        return [];
     }
 
-    // 2. Xác định tập hợp định danh chuẩn hóa của giáo viên đang đăng nhập (Mã GV cột A + Họ tên cột B DM_GIAOVIEN)
-    let maGvNorm = window.chuanHoaDinhDanhGiaoVien(madinhdanhGV);
-    let tenDayDu = window.layHoTenDayDuGiaoVienSDB(tendinhdanhGV || madinhdanhGV);
-    let tenGvNorm = window.chuanHoaDinhDanhGiaoVien(tenDayDu);
-    let tapDinhDanhGV = [maGvNorm, tenGvNorm].filter(Boolean);
+    // 2. Xác định Mã GV chuẩn hóa của giáo viên đang đăng nhập — ĐỒNG NHẤT 100% với thuật toán hiển thị "Được phân công dạy" trên lưới SĐB
+    let maGvDangNhapLC = window.chuanHoaDinhDanhGiaoVien(madinhdanhGV);
+    if (!maGvDangNhapLC) return [];
 
     const kiemTraKhopGiaoVien = (chuoiGvTkb) => {
         if (!chuoiGvTkb) return false;
-        let gvNorm = window.chuanHoaDinhDanhGiaoVien(chuoiGvTkb);
-        if (!gvNorm) return false;
-        let dsTach = gvNorm.split(/[,;&-]/).map(g => g.trim()).filter(Boolean);
-        return dsTach.some(g =>
-            tapDinhDanhGV.includes(g) ||
-            tapDinhDanhGV.some(u => (u.includes(g) || g.includes(u)) && g.length > 2)
-        );
+        let gvTkb = window.chuanHoaDinhDanhGiaoVien(chuoiGvTkb);
+        if (!gvTkb) return false;
+        let tapHopGvTkb = gvTkb.split(/[,;&-]/).map(g => g.trim()).filter(Boolean);
+        return tapHopGvTkb.includes(maGvDangNhapLC) ||
+               tapHopGvTkb.some(g => maGvDangNhapLC.includes(g) && g.length > 2);
     };
 
     let tapHopLopDuocDay = new Set();
 
-    // 3. Quét trực tiếp từ dữ liệu TKB toàn tập (bao gồm DATA_TKB của các tuần cũ và TKB_HIEN_TAI của tuần hiện tại)
-    if (mapTkbToanTapToanCuc && typeof mapTkbToanTapToanCuc === 'object') {
-        Object.values(mapTkbToanTapToanCuc).forEach(dong => {
-            let t = parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
-            if (tuanSo > 0 && t !== tuanSo) return;
-            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
-            let mon = String(dong['Môn Học'] || '').trim();
-            let gv = String(dong['Mã GV'] || '').trim();
-            if (lop && mon !== '' && mon !== '--' && mon !== '---' && kiemTraKhopGiaoVien(gv)) {
-                tapHopLopDuocDay.add(lop);
-            }
-        });
-    }
-
-    // 4. Quét bổ sung trong duLieuTKBGopDaMap của đúng tuần đang chọn
+    // 3. Quét trực tiếp từ dữ liệu của tuần đang chọn (từ cả duLieuTKBGopDaMap và mapTkbToanTapToanCuc bao gồm DATA_TKB & TKB_HIEN_TAI)
     if (Array.isArray(duLieuTKBGopDaMap)) {
         duLieuTKBGopDaMap.forEach(dong => {
             let t = dong._tuanSo !== undefined ? dong._tuanSo : (parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
@@ -3868,11 +3865,15 @@ window.layDanhSachLopDuocDayTheoTuanSDB = function(tuanChon) {
         });
     }
 
-    // 5. Dự phòng nếu chưa chọn tuần (tuanSo === 0) và có từ điển quyền phân công từ máy chủ
-    if (tuanSo === 0 && tapHopLopDuocDay.size === 0 && tuDienQuyenPhanCong && typeof tuDienQuyenPhanCong === 'object') {
-        Object.keys(tuDienQuyenPhanCong).forEach(lop => {
-            if (Array.isArray(tuDienQuyenPhanCong[lop]) && tuDienQuyenPhanCong[lop].length > 0) {
-                tapHopLopDuocDay.add(String(lop).trim().toUpperCase());
+    if (mapTkbToanTapToanCuc && typeof mapTkbToanTapToanCuc === 'object') {
+        Object.values(mapTkbToanTapToanCuc).forEach(dong => {
+            let t = parseInt(String(dong['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+            if (tuanSo > 0 && t !== tuanSo) return;
+            let lop = String(dong['Mã Lớp'] || '').trim().toUpperCase();
+            let mon = String(dong['Môn Học'] || '').trim();
+            let gv = String(dong['Mã GV'] || '').trim();
+            if (lop && mon !== '' && mon !== '--' && mon !== '---' && kiemTraKhopGiaoVien(gv)) {
+                tapHopLopDuocDay.add(lop);
             }
         });
     }
@@ -4021,6 +4022,11 @@ window.nangCapSelectThanhInput = function(selectId, placeholderText) {
 
         // Lắng nghe thao tác
         inputEl.addEventListener('focus', () => {
+            // Nếu là hộp chọn Lớp (#chonLopSo), luôn đồng bộ lại danh sách lớp theo đúng Tuần đang chọn và quyền của Giáo viên hiện tại trước khi xổ danh sách
+            if (selectId === 'chonLopSo' && typeof window.capNhatDanhSachLopTheoTuanSDB === 'function') {
+                let tHienTai = document.getElementById('chonTuanSo')?.value || '';
+                window.capNhatDanhSachLopTheoTuanSDB(tHienTai);
+            }
             // Khi bấm vào thì trả lại màu đen để gõ tìm kiếm
             inputEl.classList.remove('text-blue-900', 'font-extrabold');
             inputEl.classList.add('text-slate-800', 'font-bold');
