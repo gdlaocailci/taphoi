@@ -4,7 +4,7 @@
    ========================================================================== */
 var DG_CONFIG_GAS_URL = "https://script.google.com/macros/s/AKfycbwzKkNe8XwpT25pr2mDr-vmQk8I1j_iYXYFMoQhyFulFCHENmsSR3xqh_WShkiCjbKX1A/exec";
 
-var DG_LINK_LOGO = "https://i.postimg.cc/xjzpvXCm/Logo-HL.png"; 
+var DG_LINK_LOGO = "https://i.ibb.co/RpbMSrzj/Logo-nh-tr-ng-s-a.png"; 
 
 // Bổ sung biến lưu trữ liên kết video hướng dẫn
 var DG_LINK_YOUTUBE = "https://www.youtube.com/channel/UCdfiTWwv78VITvzlgxnv02Q";
