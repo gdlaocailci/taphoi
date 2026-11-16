@@ -362,7 +362,7 @@ function taoKhungGiaoDienPPCT() {
                 
                 <div id="nhomNutCongCuPPCT" class="flex flex-wrap items-center gap-2" style="display: none;">
                     <input type="file" id="fileNhapPPCT" accept=".xlsx, .xls" class="hidden" onchange="xuLyNhapExcelPPCT(event)">
-                    <button onclick="document.getElementById('fileNhapPPCT').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
+                    <button id="nutNhapExcelPPCT" onclick="document.getElementById('fileNhapPPCT').click()" style="display: none;" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
                         Nhập Excel
                     </button>
                     
@@ -374,7 +374,7 @@ function taoKhungGiaoDienPPCT() {
                     <button onclick="xuLyXuatExcelPPCT()" class="bg-green-700 hover:bg-green-800 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
                         Xuất Excel
                     </button>
-                    <button onclick="luuDuLieuPPCTLenMayChu(event)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm ml-2">
+                    <button id="nutLuuPPCT" onclick="luuDuLieuPPCTLenMayChu(event)" style="display: none;" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm ml-2">
                         Lưu PPCT
                     </button>
                 </div>
@@ -395,7 +395,8 @@ function taoKhungGiaoDienPPCT() {
                     <input type="text" id="locLopPPCT" list="listLopPPCT" 
                            onfocus="this.dataset.oldValue = this.value; this.value = '';" 
                            onblur="if(this.value === '') this.value = this.dataset.oldValue;" 
-                           onchange="tuDongTinhKhoiLop(); this.blur(); xuLyThayDoiBoLocPPCT('lop');" 
+                           oninput="tuDongTinhKhoiLop(); capNhatHienThiNutKhoaSuaPPCT();"
+                           onchange="tuDongTinhKhoiLop(); this.blur(); xuLyThayDoiBoLocPPCT('lop'); capNhatHienThiNutKhoaSuaPPCT();" 
                            class="w-full px-2 py-1.5 border border-blue-300 rounded outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 bg-blue-50 text-center" placeholder="Chọn lớp">
                     <datalist id="listLopPPCT"></datalist>
                 </div>
@@ -453,7 +454,7 @@ function layTapDinhDanhNguoiDangNhapPPCT() {
     let them = (v) => {
         if (v === undefined || v === null) return;
         if (typeof v === 'object') {
-            ['idGv', 'maGv', 'id', 'ma', 'tenGv', 'hoTen', 'ten', 'name', 'giaoVien', 'nguoiDung', 'email', 'taiKhoan', 'username'].forEach(k => {
+            ['idGv', 'maGv', 'id', 'ma', 'tenGv', 'hoTen', 'ten', 'name', 'giaoVien', 'nguoiDung', 'email', 'taiKhoan', 'username', 'gv'].forEach(k => {
                 if (v[k] !== undefined && v[k] !== null) {
                     let s = chuanHoaDinhDanhGvPPCT(v[k]);
                     if (s) tap.add(s);
@@ -469,11 +470,34 @@ function layTapDinhDanhNguoiDangNhapPPCT() {
     if (typeof nguoiDungHienTai !== 'undefined' && nguoiDungHienTai) them(nguoiDungHienTai);
     if (typeof taiKhoanDangNhap !== 'undefined' && taiKhoanDangNhap) them(taiKhoanDangNhap);
     if (typeof userHienTai !== 'undefined' && userHienTai) them(userHienTai);
+    if (typeof currentUser !== 'undefined' && currentUser) them(currentUser);
     if (typeof gvDangNhap !== 'undefined' && gvDangNhap) them(gvDangNhap);
     if (typeof giaoVienDangNhap !== 'undefined' && giaoVienDangNhap) them(giaoVienDangNhap);
     if (typeof idGvDangNhap !== 'undefined' && idGvDangNhap) them(idGvDangNhap);
     if (typeof maGvDangNhap !== 'undefined' && maGvDangNhap) them(maGvDangNhap);
     if (typeof tenGvDangNhap !== 'undefined' && tenGvDangNhap) them(tenGvDangNhap);
+    if (typeof emailDangNhap !== 'undefined' && emailDangNhap) them(emailDangNhap);
+    if (typeof emailHienTai !== 'undefined' && emailHienTai) them(emailHienTai);
+
+    // Đối chiếu chéo qua danh sách giáo viên (nếu có) để đồng bộ giữa Mã GV, Tên GV và Email
+    let dsGv = (typeof thongSoHocVu !== 'undefined' && (thongSoHocVu.DANH_SACH_GV || thongSoHocVu.DANH_SACH_GIAO_VIEN || thongSoHocVu.GIAO_VIEN))
+        || (typeof danhSachGiaoVien !== 'undefined' ? danhSachGiaoVien : null);
+    if (Array.isArray(dsGv) && tap.size > 0) {
+        dsGv.forEach(gv => {
+            if (!gv || typeof gv !== 'object') return;
+            let cacGiaTri = [gv.id, gv.idGv, gv.maGv, gv.ma, gv.ten, gv.hoTen, gv.tenGv, gv.email, gv['Mã GV'], gv['ID'], gv['Họ tên'], gv['Tên GV'], gv['Email']];
+            let khop = cacGiaTri.some(val => {
+                let s = chuanHoaDinhDanhGvPPCT(val);
+                return s && tap.has(s);
+            });
+            if (khop) {
+                cacGiaTri.forEach(val => {
+                    let s = chuanHoaDinhDanhGvPPCT(val);
+                    if (s) tap.add(s);
+                });
+            }
+        });
+    }
 
     return tap;
 }
@@ -482,8 +506,8 @@ function banGhiTkbKhopNguoiDayPPCT(item, tapNguoiDung) {
     if (!item || typeof item !== 'object' || tapNguoiDung.size === 0) return false;
     let cacTruongGv = [
         item.maGv, item.idGv, item.giaoVien, item.tenGv, item.gv, item.nguoiDay,
-        item.idGiaoVien, item.maGiaoVien,
-        item['Mã GV'], item['ID GV'], item['Giáo viên'], item['Tên GV'], item['Người dạy']
+        item.idGiaoVien, item.maGiaoVien, item.gvDay, item.email, item.emailGv,
+        item['Mã GV'], item['ID GV'], item['ID'], item['Giáo viên'], item['Tên GV'], item['Người dạy'], item['GV dạy'], item['Mã giáo viên'], item['Email']
     ];
     for (let i = 0; i < cacTruongGv.length; i++) {
         let val = chuanHoaDinhDanhGvPPCT(cacTruongGv[i]);
@@ -497,6 +521,16 @@ function kiemTraQuyenDayLopPPCT(lopMucTieu, tuanMucTieu) {
     if (!lopStr) return false;
     let lopUpper = lopStr.toUpperCase();
     let tuanSo = parseInt(String(tuanMucTieu || 1).replace(/\D/g, ''), 10) || 1;
+
+    // 0. Ưu tiên dùng hàm sàng lọc lớp được dạy chuẩn của Sổ đầu bài (nếu đã nạp)
+    if (typeof window.layDanhSachLopDuocDayTheoTuanSDB === 'function') {
+        try {
+            let dsLopDuocDay = window.layDanhSachLopDuocDayTheoTuanSDB(tuanSo);
+            if (Array.isArray(dsLopDuocDay) && dsLopDuocDay.some(l => String(l || '').trim().toUpperCase() === lopUpper)) {
+                return true;
+            }
+        } catch (eSdbFn) {}
+    }
 
     let tapNguoiDung = layTapDinhDanhNguoiDangNhapPPCT();
     if (tapNguoiDung.size === 0) return false;
@@ -542,7 +576,7 @@ function kiemTraQuyenDayLopPPCT(lopMucTieu, tuanMucTieu) {
         }
     }
 
-    // 4. Kiểm tra trong duLieuTKBGopDaMap của SoDauBai.js (theo đúng tuần nếu có, hoặc trong lớp đó)
+    // 4. Kiểm tra trong duLieuTKBGopDaMap & window.mapTkbToanTap của SoDauBai.js
     if (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap)) {
         for (let i = 0; i < duLieuTKBGopDaMap.length; i++) {
             let d = duLieuTKBGopDaMap[i];
@@ -550,6 +584,19 @@ function kiemTraQuyenDayLopPPCT(lopMucTieu, tuanMucTieu) {
             if (String(d['Mã Lớp'] || '').trim().toUpperCase() === lopUpper &&
                 (tD === 0 || tD === tuanSo) &&
                 String(d['Môn Học'] || '').trim() !== '' &&
+                banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) {
+                return true;
+            }
+        }
+    }
+    if (typeof window.mapTkbToanTap === 'object' && window.mapTkbToanTap) {
+        let dsMap = Object.values(window.mapTkbToanTap);
+        for (let i = 0; i < dsMap.length; i++) {
+            let d = dsMap[i];
+            let tD = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+            if (String(d['Mã Lớp'] || d.maLop || '').trim().toUpperCase() === lopUpper &&
+                (tD === 0 || tD === tuanSo) &&
+                String(d['Môn Học'] || d.monHoc || '').trim() !== '' &&
                 banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) {
                 return true;
             }
@@ -606,6 +653,14 @@ function laAdminHoacBghPPCT() {
 }
 
 function capNhatHienThiNutKhoaSuaPPCT() {
+    const laQuanTri = laAdminHoacBghPPCT();
+
+    const nutNhapExcel = document.getElementById('nutNhapExcelPPCT');
+    if (nutNhapExcel) nutNhapExcel.style.display = laQuanTri ? 'flex' : 'none';
+
+    const nutLuu = document.getElementById('nutLuuPPCT');
+    if (nutLuu) nutLuu.style.display = laQuanTri ? 'flex' : 'none';
+
     const nutSua = document.getElementById('nutSuaDuLieuPPCT');
     if (!nutSua) return;
 
@@ -614,7 +669,7 @@ function capNhatHienThiNutKhoaSuaPPCT() {
     const lop = elLop ? elLop.value.trim() : '';
     const tuan = elTuan ? elTuan.value.trim() : '1';
 
-    const coQuyenSua = laAdminHoacBghPPCT() || (lop !== '' && kiemTraQuyenDayLopPPCT(lop, tuan));
+    const coQuyenSua = laQuanTri || (lop !== '' && kiemTraQuyenDayLopPPCT(lop, tuan));
     nutSua.style.display = coQuyenSua ? 'flex' : 'none';
 
     if (!coQuyenSua && trangThaiChoPhepSua) {
