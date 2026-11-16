@@ -6,6 +6,8 @@
   const KQKT_CONTAINER_ID = "TabKetQuaKT";
   let kqktDaKhoiTao = false;
   let kqktDangTai = false;
+  let kqktDuLieuHienTai = [];
+  let kqktNguoiDangChon = null;
 
   // 0. TỰ ĐỘNG ĐẢM BẢO KHUNG TAB TỒN TẠI TRONG #so_wrapper (CHỐNG LỖI NULL)
   function kqkt_damBaoKhungTab() {
@@ -217,6 +219,18 @@
         text-overflow: ellipsis;
         border-right: 2px solid #475569 !important;
       }
+      tbody td.kqkt-col-gv {
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+      tbody td.kqkt-col-gv:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+      tbody td.kqkt-col-gv.kqkt-gv-selected {
+        background: #fef08a !important;
+        color: #991b1b !important;
+      }
       .kqkt-table thead tr:first-child th.kqkt-col-stt {
         z-index: 30;
         left: 0;
@@ -386,8 +400,34 @@
     kqkt_ganSuKienO_Ngay("kqkt_tu");
     kqkt_ganSuKienO_Ngay("kqkt_den");
     kqkt_setNgayMacDinh();
+
+    // Bấm vào tên giáo viên -> Lọc theo người đó & ẩn các ngày rỗng
+    const tbody = document.getElementById("kqkt_tbody");
+    if (tbody) {
+      tbody.addEventListener("click", function (e) {
+        const cell = e.target.closest("td.kqkt-col-gv");
+        if (!cell) return;
+        e.stopPropagation();
+        const tenGV = cell.getAttribute("data-gv");
+        if (!tenGV) return;
+        kqktNguoiDangChon = tenGV;
+        kqkt_renderBang(kqktDuLieuHienTai);
+      });
+    }
+
     kqktDaKhoiTao = true;
   }
+
+  // Bấm ra ngoài cột tên -> Hiện lại đầy đủ danh sách
+  document.addEventListener("click", function (e) {
+    if (kqktNguoiDangChon === null) return;
+    const tab = document.getElementById(KQKT_CONTAINER_ID);
+    if (!tab || !tab.classList.contains("active")) return;
+    if (e.target.closest("#kqkt_table td.kqkt-col-gv")) return;
+
+    kqktNguoiDangChon = null;
+    kqkt_renderBang(kqktDuLieuHienTai);
+  });
 
   // 4. RÚT TRÍCH GIÁ TRỊ XẾP LOẠI TỪ 1 BẢN GHI DATAKT (CỘT 9, 10, 11, 12)
   function kqkt_layXepLoai(row) {
@@ -458,7 +498,7 @@
       mapKetQua.get(key).push({ text: xl || "—", tooltip: tip });
     });
 
-    const dsNgay = Array.from(tapNgay).sort((a, b) => kqkt_parseNgay(a) - kqkt_parseNgay(b));
+    let dsNgay = Array.from(tapNgay).sort((a, b) => kqkt_parseNgay(a) - kqkt_parseNgay(b));
 
     let dsGiaoVien = [];
     if (window.ruongbac && Array.isArray(window.ruongbac.conmeo) && window.ruongbac.conmeo.length > 0) {
@@ -468,6 +508,32 @@
       });
     } else {
       dsGiaoVien = Array.from(tapGiaoVienCoKQ).sort((a, b) => a.localeCompare(b, "vi"));
+    }
+
+    // LỌC THEO NGƯỜI ĐANG CHỌN & CHỈ GIỮ CÁC NGÀY CÓ KẾT QUẢ
+    if (kqktNguoiDangChon !== null) {
+      dsGiaoVien = [kqktNguoiDangChon];
+      dsNgay = dsNgay.filter((ngay) => mapKetQua.has(`${kqktNguoiDangChon}|||${ngay}`));
+    }
+
+    if (dsNgay.length === 0) {
+      thead.innerHTML = `
+        <tr>
+          <th rowspan="2" class="kqkt-col-stt">STT</th>
+          <th rowspan="2" class="kqkt-col-gv">Họ và tên</th>
+          <th colspan="1">Kết quả</th>
+        </tr>
+        <tr><th>Ngày kiểm tra</th></tr>
+      `;
+      const tenAnToan = (kqktNguoiDangChon || "").replace(/"/g, "&quot;");
+      tbody.innerHTML = `
+        <tr>
+          <td class="kqkt-col-stt">1</td>
+          <td class="kqkt-col-gv kqkt-gv-selected" data-gv="${tenAnToan}" title="${tenAnToan}">${kqktNguoiDangChon}</td>
+          <td class="kqkt-empty">Chưa có kết quả kiểm tra trong khoảng thời gian này (bấm ra ngoài để xem lại tất cả).</td>
+        </tr>
+      `;
+      return;
     }
 
     thead.innerHTML = `
@@ -493,10 +559,16 @@
         return `<td class="kqkt-cell-xl ${clsMau}" title="${titleO}">${noiDungO}</td>`;
       }).join("");
 
+      const tenAnToan = gv.replace(/"/g, "&quot;");
+      const clsSelected = (kqktNguoiDangChon === gv) ? " kqkt-gv-selected" : "";
+      const tipGV = (kqktNguoiDangChon === gv)
+        ? "Đang lọc theo giáo viên này (bấm ra ngoài cột tên để xem tất cả)"
+        : `Bấm để lọc kết quả của ${gv}`;
+
       return `
         <tr>
           <td class="kqkt-col-stt">${idx + 1}</td>
-          <td class="kqkt-col-gv" title="${gv.replace(/"/g, "&quot;")}">${gv}</td>
+          <td class="kqkt-col-gv${clsSelected}" data-gv="${tenAnToan}" title="${tipGV.replace(/"/g, "&quot;")}">${gv}</td>
           ${cells}
         </tr>
       `;
@@ -514,6 +586,8 @@
     const btn = document.getElementById("kqkt_btn_xem");
     const tbody = document.getElementById("kqkt_tbody");
     kqktDangTai = true;
+    kqktNguoiDangChon = null;
+
     if (btn) {
       btn.disabled = true;
       btn.innerText = "⏳ Đang tải...";
@@ -529,7 +603,8 @@
           btn.disabled = false;
           btn.innerHTML = "🔍 Xem kết quả";
         }
-        kqkt_renderBang(kq || []);
+        kqktDuLieuHienTai = Array.isArray(kq) ? kq : [];
+        kqkt_renderBang(kqktDuLieuHienTai);
       })
       .withFailureHandler((err) => {
         kqktDangTai = false;
@@ -545,6 +620,7 @@
   };
 
   window.kqkt_datLai = function () {
+    kqktNguoiDangChon = null;
     kqkt_setNgayMacDinh();
     kqkt_taiDuLieu();
   };
