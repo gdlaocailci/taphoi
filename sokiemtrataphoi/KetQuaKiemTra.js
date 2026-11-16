@@ -66,23 +66,47 @@
         color: #1e3a8a;
         font-weight: bold;
       }
-      .kqkt-date-input {
-        width: 115px;
+
+      /* KHUNG NHẬP NGÀY SỬA TỪNG THÀNH PHẦN (NGÀY / THÁNG / NĂM) */
+      .kqkt-date-box {
+        display: inline-flex;
+        align-items: center;
         height: 30px;
-        padding: 2px 6px;
-        border: 1px solid #94a3b8;
+        padding: 0 6px;
+        border: 1px solid #64748b;
         border-radius: 4px;
+        background: #ffffff;
+        box-sizing: border-box;
+      }
+      .kqkt-date-box:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+      }
+      .kqkt-date-part {
+        border: none;
+        outline: none;
+        background: transparent;
         text-align: center;
         font-family: "Times New Roman", serif;
         font-size: 14px;
         font-weight: bold;
         color: #0f172a;
-        outline: none;
+        padding: 0;
       }
-      .kqkt-date-input:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+      .kqkt-date-dd,
+      .kqkt-date-mm {
+        width: 22px;
       }
+      .kqkt-date-yyyy {
+        width: 38px;
+      }
+      .kqkt-date-sep {
+        color: #475569;
+        font-weight: bold;
+        padding: 0 2px;
+        user-select: none;
+      }
+
       .kqkt-btn {
         height: 30px;
         padding: 0 14px;
@@ -112,7 +136,7 @@
         width: 100%;
         overflow-x: auto;
         overflow-y: auto;
-        border: 1px solid #9ca3af;
+        border: 1px solid #475569;
         background: #ffffff;
         position: relative;
       }
@@ -126,25 +150,30 @@
       }
       .kqkt-table th,
       .kqkt-table td {
-        border-right: 1px solid #cbd5e1 !important;
-        border-bottom: 1px solid #cbd5e1 !important;
+        border-right: 1px solid #94a3b8 !important;
+        border-bottom: 1px solid #94a3b8 !important;
         border-top: none !important;
         border-left: none !important;
         padding: 6px 6px;
         font-size: 14px;
         box-sizing: border-box;
       }
-      /* Tiêu đề 2 tầng cố định khi cuộn dọc */
+
+      /* ĐƯỜNG KẺ TIÊU ĐỀ 2 TẦNG RÕ NÉT */
+      .kqkt-table thead th {
+        border-right: 1px solid #475569 !important;
+        border-bottom: 1px solid #475569 !important;
+      }
       .kqkt-table thead tr:first-child th {
         position: sticky;
         top: 0;
         height: 34px;
         z-index: 20;
-        background: #e0f2fe;
+        background: #dbeafe;
         color: #0c4a6e;
         font-weight: bold;
         text-align: center;
-        border-top: 1px solid #94a3b8 !important;
+        border-top: 1px solid #475569 !important;
       }
       .kqkt-table thead tr:nth-child(2) th {
         position: sticky;
@@ -155,11 +184,12 @@
         color: #1e3a8a;
         font-weight: bold;
         text-align: center;
-        min-width: 95px; /* Ngưỡng hẹp tối thiểu trước khi tràn ngang */
+        min-width: 95px;
         white-space: nowrap;
+        border-bottom: 2px solid #475569 !important;
       }
 
-      /* Cố định 2 cột đầu (STT & Họ và tên) khi cuộn ngang */
+      /* CỐ ĐỊNH 2 CỘT ĐẦU (STT & HỌ VÀ TÊN) KHI CUỘN NGANG */
       .kqkt-col-stt {
         width: 52px;
         min-width: 52px;
@@ -169,6 +199,7 @@
         left: 0;
         z-index: 15;
         background: #ffffff;
+        border-left: 1px solid #475569 !important;
       }
       .kqkt-col-gv {
         width: 210px;
@@ -184,19 +215,24 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        border-right: 2px solid #475569 !important;
       }
       .kqkt-table thead tr:first-child th.kqkt-col-stt {
         z-index: 30;
         left: 0;
-        background: #e0f2fe;
+        background: #dbeafe;
+        border-left: 1px solid #475569 !important;
+        border-bottom: 2px solid #475569 !important;
       }
       .kqkt-table thead tr:first-child th.kqkt-col-gv {
         z-index: 30;
         left: 52px;
-        background: #e0f2fe;
+        background: #dbeafe;
+        border-right: 2px solid #475569 !important;
+        border-bottom: 2px solid #475569 !important;
       }
 
-      /* Ô kết quả xếp loại */
+      /* Ô KẾT QUẢ XẾP LOẠI */
       .kqkt-cell-xl {
         min-width: 95px;
         text-align: center;
@@ -214,12 +250,80 @@
     document.head.appendChild(style);
   }
 
-  // 2. HÀM TIỆN ÍCH NGÀY THÁNG (dd/mm/yyyy)
-  function kqkt_dinhDangNgayInput(e) {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
-    if (v.length >= 5) v = v.slice(0, 2) + "/" + v.slice(2, 4) + "/" + v.slice(4);
-    else if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2);
-    e.target.value = v;
+  // 2. HÀM TIỆN ÍCH NGÀY THÁNG (SỬA TỪNG THÀNH PHẦN dd / mm / yyyy)
+  function kqkt_taoHtmlO_Ngay(prefix) {
+    return `
+      <div class="kqkt-date-box">
+        <input type="text" id="${prefix}_dd" class="kqkt-date-part kqkt-date-dd" maxlength="2" placeholder="dd" inputmode="numeric" autocomplete="off">
+        <span class="kqkt-date-sep">/</span>
+        <input type="text" id="${prefix}_mm" class="kqkt-date-part kqkt-date-mm" maxlength="2" placeholder="mm" inputmode="numeric" autocomplete="off">
+        <span class="kqkt-date-sep">/</span>
+        <input type="text" id="${prefix}_yyyy" class="kqkt-date-part kqkt-date-yyyy" maxlength="4" placeholder="yyyy" inputmode="numeric" autocomplete="off">
+      </div>
+    `;
+  }
+
+  function kqkt_ganSuKienO_Ngay(prefix) {
+    const ddEl = document.getElementById(`${prefix}_dd`);
+    const mmEl = document.getElementById(`${prefix}_mm`);
+    const yyEl = document.getElementById(`${prefix}_yyyy`);
+    const parts = [
+      { el: ddEl, max: 2, next: mmEl, prev: null, pad: 2 },
+      { el: mmEl, max: 2, next: yyEl, prev: ddEl, pad: 2 },
+      { el: yyEl, max: 4, next: null, prev: mmEl, pad: 4 }
+    ];
+
+    parts.forEach((p) => {
+      if (!p.el) return;
+      p.el.addEventListener("focus", function () {
+        this.select();
+      });
+      p.el.addEventListener("input", function () {
+        this.value = this.value.replace(/\D/g, "").slice(0, p.max);
+        if (this.value.length === p.max && p.next) {
+          p.next.focus();
+          p.next.select();
+        }
+      });
+      p.el.addEventListener("blur", function () {
+        if (this.value !== "" && p.pad === 2 && this.value.length === 1) {
+          this.value = this.value.padStart(2, "0");
+        }
+      });
+      p.el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          kqkt_taiDuLieu();
+        } else if (e.key === "Backspace" && this.value === "" && p.prev) {
+          p.prev.focus();
+        } else if (e.key === "ArrowRight" && this.selectionStart === this.value.length && p.next) {
+          e.preventDefault();
+          p.next.focus();
+          p.next.select();
+        } else if (e.key === "ArrowLeft" && this.selectionStart === 0 && p.prev) {
+          e.preventDefault();
+          p.prev.focus();
+          p.prev.select();
+        }
+      });
+    });
+  }
+
+  function kqkt_layChuoiNgay(prefix) {
+    const dd = (document.getElementById(`${prefix}_dd`)?.value || "").trim();
+    const mm = (document.getElementById(`${prefix}_mm`)?.value || "").trim();
+    const yy = (document.getElementById(`${prefix}_yyyy`)?.value || "").trim();
+    if (!dd || !mm || !yy) return "";
+    return `${dd.padStart(2, "0")}/${mm.padStart(2, "0")}/${yy}`;
+  }
+
+  function kqkt_setChuoiNgay(prefix, dd, mm, yyyy) {
+    const ddEl = document.getElementById(`${prefix}_dd`);
+    const mmEl = document.getElementById(`${prefix}_mm`);
+    const yyEl = document.getElementById(`${prefix}_yyyy`);
+    if (ddEl) ddEl.value = String(dd).padStart(2, "0");
+    if (mmEl) mmEl.value = String(mm).padStart(2, "0");
+    if (yyEl) yyEl.value = String(yyyy);
   }
 
   function kqkt_parseNgay(str) {
@@ -233,13 +337,10 @@
   function kqkt_setNgayMacDinh() {
     const homNay = new Date();
     const namNay = homNay.getFullYear();
-    const dd = String(homNay.getDate()).padStart(2, "0");
-    const mm = String(homNay.getMonth() + 1).padStart(2, "0");
-
-    const tuInput = document.getElementById("kqkt_tu_ngay");
-    const denInput = document.getElementById("kqkt_den_ngay");
-    if (tuInput) tuInput.value = `${dd}/${mm}/${namNay - 1}`;
-    if (denInput) denInput.value = `${dd}/${mm}/${namNay}`;
+    const dd = homNay.getDate();
+    const mm = homNay.getMonth() + 1;
+    kqkt_setChuoiNgay("kqkt_tu", dd, mm, namNay - 1);
+    kqkt_setChuoiNgay("kqkt_den", dd, mm, namNay);
   }
 
   // 3. DỰNG KHUNG GIAO DIỆN VÀO #TabKetQuaKT
@@ -254,9 +355,9 @@
           <div class="kqkt-title">KẾT QUẢ KIỂM TRA NỘI BỘ</div>
           <div class="kqkt-subtitle-row">
             <span>Từ ngày</span>
-            <input type="text" id="kqkt_tu_ngay" class="kqkt-date-input" placeholder="dd/mm/yyyy" autocomplete="off">
+            ${kqkt_taoHtmlO_Ngay("kqkt_tu")}
             <span>đến ngày</span>
-            <input type="text" id="kqkt_den_ngay" class="kqkt-date-input" placeholder="dd/mm/yyyy" autocomplete="off">
+            ${kqkt_taoHtmlO_Ngay("kqkt_den")}
             <button id="kqkt_btn_xem" class="kqkt-btn" onclick="kqkt_taiDuLieu()">🔍 Xem kết quả</button>
             <button class="kqkt-btn kqkt-btn-reset" onclick="kqkt_datLai()" title="Đặt lại 1 năm gần nhất">↻</button>
           </div>
@@ -282,19 +383,8 @@
       </div>
     `;
 
-    const tuEl = document.getElementById("kqkt_tu_ngay");
-    const denEl = document.getElementById("kqkt_den_ngay");
-    [tuEl, denEl].forEach((el) => {
-      if (!el) return;
-      el.addEventListener("input", kqkt_dinhDangNgayInput);
-      el.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          kqkt_taiDuLieu();
-        }
-      });
-    });
-
+    kqkt_ganSuKienO_Ngay("kqkt_tu");
+    kqkt_ganSuKienO_Ngay("kqkt_den");
     kqkt_setNgayMacDinh();
     kqktDaKhoiTao = true;
   }
@@ -418,8 +508,8 @@
   // 6. GỌI API BACKEND (DÙNG CHUNG skt_timbg_kq TRONG code.gs)
   window.kqkt_taiDuLieu = function () {
     if (kqktDangTai) return;
-    const tuNgay = (document.getElementById("kqkt_tu_ngay")?.value || "").trim();
-    const denNgay = (document.getElementById("kqkt_den_ngay")?.value || "").trim();
+    const tuNgay = kqkt_layChuoiNgay("kqkt_tu");
+    const denNgay = kqkt_layChuoiNgay("kqkt_den");
 
     const btn = document.getElementById("kqkt_btn_xem");
     const tbody = document.getElementById("kqkt_tbody");
