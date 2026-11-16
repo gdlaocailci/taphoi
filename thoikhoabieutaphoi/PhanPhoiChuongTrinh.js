@@ -356,7 +356,6 @@ function taoKhungGiaoDienPPCT() {
         khungPPCT.innerHTML = `
             <div class="flex flex-col lg:flex-row justify-between items-center mb-4 gap-3 flex-none">
                 <div class="flex items-center gap-3">
-                    <img src="${typeof CAU_HINH_FRONTEND !== 'undefined' ? CAU_HINH_FRONTEND.LINK_LOGO_TRANG_CHU : 'https://www.svgrepo.com/show/309489/document-report.svg'}" class="w-10 h-10 object-contain drop-shadow-md">
                     <h2 class="text-xl font-extrabold text-blue-900 uppercase tracking-wide">Quản lý Phân Phối Chương Trình</h2>
                 </div>
                 
