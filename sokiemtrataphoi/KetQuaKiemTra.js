@@ -131,10 +131,16 @@
         padding: 0 10px;
       }
 
-      /* KHUNG BẢNG: CÂN ĐỐI 100% MÀN HÌNH + TỰ TRÀN THANH TRƯỢT NGANG */
-      .kqkt-table-wrap {
+      /* VÙNG CHỨA BẢNG: ÔM SÁT KHI ÍT DÒNG, TỰ CUỘN KHI NHIỀU DÒNG */
+      .kqkt-body-area {
         flex: 1 1 auto;
         min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .kqkt-table-wrap {
+        flex: 0 1 auto;
+        max-height: 100%;
         width: 100%;
         overflow-x: auto;
         overflow-y: auto;
@@ -259,7 +265,7 @@
       .kqkt-xl-kha { color: #1d4ed8; background: #eff6ff !important; }
       .kqkt-xl-tb  { color: #b45309; background: #fffbeb !important; }
       .kqkt-xl-yeu { color: #b91c1c; background: #fef2f2 !important; }
-      .kqkt-empty  { text-align: center; padding: 24px !important; font-style: italic; color: #64748b; }
+      .kqkt-empty  { text-align: center; padding: 18px !important; font-style: italic; color: #64748b; }
     `;
     document.head.appendChild(style);
   }
@@ -377,22 +383,24 @@
           </div>
         </div>
 
-        <div class="kqkt-table-wrap">
-          <table class="kqkt-table" id="kqkt_table">
-            <thead id="kqkt_thead">
-              <tr>
-                <th rowspan="2" class="kqkt-col-stt">STT</th>
-                <th rowspan="2" class="kqkt-col-gv">Họ và tên</th>
-                <th colspan="1">Kết quả</th>
-              </tr>
-              <tr>
-                <th>Ngày kiểm tra</th>
-              </tr>
-            </thead>
-            <tbody id="kqkt_tbody">
-              <tr><td colspan="3" class="kqkt-empty">Đang chuẩn bị dữ liệu...</td></tr>
-            </tbody>
-          </table>
+        <div class="kqkt-body-area">
+          <div class="kqkt-table-wrap">
+            <table class="kqkt-table" id="kqkt_table">
+              <thead id="kqkt_thead">
+                <tr>
+                  <th rowspan="2" class="kqkt-col-stt">STT</th>
+                  <th rowspan="2" class="kqkt-col-gv">Họ và tên</th>
+                  <th colspan="1">Kết quả</th>
+                </tr>
+                <tr>
+                  <th>Ngày kiểm tra</th>
+                </tr>
+              </thead>
+              <tbody id="kqkt_tbody">
+                <tr><td colspan="3" class="kqkt-empty">Đang chuẩn bị dữ liệu...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     `;
@@ -401,7 +409,6 @@
     kqkt_ganSuKienO_Ngay("kqkt_den");
     kqkt_setNgayMacDinh();
 
-    // Bấm vào tên giáo viên -> Lọc theo người đó & ẩn các ngày rỗng
     const tbody = document.getElementById("kqkt_tbody");
     if (tbody) {
       tbody.addEventListener("click", function (e) {
@@ -510,7 +517,6 @@
       dsGiaoVien = Array.from(tapGiaoVienCoKQ).sort((a, b) => a.localeCompare(b, "vi"));
     }
 
-    // LỌC THEO NGƯỜI ĐANG CHỌN & CHỈ GIỮ CÁC NGÀY CÓ KẾT QUẢ
     if (kqktNguoiDangChon !== null) {
       dsGiaoVien = [kqktNguoiDangChon];
       dsNgay = dsNgay.filter((ngay) => mapKetQua.has(`${kqktNguoiDangChon}|||${ngay}`));
@@ -584,6 +590,7 @@
     const denNgay = kqkt_layChuoiNgay("kqkt_den");
 
     const btn = document.getElementById("kqkt_btn_xem");
+    const thead = document.getElementById("kqkt_thead");
     const tbody = document.getElementById("kqkt_tbody");
     kqktDangTai = true;
     kqktNguoiDangChon = null;
@@ -592,8 +599,18 @@
       btn.disabled = true;
       btn.innerText = "⏳ Đang tải...";
     }
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th rowspan="2" class="kqkt-col-stt">STT</th>
+          <th rowspan="2" class="kqkt-col-gv">Họ và tên</th>
+          <th colspan="1">Kết quả</th>
+        </tr>
+        <tr><th>Ngày kiểm tra</th></tr>
+      `;
+    }
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="20" class="kqkt-empty">Đang tổng hợp kết quả kiểm tra...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" class="kqkt-empty">Đang tổng hợp kết quả kiểm tra...</td></tr>`;
     }
 
     google.script.run
@@ -613,7 +630,7 @@
           btn.innerHTML = "🔍 Xem kết quả";
         }
         if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="20" class="kqkt-empty" style="color:#dc2626;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="3" class="kqkt-empty" style="color:#dc2626;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
         }
       })
       .skt_timbg_kq({ gkiem: "", nkiem: "", bkiem: "", tkiem: tuNgay, dkiem: denNgay });
