@@ -1,6 +1,6 @@
 /* ========================================================================== */
 /* MODULE: HỒ SƠ CHƯA HOÀN THÀNH (HoSoChuaHoanThanh.js)                       */
-/* Phụ thuộc có sẵn từ index.html: google.script.run.skt_timbg_kq, chuyentth  */
+/* Nguồn dữ liệu: Sheet NHATKY thông qua skt_layds_mhs_cn() trong code.gs     */
 /* ========================================================================== */
 (function () {
   const HSHT_CONTAINER_ID = "TabHoSoChuaHoanThanh";
@@ -290,6 +290,14 @@
     if (yyEl) yyEl.value = String(yyyy);
   }
 
+  function hsht_parseNgay(str) {
+    if (!str) return 0;
+    const p = String(str).trim().split("/");
+    if (p.length !== 3) return 0;
+    const d = new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
   function hsht_setNgayMacDinh() {
     const homNay = new Date();
     const namNay = homNay.getFullYear();
@@ -315,7 +323,7 @@
             <span>đến ngày</span>
             ${hsht_taoHtmlO_Ngay("hsht_den")}
             <button id="hsht_btn_xem" class="hsht-btn" onclick="hsht_taiDuLieu()">🔍 Kiểm tra</button>
-            <button class="hsht-btn kqkt-btn-reset hsht-btn-reset" onclick="hsht_datLai()" title="Đặt lại 1 năm gần nhất">↻</button>
+            <button class="hsht-btn hsht-btn-reset" onclick="hsht_datLai()" title="Đặt lại 1 năm gần nhất">↻</button>
             <button id="hsht_btn_zalo" class="hsht-btn hsht-btn-zalo" onclick="hsht_copyZalo()" title="Sao chép danh sách gửi nhóm Zalo">📋 Copy gửi Zalo</button>
             <span id="hsht_badge_count" class="hsht-count-badge" style="display:none;">0 hồ sơ</span>
           </div>
@@ -347,23 +355,43 @@
     hshtDaKhoiTao = true;
   }
 
-  // 4. LỌC VÀ HIỂN THỊ DANH SÁCH CHƯA KÝ XÁC NHẬN
-  function hsht_renderBang(dsBanGhi) {
+  // 4. LỌC TỪ SHEET NHATKY THEO KHOẢNG NGÀY & CHƯA KÝ XÁC NHẬN
+  function hsht_renderBang(dsNhatKy) {
     const tbody = document.getElementById("hsht_tbody");
     const badge = document.getElementById("hsht_badge_count");
     if (!tbody) return;
 
-    // Lọc các dòng có cột Ký tên (row[14]) bị trống
-    hshtDanhSachChuaKy = (Array.isArray(dsBanGhi) ? dsBanGhi : [])
-      .filter((row) => String(row[14] || "").trim() === "")
+    const tuMs = hsht_parseNgay(hsht_layChuoiNgay("hsht_tu"));
+    const denMs = hsht_parseNgay(hsht_layChuoiNgay("hsht_den"));
+
+    hshtDanhSachChuaKy = (Array.isArray(dsNhatKy) ? dsNhatKy : [])
+      .filter((row) => {
+        const hoTen = String(row[0] || "").trim();
+        if (!hoTen) return false;
+
+        // Lọc cột Ký tên (row[14]) chưa ký
+        const kyTen = String(row[14] || "").trim();
+        if (kyTen !== "") return false;
+
+        // Lọc theo khoảng ngày kiểm tra (row[4])
+        if (tuMs > 0 || denMs > 0) {
+          const ngayMs = hsht_parseNgay(row[4]);
+          if (ngayMs === 0) return false;
+          if (tuMs > 0 && ngayMs < tuMs) return false;
+          if (denMs > 0 && ngayMs > denMs) return false;
+        }
+        return true;
+      })
       .map((row) => ({
         hoTen: String(row[0] || "").trim(),
         nguoiKT: String(row[1] || "").trim(),
         boPhan: String(row[2] || "").trim(),
         ngayKT: String(row[4] || "").trim(),
         noiDung: String(row[5] || "").trim() || "(Chưa ghi nội dung)",
+        maHS: String(row[16] || "").trim(),
         tinhTrang: "Chưa ký xác nhận"
-      }));
+      }))
+      .sort((a, b) => hsht_parseNgay(b.ngayKT) - hsht_parseNgay(a.ngayKT));
 
     if (badge) {
       badge.style.display = "inline-block";
@@ -371,7 +399,7 @@
     }
 
     if (hshtDanhSachChuaKy.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty" style="color:#059669; font-weight:bold;">✅ Tất cả hồ sơ trong khoảng thời gian này đã được ký xác nhận đầy đủ.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty" style="color:#059669; font-weight:bold;">✅ Không có hồ sơ nào chưa ký xác nhận trong sheet NHATKY.</td></tr>`;
       return;
     }
 
@@ -379,7 +407,8 @@
       const metaPhu = [
         item.ngayKT ? `Ngày KT: ${item.ngayKT}` : "",
         item.nguoiKT ? `Người KT: ${item.nguoiKT}` : "",
-        item.boPhan ? `Bộ phận: ${item.boPhan}` : ""
+        item.boPhan ? `Bộ phận: ${item.boPhan}` : "",
+        item.maHS ? `Mã HS: ${item.maHS}` : ""
       ].filter(Boolean).join(" • ");
 
       return `
@@ -456,11 +485,9 @@
     document.body.removeChild(ta);
   }
 
-  // 6. GỌI API BACKEND (DÙNG CHUNG skt_timbg_kq TRONG code.gs)
+  // 6. ĐỒNG BỘ MỚI NHẤT TỪ SHEET NHATKY QUA skt_layds_mhs_cn()
   window.hsht_taiDuLieu = function () {
     if (hshtDangTai) return;
-    const tuNgay = hsht_layChuoiNgay("hsht_tu");
-    const denNgay = hsht_layChuoiNgay("hsht_den");
 
     const btn = document.getElementById("hsht_btn_xem");
     const tbody = document.getElementById("hsht_tbody");
@@ -473,7 +500,7 @@
     }
     if (badge) badge.style.display = "none";
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty">Đang quét danh sách hồ sơ chưa ký xác nhận...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty">Đang đọc danh sách hồ sơ từ sheet NHATKY...</td></tr>`;
     }
 
     google.script.run
@@ -483,7 +510,12 @@
           btn.disabled = false;
           btn.innerHTML = "🔍 Kiểm tra";
         }
-        hsht_renderBang(kq || []);
+        if (kq && kq.tcon && Array.isArray(kq.dlnhatky_san)) {
+          window.skt_kho_nhatky = kq.dlnhatky_san;
+          hsht_renderBang(kq.dlnhatky_san);
+        } else {
+          hsht_renderBang(window.skt_kho_nhatky || []);
+        }
       })
       .withFailureHandler((err) => {
         hshtDangTai = false;
@@ -492,10 +524,10 @@
           btn.innerHTML = "🔍 Kiểm tra";
         }
         if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty" style="color:#dc2626;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" class="hsht-empty" style="color:#dc2626;">Lỗi tải dữ liệu NHATKY: ${err.message}</td></tr>`;
         }
       })
-      .skt_timbg_kq({ gkiem: "", nkiem: "", bkiem: "", tkiem: tuNgay, dkiem: denNgay });
+      .skt_layds_mhs_cn();
   };
 
   window.hsht_datLai = function () {
