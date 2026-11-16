@@ -7,6 +7,21 @@
   let kqktDaKhoiTao = false;
   let kqktDangTai = false;
 
+  // 0. TỰ ĐỘNG ĐẢM BẢO KHUNG TAB TỒN TẠI TRONG #so_wrapper (CHỐNG LỖI NULL)
+  function kqkt_damBaoKhungTab() {
+    let container = document.getElementById(KQKT_CONTAINER_ID);
+    if (!container) {
+      const wrapper = document.getElementById("so_wrapper");
+      if (wrapper) {
+        container = document.createElement("div");
+        container.id = KQKT_CONTAINER_ID;
+        container.className = "tab-content";
+        wrapper.appendChild(container);
+      }
+    }
+    return container;
+  }
+
   // 1. NẠP CSS RIÊNG CHO MODULE
   function kqkt_napCSS() {
     if (document.getElementById("kqkt-style")) return;
@@ -17,7 +32,9 @@
         display: flex;
         flex-direction: column;
         width: 100%;
-        height: calc(100vh - 16px);
+        height: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
         box-sizing: border-box;
         font-family: "Times New Roman", serif;
       }
@@ -227,7 +244,7 @@
 
   // 3. DỰNG KHUNG GIAO DIỆN VÀO #TabKetQuaKT
   function kqkt_dungGiaoDien() {
-    const container = document.getElementById(KQKT_CONTAINER_ID);
+    const container = kqkt_damBaoKhungTab();
     if (!container) return;
 
     kqkt_napCSS();
@@ -325,9 +342,8 @@
       return;
     }
 
-    // Gom danh sách ngày kiểm tra duy nhất & sắp xếp tăng dần
     const tapNgay = new Set();
-    const mapKetQua = new Map(); // key: "TenGV|||Ngay" -> mảng { text, tooltip }
+    const mapKetQua = new Map();
     const tapGiaoVienCoKQ = new Set();
 
     dsBanGhi.forEach((row) => {
@@ -354,7 +370,6 @@
 
     const dsNgay = Array.from(tapNgay).sort((a, b) => kqkt_parseNgay(a) - kqkt_parseNgay(b));
 
-    // Lấy danh sách giáo viên ưu tiên theo danh sách hệ thống (window.ruongbac.conmeo)
     let dsGiaoVien = [];
     if (window.ruongbac && Array.isArray(window.ruongbac.conmeo) && window.ruongbac.conmeo.length > 0) {
       dsGiaoVien = window.ruongbac.conmeo.map((gv) => String(gv.tenn || "").trim()).filter(Boolean);
@@ -365,7 +380,6 @@
       dsGiaoVien = Array.from(tapGiaoVienCoKQ).sort((a, b) => a.localeCompare(b, "vi"));
     }
 
-    // Dựng phần đầu bảng 2 dòng
     thead.innerHTML = `
       <tr>
         <th rowspan="2" class="kqkt-col-stt">STT</th>
@@ -377,7 +391,6 @@
       </tr>
     `;
 
-    // Dựng các dòng dữ liệu
     const htmlRows = dsGiaoVien.map((gv, idx) => {
       const cells = dsNgay.map((ngay) => {
         const items = mapKetQua.get(`${gv}|||${ngay}`);
@@ -448,8 +461,12 @@
 
   // HÀM MỞ TAB (GỌI TỪ MENU DỌC)
   window.kqkt_moTab = function (nutMenu) {
+    kqkt_damBaoKhungTab();
     if (typeof chuyentth === "function") {
       chuyentth(KQKT_CONTAINER_ID, nutMenu);
+    }
+    if (nutMenu) {
+      nutMenu.classList.add("active");
     }
     if (!kqktDaKhoiTao) {
       kqkt_dungGiaoDien();
