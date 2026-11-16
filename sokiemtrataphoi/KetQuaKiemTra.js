@@ -186,7 +186,8 @@
       .kqkt-table thead tr:nth-child(2) th {
         position: sticky;
         top: 34px;
-        height: 34px;
+        min-height: 34px;
+        height: auto;
         z-index: 20;
         background: #eff6ff;
         color: #1e3a8a;
@@ -194,7 +195,15 @@
         text-align: center;
         min-width: 95px;
         white-space: nowrap;
+        padding: 5px 8px;
         border-bottom: 2px solid #475569 !important;
+      }
+      .kqkt-loai-kt {
+        font-size: 12px;
+        font-weight: bold;
+        color: #b91c1c;
+        margin-top: 2px;
+        white-space: nowrap;
       }
 
       /* CỐ ĐỊNH 2 CỘT ĐẦU (STT & HỌ VÀ TÊN) KHI CUỘN NGANG */
@@ -436,7 +445,7 @@
     kqkt_renderBang(kqktDuLieuHienTai);
   });
 
-  // 4. RÚT TRÍCH GIÁ TRỊ XẾP LOẠI TỪ 1 BẢN GHI DATAKT (CỘT 9, 10, 11, 12)
+  // 4. RÚT TRÍCH GIÁ TRỊ XẾP LOẠI & LOẠI HÌNH KIỂM TRA TỪ 1 BẢN GHI DATAKT
   function kqkt_layXepLoai(row) {
     const cacLoai = [
       { nhan: "HS", gt: String(row[9] || "").trim() },
@@ -448,6 +457,15 @@
     if (cacLoai.length === 0) return "";
     if (cacLoai.length === 1) return cacLoai[0].gt;
     return cacLoai.map((m) => `${m.nhan}: ${m.gt}`).join("<br>");
+  }
+
+  function kqkt_layTenLoaiKT(row) {
+    const ds = [];
+    if (String(row[9] || "").trim() !== "") ds.push("Hồ sơ");
+    if (String(row[10] || "").trim() !== "") ds.push("Dự giờ");
+    if (String(row[11] || "").trim() !== "") ds.push("Khảo sát");
+    if (String(row[12] || "").trim() !== "") ds.push("Khác");
+    return ds;
   }
 
   function kqkt_classMauXL(text) {
@@ -492,17 +510,19 @@
       tapGiaoVienCoKQ.add(gv);
 
       const xl = kqkt_layXepLoai(row);
+      const loaiTen = kqkt_layTenLoaiKT(row);
       const noiDung = String(row[5] || "").trim();
       const nguoiKT = String(row[1] || "").trim();
       const tip = [
         `Ngày: ${ngay}`,
+        loaiTen.length ? `Hình thức: ${loaiTen.join(", ")}` : "",
         nguoiKT ? `Người KT: ${nguoiKT}` : "",
         noiDung ? `Nội dung: ${noiDung}` : ""
       ].filter(Boolean).join(" | ");
 
       const key = `${gv}|||${ngay}`;
       if (!mapKetQua.has(key)) mapKetQua.set(key, []);
-      mapKetQua.get(key).push({ text: xl || "—", tooltip: tip });
+      mapKetQua.get(key).push({ text: xl || "—", tooltip: tip, loaiTen: loaiTen });
     });
 
     let dsNgay = Array.from(tapNgay).sort((a, b) => kqkt_parseNgay(a) - kqkt_parseNgay(b));
@@ -542,15 +562,27 @@
       return;
     }
 
+    // Dựng tiêu đề cột ngày: Nếu đang lọc 1 người thì kèm loại hình kiểm tra (Hồ sơ / Dự giờ / Khảo sát / Khác)
+    const htmlCotNgay = dsNgay.map((ngay) => {
+      if (kqktNguoiDangChon !== null) {
+        const items = mapKetQua.get(`${kqktNguoiDangChon}|||${ngay}`) || [];
+        const tapLoai = new Set();
+        items.forEach((i) => i.loaiTen.forEach((l) => tapLoai.add(l)));
+        const chuoiLoai = Array.from(tapLoai).join(", ");
+        if (chuoiLoai) {
+          return `<th><div>${ngay}</div><div class="kqkt-loai-kt">${chuoiLoai}</div></th>`;
+        }
+      }
+      return `<th>${ngay}</th>`;
+    }).join("");
+
     thead.innerHTML = `
       <tr>
         <th rowspan="2" class="kqkt-col-stt">STT</th>
         <th rowspan="2" class="kqkt-col-gv">Họ và tên</th>
         <th colspan="${dsNgay.length}">Kết quả</th>
       </tr>
-      <tr>
-        ${dsNgay.map((ngay) => `<th>${ngay}</th>`).join("")}
-      </tr>
+      <tr>${htmlCotNgay}</tr>
     `;
 
     const htmlRows = dsGiaoVien.map((gv, idx) => {
