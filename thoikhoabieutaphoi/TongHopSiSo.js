@@ -1,7 +1,7 @@
 // =========================================================================
 // MODULE: TỔNG HỢP SĨ SỐ & THEO DÕI HỌC SINH NGHỈ (TongHopSiSo.js)
-// Hỗ trợ: Lọc theo Năm học, Tuần học (kèm ngày) hoặc Khoảng ngày (Từ ngày - Đến ngày),
-// Khối, Lớp, Tìm tên học sinh, Chỉ hiện lớp có HS nghỉ. Khóa 6 trục chống trùng năm.
+// Hỗ trợ: Lọc theo Năm học, Tuần học hoặc Từ ngày - Đến ngày, Khối, Lớp, Tìm HS.
+// Bổ sung đầy đủ tỷ lệ % chuyên cần theo từng Lớp/Ngày, Lớp/Kỳ và Toàn trường.
 // =========================================================================
 
 let trangThaiTongHopSiSo = {
@@ -61,7 +61,12 @@ function formatDateToVNTHSS(d) {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-// 1. Khởi tạo & tự động nạp dữ liệu (từ RAM nếu đã có, hoặc gọi trực tiếp API máy chủ)
+function tinhPhanTramTHSS(tuSo, mauSo) {
+    if (!mauSo || mauSo <= 0) return '0.0';
+    return ((tuSo / mauSo) * 100).toFixed(1);
+}
+
+// 1. Khởi tạo & tự động nạp dữ liệu
 window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo', buocTaiLai = false) {
     let container = document.getElementById(containerId);
     if (!container) return;
@@ -188,6 +193,65 @@ function layNguonHopNhatTHSS() {
     return { nhMacDinh, rows, ddMap };
 }
 
+// Suy diễn chính xác toàn bộ ngày Thứ 2 -> Chủ nhật cho mọi Tuần dựa vào bất kỳ ngày gốc nào có trong DATA_TKB / RAM / Cài đặt
+function xayDungBanDoNgayToanTuanTHSS(rows) {
+    let mapNgayTuanThu = {}; // `${t}_${thu}` -> "dd/mm/yyyy"
+    let mapThu2TheoTuan = {}; // tuanSo -> Date (Thứ 2 của tuần đó)
+    const doLechThu = { 'Thứ 2': 0, 'Thứ 3': 1, 'Thứ 4': 2, 'Thứ 5': 3, 'Thứ 6': 4, 'Thứ 7': 5, 'Chủ nhật': 6 };
+
+    const ghiNhan = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(d => {
+            let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+            let rawThu = String(d['Thứ'] || '').trim().toLowerCase();
+            let thu = rawThu ? (rawThu.charAt(0).toUpperCase() + rawThu.slice(1)) : '';
+            let ngay = String(d['Ngày'] || '').trim();
+            if (t <= 0 || !thu || !ngay || ngay === '...') return;
+            if (!mapNgayTuanThu[`${t}_${thu}`]) mapNgayTuanThu[`${t}_${thu}`] = ngay;
+            if (!mapThu2TheoTuan[t] && doLechThu[thu] !== undefined) {
+                let dt = parseNgayVNToDateTHSS(ngay);
+                if (dt) {
+                    let thu2 = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - doLechThu[thu]);
+                    mapThu2TheoTuan[t] = thu2;
+                }
+            }
+        });
+    };
+
+    ghiNhan(rows);
+    if (typeof duLieuTKBGopDaMap !== 'undefined') ghiNhan(duLieuTKBGopDaMap);
+
+    // Nếu trên lưới Thời khóa biểu hiện tại có ô #chonNgayDauTuan và #hienThiTuanHienTai thì lấy làm mốc bổ sung
+    let elTuanUI = document.getElementById('hienThiTuanHienTai');
+    let elNgayUI = document.getElementById('chonNgayDauTuan');
+    if (elTuanUI && elNgayUI && elNgayUI.value) {
+        let tUI = parseInt(elTuanUI.value, 10) || 0;
+        let dtUI = parseNgayVNToDateTHSS(elNgayUI.value);
+        if (tUI > 0 && dtUI && !mapThu2TheoTuan[tUI]) {
+            mapThu2TheoTuan[tUI] = dtUI;
+        }
+    }
+
+    // Nếu biết Thứ 2 của ít nhất 1 tuần bất kỳ, suy diễn Thứ 2 cho các tuần còn lại chưa có ngày
+    let danhSachTuanCoMoc = Object.keys(mapThu2TheoTuan).map(Number).sort((a, b) => a - b);
+    if (danhSachTuanCoMoc.length > 0) {
+        let tuanGoc = danhSachTuanCoMoc[danhSachTuanCoMoc.length - 1];
+        let thu2Goc = mapThu2TheoTuan[tuanGoc];
+        for (let t = 1; t <= 52; t++) {
+            let thu2 = mapThu2TheoTuan[t] || new Date(thu2Goc.getFullYear(), thu2Goc.getMonth(), thu2Goc.getDate() + (t - tuanGoc) * 7);
+            Object.keys(doLechThu).forEach(thu => {
+                let k = `${t}_${thu}`;
+                if (!mapNgayTuanThu[k]) {
+                    let d = new Date(thu2.getFullYear(), thu2.getMonth(), thu2.getDate() + doLechThu[thu]);
+                    mapNgayTuanThu[k] = formatDateToVNTHSS(d);
+                }
+            });
+        }
+    }
+
+    return mapNgayTuanThu;
+}
+
 function layDanhSachNamHocTHSS() {
     let { nhMacDinh, rows } = layNguonHopNhatTHSS();
     let tapNH = new Set();
@@ -201,18 +265,18 @@ function layDanhSachNamHocTHSS() {
 
 function layDanhSachTuanVaNgayTheoNamHocTHSS(namHocLoc) {
     let { nhMacDinh, rows, ddMap } = layNguonHopNhatTHSS();
-    let mapTuanNgay = {}; // tuanSo -> { minDate, maxDate }
+    let mapNgayTuanThu = xayDungBanDoNgayToanTuanTHSS(rows);
+    let mapTuanNgay = {};
 
     rows.forEach(d => {
         let nhDong = d['Năm học'] || xacDinhNamHocTuNgayTHSS(d['Ngày']) || nhMacDinh;
         if (namHocLoc && nhDong && nhDong !== namHocLoc) return;
         let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
         if (t <= 0) return;
-        if (!mapTuanNgay[t]) mapTuanNgay[t] = { tuan: t, minDate: null, maxDate: null };
-        let dt = parseNgayVNToDateTHSS(d['Ngày']);
-        if (dt && !isNaN(dt.getTime())) {
-            if (!mapTuanNgay[t].minDate || dt < mapTuanNgay[t].minDate) mapTuanNgay[t].minDate = dt;
-            if (!mapTuanNgay[t].maxDate || dt > mapTuanNgay[t].maxDate) mapTuanNgay[t].maxDate = dt;
+        if (!mapTuanNgay[t]) {
+            let dMin = parseNgayVNToDateTHSS(mapNgayTuanThu[`${t}_Thứ 2`]);
+            let dMax = parseNgayVNToDateTHSS(mapNgayTuanThu[`${t}_Thứ 6`]);
+            mapTuanNgay[t] = { tuan: t, minDate: dMin, maxDate: dMax };
         }
     });
 
@@ -220,7 +284,9 @@ function layDanhSachTuanVaNgayTheoNamHocTHSS(namHocLoc) {
         Object.keys(ddMap).forEach(k => {
             let t = parseInt(String(k.split('_')[0] || '').replace(/\D/g, ''), 10) || 0;
             if (t > 0 && !mapTuanNgay[t]) {
-                mapTuanNgay[t] = { tuan: t, minDate: null, maxDate: null };
+                let dMin = parseNgayVNToDateTHSS(mapNgayTuanThu[`${t}_Thứ 2`]);
+                let dMax = parseNgayVNToDateTHSS(mapNgayTuanThu[`${t}_Thứ 6`]);
+                mapTuanNgay[t] = { tuan: t, minDate: dMin, maxDate: dMax };
             }
         });
     }
@@ -258,7 +324,7 @@ function laySiSoChuanTongHopSS(maLop) {
     return 0;
 }
 
-// 3. Thuật toán lõi: Hỗ trợ cả 2 chế độ (Theo Tuần HOẶC Theo Khoảng ngày Từ ngày - Đến ngày)
+// 3. Thuật toán lõi: Hỗ trợ Theo Tuần & Từ ngày - Đến ngày + tính % mọi cấp độ
 window.tinhToanTongHopSiSoTuan = function(op) {
     let { nhMacDinh, rows, ddMap } = layNguonHopNhatTHSS();
     let namHocLoc = op.namHoc || nhMacDinh;
@@ -279,27 +345,11 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         return true;
     });
 
-    // Xây dựng bản đồ ngày chuẩn cho từng (Tuần, Thứ) từ DATA_TKB + dữ liệu SĐB/TKB hiện tại trong RAM
-    let mapNgayTuanThu = {}; // `${tuan}_${thu}` -> "dd/mm/yyyy"
-    const ghiNgayMap = (arr) => {
-        if (!Array.isArray(arr)) return;
-        arr.forEach(d => {
-            let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
-            let rawThu = String(d['Thứ'] || '').trim().toLowerCase();
-            let thu = rawThu ? (rawThu.charAt(0).toUpperCase() + rawThu.slice(1)) : '';
-            let ngay = String(d['Ngày'] || '').trim();
-            if (t > 0 && thu && ngay && ngay !== '...' && !mapNgayTuanThu[`${t}_${thu}`]) {
-                mapNgayTuanThu[`${t}_${thu}`] = ngay;
-            }
-        });
-    };
-    ghiNgayMap(rows);
-    if (typeof duLieuTKBGopDaMap !== 'undefined') ghiNgayMap(duLieuTKBGopDaMap);
+    let mapNgayTuanThu = xayDungBanDoNgayToanTuanTHSS(rows);
 
-    // Lập chỉ mục theo khóa 6 trục (NămHoc_Tuần_Lớp_Thứ_Buổi_Tiết) cho phạm vi thời gian đang chọn
-    let indexSlotPhamVi = {}; // key: `${tuan}_${lop}_${thu}_${buoi}_${tiet}` -> { d, ngay, thu, t }
+    let indexSlotPhamVi = {};
     let tapTuanTrongPhamVi = new Set();
-    let tapNgayHopLeTrongKhoang = new Set(); // `${t}_${thu}` hợp lệ khi lọc KHOANG_NGAY
+    let tapNgayHopLeTrongKhoang = new Set();
     let mapNgayTheoThu = {};
     let coThu7 = false, coChuNhat = false;
 
@@ -351,7 +401,7 @@ window.tinhToanTongHopSiSoTuan = function(op) {
     quetNguonDong(rows);
     if (typeof duLieuTKBGopDaMap !== 'undefined') quetNguonDong(duLieuTKBGopDaMap);
 
-    // Đảm bảo các bản ghi trong ddMap (DIEM_DANH_SDB) luôn được xét trong cả 2 chế độ
+    // Đảm bảo mọi bản ghi trong ddMap (DIEM_DANH_SDB) luôn được đối chiếu ngày chính xác
     if (ddMap && (!namHocLoc || namHocLoc === nhMacDinh)) {
         Object.keys(ddMap).forEach(kDD => {
             let parts = kDD.split('_');
@@ -376,7 +426,15 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         });
     }
 
-    if (cheDoLoc === 'TUAN' && tuanSo > 0) tapTuanTrongPhamVi.add(tuanSo);
+    if (cheDoLoc === 'TUAN' && tuanSo > 0) {
+        tapTuanTrongPhamVi.add(tuanSo);
+        ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'].forEach(thu => {
+            if (!mapNgayTheoThu[thu] && mapNgayTuanThu[`${tuanSo}_${thu}`]) {
+                mapNgayTheoThu[thu] = mapNgayTuanThu[`${tuanSo}_${thu}`];
+            }
+        });
+    }
+
     let dsTuanXet = Array.from(tapTuanTrongPhamVi).sort((a, b) => a - b);
 
     const dsThuChuan = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6'];
@@ -387,31 +445,40 @@ window.tinhToanTongHopSiSoTuan = function(op) {
     let ketQuaTheoLop = [];
     let mapHocSinhNghi = {};
     let tongSiSoToanPhamVi = 0;
+    let tongLuotCoTheToanTruong = 0;
     let tongLuotVangP = 0;
     let tongLuotVangKP = 0;
     let tuKhoaNorm = String(op.tuKhoaHS || '').trim().toLowerCase().normalize('NFC');
+
+    // Tổng hợp toàn trường theo từng cột Thứ (dùng cho dòng Tổng cộng cuối bảng)
+    let tongTruongTheoThu = {};
+    dsThuHienThi.forEach(thu => {
+        tongTruongTheoThu[thu] = { tongSiSo: 0, coMat: 0, vangP: 0, vangKP: 0 };
+    });
 
     dsLop.forEach(maLop => {
         let siSoChuan = laySiSoChuanTongHopSS(maLop);
         let ngayData = {};
         let tongPLop = 0;
         let tongKPLop = 0;
+        let tongLuotCoTheLop = 0;
+        let soNgayCoDuLieuLop = 0;
         let mapHsLop = {};
 
         dsTuanXet.forEach(tXet => {
             dsThuHienThi.forEach(thu => {
-                let cacBanGhiTrongNgay = [];
-                let ngayCuaDong = (cheDoLoc === 'TUAN') ? (mapNgayTheoThu[thu] || '') : '';
-
                 if (cheDoLoc === 'KHOANG_NGAY' && !tapNgayHopLeTrongKhoang.has(`${tXet}_${thu}`)) {
                     return;
                 }
+
+                let cacBanGhiTrongNgay = [];
+                let ngayCuaDong = mapNgayTuanThu[`${tXet}_${thu}`] || '';
+
                 for (let buoi of ['sáng', 'chiều']) {
                     let maxTiet = buoi === 'sáng' ? 5 : 4;
                     for (let tiet = 1; tiet <= maxTiet; tiet++) {
                         let khoaSlot = `${tXet}_${maLop}_${thu}_${buoi}_${tiet}`;
                         let slotInfo = indexSlotPhamVi[khoaSlot] || null;
-
                         if (slotInfo && slotInfo.ngay && !ngayCuaDong) ngayCuaDong = slotInfo.ngay;
                         let dongMap = slotInfo ? slotInfo.d : null;
                         let ct = (ddMap && (!namHocLoc || namHocLoc === nhMacDinh) && ddMap[khoaSlot]) ? ddMap[khoaSlot] : null;
@@ -485,6 +552,17 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                 tongLuotVangP += soVangPNgay;
                 tongLuotVangKP += soVangKPNgay;
 
+                if (maxTongNgay > 0) {
+                    soNgayCoDuLieuLop++;
+                    tongLuotCoTheLop += maxTongNgay;
+                    if (cheDoLoc === 'TUAN') {
+                        tongTruongTheoThu[thu].tongSiSo += maxTongNgay;
+                        tongTruongTheoThu[thu].coMat += coMatHienThi;
+                        tongTruongTheoThu[thu].vangP += soVangPNgay;
+                        tongTruongTheoThu[thu].vangKP += soVangKPNgay;
+                    }
+                }
+
                 let khoaNgayDuyNhat = `${tXet}_${thu}`;
                 const ghiHs = (mapTen, loaiVang) => {
                     mapTen.forEach((info, kTen) => {
@@ -517,6 +595,7 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                         coMat: coMatHienThi,
                         vangP: soVangPNgay,
                         vangKP: soVangKPNgay,
+                        tyLeNgay: maxTongNgay > 0 ? tinhPhanTramTHSS(coMatHienThi, maxTongNgay) : '100.0',
                         dsTenP: Array.from(mapTenP.values()).map(x => x.ten),
                         dsTenKP: Array.from(mapTenKP.values()).map(x => x.ten),
                         chuoiFallback: chuoiFallback
@@ -526,6 +605,19 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         });
 
         if (siSoChuan > 0) tongSiSoToanPhamVi += siSoChuan;
+
+        // Nếu lớp có sĩ số chuẩn nhưng chưa điểm danh ngày nào, vẫn tính mẫu số chuẩn để tỷ lệ toàn trường phản ánh đúng
+        let soNgayKhoang = (cheDoLoc === 'KHOANG_NGAY') ? Math.max(1, tapNgayHopLeTrongKhoang.size) : Math.max(1, soNgayCoDuLieuLop);
+        let mauSoTyLeLop = tongLuotCoTheLop > 0 ? tongLuotCoTheLop : (siSoChuan * soNgayKhoang);
+        let tyLeLop = mauSoTyLeLop > 0
+            ? tinhPhanTramTHSS(Math.max(0, mauSoTyLeLop - tongPLop - tongKPLop), mauSoTyLeLop)
+            : '100.0';
+
+        if (cheDoLoc === 'KHOANG_NGAY') {
+            tongLuotCoTheToanTruong += (siSoChuan * Math.max(1, tapNgayHopLeTrongKhoang.size));
+        } else {
+            tongLuotCoTheToanTruong += tongLuotCoTheLop;
+        }
 
         let tomTatHsLop = Object.values(mapHsLop).map(h => {
             let parts = [];
@@ -540,6 +632,7 @@ window.tinhToanTongHopSiSoTuan = function(op) {
             ngayData: ngayData,
             tongP: tongPLop,
             tongKP: tongKPLop,
+            tyLeCC: tyLeLop,
             coVang: (tongPLop > 0 || tongKPLop > 0),
             tomTatHsLop: tomTatHsLop
         });
@@ -562,11 +655,16 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         return hs.ten.toLowerCase().normalize('NFC').includes(tuKhoaNorm) || hs.lop.toLowerCase().includes(tuKhoaNorm);
     }).sort((a, b) => b.soNgayNghi - a.soNgayNghi || a.lop.localeCompare(b.lop, undefined, { numeric: true }));
 
-    let soNgayXet = Math.max(1, dsTuanXet.length * dsThuHienThi.length);
-    let tongLuotCoThe = tongSiSoToanPhamVi * soNgayXet;
-    let tyLeChuyenCan = tongLuotCoThe > 0
-        ? (((tongLuotCoThe - tongLuotVangP - tongLuotVangKP) / tongLuotCoThe) * 100).toFixed(1)
-        : '100.0';
+    let mauSoToanTruong = tongLuotCoTheToanTruong > 0 ? tongLuotCoTheToanTruong : tongSiSoToanPhamVi;
+    let coMatToanTruong = Math.max(0, mauSoToanTruong - tongLuotVangP - tongLuotVangKP);
+    let tyLeChuyenCan = mauSoToanTruong > 0 ? tinhPhanTramTHSS(coMatToanTruong, mauSoToanTruong) : '100.0';
+    let tyLeVangP = mauSoToanTruong > 0 ? tinhPhanTramTHSS(tongLuotVangP, mauSoToanTruong) : '0.0';
+    let tyLeVangKP = mauSoToanTruong > 0 ? tinhPhanTramTHSS(tongLuotVangKP, mauSoToanTruong) : '0.0';
+
+    dsThuHienThi.forEach(thu => {
+        let obj = tongTruongTheoThu[thu];
+        obj.tyLe = obj.tongSiSo > 0 ? tinhPhanTramTHSS(obj.coMat, obj.tongSiSo) : '';
+    });
 
     return {
         namHoc: namHocLoc,
@@ -577,12 +675,17 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         dsThu: dsThuHienThi,
         mapNgayTheoThu: mapNgayTheoThu,
         ketQuaTheoLop: ketQuaTheoLop,
+        tongTruongTheoThu: tongTruongTheoThu,
         dsHocSinhNghi: dsHocSinhNghi,
         tongKet: {
             soLop: ketQuaTheoLop.length,
             tongSiSo: tongSiSoToanPhamVi,
+            mauSoToanTruong: mauSoToanTruong,
+            coMatToanTruong: coMatToanTruong,
             tongVangP: tongLuotVangP,
             tongVangKP: tongLuotVangKP,
+            tyLeVangP: tyLeVangP,
+            tyLeVangKP: tyLeVangKP,
             tongVang: tongLuotVangP + tongLuotVangKP,
             tyLeChuyenCan: tyLeChuyenCan
         }
@@ -722,15 +825,16 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div class="text-xs font-bold text-amber-800 uppercase">Lượt nghỉ có phép (P)</div>
-                <div class="text-2xl font-black text-amber-700 mt-1">${kq.tongKet.tongVangP} <span class="text-xs font-semibold">lượt ngày</span></div>
+                <div class="text-2xl font-black text-amber-700 mt-1">${kq.tongKet.tongVangP} <span class="text-xs font-semibold">(${kq.tongKet.tyLeVangP}%)</span></div>
             </div>
             <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
                 <div class="text-xs font-bold text-rose-800 uppercase">Lượt nghỉ không phép (KP)</div>
-                <div class="text-2xl font-black text-rose-700 mt-1">${kq.tongKet.tongVangKP} <span class="text-xs font-semibold">lượt ngày</span></div>
+                <div class="text-2xl font-black text-rose-700 mt-1">${kq.tongKet.tongVangKP} <span class="text-xs font-semibold">(${kq.tongKet.tyLeVangKP}%)</span></div>
             </div>
             <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                <div class="text-xs font-bold text-emerald-800 uppercase">Tỷ lệ chuyên cần</div>
+                <div class="text-xs font-bold text-emerald-800 uppercase">Tỷ lệ chuyên cần toàn phạm vi</div>
                 <div class="text-2xl font-black text-emerald-700 mt-1">${kq.tongKet.tyLeChuyenCan}%</div>
+                <div class="text-[11px] font-semibold text-emerald-800 mt-0.5">${kq.tongKet.coMatToanTruong}/${kq.tongKet.mauSoToanTruong} lượt</div>
             </div>
         </div>
     `;
@@ -745,7 +849,7 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
                 <span class="font-extrabold text-sm text-slate-800 uppercase">Bảng tổng hợp sĩ số — ${nhanThoiGian}</span>
                 <span class="text-xs text-slate-500 italic">Tự động gom trùng tên học sinh nghỉ trong cùng một ngày</span>
             </div>
-            <table class="w-full min-w-[800px] border-collapse text-xs">
+            <table class="w-full min-w-[820px] border-collapse text-xs">
                 <thead class="bg-slate-50 text-slate-800 font-bold text-center">
                     <tr>
                         <th class="border border-slate-300 p-2 w-10">STT</th>
@@ -754,7 +858,7 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
                             let ngay = kq.mapNgayTheoThu[thu] || '';
                             return `<th class="border border-slate-300 p-2 min-w-[130px]">${thu}${ngay ? `<br><span class="font-normal text-[11px] text-slate-500">${ngay}</span>` : ''}</th>`;
                         }).join('') : `<th class="border border-slate-300 p-2 w-28">VẮNG CÓ PHÉP</th><th class="border border-slate-300 p-2 w-28">VẮNG KHÔNG PHÉP</th>`}
-                        <th class="border border-slate-300 p-2 min-w-[200px]">TỔNG HỢP &amp; HỌC SINH NGHỈ</th>
+                        <th class="border border-slate-300 p-2 min-w-[210px]">TỔNG HỢP &amp; TỶ LỆ (%)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -767,13 +871,14 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
                                 if (!cell || !cell.daDiemDanh) return `<td class="border border-slate-300 p-2 text-center text-slate-400">--</td>`;
                                 if (cell.chuoiFallback && cell.tong === 0) return `<td class="border border-slate-300 p-2 text-center font-bold text-slate-700">${cell.chuoiFallback}</td>`;
                                 if (cell.vangP === 0 && cell.vangKP === 0) {
-                                    return `<td class="border border-slate-300 p-2 text-center bg-emerald-50/40"><span class="font-bold text-emerald-700">${cell.coMat}/${cell.tong}</span><span class="block text-[10px] text-emerald-600">Đủ</span></td>`;
+                                    return `<td class="border border-slate-300 p-2 text-center bg-emerald-50/40"><span class="font-bold text-emerald-700">${cell.coMat}/${cell.tong}</span><span class="block text-[10.5px] font-semibold text-emerald-600">100%</span></td>`;
                                 }
                                 let dsTenHtml = [];
                                 if (cell.dsTenP.length > 0) dsTenHtml.push(`<span class="text-amber-800"><b>P:</b> ${cell.dsTenP.join(', ')}</span>`);
                                 if (cell.dsTenKP.length > 0) dsTenHtml.push(`<span class="text-rose-700"><b>KP:</b> ${cell.dsTenKP.join(', ')}</span>`);
                                 return `<td class="border border-slate-300 p-1.5 text-center bg-rose-50/40 align-top">
-                                    <div class="font-extrabold text-rose-700">${cell.coMat}/${cell.tong} <span class="text-[10.5px] font-semibold">(P:${cell.vangP}, KP:${cell.vangKP})</span></div>
+                                    <div class="font-extrabold text-rose-700">${cell.coMat}/${cell.tong} <span class="text-[10.5px]">(${cell.tyLeNgay}%)</span></div>
+                                    <div class="text-[10px] font-semibold text-slate-600">P:${cell.vangP}, KP:${cell.vangKP}</div>
                                     ${dsTenHtml.length > 0 ? `<div class="text-[11px] text-left mt-1 leading-snug">${dsTenHtml.join('<br>')}</div>` : ''}
                                 </td>`;
                             }).join('') : `
@@ -782,13 +887,33 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
                             `}
                             <td class="border border-slate-300 p-2 text-left align-top">
                                 <div class="font-bold ${row.coVang ? 'text-rose-700' : 'text-emerald-700'}">
-                                    ${row.coVang ? `Nghỉ: ${row.tongP}P, ${row.tongKP}KP` : 'Chuyên cần 100%'}
+                                    ${row.coVang ? `CC: ${row.tyLeCC}% (Nghỉ: ${row.tongP}P, ${row.tongKP}KP)` : 'Chuyên cần: 100%'}
                                 </div>
                                 ${row.tomTatHsLop.length > 0 ? `<div class="text-[11px] text-slate-700 mt-1 leading-snug">${row.tomTatHsLop.join('; ')}</div>` : ''}
                             </td>
                         </tr>
                     `).join('')}
                 </tbody>
+                <tfoot class="bg-blue-50 font-extrabold text-blue-950">
+                    <tr>
+                        <td class="border border-slate-300 p-2 text-center" colspan="2">TOÀN TRƯỜNG<br><span class="text-[11px] font-bold">(${kq.tongKet.tongSiSo} HS)</span></td>
+                        ${kq.cheDoLoc === 'TUAN' ? kq.dsThu.map(thu => {
+                            let tt = kq.tongTruongTheoThu[thu];
+                            if (!tt || tt.tongSiSo === 0) return `<td class="border border-slate-300 p-2 text-center text-slate-400">--</td>`;
+                            return `<td class="border border-slate-300 p-2 text-center">
+                                <div>${tt.coMat}/${tt.tongSiSo} <span class="text-emerald-700">(${tt.tyLe}%)</span></div>
+                                <div class="text-[10.5px] font-semibold text-rose-700">P:${tt.vangP}, KP:${tt.vangKP}</div>
+                            </td>`;
+                        }).join('') : `
+                            <td class="border border-slate-300 p-2 text-center text-amber-800">${kq.tongKet.tongVangP} (${kq.tongKet.tyLeVangP}%)</td>
+                            <td class="border border-slate-300 p-2 text-center text-rose-700">${kq.tongKet.tongVangKP} (${kq.tongKet.tyLeVangKP}%)</td>
+                        `}
+                        <td class="border border-slate-300 p-2 text-left">
+                            <div class="text-emerald-800">Tỷ lệ CC chung: ${kq.tongKet.tyLeChuyenCan}%</div>
+                            <div class="text-[11px] font-semibold text-slate-700">Tổng vắng: ${kq.tongKet.tongVangP}P, ${kq.tongKet.tongVangKP}KP</div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     `;
@@ -835,7 +960,7 @@ window.veGiaoDienTongHopSiSo = function(containerId = 'vungHienThiTongHopSiSo') 
     container.innerHTML = htmlBoLoc + htmlKPI + htmlBangMaTran + htmlBangHocSinh;
 };
 
-// 5. Xuất Excel Tổng hợp Sĩ số
+// 5. Xuất Excel Tổng hợp Sĩ số (kèm đầy đủ tỷ lệ % theo Lớp/Ngày, Lớp/Kỳ và Toàn trường)
 window.xuatExcelTongHopSiSo = async function() {
     let kq = trangThaiTongHopSiSo.ketQuaHienTai;
     if (!kq) return alert("Chưa có dữ liệu tổng hợp để xuất!");
@@ -854,7 +979,6 @@ window.xuatExcelTongHopSiSo = async function() {
         const workbook = new ExcelJS.Workbook();
         let tenFile = (kq.cheDoLoc === 'TUAN') ? `TongHopSiSo_Tuan${kq.tuanSo}.xlsx` : `TongHopSiSo_${kq.tuNgay}_${kq.denNgay}.xlsx`;
 
-        // Sheet 1: Tổng hợp theo lớp
         const ws1 = workbook.addWorksheet(`TongHop_SiSo`);
         let headers1 = ['STT', 'Lớp', 'Sĩ số chuẩn'];
         if (kq.cheDoLoc === 'TUAN') {
@@ -863,7 +987,7 @@ window.xuatExcelTongHopSiSo = async function() {
                 headers1.push(ngay ? `${thu}\n(${ngay})` : thu);
             });
         }
-        headers1.push('Vắng P', 'Vắng KP', 'Học sinh nghỉ');
+        headers1.push('Vắng P', 'Vắng KP', 'Tỷ lệ CC (%)', 'Học sinh nghỉ');
 
         let rTitle1 = ws1.addRow([`TỔNG HỢP SĨ SỐ HỌC SINH - NĂM HỌC ${kq.namHoc} ${kq.cheDoLoc === 'TUAN' ? '- TUẦN ' + kq.tuanSo : ''}`]);
         rTitle1.font = { name: 'Times New Roman', size: 14, bold: true };
@@ -885,16 +1009,16 @@ window.xuatExcelTongHopSiSo = async function() {
                     let cell = row.ngayData[thu];
                     if (!cell || !cell.daDiemDanh) arr.push('--');
                     else if (cell.chuoiFallback && cell.tong === 0) arr.push(cell.chuoiFallback);
-                    else if (cell.vangP === 0 && cell.vangKP === 0) arr.push(`${cell.coMat}/${cell.tong}`);
+                    else if (cell.vangP === 0 && cell.vangKP === 0) arr.push(`${cell.coMat}/${cell.tong} (100%)`);
                     else {
-                        let txt = `${cell.coMat}/${cell.tong} (P:${cell.vangP}, KP:${cell.vangKP})`;
+                        let txt = `${cell.coMat}/${cell.tong} (${cell.tyLeNgay}%)\nP:${cell.vangP}, KP:${cell.vangKP}`;
                         if (cell.dsTenP.length > 0) txt += `\nP: ${cell.dsTenP.join(', ')}`;
                         if (cell.dsTenKP.length > 0) txt += `\nKP: ${cell.dsTenKP.join(', ')}`;
                         arr.push(txt);
                     }
                 });
             }
-            arr.push(row.tongP, row.tongKP, row.tomTatHsLop.join('; '));
+            arr.push(row.tongP, row.tongKP, `${row.tyLeCC}%`, row.tomTatHsLop.join('; '));
             let r = ws1.addRow(arr);
             r.font = { name: 'Times New Roman', size: 12 };
             r.eachCell({ includeEmpty: true }, (c, colIdx) => {
@@ -904,14 +1028,33 @@ window.xuatExcelTongHopSiSo = async function() {
             });
         });
 
+        // Dòng Tổng cộng toàn trường
+        let rowTotalArr = ['', 'TOÀN TRƯỜNG', kq.tongKet.tongSiSo];
+        if (kq.cheDoLoc === 'TUAN') {
+            kq.dsThu.forEach(thu => {
+                let tt = kq.tongTruongTheoThu[thu];
+                rowTotalArr.push((tt && tt.tongSiSo > 0) ? `${tt.coMat}/${tt.tongSiSo} (${tt.tyLe}%)\nP:${tt.vangP}, KP:${tt.vangKP}` : '--');
+            });
+        }
+        rowTotalArr.push(kq.tongKet.tongVangP, kq.tongKet.tongVangKP, `${kq.tongKet.tyLeChuyenCan}%`, `Tổng vắng: ${kq.tongKet.tongVangP}P, ${kq.tongKet.tongVangKP}KP`);
+        let rTotal = ws1.addRow(rowTotalArr);
+        rTotal.font = { name: 'Times New Roman', size: 12, bold: true };
+        rTotal.eachCell({ includeEmpty: true }, (c, colIdx) => {
+            c.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+            c.alignment = { vertical: 'middle', horizontal: colIdx === headers1.length ? 'left' : 'center', wrapText: true };
+            c.numFmt = '@';
+        });
+
         ws1.getColumn(1).width = 6;
-        ws1.getColumn(2).width = 10;
+        ws1.getColumn(2).width = 14;
         ws1.getColumn(3).width = 12;
         if (kq.cheDoLoc === 'TUAN') {
             for (let i = 4; i <= 3 + kq.dsThu.length; i++) ws1.getColumn(i).width = 22;
         }
-        ws1.getColumn(headers1.length - 2).width = 12;
-        ws1.getColumn(headers1.length - 1).width = 12;
+        ws1.getColumn(headers1.length - 3).width = 11;
+        ws1.getColumn(headers1.length - 2).width = 11;
+        ws1.getColumn(headers1.length - 1).width = 14;
         ws1.getColumn(headers1.length).width = 32;
 
         // Sheet 2: Danh sách học sinh nghỉ
