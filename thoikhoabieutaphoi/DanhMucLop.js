@@ -37,16 +37,29 @@ async function taiDuLieuDanhMucLop() {
 
 function veBangDanhMucLop() {
     const tbody = document.getElementById('vungDuLieuDanhMucLop');
-    // Bổ sung cột Sĩ Số vào tiêu đề bảng Danh mục Lớp
+    // Mở rộng bảng & khung chứa vừa màn hình, chia tỷ lệ 6 cột cân đối (100%)
+    const table = tbody ? tbody.closest('table') : document.querySelector('#khungDanhMucLop table');
+    if (table) {
+        table.classList.add('w-full', 'table-fixed');
+        table.style.width = '100%';
+        let wrap = table.parentElement;
+        while (wrap && wrap.id !== 'khungDanhMucLop' && wrap !== document.body) {
+            Array.from(wrap.classList).forEach(cls => {
+                if (cls.startsWith('max-w-')) wrap.classList.remove(cls);
+            });
+            wrap.classList.add('w-full');
+            wrap = wrap.parentElement;
+        }
+    }
     const thead = document.querySelector('#khungDanhMucLop thead tr');
     if (thead) {
         thead.innerHTML = `
-            <th class="py-2 w-16">STT</th>
-            <th class="py-2 w-1/6">Mã Lớp</th>
-            <th class="py-2 w-1/6">Tên Lớp</th>
-            <th class="py-2 w-1/4">GV Chủ Nhiệm</th>
-            <th class="py-2 w-48 min-w-[180px]">Sĩ Số</th>
-            <th class="py-2 w-32">Điều Chỉnh</th>`;
+            <th class="py-2.5 w-[6%] min-w-[55px]">STT</th>
+            <th class="py-2.5 w-[18%]">Mã Lớp</th>
+            <th class="py-2.5 w-[18%]">Tên Lớp</th>
+            <th class="py-2.5 w-[26%]">GV Chủ Nhiệm</th>
+            <th class="py-2.5 w-[16%]">Sĩ Số</th>
+            <th class="py-2.5 w-[16%] min-w-[140px]">Điều Chỉnh</th>`;
     }
 
     if (duLieuDanhMucLop.length === 0) {
