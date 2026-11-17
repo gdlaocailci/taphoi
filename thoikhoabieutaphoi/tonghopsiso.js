@@ -67,8 +67,11 @@ window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo
     if (!container) return;
 
     if (!buocTaiLai) {
-        let coDuLieuTrongRam = (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap) && duLieuTKBGopDaMap.length > 0);
-        if (coDuLieuTrongRam || (cacheNguonTongHopSiSo && Array.isArray(cacheNguonTongHopSiSo.tkbRows) && cacheNguonTongHopSiSo.tkbRows.length > 0)) {
+        if (cacheNguonTongHopSiSo && Array.isArray(cacheNguonTongHopSiSo.tkbRows) && cacheNguonTongHopSiSo.tkbRows.length > 0) {
+            veGiaoDienTongHopSiSo(containerId);
+            return;
+        }
+        if (typeof window.mapTkbToanTap !== 'undefined' && window.mapTkbToanTap && Object.keys(window.mapTkbToanTap).length > 0) {
             veGiaoDienTongHopSiSo(containerId);
             return;
         }
@@ -86,13 +89,13 @@ window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo
         if (!buocTaiLai && typeof dangTaiDuLieuSoDauBai !== 'undefined' && dangTaiDuLieuSoDauBai === true) {
             for (let w = 0; w < 20; w++) {
                 await new Promise(r => setTimeout(r, 250));
-                if (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap) && duLieuTKBGopDaMap.length > 0) {
+                if (typeof window.mapTkbToanTap !== 'undefined' && window.mapTkbToanTap && Object.keys(window.mapTkbToanTap).length > 0) {
                     break;
                 }
             }
         }
 
-        let vanChuaCoDuLieu = (typeof duLieuTKBGopDaMap === 'undefined' || !Array.isArray(duLieuTKBGopDaMap) || duLieuTKBGopDaMap.length === 0);
+        let vanChuaCoDuLieu = (typeof window.mapTkbToanTap === 'undefined' || !window.mapTkbToanTap || Object.keys(window.mapTkbToanTap).length === 0);
         if (buocTaiLai || vanChuaCoDuLieu) {
             if (typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) {
                 throw new Error("Không tìm thấy cấu hình URL máy chủ (CAU_HINH_FRONTEND).");
@@ -158,30 +161,8 @@ function trichXuatNguonTuServerTHSS(duLieuSever) {
             };
         });
     };
+    // Chỉ đọc duy nhất từ sheet DATA_TKB để lấy Năm học, Tuần, Thứ, Ngày, Lớp
     napTkb(duLieuSever.DATA_TKB);
-    napTkb(duLieuSever.TKB_HIEN_TAI);
-
-    if (Array.isArray(duLieuSever.SO_DAU_BAI)) {
-        duLieuSever.SO_DAU_BAI.forEach(d => {
-            let ma = String(d['A'] || '').trim();
-            let t = parseInt(String(d['B'] || '').replace(/\D/g, ''), 10) || 0;
-            let lop = String(d['C'] || '').trim().toUpperCase();
-            let thu = chuanHoaThu(d['D'] || '');
-            if (!t || !lop || !thu || thu.toUpperCase() === 'TONGHOP' || thu.toUpperCase() === 'TỔNG HỢP') return;
-            let buoi = String(d['F'] || '').trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
-            let tiet = String(d['G'] || '').trim();
-            let ngay = String(d['E'] || '').trim();
-            let mNH = ma.match(/^(\d{4}-\d{4})_/);
-            let nh = mNH ? mNH[1] : (xacDinhNamHocTuNgayTHSS(ngay) || nhMacDinh);
-            let k = `${nh}_${t}_${lop}_${thu}_${buoi}_${tiet}`;
-            if (!mapSlot[k]) {
-                mapSlot[k] = {
-                    'Năm học': nh, 'Tuần': String(t), 'Mã Lớp': lop, 'Thứ': thu, 'Buổi': buoi, 'Tiết': tiet, 'Ngày': ngay, 'Môn Học': d['H'] || ''
-                };
-            }
-            mapSlot[k]['ChuyenCan_Thuc'] = d['N'] || '';
-        });
-    }
 
     return {
         namHocMacDinh: nhMacDinh,
@@ -195,10 +176,10 @@ function trichXuatNguonTuServerTHSS(duLieuSever) {
 function layNguonHopNhatTHSS() {
     let nhMacDinh = layNamHocMacDinhTHSS();
     let rows = [];
-    if (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap) && duLieuTKBGopDaMap.length > 0) {
-        rows = duLieuTKBGopDaMap;
-    } else if (cacheNguonTongHopSiSo && Array.isArray(cacheNguonTongHopSiSo.tkbRows)) {
+    if (cacheNguonTongHopSiSo && Array.isArray(cacheNguonTongHopSiSo.tkbRows) && cacheNguonTongHopSiSo.tkbRows.length > 0) {
         rows = cacheNguonTongHopSiSo.tkbRows;
+    } else if (typeof window.mapTkbToanTap !== 'undefined' && window.mapTkbToanTap) {
+        rows = Object.values(window.mapTkbToanTap);
     }
     let ddMap = (window.duLieuDiemDanhSDB && Object.keys(window.duLieuDiemDanhSDB).length > 0)
         ? window.duLieuDiemDanhSDB
@@ -250,16 +231,6 @@ function layDanhSachTuanVaNgayTheoNamHocTHSS(namHocLoc) {
 function layDanhSachLopTongHopSS(namHocLoc) {
     let { nhMacDinh, rows } = layNguonHopNhatTHSS();
     let tapLop = new Set();
-    let nguonHV = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu)
-        ? window.thongSoHocVu
-        : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
-
-    if (nguonHV && Array.isArray(nguonHV.DANH_SACH_LOP)) {
-        nguonHV.DANH_SACH_LOP.forEach(l => {
-            let v = String(l || '').trim().toUpperCase();
-            if (v) tapLop.add(v);
-        });
-    }
     rows.forEach(d => {
         let nhDong = d['Năm học'] || xacDinhNamHocTuNgayTHSS(d['Ngày']) || nhMacDinh;
         if (namHocLoc && nhDong && nhDong !== namHocLoc) return;
