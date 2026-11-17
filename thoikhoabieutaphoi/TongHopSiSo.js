@@ -504,6 +504,8 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                 let mapTenKP = new Map();
                 let maxSoKhongTenP = 0;
                 let maxSoKhongTenKP = 0;
+                let buoiTietKhongTenP = [];
+                let buoiTietKhongTenKP = [];
                 let chuoiFallback = '';
 
                 cacBanGhiTrongNgay.forEach(item => {
@@ -525,7 +527,10 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                                 if (!mapTenP.has(k)) mapTenP.set(k, { ten: ten.trim(), buoiTiet: [] });
                                 mapTenP.get(k).buoiTiet.push(nhanBuoiTiet);
                             });
-                        } else if (soP > maxSoKhongTenP) maxSoKhongTenP = soP;
+                        } else if (soP > 0) {
+                            if (soP > maxSoKhongTenP) maxSoKhongTenP = soP;
+                            buoiTietKhongTenP.push(nhanBuoiTiet);
+                        }
 
                         if (dsKP.length > 0) {
                             dsKP.forEach(ten => {
@@ -533,11 +538,29 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                                 if (!mapTenKP.has(k)) mapTenKP.set(k, { ten: ten.trim(), buoiTiet: [] });
                                 mapTenKP.get(k).buoiTiet.push(nhanBuoiTiet);
                             });
-                        } else if (soKP > maxSoKhongTenKP) maxSoKhongTenKP = soKP;
+                        } else if (soKP > 0) {
+                            if (soKP > maxSoKhongTenKP) maxSoKhongTenKP = soKP;
+                            buoiTietKhongTenKP.push(nhanBuoiTiet);
+                        }
                     } else if (item.chuoiCC) {
                         chuoiFallback = item.chuoiCC;
                     }
                 });
+
+                if (mapTenP.size === 0 && maxSoKhongTenP > 0) {
+                    for (let idxP = 1; idxP <= maxSoKhongTenP; idxP++) {
+                        let tenTamP = maxSoKhongTenP === 1 ? 'Chưa ghi tên HS' : `Chưa ghi tên HS #${idxP}`;
+                        let kTamP = `${tenTamP.toLowerCase()}_p_${tXet}_${thu}`;
+                        mapTenP.set(kTamP, { ten: tenTamP, buoiTiet: [...buoiTietKhongTenP] });
+                    }
+                }
+                if (mapTenKP.size === 0 && maxSoKhongTenKP > 0) {
+                    for (let idxKP = 1; idxKP <= maxSoKhongTenKP; idxKP++) {
+                        let tenTamKP = maxSoKhongTenKP === 1 ? 'Chưa ghi tên HS (KP)' : `Chưa ghi tên HS (KP) #${idxKP}`;
+                        let kTamKP = `${tenTamKP.toLowerCase()}_kp_${tXet}_${thu}`;
+                        mapTenKP.set(kTamKP, { ten: tenTamKP, buoiTiet: [...buoiTietKhongTenKP] });
+                    }
+                }
 
                 if (siSoChuan === 0 && maxTongNgay > 0) siSoChuan = maxTongNgay;
 
