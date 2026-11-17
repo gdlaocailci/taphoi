@@ -87,7 +87,7 @@ window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo
 
     container.innerHTML = `<div class="text-center py-12 text-slate-500 font-bold">
         <div class="w-9 h-9 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-        <p class="text-base text-blue-900 font-extrabold">Đang tải dữ liệu Năm học, Tuần học &amp; Sĩ số từ máy chủ...</p>
+        <p class="text-base text-blue-900 font-extrabold">Đang tải dữ liệu chuyên cần &amp; từ máy chủ...</p>
     </div>`;
 
     try {
