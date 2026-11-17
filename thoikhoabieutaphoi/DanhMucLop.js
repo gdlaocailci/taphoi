@@ -37,29 +37,45 @@ async function taiDuLieuDanhMucLop() {
 
 function veBangDanhMucLop() {
     const tbody = document.getElementById('vungDuLieuDanhMucLop');
-    // Mở rộng bảng & khung chứa vừa màn hình, chia tỷ lệ 6 cột cân đối (100%)
+    // Mở rộng toàn bộ #khungDanhMucLop, khung cuộn và bảng ra 100% chiều ngang màn hình
+    const khungDMLop = document.getElementById('khungDanhMucLop');
+    if (khungDMLop) {
+        Array.from(khungDMLop.classList).forEach(cls => {
+            if (cls.startsWith('max-w-') || /^w-(\d+|1\/\d+|2\/\d+|3\/\d+|4\/\d+|5\/\d+)$/.test(cls)) {
+                khungDMLop.classList.remove(cls);
+            }
+        });
+        khungDMLop.classList.add('w-full');
+        khungDMLop.style.maxWidth = '100%';
+        khungDMLop.style.width = '100%';
+    }
     const table = tbody ? tbody.closest('table') : document.querySelector('#khungDanhMucLop table');
     if (table) {
-        table.classList.add('w-full', 'table-fixed');
+        table.classList.remove('table-fixed');
+        table.classList.add('w-full');
         table.style.width = '100%';
         let wrap = table.parentElement;
-        while (wrap && wrap.id !== 'khungDanhMucLop' && wrap !== document.body) {
+        while (wrap && wrap !== khungDMLop && wrap !== document.body) {
             Array.from(wrap.classList).forEach(cls => {
-                if (cls.startsWith('max-w-')) wrap.classList.remove(cls);
+                if (cls.startsWith('max-w-') || /^w-(\d+|1\/\d+|2\/\d+|3\/\d+|4\/\d+|5\/\d+)$/.test(cls)) {
+                    wrap.classList.remove(cls);
+                }
             });
             wrap.classList.add('w-full');
+            wrap.style.maxWidth = '100%';
+            wrap.style.width = '100%';
             wrap = wrap.parentElement;
         }
     }
     const thead = document.querySelector('#khungDanhMucLop thead tr');
     if (thead) {
         thead.innerHTML = `
-            <th class="py-2.5 w-[6%] min-w-[55px]">STT</th>
-            <th class="py-2.5 w-[18%]">Mã Lớp</th>
-            <th class="py-2.5 w-[18%]">Tên Lớp</th>
-            <th class="py-2.5 w-[26%]">GV Chủ Nhiệm</th>
-            <th class="py-2.5 w-[16%]">Sĩ Số</th>
-            <th class="py-2.5 w-[16%] min-w-[140px]">Điều Chỉnh</th>`;
+            <th class="py-2.5 px-2 text-center whitespace-nowrap" style="width: 7%; min-width: 55px;">STT</th>
+            <th class="py-2.5 px-2 text-center" style="width: 17%;">Mã Lớp</th>
+            <th class="py-2.5 px-2 text-center" style="width: 17%;">Tên Lớp</th>
+            <th class="py-2.5 px-2 text-center" style="width: 27%;">GV Chủ Nhiệm</th>
+            <th class="py-2.5 px-2 text-center" style="width: 16%;">Sĩ Số</th>
+            <th class="py-2.5 px-2 text-center whitespace-nowrap" style="width: 16%; min-width: 140px;">Điều Chỉnh</th>`;
     }
 
     if (duLieuDanhMucLop.length === 0) {
