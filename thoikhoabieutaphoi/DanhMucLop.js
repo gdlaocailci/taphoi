@@ -39,13 +39,13 @@ function veBangDanhMucLop() {
     const tbody = document.getElementById('vungDuLieuDanhMucLop');
     // Bổ sung cột Sĩ Số vào tiêu đề bảng Danh mục Lớp
     const thead = document.querySelector('#khungDanhMucLop thead tr');
-    if (thead && (thead.children.length === 4 || thead.children.length === 5)) {
+    if (thead) {
         thead.innerHTML = `
             <th class="py-2 w-16">STT</th>
-            <th class="py-2 w-1/5">Mã Lớp</th>
-            <th class="py-2 w-1/5">Tên Lớp</th>
+            <th class="py-2 w-1/6">Mã Lớp</th>
+            <th class="py-2 w-1/6">Tên Lớp</th>
             <th class="py-2 w-1/4">GV Chủ Nhiệm</th>
-            <th class="py-2 w-24">Sĩ Số</th>
+            <th class="py-2 w-48 min-w-[180px]">Sĩ Số</th>
             <th class="py-2 w-32">Điều Chỉnh</th>`;
     }
 
