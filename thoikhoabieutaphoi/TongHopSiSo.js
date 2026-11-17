@@ -279,46 +279,102 @@ window.tinhToanTongHopSiSoTuan = function(op) {
         return true;
     });
 
+    // Xây dựng bản đồ ngày chuẩn cho từng (Tuần, Thứ) từ DATA_TKB + dữ liệu SĐB/TKB hiện tại trong RAM
+    let mapNgayTuanThu = {}; // `${tuan}_${thu}` -> "dd/mm/yyyy"
+    const ghiNgayMap = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(d => {
+            let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+            let rawThu = String(d['Thứ'] || '').trim().toLowerCase();
+            let thu = rawThu ? (rawThu.charAt(0).toUpperCase() + rawThu.slice(1)) : '';
+            let ngay = String(d['Ngày'] || '').trim();
+            if (t > 0 && thu && ngay && ngay !== '...' && !mapNgayTuanThu[`${t}_${thu}`]) {
+                mapNgayTuanThu[`${t}_${thu}`] = ngay;
+            }
+        });
+    };
+    ghiNgayMap(rows);
+    if (typeof duLieuTKBGopDaMap !== 'undefined') ghiNgayMap(duLieuTKBGopDaMap);
+
     // Lập chỉ mục theo khóa 6 trục (NămHoc_Tuần_Lớp_Thứ_Buổi_Tiết) cho phạm vi thời gian đang chọn
-    let indexSlotPhamVi = {}; // key: `${tuan}_${lop}_${thu}_${buoi}_${tiet}` -> row
+    let indexSlotPhamVi = {}; // key: `${tuan}_${lop}_${thu}_${buoi}_${tiet}` -> { d, ngay, thu, t }
     let tapTuanTrongPhamVi = new Set();
+    let tapNgayHopLeTrongKhoang = new Set(); // `${t}_${thu}` hợp lệ khi lọc KHOANG_NGAY
     let mapNgayTheoThu = {};
     let coThu7 = false, coChuNhat = false;
 
-    rows.forEach(d => {
-        let nhDong = d['Năm học'] || xacDinhNamHocTuNgayTHSS(d['Ngày']) || nhMacDinh;
-        if (namHocLoc && nhDong && nhDong !== namHocLoc) return;
+    const quetNguonDong = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(d => {
+            let nhDong = d['Năm học'] || xacDinhNamHocTuNgayTHSS(d['Ngày']) || nhMacDinh;
+            if (namHocLoc && nhDong && nhDong !== namHocLoc) return;
 
-        let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
-        if (t <= 0) return;
+            let t = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+            if (t <= 0) return;
 
-        if (cheDoLoc === 'TUAN') {
-            if (t !== tuanSo) return;
-        } else {
-            let dtDong = parseNgayVNToDateTHSS(d['Ngày']);
-            if (!dtDong) return;
-            if (dtTu && dtDong < dtTu) return;
-            if (dtDen && dtDong > dtDen) return;
-        }
+            let rawThu = String(d['Thứ'] || '').trim().toLowerCase();
+            let thu = rawThu ? (rawThu.charAt(0).toUpperCase() + rawThu.slice(1)) : '';
+            if (!thu) return;
 
-        let rawThu = String(d['Thứ'] || '').trim().toLowerCase();
-        let thu = rawThu ? (rawThu.charAt(0).toUpperCase() + rawThu.slice(1)) : '';
-        if (thu === 'Thứ 7') coThu7 = true;
-        if (thu === 'Chủ nhật') coChuNhat = true;
+            let ngay = String(d['Ngày'] || '').trim();
+            if (!ngay || ngay === '...') ngay = mapNgayTuanThu[`${t}_${thu}`] || '';
 
-        let ngay = String(d['Ngày'] || '').trim();
-        if (cheDoLoc === 'TUAN' && thu && ngay && ngay !== '...' && !mapNgayTheoThu[thu]) {
-            mapNgayTheoThu[thu] = ngay;
-        }
+            if (cheDoLoc === 'TUAN') {
+                if (t !== tuanSo) return;
+            } else {
+                let dtDong = parseNgayVNToDateTHSS(ngay);
+                if (!dtDong) return;
+                if (dtTu && dtDong < dtTu) return;
+                if (dtDen && dtDong > dtDen) return;
+                tapNgayHopLeTrongKhoang.add(`${t}_${thu}`);
+            }
 
-        let lop = String(d['Mã Lớp'] || '').trim().toUpperCase();
-        let buoi = String(d['Buổi'] || '').trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
-        let tiet = String(d['Tiết'] || '').trim();
-        if (lop && thu && tiet) {
-            tapTuanTrongPhamVi.add(t);
-            indexSlotPhamVi[`${t}_${lop}_${thu}_${buoi}_${tiet}`] = { d, ngay, thu, t };
-        }
-    });
+            if (thu === 'Thứ 7') coThu7 = true;
+            if (thu === 'Chủ nhật') coChuNhat = true;
+            if (cheDoLoc === 'TUAN' && ngay && !mapNgayTheoThu[thu]) {
+                mapNgayTheoThu[thu] = ngay;
+            }
+
+            let lop = String(d['Mã Lớp'] || '').trim().toUpperCase();
+            let buoi = String(d['Buổi'] || '').trim().toLowerCase() === 'sáng' ? 'sáng' : 'chiều';
+            let tiet = String(d['Tiết'] || '').trim();
+            if (lop && tiet) {
+                tapTuanTrongPhamVi.add(t);
+                let kSlot = `${t}_${lop}_${thu}_${buoi}_${tiet}`;
+                if (!indexSlotPhamVi[kSlot]) {
+                    indexSlotPhamVi[kSlot] = { d, ngay, thu, t };
+                }
+            }
+        });
+    };
+
+    quetNguonDong(rows);
+    if (typeof duLieuTKBGopDaMap !== 'undefined') quetNguonDong(duLieuTKBGopDaMap);
+
+    // Đảm bảo các bản ghi trong ddMap (DIEM_DANH_SDB) luôn được xét trong cả 2 chế độ
+    if (ddMap && (!namHocLoc || namHocLoc === nhMacDinh)) {
+        Object.keys(ddMap).forEach(kDD => {
+            let parts = kDD.split('_');
+            if (parts.length < 5) return;
+            let tDD = parseInt(String(parts[0]).replace(/\D/g, ''), 10) || 0;
+            let thuDD = parts[2];
+            if (tDD <= 0 || !thuDD) return;
+            let ngayDD = mapNgayTuanThu[`${tDD}_${thuDD}`] || '';
+            if (cheDoLoc === 'TUAN') {
+                if (tDD !== tuanSo) return;
+                if (ngayDD && !mapNgayTheoThu[thuDD]) mapNgayTheoThu[thuDD] = ngayDD;
+                tapTuanTrongPhamVi.add(tDD);
+            } else {
+                let dtDD = parseNgayVNToDateTHSS(ngayDD);
+                if (dtDD && (!dtTu || dtDD >= dtTu) && (!dtDen || dtDD <= dtDen)) {
+                    tapTuanTrongPhamVi.add(tDD);
+                    tapNgayHopLeTrongKhoang.add(`${tDD}_${thuDD}`);
+                }
+            }
+            if (thuDD === 'Thứ 7') coThu7 = true;
+            if (thuDD === 'Chủ nhật') coChuNhat = true;
+        });
+    }
 
     if (cheDoLoc === 'TUAN' && tuanSo > 0) tapTuanTrongPhamVi.add(tuanSo);
     let dsTuanXet = Array.from(tapTuanTrongPhamVi).sort((a, b) => a - b);
@@ -347,12 +403,14 @@ window.tinhToanTongHopSiSoTuan = function(op) {
                 let cacBanGhiTrongNgay = [];
                 let ngayCuaDong = (cheDoLoc === 'TUAN') ? (mapNgayTheoThu[thu] || '') : '';
 
+                if (cheDoLoc === 'KHOANG_NGAY' && !tapNgayHopLeTrongKhoang.has(`${tXet}_${thu}`)) {
+                    return;
+                }
                 for (let buoi of ['sáng', 'chiều']) {
                     let maxTiet = buoi === 'sáng' ? 5 : 4;
                     for (let tiet = 1; tiet <= maxTiet; tiet++) {
                         let khoaSlot = `${tXet}_${maLop}_${thu}_${buoi}_${tiet}`;
                         let slotInfo = indexSlotPhamVi[khoaSlot] || null;
-                        if (cheDoLoc === 'KHOANG_NGAY' && !slotInfo) continue;
 
                         if (slotInfo && slotInfo.ngay && !ngayCuaDong) ngayCuaDong = slotInfo.ngay;
                         let dongMap = slotInfo ? slotInfo.d : null;
