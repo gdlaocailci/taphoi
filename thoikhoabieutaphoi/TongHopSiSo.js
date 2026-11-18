@@ -75,12 +75,12 @@ window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo
 
     if (!buocTaiLai) {
         if (cacheNguonTongHopSiSo && Array.isArray(cacheNguonTongHopSiSo.tkbRows) && cacheNguonTongHopSiSo.tkbRows.length > 0) {
-            await napBoSungDanhMucGvcnTHSS();
+            await napBoSungDanhMucGvcnTHSS(false);
             veGiaoDienTongHopSiSo(containerId);
             return;
         }
         if (typeof window.mapTkbToanTap !== 'undefined' && window.mapTkbToanTap && Object.keys(window.mapTkbToanTap).length > 0) {
-            await napBoSungDanhMucGvcnTHSS();
+            await napBoSungDanhMucGvcnTHSS(false);
             veGiaoDienTongHopSiSo(containerId);
             return;
         }
@@ -138,7 +138,7 @@ window.khoiTaoTongHopSiSo = async function(containerId = 'vungHienThiTongHopSiSo
             }
             cacheNguonTongHopSiSo = trichXuatNguonTuServerTHSS(duLieuSever);
         }
-        await napBoSungDanhMucGvcnTHSS();
+        await napBoSungDanhMucGvcnTHSS(buocTaiLai);
     } catch (loi) {
         container.innerHTML = `<div class="text-center py-10 text-red-600 font-bold">
             ⚠️ Lỗi tải dữ liệu sĩ số: ${loi.message}
@@ -362,19 +362,23 @@ function chuanHoaKhoaGvTHSS(val) {
     return s;
 }
 
-async function napBoSungDanhMucGvcnTHSS() {
+async function napBoSungDanhMucGvcnTHSS(buocTaiLai = false) {
     if (typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) return;
     let nguonHV = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu)
         ? window.thongSoHocVu
         : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
 
-    let daCoGvcn = Object.keys(cacheGvcnLopTHSS).length > 0
+    let daCoGvcn = !buocTaiLai && (
+        Object.keys(cacheGvcnLopTHSS).length > 0
         || (cacheNguonTongHopSiSo && cacheNguonTongHopSiSo.gvcnMap && Object.keys(cacheNguonTongHopSiSo.gvcnMap).length > 0)
-        || (nguonHV && nguonHV.GVCN_THEO_LOP && Object.keys(nguonHV.GVCN_THEO_LOP).length > 0);
+        || (nguonHV && nguonHV.GVCN_THEO_LOP && Object.keys(nguonHV.GVCN_THEO_LOP).length > 0)
+    );
 
-    let daCoTenGV = Object.keys(cacheHoTenGiaoVienTHSS).length > 0
+    let daCoTenGV = !buocTaiLai && (
+        Object.keys(cacheHoTenGiaoVienTHSS).length > 0
         || (cacheNguonTongHopSiSo && cacheNguonTongHopSiSo.hoTenGvMap && Object.keys(cacheNguonTongHopSiSo.hoTenGvMap).length > 0)
-        || (nguonHV && nguonHV.TU_DIEN_HO_TEN_GV && Object.keys(nguonHV.TU_DIEN_HO_TEN_GV).length > 0);
+        || (nguonHV && nguonHV.TU_DIEN_HO_TEN_GV && Object.keys(nguonHV.TU_DIEN_HO_TEN_GV).length > 0)
+    );
 
     let tasks = [];
     if (!daCoTenGV) {
@@ -384,6 +388,7 @@ async function napBoSungDanhMucGvcnTHSS() {
                 .then(r => r.json())
                 .then(rowsGV => {
                     if (Array.isArray(rowsGV) && rowsGV.length > 1) {
+                        cacheHoTenGiaoVienTHSS = {};
                         for (let i = 1; i < rowsGV.length; i++) {
                             let maGV = String(rowsGV[i][0] || '').trim();
                             let hoTen = String(rowsGV[i][1] || '').trim();
@@ -391,6 +396,9 @@ async function napBoSungDanhMucGvcnTHSS() {
                                 cacheHoTenGiaoVienTHSS[chuanHoaKhoaGvTHSS(maGV)] = hoTen;
                                 cacheHoTenGiaoVienTHSS[maGV.toLowerCase().normalize('NFC')] = hoTen;
                             }
+                        }
+                        if (nguonHV) {
+                            nguonHV.TU_DIEN_HO_TEN_GV = { ...(nguonHV.TU_DIEN_HO_TEN_GV || {}), ...cacheHoTenGiaoVienTHSS };
                         }
                     }
                 }).catch(() => {})
@@ -403,10 +411,17 @@ async function napBoSungDanhMucGvcnTHSS() {
                 .then(r => r.json())
                 .then(rowsLop => {
                     if (Array.isArray(rowsLop) && rowsLop.length > 1) {
+                        cacheGvcnLopTHSS = {};
                         for (let i = 1; i < rowsLop.length; i++) {
                             let mLop = String(rowsLop[i][0] || '').trim().toUpperCase();
                             let gvcn = String(rowsLop[i][2] || '').trim();
-                            if (mLop && gvcn) cacheGvcnLopTHSS[mLop] = gvcn;
+                            if (mLop) cacheGvcnLopTHSS[mLop] = gvcn;
+                        }
+                        if (nguonHV) {
+                            nguonHV.GVCN_THEO_LOP = { ...(nguonHV.GVCN_THEO_LOP || {}), ...cacheGvcnLopTHSS };
+                        }
+                        if (cacheNguonTongHopSiSo) {
+                            cacheNguonTongHopSiSo.gvcnMap = { ...(cacheNguonTongHopSiSo.gvcnMap || {}), ...cacheGvcnLopTHSS };
                         }
                     }
                 }).catch(() => {})
@@ -420,7 +435,17 @@ function layHoTenGvcnTongHopSS(maLop) {
     if (!lopUp) return '';
 
     let maGvcn = '';
-    if (cacheGvcnLopTHSS[lopUp]) {
+    let nguonHV = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu)
+        ? window.thongSoHocVu
+        : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
+    if (nguonHV && nguonHV.GVCN_THEO_LOP) {
+        if (nguonHV.GVCN_THEO_LOP[lopUp] !== undefined) maGvcn = String(nguonHV.GVCN_THEO_LOP[lopUp] || '').trim();
+        else {
+            let kMatch = Object.keys(nguonHV.GVCN_THEO_LOP).find(k => String(k).trim().toUpperCase() === lopUp);
+            if (kMatch) maGvcn = String(nguonHV.GVCN_THEO_LOP[kMatch] || '').trim();
+        }
+    }
+    if (!maGvcn && cacheGvcnLopTHSS[lopUp]) {
         maGvcn = String(cacheGvcnLopTHSS[lopUp]).trim();
     }
     if (!maGvcn && cacheNguonTongHopSiSo && cacheNguonTongHopSiSo.gvcnMap) {
@@ -432,16 +457,6 @@ function layHoTenGvcnTongHopSS(maLop) {
     }
     if (!maGvcn && typeof tuDienGvcnTheoLopToanCuc !== 'undefined' && tuDienGvcnTheoLopToanCuc && tuDienGvcnTheoLopToanCuc[lopUp]) {
         maGvcn = String(tuDienGvcnTheoLopToanCuc[lopUp]).trim();
-    }
-    let nguonHV = (typeof window.thongSoHocVu !== 'undefined' && window.thongSoHocVu)
-        ? window.thongSoHocVu
-        : ((typeof thongSoHocVu !== 'undefined' && thongSoHocVu) ? thongSoHocVu : null);
-    if (!maGvcn && nguonHV && nguonHV.GVCN_THEO_LOP) {
-        if (nguonHV.GVCN_THEO_LOP[lopUp]) maGvcn = String(nguonHV.GVCN_THEO_LOP[lopUp]).trim();
-        else {
-            let kMatch = Object.keys(nguonHV.GVCN_THEO_LOP).find(k => String(k).trim().toUpperCase() === lopUp);
-            if (kMatch) maGvcn = String(nguonHV.GVCN_THEO_LOP[kMatch] || '').trim();
-        }
     }
     if (!maGvcn) return '';
 
