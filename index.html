@@ -3,6 +3,7 @@
 <head>
     <meta name="referrer" content="no-referrer">
     <script src="ketnoi.js?v=1.1"></script>
+    <script src="sso-client.js?v=1"></script>
     <link id="sys-favicon" rel="icon" href="">
     <meta charset="UTF-8">
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1179,6 +1180,9 @@ function taiBieuTuongCongKhai() {
 
     function kiemTraTrangThaiDangNhap() {
         let sysSession = localStorage.getItem(PREFIX_MEM + 'session');
+        if (sysSession && window.HT_SSO && !localStorage.getItem('HT_SSO_TOKEN')) {
+            HT_SSO.saveToken(sysSession);
+        }
         if (!sysSession) {
             isLoggedIn = false;
             document.getElementById('sys-name').style.display = 'none'; 
@@ -1214,8 +1218,8 @@ function taiBieuTuongCongKhai() {
     }
 
     function xuLyDangNhapThanhCong(response) { 
-        localStorage.setItem(PREFIX_MEM + 'session', response.credential); 
-        if (window.HT_SSO) HT_SSO.saveToken(response.credential); // <-- Thêm dòng này
+        localStorage.setItem(PREFIX_MEM + 'session', response.credential);
+        if (window.HT_SSO) HT_SSO.saveToken(response.credential); 
         kiemTraTrangThaiDangNhap(); 
     }
     
@@ -1223,8 +1227,9 @@ function taiBieuTuongCongKhai() {
         localStorage.removeItem(PREFIX_MEM + 'session'); 
         localStorage.removeItem(PREFIX_MEM + 'sysRoles'); 
         localStorage.removeItem(PREFIX_MEM + 'sysIconRoles'); 
-        localStorage.removeItem(PREFIX_MEM + 'sysName'); 
-        if (window.HT_SSO) HT_SSO.clearToken(); // <-- Thêm dòng này
+        localStorage.removeItem(PREFIX_MEM + 'sysName');
+        if (window.HT_SSO) HT_SSO.clearToken(); 
+        
         isLoggedIn = false;
         pickerAccessToken = null; 
         location.reload(); 
@@ -2741,5 +2746,5 @@ function toggleFolderMaximize() {
     }
 }
 </script>
- </body>
+</body>
 </html>
