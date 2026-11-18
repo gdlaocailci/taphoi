@@ -479,9 +479,9 @@
               <textarea id="nhapYkien" class="form-control border-danger" placeholder="* Ý kiến tham mưu, đề xuất..." style="height: 45px; min-height: 45px; overflow-y: hidden; resize: none; font-size: 13px; border: 1px dashed #dc3545; padding: 3px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
             </div>
             <div class="col-md-6">
-              <div style="position: relative;">
-                <textarea id="nhapBcao" class="form-control border-danger" placeholder="* Báo cáo tóm tắt quá trình thực hiện..." style="height: 45px; min-height: 45px; max-height: 66px; line-height: 1.45; overflow-y: auto; resize: none; font-size: 13px; border: 1px dashed #dc3545; padding: 3px 30px 3px 3px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
-                <button class="btn btn-sm text-primary" onclick="document.getElementById('tepBcao').click()" style="position: absolute; top: 2px; right: 4px; padding: 0; background: transparent; border: none; z-index: 10;" title="Đính kèm báo cáo"><i class="bi bi-paperclip" style="font-size: 18px;"></i></button>
+              <div class="d-flex align-items-start gap-1">
+                <textarea id="nhapBcao" class="form-control border-danger" placeholder="* Báo cáo tóm tắt quá trình thực hiện..." style="flex: 1 1 auto; height: 45px; min-height: 45px; max-height: 45px; line-height: 1.45; overflow-y: auto; resize: none; font-size: 13px; border: 1px dashed #dc3545; padding: 3px 6px; border-radius: 4px;" oninput="gdang(this)" onfocus="gdang(this)" onblur="cgon(this, '45px')"></textarea>
+                <button class="btn btn-sm text-primary flex-shrink-0" onclick="document.getElementById('tepBcao').click()" style="padding: 2px 4px; background: transparent; border: none;" title="Đính kèm báo cáo"><i class="bi bi-paperclip" style="font-size: 18px;"></i></button>
                 <input type="file" id="tepBcao" multiple style="display:none;" onchange="xulyTaiBcao(this)">
               </div>
               <div id="vungDinhkBcao" class="mt-1 d-flex gap-1 flex-wrap justify-content-end"></div>
