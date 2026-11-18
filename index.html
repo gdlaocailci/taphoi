@@ -1215,6 +1215,7 @@ function taiBieuTuongCongKhai() {
 
     function xuLyDangNhapThanhCong(response) { 
         localStorage.setItem(PREFIX_MEM + 'session', response.credential); 
+        if (window.HT_SSO) HT_SSO.saveToken(response.credential); // <-- Thêm dòng này
         kiemTraTrangThaiDangNhap(); 
     }
     
@@ -1223,7 +1224,7 @@ function taiBieuTuongCongKhai() {
         localStorage.removeItem(PREFIX_MEM + 'sysRoles'); 
         localStorage.removeItem(PREFIX_MEM + 'sysIconRoles'); 
         localStorage.removeItem(PREFIX_MEM + 'sysName'); 
-        
+        if (window.HT_SSO) HT_SSO.clearToken(); // <-- Thêm dòng này
         isLoggedIn = false;
         pickerAccessToken = null; 
         location.reload(); 
@@ -2740,5 +2741,7 @@ function toggleFolderMaximize() {
     }
 }
 </script>
+    <script src="../sso-client.js"></script>
+   <script src="sso-bridge.js"></script>
 </body>
 </html>
