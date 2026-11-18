@@ -537,13 +537,13 @@
     <div class="card-body p-3">
       <div id="mcThongTinNhiemVu" class="p-2 mb-2 bg-light border rounded small text-dark" style="max-height: 90px; overflow-y: auto; line-height: 1.4;"></div>
       <label id="mcNhanNoiDung" for="txtMinhChungModal" class="form-label fw-bold small text-primary mb-1">Nội dung minh chứng <span class="text-danger">*</span></label>
-      <textarea id="txtMinhChungModal" class="form-control" rows="4" placeholder="Hãy viết nội dung đã làm được theo yêu cầu tiêu chí Hoặc nếu có báo cáo chi tiết đính kèm đã thể hiện thì hãy nhập "Đã có báo cáo đính kèm"" style="font-size: 13px; resize: vertical;" oninput="anCanhBaoModalMinhChung()"></textarea>
+      <textarea id="txtMinhChungModal" class="form-control" rows="4" placeholder="Hãy viết nội dung đã làm được theo yêu cầu tiêu chí Hoặc nếu có báo cáo chi tiết đính kèm đã thể hiện thì hãy nhập (Đã có báo cáo đính kèm)" style="font-size: 13px; resize: vertical;" oninput="anCanhBaoModalMinhChung()"></textarea>
       <div id="mcCanhBaoLoi" class="alert alert-danger py-1 px-2 mt-2 mb-0 small fw-bold" style="display: none; font-size: 12px;"><i class="bi bi-exclamation-triangle-fill me-1"></i> <span id="mcCanhBaoText">Vui lòng nhập nội dung minh chứng trước khi xác nhận.</span></div>
       <div id="mcGhiChuDuoi" class="form-text small text-muted mt-1">Minh chứng sẽ tự động gán trong ô Báo cáo tóm tắt.</div>
     </div>
     <div class="card-footer bg-light d-flex justify-content-end gap-2 py-2 px-3">
       <button type="button" class="btn btn-sm btn-secondary" onclick="dongModalMinhChung()">Hủy</button>
-      <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="xacNhanMinhChung()"><i class="bi bi-check-circle me-1"></i> Xác nhận & Gán vào báo cáo</button>
+      <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="xacNhanMinhChung()"><i class="bi bi-check-circle me-1"></i> Xác nhận</button>
     </div>
   </div>
 </div>
