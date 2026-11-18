@@ -2163,16 +2163,24 @@ function xacNhanMinhChung() {
         return;
     }
 
+    let tenTieuChi = _dongDangNhapMinhChung.querySelector('.nhapNdung') ? _dongDangNhapMinhChung.querySelector('.nhapNdung').value.replace(/[\r\n]+/g, ' ').trim() : "";
+    let diemDat = _dongDangNhapMinhChung.querySelector('.chonKq') ? _dongDangNhapMinhChung.querySelector('.chonKq').value.trim() : "";
+    let phanTieuDe = tenTieuChi !== ""
+        ? `${tenTieuChi}${diemDat !== "" ? ` (${diemDat} điểm)` : ""}: `
+        : (diemDat !== "" ? `(${diemDat} điểm): ` : "");
+    let dongDinhDang = `${phanTieuDe}${noiDungMc}`;
+
     let mcCu = _dongDangNhapMinhChung.getAttribute('data-minh-chung') || "";
+    let mcDongCu = _dongDangNhapMinhChung.getAttribute('data-minh-chung-dong') || "";
     let noiDungHienTai = oBcao.value || "";
     let cacDong = noiDungHienTai === "" ? [] : noiDungHienTai.split(/\r?\n/);
 
     let daCapNhatTaiCho = false;
-    if (mcCu !== "") {
+    if (mcDongCu !== "" || mcCu !== "") {
         for (let i = 0; i < cacDong.length; i++) {
             let m = cacDong[i].match(/^\s*(\d+)\.\s+(.*)$/);
-            if (m && m[2].trim() === mcCu.trim()) {
-                cacDong[i] = `${m[1]}. ${noiDungMc}`;
+            if (m && ((mcDongCu !== "" && m[2].trim() === mcDongCu.trim()) || (mcCu !== "" && m[2].trim() === mcCu.trim()))) {
+                cacDong[i] = `${m[1]}. ${dongDinhDang}`;
                 daCapNhatTaiCho = true;
                 break;
             }
@@ -2192,10 +2200,11 @@ function xacNhanMinhChung() {
         while (cacDong.length > 0 && cacDong[cacDong.length - 1].trim() === "") {
             cacDong.pop();
         }
-        cacDong.push(`${sttMoi}. ${noiDungMc}`);
+        cacDong.push(`${sttMoi}. ${dongDinhDang}`);
     }
 
     _dongDangNhapMinhChung.setAttribute('data-minh-chung', noiDungMc);
+    _dongDangNhapMinhChung.setAttribute('data-minh-chung-dong', dongDinhDang);
     _dongDangNhapMinhChung.setAttribute('data-minh-chung-mode', _cheDoModalMinhChung);
     datGiaTriBaoCaoAnToan(oBcao, cacDong.join('\n'));
 
