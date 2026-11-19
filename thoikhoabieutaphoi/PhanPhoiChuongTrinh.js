@@ -314,9 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         let nhomNut = document.getElementById('nhomNutCongCuPPCT');
         if (nhomNut) {
-            let coQuyen = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || 
-                          (typeof quyenChiTiet !== 'undefined' && quyenChiTiet.menu && quyenChiTiet.menu.includes('menuPhanPhoiChuongTrinh'));
-            nhomNut.style.display = coQuyen ? 'flex' : 'none';
+            nhomNut.style.display = 'flex';
         }
         capNhatHienThiNutKhoaSuaPPCT();
     }, 1000);
@@ -363,7 +361,7 @@ function taoKhungGiaoDienPPCT() {
                     <h2 class="text-xl font-extrabold text-blue-900 uppercase tracking-wide">Quản lý Phân Phối Chương Trình</h2>
                 </div>
                 
-                <div id="nhomNutCongCuPPCT" class="flex flex-wrap items-center gap-2" style="display: none;">
+                <div id="nhomNutCongCuPPCT" class="flex flex-wrap items-center gap-2">
                     <input type="file" id="fileNhapPPCT" accept=".xlsx, .xls" class="hidden" onchange="xuLyNhapExcelPPCT(event)">
                     <button id="nutNhapExcelPPCT" onclick="document.getElementById('fileNhapPPCT').click()" style="display: none;" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded shadow transition duration-200 flex items-center gap-1.5 text-sm">
                         Nhập Excel
@@ -925,12 +923,16 @@ function capNhatHienThiNutKhoaSuaPPCT() {
     const lop = elLop ? elLop.value.trim() : '';
     const tuan = elTuan ? elTuan.value.trim() : '1';
 
+    const daDangNhap = laQuanTri || layTapDinhDanhNguoiDangNhapPPCT().size > 0;
+    const coDongDuLieu = document.querySelectorAll('#vungDuLieuLichPPCT [data-loai="tietPpc"]').length > 0;
+
     let coQuyenSua = false;
-    if (cheDoXemPPCT === 'gvbm') {
-        const coDongDuLieu = document.querySelectorAll('#vungDuLieuLichPPCT [data-loai="tietPpc"]').length > 0;
-        coQuyenSua = coDongDuLieu && (laQuanTri || Object.keys(duLieuGvbmTheoLop).length > 0);
-    } else {
-        coQuyenSua = laQuanTri || (lop !== '' && kiemTraQuyenDayLopPPCT(lop, tuan));
+    if (daDangNhap && coDongDuLieu) {
+        if (cheDoXemPPCT === 'gvbm') {
+            coQuyenSua = laQuanTri || Object.keys(duLieuGvbmTheoLop).length > 0;
+        } else {
+            coQuyenSua = laQuanTri || (lop !== '' && kiemTraQuyenDayLopPPCT(lop, tuan));
+        }
     }
     nutSua.style.display = coQuyenSua ? 'flex' : 'none';
 
@@ -950,9 +952,14 @@ function chuyenDoiTrangThaiSuaPPCT() {
     const elTuan = document.getElementById('locTuanUI');
     const lop = elLop ? elLop.value.trim() : '';
     const tuan = elTuan ? elTuan.value.trim() : '1';
-    const hopLe = (cheDoXemPPCT === 'gvbm')
-        ? (laAdminHoacBghPPCT() || Object.keys(duLieuGvbmTheoLop).length > 0)
-        : (laAdminHoacBghPPCT() || kiemTraQuyenDayLopPPCT(lop, tuan));
+    const laQuanTri = laAdminHoacBghPPCT();
+    const daDangNhap = laQuanTri || layTapDinhDanhNguoiDangNhapPPCT().size > 0;
+    const coDongDuLieu = document.querySelectorAll('#vungDuLieuLichPPCT [data-loai="tietPpc"]').length > 0;
+    const hopLe = daDangNhap && coDongDuLieu && (
+        (cheDoXemPPCT === 'gvbm')
+            ? (laQuanTri || Object.keys(duLieuGvbmTheoLop).length > 0)
+            : (laQuanTri || kiemTraQuyenDayLopPPCT(lop, tuan))
+    );
     if (!hopLe) {
         capNhatHienThiNutKhoaSuaPPCT();
         return;
