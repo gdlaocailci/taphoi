@@ -558,7 +558,7 @@ function layTapDinhDanhNguoiDangNhapPPCT() {
             return;
         }
         let s = chuanHoaDinhDanhGvPPCT(v);
-        if (s) tap.add(s);
+        if (s && s !== 'guest' && s !== 'khách' && s !== 'public' && s !== 'công khai') tap.add(s);
     };
 
     if (typeof quyenChiTiet !== 'undefined' && quyenChiTiet) them(quyenChiTiet);
