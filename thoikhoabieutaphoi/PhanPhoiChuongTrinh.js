@@ -906,6 +906,13 @@ function laAdminHoacBghPPCT() {
     return false;
 }
 
+function coQuyenDangNhapPPCT() {
+    if (laAdminHoacBghPPCT()) return true;
+    if (layTapDinhDanhNguoiDangNhapPPCT().size > 0) return true;
+    if (typeof quyenChiTiet !== 'undefined' && quyenChiTiet && Array.isArray(quyenChiTiet.menu) && quyenChiTiet.menu.includes('menuPhanPhoiChuongTrinh')) return true;
+    return false;
+}
+
 function capNhatHienThiNutKhoaSuaPPCT() {
     const laQuanTri = laAdminHoacBghPPCT();
 
@@ -923,7 +930,7 @@ function capNhatHienThiNutKhoaSuaPPCT() {
     const lop = elLop ? elLop.value.trim() : '';
     const tuan = elTuan ? elTuan.value.trim() : '1';
 
-    const daDangNhap = laQuanTri || layTapDinhDanhNguoiDangNhapPPCT().size > 0;
+    const daDangNhap = coQuyenDangNhapPPCT();
     const coDongDuLieu = document.querySelectorAll('#vungDuLieuLichPPCT [data-loai="tietPpc"]').length > 0;
 
     let coQuyenSua = false;
@@ -953,7 +960,7 @@ function chuyenDoiTrangThaiSuaPPCT() {
     const lop = elLop ? elLop.value.trim() : '';
     const tuan = elTuan ? elTuan.value.trim() : '1';
     const laQuanTri = laAdminHoacBghPPCT();
-    const daDangNhap = laQuanTri || layTapDinhDanhNguoiDangNhapPPCT().size > 0;
+    const daDangNhap = coQuyenDangNhapPPCT();
     const coDongDuLieu = document.querySelectorAll('#vungDuLieuLichPPCT [data-loai="tietPpc"]').length > 0;
     const hopLe = daDangNhap && coDongDuLieu && (
         (cheDoXemPPCT === 'gvbm')
