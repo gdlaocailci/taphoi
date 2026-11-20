@@ -524,11 +524,9 @@ function chuyenCheDoXemPPCT(cheDoMoi) {
     _chuKyBoLocMonGvbmPPCT = '';
 
     if (cheDoXemPPCT === 'gvbm') {
-        capNhatBoLocMonRiengChoGvbmPPCT(false);
+        bomDuLieuVaoBoLoc(false);
         taiDuLieuGvbmPPCT(false);
     } else {
-        const elMon = document.getElementById('locMonPPCT');
-        if (elMon) elMon.value = 'Tất cả';
         bomDuLieuVaoBoLoc(false);
         taiDuLieuTkbVaPpct(false);
     }
@@ -1194,8 +1192,7 @@ function bomDuLieuVaoBoLoc(tuDongTaiKhiThayDoi = false) {
         if (_chuKyBoLocPPCT !== chuKyMoi) {
             _chuKyBoLocPPCT = chuKyMoi;
             if (listLop) listLop.innerHTML = dsLopHienThi.map(lop => `<option value="${lop}">`).join('');
-            // Chế độ GVCN ('lop') luôn giữ đầy đủ danh sách môn toàn trường + "Tất cả"
-            if (cheDoXemPPCT === 'lop' && listMon) {
+            if (listMon) {
                 listMon.innerHTML = `<option value="Tất cả"></option>` + dsMonToanTruong.map(mon => `<option value="${mon}">`).join('');
             }
         }
@@ -1212,15 +1209,8 @@ function bomDuLieuVaoBoLoc(tuDongTaiKhiThayDoi = false) {
             }
         }
 
-        // Ở chế độ GVCN ('lop'), mặc định ô Môn học luôn là "Tất cả"
-        if (cheDoXemPPCT === 'lop' && inputMon && document.activeElement !== inputMon && inputMon.value === '') {
+        if (inputMon && document.activeElement !== inputMon && inputMon.value === '') {
             inputMon.value = 'Tất cả';
-        }
-
-        // Nếu đang ở chế độ GVBM, giao riêng phần lọc môn cho khối mã GVBM xử lý
-        if (cheDoXemPPCT === 'gvbm') {
-            capNhatBoLocMonRiengChoGvbmPPCT(tuDongTaiKhiThayDoi);
-            return;
         }
 
         if (tuDongTaiKhiThayDoi && daDoiGiaTriTuDong) {
@@ -2034,7 +2024,6 @@ async function taiDuLieuGvbmPPCT(epDongBo = false) {
         const monHienTaiUI = document.getElementById('locMonPPCT').value.trim();
         if (cheDoXemPPCT === 'gvbm' && tuanHienTaiUI === tuan) {
             _tuanDangHienThiGvbmPPCT = tuan;
-            capNhatBoLocMonRiengChoGvbmPPCT(false);
             veBangGvbmPPCT(document.getElementById('locMonPPCT') ? document.getElementById('locMonPPCT').value.trim() : monHienTaiUI);
         }
     } catch (loi) {
