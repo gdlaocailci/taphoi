@@ -575,6 +575,18 @@ function layTapDinhDanhNguoiDangNhapPPCT() {
     if (typeof tenGvDangNhap !== 'undefined' && tenGvDangNhap) them(tenGvDangNhap);
     if (typeof emailDangNhap !== 'undefined' && emailDangNhap) them(emailDangNhap);
     if (typeof emailHienTai !== 'undefined' && emailHienTai) them(emailHienTai);
+    if (typeof window.HT_SSO === 'object' && window.HT_SSO) {
+        them(window.HT_SSO.currentUser || window.HT_SSO.user || window.HT_SSO);
+    }
+    try {
+        let ssoToken = localStorage.getItem('HT_SSO_TOKEN');
+        if (ssoToken && ssoToken.split('.').length === 3) {
+            let b64 = ssoToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            let payload = JSON.parse(jsonPayload);
+            if (payload) them(payload);
+        }
+    } catch (eSso) {}
 
     // Đối chiếu chéo qua danh sách giáo viên (nếu có) để đồng bộ giữa Mã GV, Tên GV và Email
     let dsGv = (typeof thongSoHocVu !== 'undefined' && (thongSoHocVu.DANH_SACH_GV || thongSoHocVu.DANH_SACH_GIAO_VIEN || thongSoHocVu.DM_GIAOVIEN || thongSoHocVu.GIAO_VIEN))
@@ -696,6 +708,28 @@ function layDanhSachMonPhanCongCuaGvPPCT(tuanMucTieu) {
                 if (banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) themMon(d['Môn Học'] || d.monHoc);
             });
         }
+    }
+    return Array.from(tapMon.values()).sort((a, b) => a.localeCompare(b, 'vi'));
+}
+
+function layDanhSachMonChoCheDoGvbmPPCT(tuanMucTieu) {
+    let dsMonPc = layDanhSachMonPhanCongCuaGvPPCT(tuanMucTieu);
+    if (dsMonPc.length > 0) return dsMonPc;
+
+    // Dự phòng riêng cho chế độ GVBM: lấy các môn thực tế có trong TKB của các lớp được phân công
+    let tapMon = new Map();
+    let themMon = (m) => {
+        let s = String(m || '').trim();
+        if (!s || s === '--' || s === '---') return;
+        let k = s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+        if (!tapMon.has(k)) tapMon.set(k, s);
+    };
+    if (duLieuGvbmTheoLop && typeof duLieuGvbmTheoLop === 'object') {
+        Object.values(duLieuGvbmTheoLop).forEach(goi => {
+            if (goi && Array.isArray(goi.dsTkb)) {
+                goi.dsTkb.forEach(t => themMon(t.monHoc));
+            }
+        });
     }
     return Array.from(tapMon.values()).sort((a, b) => a.localeCompare(b, 'vi'));
 }
@@ -1155,7 +1189,9 @@ function bomDuLieuVaoBoLoc(tuDongTaiKhiThayDoi = false) {
                 dsLopHienThi = dsLopPhanCong;
                 daLocLopTheoPhanCong = true;
             }
-            let dsMonPhanCong = layDanhSachMonPhanCongCuaGvPPCT(tuan);
+            let dsMonPhanCong = (cheDoXemPPCT === 'gvbm')
+                ? layDanhSachMonChoCheDoGvbmPPCT(tuan)
+                : layDanhSachMonPhanCongCuaGvPPCT(tuan);
             if (Array.isArray(dsMonPhanCong) && dsMonPhanCong.length > 0) {
                 dsMonHienThi = dsMonPhanCong;
                 daLocMonTheoPhanCong = true;
@@ -1167,7 +1203,7 @@ function bomDuLieuVaoBoLoc(tuDongTaiKhiThayDoi = false) {
         const inputLop = document.getElementById('locLopPPCT');
         const inputMon = document.getElementById('locMonPPCT');
 
-        let chuKyMoi = `${dsLopHienThi.join('|')}__${dsMonHienThi.join('|')}__${daLocLopTheoPhanCong ? 'PCL' : 'ALLL'}_${daLocMonTheoPhanCong ? 'PCM' : 'ALLM'}`;
+        let chuKyMoi = `${cheDoXemPPCT}__${dsLopHienThi.join('|')}__${dsMonHienThi.join('|')}__${daLocLopTheoPhanCong ? 'PCL' : 'ALLL'}_${daLocMonTheoPhanCong ? 'PCM' : 'ALLM'}`;
         if (_chuKyBoLocPPCT !== chuKyMoi) {
             _chuKyBoLocPPCT = chuKyMoi;
             if (listLop) listLop.innerHTML = dsLopHienThi.map(lop => `<option value="${lop}">`).join('');
