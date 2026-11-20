@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nhomNut) {
             nhomNut.style.display = 'flex';
         }
-        bomDuLieuVaoBoLoc();
+        bomDuLieuVaoBoLoc(true);
         capNhatHienThiNutKhoaSuaPPCT();
     }, 1000);
 });
@@ -1132,29 +1132,32 @@ function moTabPhanPhoiChuongTrinh() {
 }
 
 let _chuKyBoLocPPCT = '';
-function bomDuLieuVaoBoLoc() {
+function bomDuLieuVaoBoLoc(tuDongTaiKhiThayDoi = false) {
     if (typeof thongSoHocVu !== 'undefined') {
         const dsLopToanTruong = thongSoHocVu.DANH_SACH_LOP || [];
         const dsMonToanTruong = thongSoHocVu.DANH_SACH_MON_HOC || [];
         const elTuan = document.getElementById('locTuanUI');
         const tuan = elTuan ? elTuan.value.trim() : '1';
 
+        const laQuanTri = laAdminHoacBghPPCT();
+        const daDangNhap = coQuyenDangNhapPPCT();
+
         let dsLopHienThi = dsLopToanTruong;
         let dsMonHienThi = dsMonToanTruong;
-        let tapNguoiDung = layTapDinhDanhNguoiDangNhapPPCT();
-        let daLocMonTheoPhanCong = false;
         let daLocLopTheoPhanCong = false;
+        let daLocMonTheoPhanCong = false;
 
-        if (!laAdminHoacBghPPCT() && tapNguoiDung.size > 0) {
-            let dsMonPhanCong = layDanhSachMonPhanCongCuaGvPPCT(tuan);
-            if (dsMonPhanCong.length > 0) {
-                dsMonHienThi = dsMonPhanCong;
-                daLocMonTheoPhanCong = true;
-            }
+        // Chỉ lọc theo phân công khi ĐÃ ĐĂNG NHẬP và KHÔNG PHẢI Admin/BGH
+        if (daDangNhap && !laQuanTri) {
             let { dsLop: dsLopPhanCong } = layDanhSachLopPhanCongGvbmPPCT(tuan, '');
             if (Array.isArray(dsLopPhanCong) && dsLopPhanCong.length > 0) {
                 dsLopHienThi = dsLopPhanCong;
                 daLocLopTheoPhanCong = true;
+            }
+            let dsMonPhanCong = layDanhSachMonPhanCongCuaGvPPCT(tuan);
+            if (Array.isArray(dsMonPhanCong) && dsMonPhanCong.length > 0) {
+                dsMonHienThi = dsMonPhanCong;
+                daLocMonTheoPhanCong = true;
             }
         }
 
@@ -1167,30 +1170,54 @@ function bomDuLieuVaoBoLoc() {
         if (_chuKyBoLocPPCT !== chuKyMoi) {
             _chuKyBoLocPPCT = chuKyMoi;
             if (listLop) listLop.innerHTML = dsLopHienThi.map(lop => `<option value="${lop}">`).join('');
-            // [NÂNG CẤP]: Đưa tùy chọn "Tất cả" lên đỉnh danh sách đổ xuống
+            // [NÂNG CẤP]: Đưa tùy chọn "Tất cả" lên đỉnh danh sách đổ xuống (trừ khi GV chỉ dạy 1 môn)
             if (listMon) {
-                let htmlMon = (dsMonHienThi.length === 1 && daLocMonTheoPhanCong)
+                let htmlMon = (daLocMonTheoPhanCong && dsMonHienThi.length === 1)
                     ? ''
                     : `<option value="Tất cả"></option>`;
                 listMon.innerHTML = htmlMon + dsMonHienThi.map(mon => `<option value="${mon}">`).join('');
             }
         }
 
-        if (inputLop && dsLopHienThi.length > 0) {
+        let daDoiGiaTriTuDong = false;
+
+        if (inputLop && dsLopHienThi.length > 0 && document.activeElement !== inputLop) {
             let lopHienTaiUpper = inputLop.value.trim().toUpperCase();
             let lopHopLe = lopHienTaiUpper !== '' && (!daLocLopTheoPhanCong || dsLopHienThi.some(l => String(l).trim().toUpperCase() === lopHienTaiUpper));
             if (!lopHopLe) {
                 inputLop.value = dsLopHienThi[0];
                 tuDongTinhKhoiLop();
+                daDoiGiaTriTuDong = true;
             }
         }
-        
-        // [NÂNG CẤP]: Mặc định chọn môn được phân công nếu chỉ dạy 1 môn, ngược lại để "Tất cả"
-        if (inputMon) {
-            if (daLocMonTheoPhanCong && dsMonHienThi.length === 1 && (inputMon.value === '' || inputMon.value === 'Tất cả')) {
-                inputMon.value = dsMonHienThi[0];
+
+        if (inputMon && document.activeElement !== inputMon) {
+            let monHienTaiChuan = inputMon.value.trim().normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+            let laTatCa = (monHienTaiChuan === '' || monHienTaiChuan === 'tất cả');
+            let monTrongDs = !laTatCa && dsMonHienThi.some(m => monHocKhopPPCT(m, inputMon.value));
+
+            if (daLocMonTheoPhanCong) {
+                if (dsMonHienThi.length === 1 && (laTatCa || !monTrongDs)) {
+                    inputMon.value = dsMonHienThi[0];
+                    daDoiGiaTriTuDong = true;
+                } else if (!laTatCa && !monTrongDs) {
+                    inputMon.value = 'Tất cả';
+                    daDoiGiaTriTuDong = true;
+                }
             } else if (inputMon.value === '') {
                 inputMon.value = 'Tất cả';
+            }
+        }
+
+        // Nếu tab PPCT đang mở và bộ lọc vừa tự động chuyển sang lớp/môn được phân công -> đồng bộ bảng ngay
+        if (tuDongTaiKhiThayDoi && daDoiGiaTriTuDong) {
+            const khungPPCT = document.getElementById('khungPhanPhoiChuongTrinh');
+            if (khungPPCT && !khungPPCT.classList.contains('hidden')) {
+                if (cheDoXemPPCT === 'gvbm') {
+                    taiDuLieuGvbmPPCT(false);
+                } else {
+                    taiDuLieuTkbVaPpct(false);
+                }
             }
         }
     }
