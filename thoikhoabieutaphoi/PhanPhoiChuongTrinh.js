@@ -2320,11 +2320,9 @@ function veBangGvbmPPCT(monDangChon) {
                     let khopMon = isXemTatCa || monTkbChuan === monChonChuan || monTkbGoc === monChonGoc;
                     if (!khopMon) return;
 
-                    // Chỉ lọc theo định danh GV trên từng tiết khi trong TKB của lớp đó thực sự có ít nhất 1 tiết khớp tapNguoiDung
-                    // (Tránh trường hợp Tuần hiện tại lấy từ duLieuTkbHienTai có mã/tên GV khác định dạng SSO làm ẩn sạch tiết dù lớp đã được phân công qua SĐB)
+                    // Nếu bản ghi TKB có thông tin GV và không phải chế độ Admin fallback -> kiểm tra đúng GV đang đăng nhập
                     if (!goi.laCheDoAdminFallback && tapNguoiDung.size > 0 && banGhiTkbCoThongTinGvPPCT(tietTkb)) {
-                        let coItNhatMotTietKhopTrongLop = goi.dsTkb.some(t => banGhiTkbKhopNguoiDayPPCT(t, tapNguoiDung));
-                        if (coItNhatMotTietKhopTrongLop && !banGhiTkbKhopNguoiDayPPCT(tietTkb, tapNguoiDung)) return;
+                        if (!banGhiTkbKhopNguoiDayPPCT(tietTkb, tapNguoiDung)) return;
                     }
 
                     let ppctCuaMon = layPpctChoKhoiMon(goi.khoi, goi.dsPpct, tenMonTkb);
