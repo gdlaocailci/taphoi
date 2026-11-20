@@ -941,6 +941,14 @@ function kiemTraQuyenDayLopPPCT(lopMucTieu, tuanMucTieu) {
         }
     }
 
+    // 6. Đồng bộ với bộ lọc lớp được phân công (bao gồm kế thừa tuần tương lai cho chế độ Theo Lớp - GVCN)
+    if (typeof layDanhSachLopPhanCongGvbmPPCT === 'function') {
+        let { dsLop: dsLopPc } = layDanhSachLopPhanCongGvbmPPCT(tuanSo, '');
+        if (Array.isArray(dsLopPc) && dsLopPc.some(l => String(l || '').trim().toUpperCase() === lopUpper)) {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -1010,8 +1018,11 @@ function capNhatHienThiNutKhoaSuaPPCT() {
             coQuyenSua = laQuanTri || (lop !== '' && kiemTraQuyenDayLopPPCT(lop, tuan));
         }
     }
+    const dangXemTruocExcel = laQuanTri && cheDoXemPPCT === 'lop' && document.querySelectorAll('#vungDuLieuLichPPCT .dong-xem-truoc-excel').length > 0;
     nutSua.style.display = coQuyenSua ? 'flex' : 'none';
-    if (nutLuu) nutLuu.style.display = nutSua.style.display;
+    if (nutLuu) {
+        nutLuu.style.display = dangXemTruocExcel ? 'flex' : nutSua.style.display;
+    }
 
     if (!coQuyenSua && trangThaiChoPhepSua) {
         trangThaiChoPhepSua = false;
@@ -1058,6 +1069,8 @@ function chuyenDoiTrangThaiSuaPPCT() {
             Khóa Sửa
         `;
     }
+    const nutLuu = document.getElementById('nutLuuPPCT');
+    if (nutLuu && nutSua) nutLuu.style.display = nutSua.style.display;
     capNhatTrangThaiCacO();
 }
 
