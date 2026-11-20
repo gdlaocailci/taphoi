@@ -803,14 +803,29 @@ function layDanhSachLopPhanCongGvbmPPCT(tuanMucTieu, monMucTieu = '') {
         }
     }
 
-    // 3. Kết hợp hàm sàng lọc lớp của Sổ đầu bài (khi chưa lọc được theo môn cụ thể)
+    // 3. Kết hợp hàm sàng lọc lớp của Sổ đầu bài (nếu là tuần tương lai thì kế thừa phân công của tuần hiện tại)
+    let tuanHT = (typeof thongSoHocVu !== 'undefined' && thongSoHocVu.TUAN_HIEN_TAI)
+        ? (parseInt(thongSoHocVu.TUAN_HIEN_TAI, 10) || 1)
+        : ((typeof tuanDangXem !== 'undefined') ? (parseInt(tuanDangXem, 10) || 1) : 1);
+
     if (tapLopMap.size === 0 && typeof window.layDanhSachLopDuocDayTheoTuanSDB === 'function') {
         try {
             let dsSdb = window.layDanhSachLopDuocDayTheoTuanSDB(tuanSo);
+            if ((!Array.isArray(dsSdb) || dsSdb.length === 0) && tuanSo > tuanHT) {
+                dsSdb = window.layDanhSachLopDuocDayTheoTuanSDB(tuanHT);
+            }
             if (Array.isArray(dsSdb)) {
                 dsSdb.forEach(l => themLop(l));
             }
         } catch (eSdb) {}
+    }
+
+    // 3.5 Dự phòng riêng cho tuần tương lai: kế thừa lớp từ TKB tuần hiện tại nếu TKB_CoDinh chưa có
+    if (tapLopMap.size === 0 && tuanSo > tuanHT && typeof window.sangLocTkbTuanDaCo === 'function') {
+        let kqTuanHT = window.sangLocTkbTuanDaCo(tuanHT, 'TKB_HIEN_TAI');
+        if (kqTuanHT && Array.isArray(kqTuanHT.ds)) {
+            quetDanhSachTkb(kqTuanHT.ds, false);
+        }
     }
 
     // 4. Dự phòng riêng cho Admin/BGH không có tiết đứng lớp cá nhân: cho phép xem toàn trường theo môn
