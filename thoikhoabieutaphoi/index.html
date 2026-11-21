@@ -1790,7 +1790,9 @@
         window.kichHoatToanManHinhHeThong = kichHoatToanManHinhHeThong;
     })();
     </script>
-    <script src="[https://gdlaocailci.github.io/taphoi/sso-client.js?v=1](https://gdlaocailci.github.io/taphoi/sso-client.js?v=1)"></script>
-    <script src="sso-bridge.js?v=1"></script>
+    const vSsoCache = new Date().getTime();
+      document.write('<script src="https://gdlaocailci.github.io/taphoi/sso-client.js?v=' + vSsoCache + '"><\/script>');
+      document.write('<script src="sso-bridge.js?v=' + vSsoCache + '"><\/script>');
+    </script>
 </body>
 </html>
