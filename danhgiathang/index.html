@@ -4,7 +4,7 @@
   <link rel="icon" id="page_favicon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
   <base target="_top">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Đánh giá hiệu quả công việc</title>
 
   <!-- CẤU HÌNH WEB APP / PWA STANDALONE TOÀN MÀN HÌNH -->
@@ -79,16 +79,36 @@
         scriptConfig.src = 'ketnoi.js?v=' + new Date().getTime();
         scriptConfig.onload = function() {
             applyPGVConfig();
-            
-            var scriptGSI = document.createElement('script');
-            scriptGSI.src = "https://accounts.google.com/gsi/client";
-            scriptGSI.onload = function() {
-                kiemTraPhienLamViec();
+
+            var trangChuBase = (typeof PGV_LINK_TRANG_CHU !== 'undefined' && PGV_LINK_TRANG_CHU.trim() !== '')
+                ? PGV_LINK_TRANG_CHU.replace(/\/+$/, '')
+                : 'https://gdlaocailci.github.io/taphoi';
+
+            var tiepTucKhoiTaoDangNhap = function() {
+                if (sessionStorage.getItem("MA_PBAN_HT") && sessionStorage.getItem("PGV_TOKEN")) {
+                    kiemTraPhienLamViec();
+                    return;
+                }
+                if (layNguoiDungSSO()) {
+                    kiemTraPhienLamViec();
+                    return;
+                }
+                var scriptGSI = document.createElement('script');
+                scriptGSI.src = "https://accounts.google.com/gsi/client";
+                scriptGSI.onload = function() {
+                    kiemTraPhienLamViec();
+                };
+                scriptGSI.onerror = function() {
+                    document.getElementById('khu_vuc_nut_dang_nhap').innerHTML = "<span class='text-danger'>Lỗi kết nối tới máy chủ Google.</span>";
+                };
+                document.body.appendChild(scriptGSI);
             };
-            scriptGSI.onerror = function() {
-                document.getElementById('khu_vuc_nut_dang_nhap').innerHTML = "<span class='text-danger'>Lỗi kết nối tới máy chủ Google.</span>";
-            };
-            document.body.appendChild(scriptGSI);
+
+            var scriptSSO = document.createElement('script');
+            scriptSSO.src = trangChuBase + '/sso-client.js?v=' + new Date().getTime();
+            scriptSSO.onload = tiepTucKhoiTaoDangNhap;
+            scriptSSO.onerror = tiepTucKhoiTaoDangNhap;
+            document.head.appendChild(scriptSSO);
         };
         scriptConfig.onerror = function() {
             document.getElementById('hopLoi').style.display = 'block';
@@ -129,10 +149,41 @@
         document.head.appendChild(metaDesc);
     }
 
+function layNguoiDungSSO() {
+    if (sessionStorage.getItem("PGV_BO_QUA_SSO") === "1") return null;
+    if (window.HT_SSO && typeof window.HT_SSO.getUser === 'function') {
+        return window.HT_SSO.getUser();
+    }
+    try {
+        var token = localStorage.getItem('HT_SSO_TOKEN');
+        if (!token) return null;
+        var payload = giaimaJwt(token);
+        if (!payload || !payload.exp || (payload.exp * 1000) <= Date.now() || !payload.email) return null;
+        return {
+            email: payload.email,
+            name: payload.name || payload.email,
+            picture: payload.picture || '',
+            token: token
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
 function kiemTraPhienLamViec() {
-    const tkluuhd = sessionStorage.getItem("MA_PBAN_HT");
-    const tokenluu = sessionStorage.getItem("PGV_TOKEN"); 
+    let tkluuhd = sessionStorage.getItem("MA_PBAN_HT");
+    let tokenluu = sessionStorage.getItem("PGV_TOKEN"); 
     const daGhiLs = sessionStorage.getItem("DA_GHI_LS"); 
+
+    if (!tkluuhd || !tokenluu) {
+        const ssoUser = layNguoiDungSSO();
+        if (ssoUser && ssoUser.email && ssoUser.token) {
+            tkluuhd = ssoUser.email;
+            tokenluu = ssoUser.token;
+            sessionStorage.setItem("MA_PBAN_HT", tkluuhd);
+            sessionStorage.setItem("PGV_TOKEN", tokenluu);
+        }
+    }
 
     if (tkluuhd && tokenluu) { 
         window.PGV_ID_TC = tkluuhd; 
@@ -184,6 +235,7 @@ function xulyPhienDn(phanho) {
             return;
         }
         
+        sessionStorage.removeItem("PGV_BO_QUA_SSO");
         sessionStorage.setItem("MA_PBAN_HT", idht);
         sessionStorage.setItem("PGV_TOKEN", phanho.credential);
         
@@ -209,6 +261,7 @@ function xulyPhienDn(phanho) {
     }
 
     function thoatTaik() { 
+        sessionStorage.setItem("PGV_BO_QUA_SSO", "1");
         sessionStorage.removeItem("MA_PBAN_HT"); 
         sessionStorage.removeItem("PGV_TOKEN"); 
         sessionStorage.removeItem("DA_GHI_LS"); 
@@ -372,6 +425,13 @@ th.cot-thang-hien-tai-th { background-color: #ffc107 !important; color: #000 !im
 
     /* Kích hoạt khi xem trên điện thoại hoặc máy tính bảng nhỏ */
     @media screen and (max-width: 768px) {
+        html, body {
+            touch-action: manipulation;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+            touch-action: manipulation;
+        }
         /* Ẩn hoàn toàn cụm điều khiển cửa sổ trên điện thoại để trả lại 100% giao diện gốc */
         #cumDieuKhienCuaSo {
             display: none !important;
