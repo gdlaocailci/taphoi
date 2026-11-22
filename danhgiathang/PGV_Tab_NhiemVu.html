@@ -899,7 +899,8 @@ function apDungKhoaGiaoDien() {
     let isBGH = kiemTraLaBGH() || pgvTabCoQuyen('nv_ghi_ykien_ld', false);
     let isGS = kiemTraLaGS();
 
-    $('#nhapSngayNghi, #nhapLdoNghi, #nhapYkien, #oNoiDungYkienLanhDao, #nhapBcao').prop('disabled', isLocked);
+    $('#nhapSngayNghi, #nhapLdoNghi, #oNoiDungYkienLanhDao').prop('disabled', isLocked);
+    $('#nhapYkien, #nhapBcao').prop('disabled', false);
     if (isLocked) {
         $('#nhapSngayNghi, #nhapLdoNghi, #nhapYkien, #oNoiDungYkienLanhDao, #nhapBcao').prop('readonly', true);
     } else {
@@ -926,14 +927,16 @@ function apDungKhoaGiaoDien() {
 
     if (daChonGvKhac) {
         // Góc nhìn của người đánh giá: Luôn hiển thị để nhập ý kiến
+        // Dùng readonly thay vì disabled cho #nhapYkien, #nhapBcao để người giám sát vẫn click giãn rộng đọc toàn bộ nội dung mà không sửa được
         $('#vungYkienLanhDaoToanBo').show();
         if (isBGH || isGS) {
-            $('#nhapYkien, #nhapBcao').prop('disabled', true);
+            $('#nhapYkien, #nhapBcao').prop('disabled', false).prop('readonly', true);
             $('#oNoiDungYkienLanhDao').prop('disabled', false).prop('readonly', false);
             $('#nhapSngayNghi, #nhapLdoNghi').prop('disabled', true);
             $('.bi-paperclip').closest('button').prop('disabled', false); 
         } else {
-            $('#nhapYkien, #nhapBcao, #oNoiDungYkienLanhDao').prop('disabled', true);
+            $('#nhapYkien, #nhapBcao').prop('disabled', false).prop('readonly', true);
+            $('#oNoiDungYkienLanhDao').prop('disabled', true);
         }
     } else {
         // Góc nhìn của chính chủ: Chỉ hiển thị vùng phản hồi khi ĐÃ CÓ ý kiến của người đánh giá
