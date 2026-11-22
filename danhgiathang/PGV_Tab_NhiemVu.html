@@ -555,7 +555,7 @@
       <button type="button" class="btn-close btn-close-white" style="font-size: 11px;" onclick="dongModalMinhChung()" aria-label="Đóng"></button>
     </div>
     <div class="card-body p-3">
-      <div id="mcThongTinNhiemVu" class="p-2 mb-2 bg-light border rounded small text-dark" style="max-height: 90px; overflow-y: auto; line-height: 1.4;"></div>
+      <div id="mcThongTinNhiemVu" class="p-2 mb-2 bg-light border rounded text-dark" style="max-height: 140px; overflow-y: auto; line-height: 1.45; font-size: 14px;"></div>
       <label id="mcNhanNoiDung" for="txtMinhChungModal" class="form-label fw-bold small text-primary mb-1">Nội dung minh chứng <span class="text-danger">*</span></label>
       <textarea id="txtMinhChungModal" class="form-control" rows="4" placeholder="Hãy viết nội dung đã làm được theo yêu cầu tiêu chí Hoặc nếu có báo cáo chi tiết đính kèm đã thể hiện thì hãy nhập (Đã có báo cáo đính kèm)" style="font-size: 13px; resize: vertical;" oninput="anCanhBaoModalMinhChung()"></textarea>
       <div id="mcCanhBaoLoi" class="alert alert-danger py-1 px-2 mt-2 mb-0 small fw-bold" style="display: none; font-size: 12px;"><i class="bi bi-exclamation-triangle-fill me-1"></i> <span id="mcCanhBaoText">Vui lòng nhập nội dung minh chứng trước khi xác nhận.</span></div>
@@ -2137,7 +2137,7 @@ function moModalMinhChung(dongHienTai, giaTriDiem, giaTriTruocDo = "", cheDo = "
     let mucTieuModal = layMucTieuMucDiemCuaDong(dongHienTai, giaTriDiem, cheDo);
     if (infoEl) {
         let nhanStt = stt ? `<span class="badge bg-primary me-1">TT ${stt}</span>` : "";
-        let htmlMucTieu = mucTieuModal ? `<div class="mt-1 text-primary small"><strong>Mục tiêu yêu cầu:</strong> ${mucTieuModal.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : "";
+        let htmlMucTieu = mucTieuModal ? `<div class="mt-2 text-danger fw-bold" style="font-size: 14.5px; line-height: 1.45;"><strong>Mục tiêu yêu cầu:</strong> ${mucTieuModal.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : "";
         infoEl.innerHTML = `${nhanStt}<strong>Điểm đạt: ${giaTriDiem}${dMax ? '/' + dMax : ''}</strong><div class="mt-1">${nd.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>${htmlMucTieu}`;
     }
 
