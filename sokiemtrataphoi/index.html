@@ -1063,6 +1063,7 @@ function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
                         dlmhso = dl_tk.dlmh || [];
                         try { if (typeof capnhopm === 'function') capnhopm(); } catch(e) {}
                     }
+                    try { if (typeof goiCuocKTCuaNguoiDung === 'function') goiCuocKTCuaNguoiDung(true); } catch(e) {}
                     
                     document.querySelectorAll('#s_gv, #s_nkt, #s_bp, #cbMaHoSo').forEach(el => {
                         if(el) { el.classList.remove('reactbits-skeleton'); el.disabled = false; }
@@ -1136,6 +1137,7 @@ function kiemtqvata(tk_chuyen_den = null, so_lan_thu = 1) {
       if(nut) nut.classList.add('active');
       
       if (idd === 'TabPhanQuyen') { if (typeof loadPhanQuyen === 'function') loadPhanQuyen(); }
+      if (idd === 'TabNhapLieu') { if (typeof goiCuocKTCuaNguoiDung === 'function') goiCuocKTCuaNguoiDung(true); }
     }
 
    // BẮT ĐẦU NÂNG CẤP: Bổ sung hàm tải PDF ngầm cho khung xem minh chứng
