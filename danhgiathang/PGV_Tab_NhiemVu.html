@@ -2069,6 +2069,36 @@ function laMucDiemNhoNhat(dongHienTai, giaTriDiem) {
     return false;
 }
 
+function layMucTieuMucDiemCuaDong(dongHienTai, giaTriDiem, cheDo = "") {
+    if (!dongHienTai) return "";
+    let valFloat = parseFloat(String(giaTriDiem || "").replace(/,/g, '.'));
+    let cacMuc = dongHienTai.querySelectorAll('.khung-danh-sach .muc-chon');
+    let dsMuc = [];
+    cacMuc.forEach((muc, idx) => {
+        if (idx === 0) return;
+        let txt = (muc.innerText || muc.textContent || "").replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+        let oncl = muc.getAttribute('onclick') || "";
+        let m = oncl.match(/'([^']*)'/);
+        let valStr = m ? m[1].trim() : "";
+        let num = parseFloat(valStr.replace(/,/g, '.'));
+        if (txt !== "") {
+            dsMuc.push({ txt: txt.replace(/^[-•*]\s*/, '').trim(), valStr: valStr, num: isNaN(num) ? null : num });
+        }
+    });
+    if (dsMuc.length === 0) return "";
+    if (!isNaN(valFloat)) {
+        let khop = dsMuc.find(item => item.num !== null && Math.abs(item.num - valFloat) < 1e-6);
+        if (khop) return khop.txt;
+    }
+    let coSo = dsMuc.filter(item => item.num !== null);
+    if (coSo.length > 0) {
+        coSo.sort((a, b) => a.num - b.num);
+        if (cheDo === 'min') return coSo[0].txt;
+        if (cheDo === 'max') return coSo[coSo.length - 1].txt;
+    }
+    return "";
+}
+
 function moModalMinhChung(dongHienTai, giaTriDiem, giaTriTruocDo = "", cheDo = "max") {
     let oBcao = document.getElementById('nhapBcao');
     if (!oBcao || oBcao.disabled || oBcao.readOnly) return;
@@ -2104,9 +2134,11 @@ function moModalMinhChung(dongHienTai, giaTriDiem, giaTriTruocDo = "", cheDo = "
     let nd = dongHienTai.querySelector('.nhapNdung') ? dongHienTai.querySelector('.nhapNdung').value.trim() : "";
     let dMax = dongHienTai.querySelector('.nhapDiemMax') ? dongHienTai.querySelector('.nhapDiemMax').value.trim() : giaTriDiem;
 
+    let mucTieuModal = layMucTieuMucDiemCuaDong(dongHienTai, giaTriDiem, cheDo);
     if (infoEl) {
         let nhanStt = stt ? `<span class="badge bg-primary me-1">TT ${stt}</span>` : "";
-        infoEl.innerHTML = `${nhanStt}<strong>Điểm đạt: ${giaTriDiem}${dMax ? '/' + dMax : ''}</strong><div class="mt-1">${nd.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+        let htmlMucTieu = mucTieuModal ? `<div class="mt-1 text-primary small"><strong>Mục tiêu yêu cầu:</strong> ${mucTieuModal.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : "";
+        infoEl.innerHTML = `${nhanStt}<strong>Điểm đạt: ${giaTriDiem}${dMax ? '/' + dMax : ''}</strong><div class="mt-1">${nd.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>${htmlMucTieu}`;
     }
 
     let modeCu = dongHienTai.getAttribute('data-minh-chung-mode') || "";
@@ -2197,7 +2229,7 @@ function xoaMinhChungCuaDong(dongHienTai) {
                     daXoa = true;
                     return false;
                 }
-                if (tenTieuChi !== "" && phanNoiDung.startsWith(tenTieuChi + " (") && phanNoiDung.includes(" điểm):")) {
+                if (tenTieuChi !== "" && (phanNoiDung.startsWith(tenTieuChi + " (") || phanNoiDung.startsWith(tenTieuChi + " [")) && phanNoiDung.includes(" điểm")) {
                     daXoa = true;
                     return false;
                 }
@@ -2338,9 +2370,11 @@ function xacNhanMinhChung() {
 
     let tenTieuChi = _dongDangNhapMinhChung.querySelector('.nhapNdung') ? _dongDangNhapMinhChung.querySelector('.nhapNdung').value.replace(/[\r\n]+/g, ' ').trim() : "";
     let diemDat = _dongDangNhapMinhChung.querySelector('.chonKq') ? _dongDangNhapMinhChung.querySelector('.chonKq').value.trim() : "";
+    let mucTieuYc = layMucTieuMucDiemCuaDong(_dongDangNhapMinhChung, diemDat, _cheDoModalMinhChung);
+    let moTaMucTieu = mucTieuYc !== "" ? ` - Mục tiêu: ${mucTieuYc}` : "";
     let phanTieuDe = tenTieuChi !== ""
-        ? `${tenTieuChi}${diemDat !== "" ? ` (${diemDat} điểm)` : ""}: `
-        : (diemDat !== "" ? `(${diemDat} điểm): ` : "");
+        ? `${tenTieuChi}${diemDat !== "" ? ` (${diemDat} điểm${moTaMucTieu})` : (mucTieuYc !== "" ? ` (${mucTieuYc})` : "")}: `
+        : (diemDat !== "" ? `(${diemDat} điểm${moTaMucTieu}): ` : (mucTieuYc !== "" ? `(${mucTieuYc}): ` : ""));
     let dongDinhDang = `${phanTieuDe}${noiDungMc}`;
 
     let mcCu = _dongDangNhapMinhChung.getAttribute('data-minh-chung') || "";
