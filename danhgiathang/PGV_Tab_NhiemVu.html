@@ -2301,7 +2301,7 @@ function layCacDongMinhChungBaoVe(noiDung) {
         if (!m) return false;
         let phanSau = m[2].trim();
         if (tapDongDaLuu.has(phanSau)) return true;
-        return /^.+\([^)]*điểm\):\s*.+$/.test(phanSau);
+        return /^.+\([^)]*điểm.*\).+$/.test(phanSau);
     });
 }
 
@@ -2372,10 +2372,13 @@ function xacNhanMinhChung() {
     let diemDat = _dongDangNhapMinhChung.querySelector('.chonKq') ? _dongDangNhapMinhChung.querySelector('.chonKq').value.trim() : "";
     let mucTieuYc = layMucTieuMucDiemCuaDong(_dongDangNhapMinhChung, diemDat, _cheDoModalMinhChung);
     let moTaMucTieu = mucTieuYc !== "" ? ` - Mục tiêu: ${mucTieuYc}` : "";
+    let nhanNoiBat = (_cheDoModalMinhChung === 'min') ? 'LÝ DO' : 'MINH CHỨNG';
     let phanTieuDe = tenTieuChi !== ""
-        ? `${tenTieuChi}${diemDat !== "" ? ` (${diemDat} điểm${moTaMucTieu})` : (mucTieuYc !== "" ? ` (${mucTieuYc})` : "")}: `
-        : (diemDat !== "" ? `(${diemDat} điểm${moTaMucTieu}): ` : (mucTieuYc !== "" ? `(${mucTieuYc}): ` : ""));
-    let dongDinhDang = `${phanTieuDe}${noiDungMc}`;
+        ? `${tenTieuChi}${diemDat !== "" ? ` (${diemDat} điểm${moTaMucTieu})` : (mucTieuYc !== "" ? ` (${mucTieuYc})` : "")}`
+        : (diemDat !== "" ? `(${diemDat} điểm${moTaMucTieu})` : (mucTieuYc !== "" ? `(${mucTieuYc})` : ""));
+    let dongDinhDang = phanTieuDe !== ""
+        ? `${phanTieuDe} => 【${nhanNoiBat}: ${noiDungMc}】`
+        : `【${nhanNoiBat}: ${noiDungMc}】`;
 
     let mcCu = _dongDangNhapMinhChung.getAttribute('data-minh-chung') || "";
     let mcDongCu = _dongDangNhapMinhChung.getAttribute('data-minh-chung-dong') || "";
