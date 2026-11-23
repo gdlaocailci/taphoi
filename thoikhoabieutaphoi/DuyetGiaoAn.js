@@ -557,6 +557,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
     let dsMon = window.layDanhSachMonPhanCongCuaGvTheoTuan(ga.maGV, ga.tuan);
     let urlPreview = `https://drive.google.com/file/d/${ga.fileId}/preview`;
     let urlMoTab = `https://drive.google.com/file/d/${ga.fileId}/view`;
+    let urlTaiXuong = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(ga.fileId || '')}`;
     let uiChung = window.layThongTinHienThiTrangThaiGA(ga.trangThaiChung);
 
     let htmlDanhSachMon = '';
@@ -634,13 +635,14 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${uiChung.mauBadge} flex-none">${uiChung.nhan}</span>
                 </div>
                 <div class="flex items-center gap-2 flex-none">
+                    <a href="${urlTaiXuong}" target="_blank" rel="noopener" download="${String(ga.tenFile || 'GiaoAn').replace(/"/g, '&quot;')}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded transition inline-flex items-center gap-1">⬇ Tải xuống</a>
                     ${(laNguoiTai || coQuyenDuyet) ? `<a href="${urlMoTab}" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition">Mở tab mới</a>` : ''}
                     <button type="button" onclick="dongModalXemGiaoAnSDB()" class="text-white/80 hover:text-white text-2xl font-bold leading-none px-1 cursor-pointer">&times;</button>
                 </div>
             </div>
             <div class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
                 <div class="flex-1 lg:w-[68%] h-[48vh] lg:h-full bg-slate-100 border-b lg:border-b-0 lg:border-r border-slate-300 relative">
-                    ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2 right-3 w-12 h-12 z-20 bg-slate-100/95 rounded select-none" title="Chế độ chỉ xem giáo án"></div>` : ''}
+                    ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2 right-3 w-12 h-12 z-20 bg-white rounded select-none" title="Chế độ chỉ xem giáo án"></div>` : ''}
                     <iframe src="${urlPreview}" class="w-full h-full border-0" allow="autoplay"></iframe>
                 </div>
                 <div class="w-full lg:w-[32%] flex-1 lg:flex-none h-full overflow-y-auto p-3.5 bg-slate-50 flex flex-col justify-between">
