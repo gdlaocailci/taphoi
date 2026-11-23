@@ -612,8 +612,11 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
             <button type="button" id="btnLuuPheDuyetGA" onclick="luuPheDuyetGiaoAn('${ga.id.replace(/'/g, "\\'")}')" class="w-full py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-extrabold rounded shadow cursor-pointer transition">Lưu Phê Duyệt</button>
         </div>` : (ga.nhanXetChung ? `<div class="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-slate-800"><b>Nhận xét chung của BGH:</b><br>${ga.nhanXetChung}</div>` : '');
 
+    let dangCanSua = (ga.trangThaiChung === 'CAN_SUA') || Object.values(ga.chiTietMon || {}).some(ct => ct && ct.trangThai === 'CAN_SUA');
+    let nutDaDieuChinh = dangCanSua ? `<button type="button" id="btnBaoDaSuaGA" onclick="baoDaDieuChinhGiaoAn('${ga.id.replace(/'/g, "\\'")}', '${String(monFocus || '').replace(/'/g, "\\'")}')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded shadow cursor-pointer transition" title="Bấm sau khi đã sửa trực tiếp file trên Drive">✓ Đã điều chỉnh</button>` : '';
     let htmlNutNguoiTai = (laNguoiTai || coAdmin) ? `
-        <div class="mt-3 pt-3 border-t border-slate-200 flex gap-2">
+        <div class="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-2">
+            ${nutDaDieuChinh}
             <button type="button" onclick="kichHoatTaiGiaoAn1Cham(${ga.tuan}, '${String(ga.maGV).replace(/'/g, "\\'")}', '${String(ga.fileId).replace(/'/g, "\\'")}')" class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded shadow cursor-pointer transition">Sửa / Thay file</button>
             <button type="button" onclick="xoaGiaoAn1Cham('${ga.id.replace(/'/g, "\\'")}')" class="py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded shadow cursor-pointer transition">Xóa</button>
         </div>` : '';
@@ -715,6 +718,43 @@ window.luuPheDuyetGiaoAn = async function(giaoAnId) {
         }
     } catch (err) {
         alert('⚠️ Lỗi phê duyệt: ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerHTML = txtGoc; }
+    }
+};
+
+window.baoDaDieuChinhGiaoAn = async function(giaoAnId, monFocus = '') {
+    let infoUser = window.layThongTinNguoiDangNhapGA();
+    let btn = document.getElementById('btnBaoDaSuaGA');
+    let txtGoc = btn ? btn.innerHTML : '✓ Đã điều chỉnh';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Đang gửi...'; }
+
+    try {
+        const phanHoi = await fetchVoiCoCheThuLai(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+            method: 'POST',
+            body: JSON.stringify({
+                thaoTac: 'baoDaSuaGiaoAn',
+                id: giaoAnId,
+                emailTruyCap: infoUser.email || infoUser.maGV
+            })
+        }, 2, 30000);
+        const kq = await phanHoi.json();
+        if (kq && kq.trangThai === 'thanh_cong' && kq.giaoAn) {
+            let idx = window.duLieuGiaoAnToanCuc.findIndex(g => g.id === kq.giaoAn.id);
+            if (idx !== -1) window.duLieuGiaoAnToanCuc[idx] = kq.giaoAn;
+            if (document.getElementById('modalXemDuyetGiaoAn')) {
+                window.moModalXemGiaoAnSDB(kq.giaoAn.id, monFocus, _dangMoModalCheDoDuyet);
+            }
+            if (!document.getElementById('khungDuyetGiaoAn')?.classList.contains('hidden')) {
+                window.ketXuatBangDuyetGiaoAn();
+            }
+            if (typeof thucThiKetXuatSoDauBaiLenLuoi === 'function' && !document.getElementById('khungSoDauBai')?.classList.contains('hidden')) {
+                thucThiKetXuatSoDauBaiLenLuoi();
+            }
+        } else {
+            throw new Error((kq && kq.thongBao) ? kq.thongBao : 'Không thể cập nhật trạng thái.');
+        }
+    } catch (err) {
+        alert('⚠️ Lỗi báo đã điều chỉnh: ' + err.message);
         if (btn) { btn.disabled = false; btn.innerHTML = txtGoc; }
     }
 };
