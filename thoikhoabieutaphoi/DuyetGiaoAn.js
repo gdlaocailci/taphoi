@@ -218,6 +218,26 @@ window.layTrangThaiMonTrongGiaoAn = function(giaoAn, tenMon) {
     };
 };
 
+// Trả về chuỗi "Môn (Lớp)" cho các môn có trạng thái CAN_SUA
+window.layChuoiMonCanSuaGA = function(ga, maGV, tuanSo) {
+    if (!ga || !ga.chiTietMon) return "";
+    let dsPC = window.layDanhSachMonPhanCongCuaGvTheoTuan(maGV || ga.maGV, tuanSo || ga.tuan);
+    let mapLop = {};
+    dsPC.forEach(item => {
+        mapLop[String(item.mon || "").trim().toLowerCase().normalize("NFC")] = item.lopList || [];
+    });
+    let ketQua = [];
+    for (let mon in ga.chiTietMon) {
+        let ct = ga.chiTietMon[mon];
+        if (ct && ct.trangThai === "CAN_SUA") {
+            let key = String(mon).trim().toLowerCase().normalize("NFC");
+            let lops = mapLop[key] || [];
+            ketQua.push(lops.length > 0 ? `${mon} (${lops.join(", ")})` : mon);
+        }
+    }
+    return ketQua.join(", ");
+};
+
 // Helper render thông tin hiển thị của từng mã trạng thái
 window.layThongTinHienThiTrangThaiGA = function(maTrangThai) {
     switch (maTrangThai) {
