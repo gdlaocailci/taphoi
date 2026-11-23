@@ -549,7 +549,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
     let infoUser = window.layThongTinNguoiDangNhapGA();
     let maUserNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(infoUser.maGV) : infoUser.maGV.toLowerCase();
     let maGaNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(ga.maGV) : String(ga.maGV || '').toLowerCase();
-    let laNguoiTai = !!(maUserNorm && (maUserNorm === maGaNorm || (maGaNorm.length > 2 && maUserNorm.includes(maGaNorm))));
+    let laNguoiTai = !!(maUserNorm && maGaNorm && maUserNorm === maGaNorm);
     _dangMoModalCheDoDuyet = (choPhepDuyet === true);
     let coQuyenDuyet = _dangMoModalCheDoDuyet && window.coQuyenDuyetGiaoAn();
     let coAdmin = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || (typeof coToanQuyenSDB !== 'undefined' && coToanQuyenSDB);
@@ -614,7 +614,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
 
     let dangCanSua = (ga.trangThaiChung === 'CAN_SUA') || Object.values(ga.chiTietMon || {}).some(ct => ct && ct.trangThai === 'CAN_SUA');
     let nutDaDieuChinh = dangCanSua ? `<button type="button" id="btnBaoDaSuaGA" onclick="baoDaDieuChinhGiaoAn('${ga.id.replace(/'/g, "\\'")}', '${String(monFocus || '').replace(/'/g, "\\'")}')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded shadow cursor-pointer transition" title="Bấm sau khi đã sửa trực tiếp file trên Drive">✓ Đã điều chỉnh</button>` : '';
-    let htmlNutNguoiTai = (laNguoiTai || coAdmin) ? `
+    let htmlNutNguoiTai = laNguoiTai ? `
         <div class="mt-3 pt-3 border-t border-slate-200 flex flex-wrap gap-2">
             ${nutDaDieuChinh}
             <button type="button" onclick="kichHoatTaiGiaoAn1Cham(${ga.tuan}, '${String(ga.maGV).replace(/'/g, "\\'")}', '${String(ga.fileId).replace(/'/g, "\\'")}')" class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded shadow cursor-pointer transition">Sửa / Thay file</button>
@@ -634,12 +634,13 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${uiChung.mauBadge} flex-none">${uiChung.nhan}</span>
                 </div>
                 <div class="flex items-center gap-2 flex-none">
-                    <a href="${urlMoTab}" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition">Mở tab mới</a>
+                    ${(laNguoiTai || coQuyenDuyet) ? `<a href="${urlMoTab}" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition">Mở tab mới</a>` : ''}
                     <button type="button" onclick="dongModalXemGiaoAnSDB()" class="text-white/80 hover:text-white text-2xl font-bold leading-none px-1 cursor-pointer">&times;</button>
                 </div>
             </div>
             <div class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
                 <div class="flex-1 lg:w-[68%] h-[48vh] lg:h-full bg-slate-100 border-b lg:border-b-0 lg:border-r border-slate-300 relative">
+                    ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2 right-3 w-12 h-12 z-20 bg-slate-100/95 rounded select-none" title="Chế độ chỉ xem giáo án"></div>` : ''}
                     <iframe src="${urlPreview}" class="w-full h-full border-0" allow="autoplay"></iframe>
                 </div>
                 <div class="w-full lg:w-[32%] flex-1 lg:flex-none h-full overflow-y-auto p-3.5 bg-slate-50 flex flex-col justify-between">
