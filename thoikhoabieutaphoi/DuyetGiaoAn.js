@@ -8,6 +8,24 @@ window.daTaiDuLieuGiaoAn = window.daTaiDuLieuGiaoAn || false;
 window.dangTaiDuLieuGiaoAn = false;
 
 let _nguCanhTaiLenGA = null; // Lưu tạm { tuan, maGV, tenGV, fileIdCu } khi bấm chọn file
+let _dangMoModalCheDoDuyet = false;
+
+window.dinhDangThoiGianGA = function(val) {
+    if (!val) return '';
+    let s = String(val).trim();
+    if (!s) return '';
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
+    let d = new Date(s);
+    if (!isNaN(d.getTime())) {
+        let dd = String(d.getDate()).padStart(2, '0');
+        let mm = String(d.getMonth() + 1).padStart(2, '0');
+        let yyyy = d.getFullYear();
+        let hh = String(d.getHours()).padStart(2, '0');
+        let min = String(d.getMinutes()).padStart(2, '0');
+        return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    }
+    return s;
+};
 
 // 1. Khởi tạo DOM Menu & Khung Duyệt Giáo Án (tự động chèn nếu HTML chưa có)
 window.khoiTaoDOMDuyetGiaoAn = function() {
@@ -376,7 +394,7 @@ async function xuLyChonFileGiaoAn1Cham(event) {
             else window.duLieuGiaoAnToanCuc.push(kq.giaoAn);
 
             if (document.getElementById('modalXemDuyetGiaoAn')) {
-                window.moModalXemGiaoAnSDB(kq.giaoAn.id, '');
+                window.moModalXemGiaoAnSDB(kq.giaoAn.id, '', _dangMoModalCheDoDuyet);
             }
             if (typeof thucThiKetXuatSoDauBaiLenLuoi === 'function' && !document.getElementById('khungSoDauBai')?.classList.contains('hidden')) {
                 thucThiKetXuatSoDauBaiLenLuoi();
@@ -489,7 +507,7 @@ window.ketXuatBangDuyetGiaoAn = function() {
             <td class="p-2 text-left text-xs font-semibold text-slate-700 break-all">${g.tenFile}</td>
             <td class="p-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-extrabold ${uiChung.mauBadge} ${uiChung.nhapNhay ? 'animate-pulse' : ''}"><span class="w-2 h-2 rounded-full ${uiChung.mauCham}"></span>${uiChung.nhan}</span></td>
             <td class="p-2">
-                <button type="button" onclick="moModalXemGiaoAnSDB('${idSafe}', '')" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition">Xem &amp; Duyệt</button>
+                <button type="button" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition">Xem &amp; Duyệt</button>
             </td>
         </tr>`;
     });
@@ -502,7 +520,7 @@ window.dongModalXemGiaoAnSDB = function() {
     if (m) m.remove();
 };
 
-window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus) {
+window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) {
     let ga = (window.duLieuGiaoAnToanCuc || []).find(x => x.id === giaoAnId);
     if (!ga) return alert('Không tìm thấy dữ liệu giáo án!');
 
@@ -512,7 +530,8 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus) {
     let maUserNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(infoUser.maGV) : infoUser.maGV.toLowerCase();
     let maGaNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(ga.maGV) : String(ga.maGV || '').toLowerCase();
     let laNguoiTai = !!(maUserNorm && (maUserNorm === maGaNorm || (maGaNorm.length > 2 && maUserNorm.includes(maGaNorm))));
-    let coQuyenDuyet = window.coQuyenDuyetGiaoAn();
+    _dangMoModalCheDoDuyet = (choPhepDuyet === true);
+    let coQuyenDuyet = _dangMoModalCheDoDuyet && window.coQuyenDuyetGiaoAn();
     let coAdmin = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || (typeof coToanQuyenSDB !== 'undefined' && coToanQuyenSDB);
 
     let dsMon = window.layDanhSachMonPhanCongCuaGvTheoTuan(ga.maGV, ga.tuan);
@@ -605,8 +624,8 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus) {
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1 mb-3">
                             <div><span class="font-bold text-slate-600">Giáo viên:</span> <span class="font-extrabold text-blue-900">${ga.tenGV || ga.maGV}</span></div>
                             <div><span class="font-bold text-slate-600">Tuần học:</span> <span class="font-bold">Tuần ${ga.tuan}</span></div>
-                            <div><span class="font-bold text-slate-600">Cập nhật:</span> <span>${ga.ngaySua || ga.ngayTai || ''}</span></div>
-                            ${ga.nguoiDuyet ? `<div><span class="font-bold text-slate-600">Người duyệt:</span> <span>${ga.nguoiDuyet} (${ga.ngayDuyet || ''})</span></div>` : ''}
+                            <div><span class="font-bold text-slate-600">Cập nhật:</span> <span>${window.dinhDangThoiGianGA(ga.ngaySua || ga.ngayTai || '')}</span></div>
+                            ${ga.nguoiDuyet ? `<div><span class="font-bold text-slate-600">Người duyệt:</span> <span>${ga.nguoiDuyet} (${window.dinhDangThoiGianGA(ga.ngayDuyet || '')})</span></div>` : ''}
                         </div>
                         <div class="text-xs font-extrabold text-slate-800 uppercase mb-2">Danh sách môn theo phân công:</div>
                         ${htmlNutNhanhBGH}
