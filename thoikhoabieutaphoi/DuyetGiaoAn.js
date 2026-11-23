@@ -535,6 +535,19 @@ window.ketXuatBangDuyetGiaoAn = function() {
 };
 
 // 8. Modal Xem, Sửa, Xóa & Phê duyệt từng môn
+window.taiXuongGiaoAnKhongMoTab = function(fileId) {
+    if (!fileId) return;
+    let url = `https://drive.google.com/uc?export=download&confirm=t&id=${encodeURIComponent(fileId)}`;
+    let khungTai = document.getElementById('khungTaiXuongAnGA');
+    if (!khungTai) {
+        khungTai = document.createElement('iframe');
+        khungTai.id = 'khungTaiXuongAnGA';
+        khungTai.style.display = 'none';
+        document.body.appendChild(khungTai);
+    }
+    khungTai.src = url;
+};
+
 window.chuyenDoiToanManHinhModalGA = function() {
     let modal = document.getElementById('modalXemDuyetGiaoAn');
     let box = document.getElementById('khungNoiDungModalGA');
@@ -576,7 +589,6 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
     let dsMon = window.layDanhSachMonPhanCongCuaGvTheoTuan(ga.maGV, ga.tuan);
     let urlPreview = `https://drive.google.com/file/d/${ga.fileId}/preview`;
     let urlMoTab = `https://drive.google.com/file/d/${ga.fileId}/view`;
-    let urlTaiXuong = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(ga.fileId || '')}`;
     let uiChung = window.layThongTinHienThiTrangThaiGA(ga.trangThaiChung);
 
     let htmlDanhSachMon = '';
@@ -655,7 +667,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                 </div>
                 <div class="flex items-center gap-2 flex-none">
                     <button type="button" id="btnToanManHinhGA" onclick="chuyenDoiToanManHinhModalGA()" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition cursor-pointer">⛶ Toàn màn hình</button>
-                    <a href="${urlTaiXuong}" target="_blank" rel="noopener" download="${String(ga.tenFile || 'GiaoAn').replace(/"/g, '&quot;')}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded transition inline-flex items-center gap-1">⬇ Tải xuống</a>
+                    <button type="button" onclick="taiXuongGiaoAnKhongMoTab('${String(ga.fileId || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded transition inline-flex items-center gap-1 cursor-pointer">⬇ Tải xuống</button>
                     ${(laNguoiTai || coQuyenDuyet) ? `<a href="${urlMoTab}" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition">Mở tab mới</a>` : ''}
                     <button type="button" onclick="dongModalXemGiaoAnSDB()" class="text-white/80 hover:text-white text-2xl font-bold leading-none px-1 cursor-pointer">&times;</button>
                 </div>
