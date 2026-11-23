@@ -2551,6 +2551,8 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
         }
     }
     let theHienThiQuyen = `<div class="mb-4 p-2.5 bg-blue-50 border border-blue-300 shadow-sm text-sm rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-pulse-once"><div class="flex flex-wrap items-center gap-2"><span class="font-bold text-blue-800">Giáo viên:</span> <span class="text-blue-700 font-extrabold">${madinhdanhGV || 'Chưa nhận diện'}</span>${htmlNutGiaoAnTuan}</div><div class="text-left sm:text-right sm:max-w-[60%]"><span class="font-bold text-blue-800">Được phân công dạy:</span> <span class="text-blue-700 font-semibold italic">${chuoiMonDay}</span></div></div>`;
+
+    let danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
     if (coDayBuThu7) danhSachThu.push("Thứ 7");
     if (coDayBuChuNhat) danhSachThu.push("Chủ nhật");
 
@@ -4743,7 +4745,7 @@ window.capNhatSoDauBaiNgamLenLuoi = function(tuanChon, lopChon) {
                         for (let nd of tdMon.childNodes) { if (nd.nodeType === 3) monHienTai += nd.textContent; }
                         if (monHienTai.trim() !== monHocMoi) {
                             let nutGA = (monHocMoi && typeof window.taoHtmlNutGiaoAnChoO === 'function')
-                                ? window.taoHtmlNutGiaoAnChoO(maxTuanChon, monHocMoi, dongDuLieuMoi['Mã GV'] || '', quyenNhapThuCong && !quyenQuanTri && !isLockedMoi)
+                                ? window.taoHtmlNutGiaoAnChoO(tuanChon, monHocMoi, dongDuLieuMoi['Mã GV'] || '', quyenNhapThuCong && !quyenQuanTri && !isLockedMoi)
                                 : '';
                             tdMon.innerHTML = monHocMoi + (nutGA ? `<div class="hide-on-print leading-none">${nutGA}</div>` : '');
                         }
