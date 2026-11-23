@@ -1428,7 +1428,7 @@ window.copyNhacNhoChuyenCanZaloTHSS = async function() {
     let dongNoiDung = dsChuaBao.map((item, idx) =>
         `${idx + 1}. Lớp ${item.maLop} (GVCN: ${item.gvcn}): ${item.ngayThieu.join(', ')}`
     );
-    let vanBanZalo = `${tieuDe}\nCác lớp chưa cập nhật chuyên cần:\n${dongNoiDung.join('\n')}\nKính đề nghị các đồng chí bổ sung đầy đủ trên Sổ đầu bài điện tử. Xin cảm ơn!`;
+    let vanBanZalo = `${tieuDe}\nCác lớp chưa cập nhật chuyên cần:\n${dongNoiDung.join('\n')}\nKính đề nghị các đồng chí cập nhật đầy đủ, đúng thời gian quy định trên Sổ đầu bài điện tử. Xin cảm ơn!`;
 
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
