@@ -535,6 +535,25 @@ window.ketXuatBangDuyetGiaoAn = function() {
 };
 
 // 8. Modal Xem, Sửa, Xóa & Phê duyệt từng môn
+window.chuyenDoiToanManHinhModalGA = function() {
+    let modal = document.getElementById('modalXemDuyetGiaoAn');
+    let box = document.getElementById('khungNoiDungModalGA');
+    let btn = document.getElementById('btnToanManHinhGA');
+    if (!modal || !box) return;
+    let dangFull = box.getAttribute('data-fullscreen') === 'true';
+    if (dangFull) {
+        box.setAttribute('data-fullscreen', 'false');
+        modal.className = 'fixed inset-0 z-[10020] bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-2 md:p-4 font-sans';
+        box.className = 'bg-white w-full max-w-6xl h-[92vh] rounded-xl shadow-2xl border border-slate-300 flex flex-col overflow-hidden';
+        if (btn) btn.innerHTML = '⛶ Toàn màn hình';
+    } else {
+        box.setAttribute('data-fullscreen', 'true');
+        modal.className = 'fixed inset-0 z-[10020] bg-black/80 flex items-center justify-center p-0 font-sans';
+        box.className = 'bg-white w-screen max-w-none h-screen rounded-none shadow-2xl border-0 flex flex-col overflow-hidden';
+        if (btn) btn.innerHTML = '🗗 Thu gọn';
+    }
+};
+
 window.dongModalXemGiaoAnSDB = function() {
     let m = document.getElementById('modalXemDuyetGiaoAn');
     if (m) m.remove();
@@ -628,13 +647,14 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
     modal.onclick = () => window.dongModalXemGiaoAnSDB();
 
     modal.innerHTML = `
-        <div class="bg-white w-full max-w-6xl h-[92vh] rounded-xl shadow-2xl border border-slate-300 flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+        <div id="khungNoiDungModalGA" data-fullscreen="false" class="bg-white w-full max-w-6xl h-[92vh] rounded-xl shadow-2xl border border-slate-300 flex flex-col overflow-hidden" onclick="event.stopPropagation()">
             <div class="bg-blue-900 text-white px-4 py-2.5 flex items-center justify-between flex-none">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="font-extrabold text-sm truncate">${ga.tenFile}</span>
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${uiChung.mauBadge} flex-none">${uiChung.nhan}</span>
                 </div>
                 <div class="flex items-center gap-2 flex-none">
+                    <button type="button" id="btnToanManHinhGA" onclick="chuyenDoiToanManHinhModalGA()" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition cursor-pointer">⛶ Toàn màn hình</button>
                     <a href="${urlTaiXuong}" target="_blank" rel="noopener" download="${String(ga.tenFile || 'GiaoAn').replace(/"/g, '&quot;')}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded transition inline-flex items-center gap-1">⬇ Tải xuống</a>
                     ${(laNguoiTai || coQuyenDuyet) ? `<a href="${urlMoTab}" target="_blank" rel="noopener" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition">Mở tab mới</a>` : ''}
                     <button type="button" onclick="dongModalXemGiaoAnSDB()" class="text-white/80 hover:text-white text-2xl font-bold leading-none px-1 cursor-pointer">&times;</button>
