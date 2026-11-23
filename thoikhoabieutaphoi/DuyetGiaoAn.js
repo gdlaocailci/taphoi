@@ -674,7 +674,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
             </div>
             <div class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
                 <div class="flex-1 lg:w-[68%] h-[48vh] lg:h-full bg-slate-100 border-b lg:border-b-0 lg:border-r border-slate-300 relative">
-                    ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2 right-3 w-12 h-12 z-20 bg-white rounded select-none" title="Chế độ chỉ xem giáo án"></div>` : ''}
+                    ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2.5 right-4 w-11 h-11 z-20 rounded-md select-none cursor-not-allowed" style="background-color: transparent;" title="Đã khóa mở cửa sổ ngoài ở chế độ chỉ xem"></div>` : ''}
                     <iframe src="${urlPreview}" class="w-full h-full border-0" allow="autoplay"></iframe>
                 </div>
                 <div class="w-full lg:w-[32%] flex-1 lg:flex-none h-full overflow-y-auto p-3.5 bg-slate-50 flex flex-col justify-between">
