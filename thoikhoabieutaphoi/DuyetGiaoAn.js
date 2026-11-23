@@ -93,7 +93,8 @@ window.khoiTaoDOMDuyetGiaoAn = function() {
                         <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm">
                             <tr>
                                 <th class="py-2 w-12">STT</th>
-                                <th class="py-2 w-48">Giáo viên</th>
+                                <th class="py-2 w-28">ID GV</th>
+                                <th class="py-2 w-44">Tên Giáo viên</th>
                                 <th class="py-2 w-20">Tuần</th>
                                 <th class="py-2">Môn phân công &amp; Trạng thái từng môn</th>
                                 <th class="py-2 w-56">Tên giáo án</th>
@@ -102,7 +103,7 @@ window.khoiTaoDOMDuyetGiaoAn = function() {
                             </tr>
                         </thead>
                         <tbody id="vungDuLieuDuyetGiaoAn">
-                            <tr><td colspan="7" class="text-center py-10 text-slate-500 font-bold">Đang chuẩn bị dữ liệu giáo án...</td></tr>
+                            <tr><td colspan="8" class="text-center py-10 text-slate-500 font-bold">Đang chuẩn bị dữ liệu giáo án...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -182,6 +183,21 @@ window.layDanhSachMonPhanCongCuaGvTheoTuan = function(maGV, tuanSo) {
         mon: mon,
         lopList: Array.from(mapMonLop[mon]).sort()
     }));
+};
+
+window.layChuoiLopDayCuaGvTheoTuanGA = function(maGV, tuanSo) {
+    let dsMon = window.layDanhSachMonPhanCongCuaGvTheoTuan(maGV, tuanSo);
+    let tapLop = new Set();
+    dsMon.forEach(item => {
+        (item.lopList || []).forEach(l => {
+            let lopStr = String(l || "").trim();
+            if (lopStr) tapLop.add(lopStr);
+        });
+    });
+    let arrLop = Array.from(tapLop).sort((a, b) => a.localeCompare(b, "vi", { numeric: true }));
+    if (arrLop.length === 0) return "";
+    if (arrLop.length <= 3) return arrLop.join("-");
+    return arrLop.slice(0, 3).join("-") + "...";
 };
 
 // 4. Tìm giáo án của 1 giáo viên trong 1 tuần
@@ -360,7 +376,10 @@ async function xuLyChonFileGiaoAn1Cham(event) {
     let ext = '';
     let idxDot = file.name.lastIndexOf('.');
     if (idxDot !== -1) ext = file.name.substring(idxDot).toLowerCase();
-    let tenFileChuan = `${ctx.tenGV}_Tuần ${ctx.tuan}${ext}`;
+    let chuoiLop = window.layChuoiLopDayCuaGvTheoTuanGA(ctx.maGV, ctx.tuan);
+    let tenFileChuan = chuoiLop
+        ? `${ctx.tenGV}_${chuoiLop}_Tuần ${ctx.tuan}${ext}`
+        : `${ctx.tenGV}_Tuần ${ctx.tuan}${ext}`;
 
     let thongBaoTai = document.getElementById('thongBaoTaiGiaoAnDangChay');
     if (!thongBaoTai) {
@@ -500,7 +519,7 @@ window.ketXuatBangDuyetGiaoAn = function() {
     }
 
     if (dsLoc.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500 font-bold">Không có giáo án nào khớp điều kiện lọc.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-500 font-bold">Không có giáo án nào khớp điều kiện lọc.</td></tr>`;
         return;
     }
 
@@ -521,6 +540,7 @@ window.ketXuatBangDuyetGiaoAn = function() {
 
         html += `<tr class="hover:bg-slate-50 border-b border-gray-300">
             <td class="p-2 font-bold text-slate-700">${idx + 1}</td>
+            <td class="p-2 font-bold text-slate-700">${g.maGV || ''}</td>
             <td class="p-2 text-left font-bold text-blue-900">${g.tenGV || g.maGV}</td>
             <td class="p-2 font-extrabold text-slate-800">Tuần ${g.tuan}</td>
             <td class="p-2 text-left"><div class="flex flex-wrap gap-1.5">${pillsMon}</div></td>
