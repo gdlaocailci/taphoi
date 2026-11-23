@@ -602,6 +602,13 @@ function layTapDinhDanhNguoiDangNhapPPCT() {
     if (typeof tenGvDangNhap !== 'undefined' && tenGvDangNhap) them(tenGvDangNhap);
     if (typeof emailDangNhap !== 'undefined' && emailDangNhap) them(emailDangNhap);
     if (typeof emailHienTai !== 'undefined' && emailHienTai) them(emailHienTai);
+    if (typeof maGvDangNhapHeThong !== 'undefined' && maGvDangNhapHeThong) them(maGvDangNhapHeThong);
+    if (typeof window.dinhDanhGiaoVienToanCuc !== 'undefined' && window.dinhDanhGiaoVienToanCuc) them(window.dinhDanhGiaoVienToanCuc);
+    let theChotSdb = document.getElementById('theChotQuyenSDB');
+    if (theChotSdb) {
+        them(theChotSdb.getAttribute('data-madinhdanh'));
+        them(theChotSdb.getAttribute('data-tendinhdanh'));
+    }
     if (typeof window.tenGvSDB !== 'undefined' && window.tenGvSDB) them(window.tenGvSDB);
     if (typeof window.maGvSDB !== 'undefined' && window.maGvSDB) them(window.maGvSDB);
     if (typeof window.idGvSDB !== 'undefined' && window.idGvSDB) them(window.idGvSDB);
@@ -687,8 +694,13 @@ function banGhiTkbKhopNguoiDayPPCT(item, tapNguoiDung) {
         item['Mã GV'], item['ID GV'], item['ID'], item['Giáo viên'], item['Tên GV'], item['Người dạy'], item['GV dạy'], item['Mã giáo viên'], item['Email']
     ];
     for (let i = 0; i < cacTruongGv.length; i++) {
-        let val = chuanHoaDinhDanhGvPPCT(cacTruongGv[i]);
-        if (val && tapNguoiDung.has(val)) return true;
+        let rawVal = cacTruongGv[i];
+        if (rawVal === undefined || rawVal === null) continue;
+        let parts = String(rawVal).split(/[,;&]+/);
+        for (let p = 0; p < parts.length; p++) {
+            let val = chuanHoaDinhDanhGvPPCT(parts[p]);
+            if (val && tapNguoiDung.has(val)) return true;
+        }
     }
     return false;
 }
@@ -727,7 +739,8 @@ function layDanhSachMonPhanCongCuaGvPPCT(tuanMucTieu) {
                 });
             }
         }
-        if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai)) {
+        let tDangXemTkb = (typeof tuanDangXem !== 'undefined') ? (parseInt(tuanDangXem, 10) || 0) : 0;
+        if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && (tDangXemTkb === 0 || tDangXemTkb === tuanSo)) {
             duLieuTkbHienTai.forEach(t => {
                 if (banGhiTkbKhopNguoiDayPPCT(t, tapNguoiDung)) themMon(t.monHoc);
             });
@@ -757,13 +770,15 @@ function layDanhSachMonPhanCongCuaGvPPCT(tuanMucTieu) {
             });
         }
         if (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap)) {
-            duLieuTKBGopDaMap.forEach(d => {
+            let dsTuanGop = duLieuTKBGopDaMap.filter(d => (parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0) === tuanSo);
+            (dsTuanGop.length > 0 ? dsTuanGop : []).forEach(d => {
                 if (banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) themMon(d['Môn Học'] || d.monHoc);
             });
         }
         if (typeof window.mapTkbToanTap === 'object' && window.mapTkbToanTap) {
             Object.values(window.mapTkbToanTap).forEach(d => {
-                if (banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) themMon(d['Môn Học'] || d.monHoc);
+                let tD = parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0;
+                if ((tD === 0 || tD === tuanSo) && banGhiTkbKhopNguoiDayPPCT(d, tapNguoiDung)) themMon(d['Môn Học'] || d.monHoc);
             });
         }
     }
@@ -832,7 +847,8 @@ function layDanhSachLopPhanCongGvbmPPCT(tuanMucTieu, monMucTieu = '') {
         }
     }
 
-    if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai)) {
+    let tDangXemLop = (typeof tuanDangXem !== 'undefined') ? (parseInt(tuanDangXem, 10) || 0) : 0;
+    if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && (tDangXemLop === 0 || tDangXemLop === tuanSo)) {
         quetDanhSachTkb(duLieuTkbHienTai, false);
     }
 
