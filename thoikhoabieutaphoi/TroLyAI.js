@@ -2,7 +2,7 @@
     let phienAI = null;
     let dangTraLoi = false;
 
-    // Kiểm tra khả năng chạy Gemini Nano cục bộ trên Chrome
+    // 1. Kiểm tra khả năng chạy Gemini Nano cục bộ trên Chrome
     async function kiemTraHoTroGeminiNano() {
         if (!('LanguageModel' in window)) return { sanSang: false };
         try {
@@ -14,34 +14,59 @@
         }
     }
 
-    // Trích xuất dữ liệu gọn từ màn hình đang mở để làm ngữ cảnh cho AI
+    // 2. Rút gọn dữ liệu từ màn hình đang mở để Gemini Nano đọc nhanh, không tràn bộ nhớ
     function layNguCanhTrangHienTai() {
         const khungTKB = document.getElementById('khungTKB');
         const khungSDB = document.getElementById('khungSoDauBai');
 
         if (khungTKB && !khungTKB.classList.contains('hidden')) {
             const tuan = document.getElementById('hienThiTuanHienTai')?.value || '';
-            const dong = Array.from(document.querySelectorAll('#vungHienThiDuLieu tr')).slice(0, 35);
-            const noiDung = dong.map(tr =>
-                Array.from(tr.querySelectorAll('td, th'))
-                    .map(td => (td.querySelector('input')?.value || td.innerText || '').trim())
-                    .filter(Boolean)
-                    .join(' | ')
-            ).filter(Boolean).join('\n');
-            return `Ngữ cảnh: Thời khóa biểu Tuần ${tuan}.\n${noiDung}`;
+            const dong = Array.from(document.querySelectorAll('#vungHienThiDuLieu tr'));
+            const thongKeGV = {};
+
+            dong.forEach(tr => {
+                const inputs = Array.from(tr.querySelectorAll('input'));
+                if (inputs.length >= 2) {
+                    for (let i = 1; i < inputs.length; i += 2) {
+                        const tenGV = (inputs[i]?.value || '').trim();
+                        const tenMon = (inputs[i - 1]?.value || '').trim();
+                        if (tenGV && tenGV !== '--' && tenMon && tenMon !== '--') {
+                            thongKeGV[tenGV] = (thongKeGV[tenGV] || 0) + 1;
+                        }
+                    }
+                } else {
+                    const cells = Array.from(tr.querySelectorAll('td')).filter(td => !td.style.left);
+                    for (let i = 1; i < cells.length; i += 2) {
+                        const tenGV = (cells[i]?.innerText || '').trim();
+                        const tenMon = (cells[i - 1]?.innerText || '').trim();
+                        if (tenGV && tenGV !== '--' && tenMon && tenMon !== '--') {
+                            thongKeGV[tenGV] = (thongKeGV[tenGV] || 0) + 1;
+                        }
+                    }
+                }
+            });
+
+            const danhSachRutGon = Object.entries(thongKeGV)
+                .map(([gv, soTiet]) => `${gv}: ${soTiet} tiết`)
+                .join('\n');
+
+            if (danhSachRutGon) {
+                return `Ngữ cảnh: Tổng hợp số tiết trên lưới TKB Tuần ${tuan}:\n${danhSachRutGon.slice(0, 2500)}`;
+            }
+            return `Ngữ cảnh: Lưới TKB Tuần ${tuan} hiện chưa có dữ liệu tiết dạy.`;
         }
 
         if (khungSDB && !khungSDB.classList.contains('hidden')) {
             const lop = document.getElementById('chonLopSo')?.value || '';
             const tuan = document.getElementById('chonTuanSo')?.value || '';
-            const vanBan = (document.getElementById('vungHienThiSoDauBai')?.innerText || '').slice(0, 3000);
+            const vanBan = (document.getElementById('vungHienThiSoDauBai')?.innerText || '').slice(0, 2200);
             return `Ngữ cảnh: Sổ đầu bài lớp ${lop}, tuần ${tuan}.\n${vanBan}`;
         }
 
         return 'Ngữ cảnh: Hệ thống Quản lý Chương trình Dạy - Học.';
     }
 
-    // Dựng nút bấm và hộp thoại chat AI bằng Tailwind CSS
+    // 3. Dựng nút bấm và hộp thoại chat AI bằng Tailwind CSS
     function taoGiaoDienTroLyAI() {
         if (document.getElementById('cumTroLyAINoiBo')) return;
 
@@ -131,10 +156,15 @@
 
             try {
                 if (!phienAI) {
+                    const trangThai = await LanguageModel.availability();
+                    if (trangThai === 'downloading' || trangThai === 'downloadable') {
+                        oTraLoi.textContent = 'Chrome đang tải mô hình Gemini Nano (~1,5–4GB) lần đầu. Bạn có thể mở chrome://components để xem tiến trình...';
+                    }
+
                     phienAI = await LanguageModel.create({
                         initialPrompts: [{
                             role: 'system',
-                            content: 'Bạn là trợ lý chuyên môn trường học. Hãy trả lời ngắn gọn, rõ ràng bằng tiếng Việt dựa trên dữ liệu được cung cấp.'
+                            content: 'Bạn là trợ lý chuyên môn trường học. Trả lời ngắn gọn, chính xác bằng tiếng Việt dựa trên dữ liệu được cung cấp.'
                         }],
                         monitor(m) {
                             m.addEventListener('downloadprogress', (ev) => {
@@ -147,13 +177,19 @@
                     nhanTrangThai.textContent = 'Gemini Nano đã sẵn sàng (Offline/Local)';
                 }
 
+                oTraLoi.textContent = 'Đã nạp xong mô hình, đang phân tích dữ liệu...';
+
                 const nguCanh = layNguCanhTrangHienTai();
                 const promptDayDu = `${nguCanh}\n\nYêu cầu của giáo viên: ${cauHoi}`;
                 const stream = phienAI.promptStreaming(promptDayDu);
 
                 let ketQua = '';
-                oTraLoi.textContent = '';
+                let daNhanChuDau = false;
                 for await (const chunk of stream) {
+                    if (!daNhanChuDau) {
+                        oTraLoi.textContent = '';
+                        daNhanChuDau = true;
+                    }
                     ketQua += chunk;
                     oTraLoi.textContent = ketQua;
                     khungTin.scrollTop = khungTin.scrollHeight;
@@ -168,7 +204,7 @@
         });
     }
 
-    // Tự động khởi chạy sau khi trang tải xong
+    // 4. Tự động khởi chạy sau khi trang tải xong
     document.addEventListener('DOMContentLoaded', async () => {
         const kq = await kiemTraHoTroGeminiNano();
         if (kq.sanSang) {
