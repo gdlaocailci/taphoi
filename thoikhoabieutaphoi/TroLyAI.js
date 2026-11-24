@@ -161,7 +161,20 @@
         return `MÀN HÌNH: ${tieuDe}\n${vanBanBoSung}`.slice(0, 30000);
     }
 
+    function layFileIdModalDangMo() {
+        const modalGA = document.getElementById('modalXemDuyetGiaoAn');
+        if (modalGA && laPhanTuDangHien(modalGA)) {
+            return modalGA.getAttribute('data-file-id') || '';
+        }
+        return '';
+    }
+
     function layNguCanhTrangHienTai() {
+        const modalGA = document.getElementById('modalXemDuyetGiaoAn');
+        if (modalGA && laPhanTuDangHien(modalGA)) {
+            return trichXuatBangTongQuat(modalGA, 'Đang mở cửa sổ Xem & Duyệt Giáo án');
+        }
+
         const dsModal = [
             { id: 'modalThongKeGV', ten: 'Bảng thống kê số tiết dạy thực tế của Giáo viên' },
             { id: 'modalKiemTraTienDo', ten: 'Báo cáo kiểm tra tiến độ dạy học' },
@@ -419,7 +432,8 @@
                         thaoTac: 'hoiTroLyAI',
                         cauHoi: cauHoi,
                         nguCanh: layNguCanhTrangHienTai(),
-                        tepDinhKem: tepGui
+                        tepDinhKem: tepGui,
+                        fileIdGiaoAn: layFileIdModalDangMo()
                     })
                 });
 
