@@ -588,6 +588,24 @@ window.chuyenDoiToanManHinhModalGA = function() {
     }
 };
 
+window.datTyLeXemGiaoAnGA = function(tyLe) {
+    let iframe = document.getElementById('iframeXemGiaoAnGA');
+    if (!iframe) return;
+    let s = parseFloat(tyLe) || 1;
+    if (s >= 1) {
+        iframe.style.transform = '';
+        iframe.style.transformOrigin = '';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+    } else {
+        let pct = (100 / s).toFixed(4) + '%';
+        iframe.style.transform = `scale(${s})`;
+        iframe.style.transformOrigin = '0 0';
+        iframe.style.width = pct;
+        iframe.style.height = pct;
+    }
+};
+
 window.chuyenDoiAnHienCotDuyetGA = function() {
     let cotDuyet = document.getElementById('cotThongTinDuyetGA');
     let btn = document.getElementById('btnAnHienCotDuyetGA');
@@ -703,6 +721,12 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${uiChung.mauBadge} flex-none">${uiChung.nhan}</span>
                 </div>
                 <div class="flex items-center gap-2 flex-none">
+                    <select id="chonTyLeXemGA" onchange="datTyLeXemGiaoAnGA(this.value)" title="Thu nhỏ khung xem khi tài liệu hoặc trang ngang bị che mép phải" class="px-2 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition cursor-pointer outline-none">
+                        <option value="1" class="text-slate-900">100%</option>
+                        <option value="0.85" class="text-slate-900">85%</option>
+                        <option value="0.75" class="text-slate-900">75%</option>
+                        <option value="0.65" class="text-slate-900">65%</option>
+                    </select>
                     <button type="button" id="btnAnHienCotDuyetGA" onclick="chuyenDoiAnHienCotDuyetGA()" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition cursor-pointer hidden lg:inline-flex items-center">⇥ Ẩn bảng duyệt</button>
                     <button type="button" id="btnToanManHinhGA" onclick="chuyenDoiToanManHinhModalGA()" class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded transition cursor-pointer">⛶ Toàn màn hình</button>
                     <button type="button" onclick="taiXuongGiaoAnKhongMoTab('${String(ga.fileId || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded transition inline-flex items-center gap-1 cursor-pointer">⬇ Tải xuống</button>
@@ -711,9 +735,9 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                 </div>
             </div>
             <div class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-                <div class="flex-1 min-w-0 h-[48vh] lg:h-full bg-slate-100 border-b lg:border-b-0 lg:border-r border-slate-300 relative">
+                <div class="flex-1 min-w-0 h-[48vh] lg:h-full bg-slate-100 border-b lg:border-b-0 lg:border-r border-slate-300 relative overflow-hidden">
                     ${(!laNguoiTai && !coQuyenDuyet) ? `<div class="absolute top-2.5 right-4 w-11 h-11 z-20 rounded-md select-none cursor-not-allowed" style="background-color: transparent;" title="Đã khóa mở cửa sổ ngoài ở chế độ chỉ xem"></div>` : ''}
-                    <iframe src="${urlPreview}" class="w-full h-full border-0" allow="autoplay"></iframe>
+                    <iframe id="iframeXemGiaoAnGA" src="${urlPreview}" class="w-full h-full border-0" allow="autoplay"></iframe>
                 </div>
                 <div id="cotThongTinDuyetGA" class="w-full lg:w-[320px] xl:w-[350px] flex-1 lg:flex-none h-full overflow-y-auto p-3.5 bg-slate-50 flex flex-col justify-between">
                     <div>
