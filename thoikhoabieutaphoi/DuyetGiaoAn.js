@@ -675,6 +675,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
 
     let modal = document.createElement('div');
     modal.id = 'modalXemDuyetGiaoAn';
+    modal.setAttribute('data-file-id', ga.fileId || '');
     modal.className = 'fixed inset-0 z-[10020] bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-2 md:p-4 font-sans';
     modal.onclick = () => window.dongModalXemGiaoAnSDB();
 
