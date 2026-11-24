@@ -1,20 +1,7 @@
 (function () {
-    let phienAI = null;
     let dangTraLoi = false;
 
-    // 1. Kiểm tra khả năng chạy Gemini Nano cục bộ trên Chrome
-    async function kiemTraHoTroGeminiNano() {
-        if (!('LanguageModel' in window)) return { sanSang: false };
-        try {
-            const trangThai = await LanguageModel.availability();
-            if (trangThai === 'unavailable') return { sanSang: false };
-            return { sanSang: true, trangThai };
-        } catch (e) {
-            return { sanSang: false };
-        }
-    }
-
-    // 2. Rút gọn dữ liệu từ màn hình đang mở để Gemini Nano đọc nhanh, không tràn bộ nhớ
+    // 1. Trích xuất dữ liệu từ màn hình đang mở (TKB hoặc Sổ đầu bài)
     function layNguCanhTrangHienTai() {
         const khungTKB = document.getElementById('khungTKB');
         const khungSDB = document.getElementById('khungSoDauBai');
@@ -51,7 +38,7 @@
                 .join('\n');
 
             if (danhSachRutGon) {
-                return `Ngữ cảnh: Tổng hợp số tiết trên lưới TKB Tuần ${tuan}:\n${danhSachRutGon.slice(0, 2500)}`;
+                return `Ngữ cảnh: Tổng hợp số tiết trên lưới TKB Tuần ${tuan}:\n${danhSachRutGon.slice(0, 6000)}`;
             }
             return `Ngữ cảnh: Lưới TKB Tuần ${tuan} hiện chưa có dữ liệu tiết dạy.`;
         }
@@ -59,14 +46,14 @@
         if (khungSDB && !khungSDB.classList.contains('hidden')) {
             const lop = document.getElementById('chonLopSo')?.value || '';
             const tuan = document.getElementById('chonTuanSo')?.value || '';
-            const vanBan = (document.getElementById('vungHienThiSoDauBai')?.innerText || '').slice(0, 2200);
+            const vanBan = (document.getElementById('vungHienThiSoDauBai')?.innerText || '').slice(0, 5000);
             return `Ngữ cảnh: Sổ đầu bài lớp ${lop}, tuần ${tuan}.\n${vanBan}`;
         }
 
         return 'Ngữ cảnh: Hệ thống Quản lý Chương trình Dạy - Học.';
     }
 
-    // 3. Dựng nút bấm và hộp thoại chat AI bằng Tailwind CSS
+    // 2. Dựng nút bấm và hộp thoại chat AI
     function taoGiaoDienTroLyAI() {
         if (document.getElementById('cumTroLyAINoiBo')) return;
 
@@ -79,21 +66,21 @@
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z"/>
                 </svg>
-                <span class="text-sm">Hỏi Gemini Nano</span>
+                <span class="text-sm">Trợ lý Gemini</span>
             </button>
 
             <div id="hopChatTroLyAI" class="hidden w-[360px] max-w-[92vw] h-[480px] bg-white border border-slate-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 <div class="bg-[#0b5394] text-white px-4 py-3 flex items-center justify-between">
                     <div>
-                        <div class="font-bold text-sm">Trợ lý Gemini (Chrome Cục bộ)</div>
-                        <div id="trangThaiModelAI" class="text-[11px] text-blue-200">Chạy trực tiếp trên máy, không cần API</div>
+                        <div class="font-bold text-sm">Trợ lý Gemini Nhà trường</div>
+                        <div class="text-[11px] text-blue-200">Kết nối bảo mật qua hệ thống trường</div>
                     </div>
                     <button id="btnDongTroLyAI" type="button" class="text-white hover:text-red-200 text-2xl leading-none px-1 cursor-pointer">&times;</button>
                 </div>
 
                 <div id="noiDungChatAI" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-slate-50 text-sm">
                     <div class="bg-blue-50 border border-blue-200 text-slate-700 p-2.5 rounded-xl text-xs leading-relaxed">
-                        Xin chào! Tôi chạy trực tiếp trên trình duyệt Chrome của bạn. Bạn có thể hỏi về lịch dạy tuần này, số tiết hoặc nội dung sổ đầu bài đang mở.
+                        Xin chào! Tôi có thể giúp bạn tổng hợp số tiết trên lưới TKB, kiểm tra lịch dạy hoặc đọc nội dung Sổ đầu bài đang mở.
                     </div>
                 </div>
 
@@ -115,7 +102,6 @@
         const form = document.getElementById('formGuiCauHoiAI');
         const input = document.getElementById('inputCauHoiAI');
         const khungTin = document.getElementById('noiDungChatAI');
-        const nhanTrangThai = document.getElementById('trangThaiModelAI');
 
         btnMo.addEventListener('click', () => {
             btnMo.classList.add('hidden');
@@ -126,10 +112,6 @@
         btnDong.addEventListener('click', () => {
             hopChat.classList.add('hidden');
             btnMo.classList.remove('hidden');
-            if (phienAI && !dangTraLoi) {
-                phienAI.destroy();
-                phienAI = null;
-            }
         });
 
         function themTinNhan(vaiTro, noiDung) {
@@ -148,67 +130,44 @@
             const cauHoi = input.value.trim();
             if (!cauHoi || dangTraLoi) return;
 
+            if (typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) {
+                themTinNhan('assistant', 'Chưa tìm thấy đường dẫn máy chủ trong KetNoi.js.');
+                return;
+            }
+
             input.value = '';
             themTinNhan('user', cauHoi);
-            const oTraLoi = themTinNhan('assistant', 'Đang khởi tạo Gemini Nano...');
+            const oTraLoi = themTinNhan('assistant', 'Đang phân tích dữ liệu...');
             dangTraLoi = true;
             document.getElementById('btnGuiAI').disabled = true;
 
             try {
-                if (!phienAI) {
-                    const trangThai = await LanguageModel.availability();
-                    if (trangThai === 'downloading' || trangThai === 'downloadable') {
-                        oTraLoi.textContent = 'Chrome đang tải mô hình Gemini Nano (~1,5–4GB) lần đầu. Bạn có thể mở chrome://components để xem tiến trình...';
-                    }
+                const phanHoi = await fetch(CAU_HINH_FRONTEND.URL_API_MAY_CHU, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        thaoTac: 'hoiTroLyAI',
+                        cauHoi: cauHoi,
+                        nguCanh: layNguCanhTrangHienTai()
+                    })
+                });
 
-                    phienAI = await LanguageModel.create({
-                        initialPrompts: [{
-                            role: 'system',
-                            content: 'Bạn là trợ lý chuyên môn trường học. Trả lời ngắn gọn, chính xác bằng tiếng Việt dựa trên dữ liệu được cung cấp.'
-                        }],
-                        monitor(m) {
-                            m.addEventListener('downloadprogress', (ev) => {
-                                const pt = Math.round(ev.loaded * 100);
-                                nhanTrangThai.textContent = `Đang tải mô hình cục bộ: ${pt}%`;
-                                oTraLoi.textContent = `Đang tải Gemini Nano lần đầu (${pt}%)...`;
-                            });
-                        }
-                    });
-                    nhanTrangThai.textContent = 'Gemini Nano đã sẵn sàng (Offline/Local)';
-                }
-
-                oTraLoi.textContent = 'Đã nạp xong mô hình, đang phân tích dữ liệu...';
-
-                const nguCanh = layNguCanhTrangHienTai();
-                const promptDayDu = `${nguCanh}\n\nYêu cầu của giáo viên: ${cauHoi}`;
-                const stream = phienAI.promptStreaming(promptDayDu);
-
-                let ketQua = '';
-                let daNhanChuDau = false;
-                for await (const chunk of stream) {
-                    if (!daNhanChuDau) {
-                        oTraLoi.textContent = '';
-                        daNhanChuDau = true;
-                    }
-                    ketQua += chunk;
-                    oTraLoi.textContent = ketQua;
-                    khungTin.scrollTop = khungTin.scrollHeight;
+                const ketQua = await phanHoi.json();
+                if (ketQua.trangThai === 'thanh_cong') {
+                    oTraLoi.textContent = ketQua.traLoi;
+                } else {
+                    oTraLoi.textContent = 'Lỗi: ' + (ketQua.thongBao || 'Không nhận được phản hồi.');
                 }
             } catch (err) {
-                oTraLoi.textContent = 'Không thể xử lý: ' + (err.message || 'Lỗi mô hình cục bộ.');
+                oTraLoi.textContent = 'Lỗi kết nối: ' + (err.message || 'Vui lòng thử lại.');
             } finally {
                 dangTraLoi = false;
                 document.getElementById('btnGuiAI').disabled = false;
+                khungTin.scrollTop = khungTin.scrollHeight;
                 input.focus();
             }
         });
     }
 
-    // 4. Tự động khởi chạy sau khi trang tải xong
-    document.addEventListener('DOMContentLoaded', async () => {
-        const kq = await kiemTraHoTroGeminiNano();
-        if (kq.sanSang) {
-            taoGiaoDienTroLyAI();
-        }
-    });
+    document.addEventListener('DOMContentLoaded', taoGiaoDienTroLyAI);
 })();
