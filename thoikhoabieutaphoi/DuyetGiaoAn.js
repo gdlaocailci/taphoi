@@ -637,7 +637,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                             <input type="radio" name="ttMonGA_${idx}" value="CAN_SUA" ${st.trangThai === 'CAN_SUA' ? 'checked' : ''} class="accent-rose-600"> Cần sửa
                         </label>
                     </div>
-                    <input type="text" class="inp-nx-mon-ga w-full px-2 py-1 text-xs border border-slate-300 rounded outline-none focus:border-blue-500" placeholder="Góp ý riêng cho môn ${item.mon} (nếu cần)..." value="${(st.nhanXet || '').replace(/"/g, '&quot;')}">
+                    <textarea rows="1" class="inp-nx-mon-ga w-full px-2 py-1.5 text-xs border border-slate-300 rounded outline-none focus:border-blue-500 resize-none overflow-hidden leading-relaxed break-words" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" placeholder="Góp ý riêng cho môn ${item.mon} (nếu cần)...">${String(st.nhanXet || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
                 </div>`;
             } else {
                 return `<div class="p-2 rounded border ${isFocus ? 'border-blue-500 bg-blue-50/60' : 'border-slate-200 bg-white'} flex flex-col gap-1">
@@ -645,7 +645,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
                         <span class="font-bold text-xs text-slate-800">${item.mon} <span class="font-normal text-slate-500">(${item.lopList.join(', ')})</span></span>
                         <span class="px-2 py-0.5 rounded-full border text-[11px] font-bold ${uiM.mauBadge}">${uiM.nhan}</span>
                     </div>
-                    ${st.nhanXet ? `<div class="text-[11px] text-rose-700 bg-rose-50 px-2 py-1 rounded border border-rose-200"><b>Góp ý BGH:</b> ${st.nhanXet}</div>` : ''}
+                    ${st.nhanXet ? `<div class="text-[11px] text-rose-700 bg-rose-50 px-2 py-1 rounded border border-rose-200 whitespace-pre-wrap break-words"><b>Góp ý BGH:</b> ${st.nhanXet}</div>` : ''}
                 </div>`;
             }
         }).join('');
@@ -715,6 +715,10 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
             </div>
         </div>`;
     document.body.appendChild(modal);
+    modal.querySelectorAll('textarea.inp-nx-mon-ga').forEach(el => {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    });
 };
 
 window.chonNhanhTrangThaiTatCaMonGA = function(trangThai) {
