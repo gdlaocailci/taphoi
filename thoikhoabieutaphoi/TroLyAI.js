@@ -1,5 +1,6 @@
 (function () {
     let dangTraLoi = false;
+    let tepDangChon = null; // { tenFile, mimeType, base64, noiDungText }
 
     // =========================================================================
     // THUẬT TOÁN TRÍCH XUẤT DỮ LIỆU THÔNG MINH TRÊN MÀN HÌNH
@@ -29,7 +30,6 @@
         const locGV = document.getElementById('locGiaoVien')?.value?.trim() || '';
         const locLop = document.getElementById('locLopHoc')?.value?.trim() || '';
 
-        // Tìm tên các lớp ở hàng đầu tiên của thead (bỏ 3 cột đầu: Thứ/Ngày, Buổi, Tiết)
         const theadRows = Array.from(document.querySelectorAll('#tieuDeBang tr'));
         const dsLop = [];
         if (theadRows.length > 0) {
@@ -44,7 +44,6 @@
             }
         }
 
-        // Đọc dòng cảnh báo tiến độ/thiếu tiết của từng lớp (nếu có trong thead)
         const canhBaoLop = [];
         for (let r = 1; r < theadRows.length; r++) {
             const cells = Array.from(theadRows[r].querySelectorAll('th, td'));
@@ -68,10 +67,8 @@
             const cells = Array.from(tr.querySelectorAll('td'));
             if (cells.length === 0) return;
 
-            // Xác định vị trí cột bắt đầu phần dữ liệu lớp (dựa vào ô Tiết có id="oTiet_...")
             let idxTiet = cells.findIndex(td => td.id && td.id.startsWith('oTiet_'));
             if (idxTiet === -1) {
-                // Dự phòng theo số cột bị gộp rowspan
                 if (cells.length >= 3 && /^(thứ|chủ nhật)/i.test(layGiaTriO(cells[0]))) idxTiet = 2;
                 else if (cells.length >= 2 && /^(sáng|chiều)/i.test(layGiaTriO(cells[0]))) idxTiet = 1;
                 else idxTiet = 0;
@@ -93,7 +90,6 @@
                 const cellGV = cells[c + 1];
                 if (!cellMon || !cellGV) break;
 
-                // Bỏ qua nếu cột lớp đang bị ẩn do lọc
                 while (lopIndex < dsLop.length && dsLop[lopIndex] === null) {
                     lopIndex++;
                 }
@@ -130,17 +126,11 @@
         if (locLop) ketQua += ` | Đang lọc Lớp: ${locLop}`;
         ketQua += '\n';
 
-        if (canhBaoLop.length > 0) {
-            ketQua += `\n[Tình trạng số tiết các lớp]\n${canhBaoLop.join('\n')}\n`;
-        }
-        if (tomTatGV) {
-            ketQua += `\n[Tổng hợp số tiết theo Giáo viên đang hiển thị]\n${tomTatGV}\n`;
-        }
-        if (chiTietTheoTiet.length > 0) {
-            ketQua += `\n[Chi tiết từng tiết học]\n${chiTietTheoTiet.join('\n')}`;
-        }
+        if (canhBaoLop.length > 0) ketQua += `\n[Tình trạng số tiết các lớp]\n${canhBaoLop.join('\n')}\n`;
+        if (tomTatGV) ketQua += `\n[Tổng hợp số tiết theo Giáo viên đang hiển thị]\n${tomTatGV}\n`;
+        if (chiTietTheoTiet.length > 0) ketQua += `\n[Chi tiết từng tiết học]\n${chiTietTheoTiet.join('\n')}`;
 
-        return ketQua.slice(0, 14000);
+        return ketQua.slice(0, 30000);
     }
 
     // 2. Bộ đọc tổng quát cho Sổ đầu bài, Thống kê, Chuyên cần và các Modal đang mở
@@ -151,27 +141,27 @@
         if (tables.length > 0) {
             tables.forEach((tbl, idx) => {
                 if (!laPhanTuDangHien(tbl)) return;
+                const prevText = (tbl.previousElementSibling?.innerText || '').replace(/\s+/g, ' ').trim();
                 const rows = Array.from(tbl.querySelectorAll('tr')).filter(laPhanTuDangHien);
-                const lines = rows.map(tr =>
-                    Array.from(tr.querySelectorAll('th, td'))
-                        .filter(laPhanTuDangHien)
-                        .map(layGiaTriO)
-                        .filter(Boolean)
-                        .join(' | ')
-                ).filter(Boolean);
+                const lines = rows.map(tr => {
+                    const cells = Array.from(tr.querySelectorAll('th, td')).filter(laPhanTuDangHien);
+                    const vals = cells.map(c => layGiaTriO(c) || '-');
+                    return vals.some(v => v !== '-') ? vals.join(' | ') : '';
+                }).filter(Boolean);
+
                 if (lines.length > 0) {
-                    blocks.push(`[Bảng ${idx + 1}]\n${lines.join('\n')}`);
+                    const nhanBang = prevText ? `[Bảng ${idx + 1}: ${prevText}]` : `[Bảng ${idx + 1}]`;
+                    blocks.push(`${nhanBang}\n${lines.join('\n')}`);
                 }
             });
         }
 
         const noiDungBang = blocks.join('\n\n');
         const vanBanBoSung = noiDungBang || (container.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
-        return `MÀN HÌNH: ${tieuDe}\n${vanBanBoSung}`.slice(0, 14000);
+        return `MÀN HÌNH: ${tieuDe}\n${vanBanBoSung}`.slice(0, 30000);
     }
 
     function layNguCanhTrangHienTai() {
-        // Ưu tiên 1: Nếu đang mở Modal (Thống kê số tiết GV, Kiểm tra tiến độ, Kiểm tra định mức)
         const dsModal = [
             { id: 'modalThongKeGV', ten: 'Bảng thống kê số tiết dạy thực tế của Giáo viên' },
             { id: 'modalKiemTraTienDo', ten: 'Báo cáo kiểm tra tiến độ dạy học' },
@@ -184,13 +174,11 @@
             }
         }
 
-        // Ưu tiên 2: Lưới TKB Toàn trường
         const khungTKB = document.getElementById('khungTKB');
         if (khungTKB && !khungTKB.classList.contains('hidden') && laPhanTuDangHien(khungTKB)) {
             return trichXuatTKBToanTruong();
         }
 
-        // Ưu tiên 3: Sổ đầu bài điện tử
         const khungSDB = document.getElementById('khungSoDauBai');
         if (khungSDB && !khungSDB.classList.contains('hidden') && laPhanTuDangHien(khungSDB)) {
             const lop = document.getElementById('chonLopSo')?.value || '';
@@ -198,7 +186,6 @@
             return trichXuatBangTongQuat(khungSDB, `Sổ đầu bài điện tử - Lớp ${lop}, Tuần ${tuan}`);
         }
 
-        // Ưu tiên 4: Bất kỳ phân hệ nào khác đang mở trong #vungHienThiChinh
         const vungChinh = document.getElementById('vungHienThiChinh');
         if (vungChinh) {
             const khungDangMo = Array.from(vungChinh.children).find(el => !el.classList.contains('hidden') && laPhanTuDangHien(el));
@@ -209,6 +196,50 @@
         }
 
         return 'MÀN HÌNH: Hệ thống Quản lý Chương trình Dạy - Học.';
+    }
+
+    // =========================================================================
+    // XỬ LÝ ĐỌC TỆP ĐÍNH KÈM (PDF, ẢNH, EXCEL, CSV, TXT)
+    // =========================================================================
+    async function docTepDinhKem(file) {
+        const gioiHanMB = 4;
+        if (file.size > gioiHanMB * 1024 * 1024) {
+            throw new Error(`Tệp vượt quá ${gioiHanMB}MB. Vui lòng chọn tệp nhỏ hơn.`);
+        }
+
+        const tenLower = file.name.toLowerCase();
+
+        // 1. Tệp Excel (.xlsx, .xls) -> Đọc bằng SheetJS có sẵn thành bảng CSV
+        if (tenLower.endsWith('.xlsx') || tenLower.endsWith('.xls')) {
+            if (typeof XLSX === 'undefined') {
+                throw new Error('Thư viện đọc Excel chưa sẵn sàng.');
+            }
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: 'array' });
+            const ketQuaSheet = wb.SheetNames.map(tenSheet => {
+                const csv = XLSX.utils.sheet_to_csv(wb.Sheets[tenSheet]);
+                return `[Sheet: ${tenSheet}]\n${csv}`;
+            }).join('\n\n');
+            return { tenFile: file.name, noiDungText: ketQuaSheet.slice(0, 25000) };
+        }
+
+        // 2. Tệp văn bản thuần (.txt, .csv, .json)
+        if (tenLower.endsWith('.txt') || tenLower.endsWith('.csv') || tenLower.endsWith('.json')) {
+            const text = await file.text();
+            return { tenFile: file.name, noiDungText: text.slice(0, 25000) };
+        }
+
+        // 3. Tệp PDF hoặc Ảnh (.pdf, .png, .jpg, .jpeg, .webp) -> Chuyển Base64 gửi thẳng Gemini
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = String(reader.result || '').split(',')[1] || '';
+                const mimeType = file.type || (tenLower.endsWith('.pdf') ? 'application/pdf' : 'image/png');
+                resolve({ tenFile: file.name, mimeType, base64 });
+            };
+            reader.onerror = () => reject(new Error('Không đọc được tệp đã chọn.'));
+            reader.readAsDataURL(file);
+        });
     }
 
     // =========================================================================
@@ -229,24 +260,36 @@
                 <span class="text-sm">Trợ lý Gemini</span>
             </button>
 
-            <div id="hopChatTroLyAI" class="hidden w-[360px] max-w-[92vw] h-[480px] bg-white border border-slate-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div id="hopChatTroLyAI" class="hidden w-[380px] max-w-[94vw] h-[500px] bg-white border border-slate-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 <div class="bg-[#0b5394] text-white px-4 py-3 flex items-center justify-between">
                     <div>
                         <div class="font-bold text-sm">Trợ lý Gemini Nhà trường</div>
-                        <div class="text-[11px] text-blue-200">Tự động đọc dữ liệu màn hình đang mở</div>
+                        <div class="text-[11px] text-blue-200">Đọc màn hình &amp; phân tích tệp đính kèm</div>
                     </div>
                     <button id="btnDongTroLyAI" type="button" class="text-white hover:text-red-200 text-2xl leading-none px-1 cursor-pointer">&times;</button>
                 </div>
 
                 <div id="noiDungChatAI" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-slate-50 text-sm">
                     <div class="bg-blue-50 border border-blue-200 text-slate-700 p-2.5 rounded-xl text-xs leading-relaxed">
-                        Xin chào! Tôi có thể đọc trực tiếp dữ liệu trên màn hình bạn đang mở (TKB, Sổ đầu bài, Thống kê, Chuyên cần...). Hãy đặt câu hỏi nhé!
+                        Xin chào! Tôi có thể đọc dữ liệu trên màn hình đang mở, hoặc bạn bấm biểu tượng kẹp ghim để tải lên file <b>Excel, PDF, Ảnh, TXT/CSV</b> cùng đối chiếu nhé.
                     </div>
                 </div>
 
-                <form id="formGuiCauHoiAI" class="p-2.5 bg-white border-t border-slate-200 flex gap-2">
+                <div id="vungTepDinhKemAI" class="hidden px-3 py-1.5 bg-blue-50 border-t border-blue-200 flex items-center justify-between text-xs text-blue-900">
+                    <span id="tenTepDinhKemAI" class="truncate font-semibold"></span>
+                    <button id="btnXoaTepAI" type="button" class="ml-2 text-red-600 hover:text-red-800 font-bold cursor-pointer">&times;</button>
+                </div>
+
+                <form id="formGuiCauHoiAI" class="p-2.5 bg-white border-t border-slate-200 flex items-center gap-1.5">
+                    <input id="inputFileAI" type="file" accept=".pdf,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.webp" class="hidden">
+                    <button id="btnChonFileAI" type="button" title="Đính kèm tệp (Excel, PDF, Ảnh, TXT)"
+                        class="p-2 text-slate-600 hover:text-[#0b5394] hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                    </button>
                     <input id="inputCauHoiAI" type="text" placeholder="Nhập câu hỏi..." autocomplete="off"
-                        class="flex-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="flex-1 min-w-0 border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <button id="btnGuiAI" type="submit"
                         class="bg-[#0b5394] hover:bg-[#1e70b8] text-white font-bold px-3.5 py-1.5 rounded-lg text-sm cursor-pointer disabled:opacity-50">
                         Gửi
@@ -262,6 +305,11 @@
         const form = document.getElementById('formGuiCauHoiAI');
         const input = document.getElementById('inputCauHoiAI');
         const khungTin = document.getElementById('noiDungChatAI');
+        const inputFile = document.getElementById('inputFileAI');
+        const btnChonFile = document.getElementById('btnChonFileAI');
+        const vungTep = document.getElementById('vungTepDinhKemAI');
+        const tenTep = document.getElementById('tenTepDinhKemAI');
+        const btnXoaTep = document.getElementById('btnXoaTepAI');
 
         btnMo.addEventListener('click', () => {
             btnMo.classList.add('hidden');
@@ -272,6 +320,28 @@
         btnDong.addEventListener('click', () => {
             hopChat.classList.add('hidden');
             btnMo.classList.remove('hidden');
+        });
+
+        btnChonFile.addEventListener('click', () => inputFile.click());
+
+        btnXoaTep.addEventListener('click', () => {
+            tepDangChon = null;
+            inputFile.value = '';
+            vungTep.classList.add('hidden');
+        });
+
+        inputFile.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+                tepDangChon = await docTepDinhKem(file);
+                tenTep.textContent = `📎 ${tepDangChon.tenFile}`;
+                vungTep.classList.remove('hidden');
+                input.focus();
+            } catch (err) {
+                alert(err.message || 'Không thể đọc tệp này.');
+                inputFile.value = '';
+            }
         });
 
         function themTinNhan(vaiTro, noiDung) {
@@ -288,16 +358,25 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const cauHoi = input.value.trim();
-            if (!cauHoi || dangTraLoi) return;
+            if ((!cauHoi && !tepDangChon) || dangTraLoi) return;
 
             if (typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) {
                 themTinNhan('assistant', 'Chưa tìm thấy đường dẫn máy chủ trong KetNoi.js.');
                 return;
             }
 
+            const tepGui = tepDangChon;
+            const nhanUser = tepGui
+                ? `${cauHoi || 'Phân tích tệp đính kèm'}\n[📎 ${tepGui.tenFile}]`
+                : cauHoi;
+
             input.value = '';
-            themTinNhan('user', cauHoi);
-            const oTraLoi = themTinNhan('assistant', 'Đang đọc dữ liệu màn hình và phân tích...');
+            tepDangChon = null;
+            inputFile.value = '';
+            vungTep.classList.add('hidden');
+
+            themTinNhan('user', nhanUser);
+            const oTraLoi = themTinNhan('assistant', 'Đang đọc dữ liệu và phân tích...');
             dangTraLoi = true;
             document.getElementById('btnGuiAI').disabled = true;
 
@@ -308,7 +387,8 @@
                     body: JSON.stringify({
                         thaoTac: 'hoiTroLyAI',
                         cauHoi: cauHoi,
-                        nguCanh: layNguCanhTrangHienTai()
+                        nguCanh: layNguCanhTrangHienTai(),
+                        tepDinhKem: tepGui
                     })
                 });
 
