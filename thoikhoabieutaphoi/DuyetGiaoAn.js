@@ -162,7 +162,7 @@ window.layDanhSachMonPhanCongCuaGvTheoTuan = function(maGV, tuanSo) {
         nguon = Object.values(mapTkbToanTapToanCuc);
     }
 
-    let mapMonLop = {}; // { "Toán": Set(["6A", "6B"]) }
+    let mapMonLop = {};
     nguon.forEach(d => {
         let t = d._tuanSo !== undefined ? d._tuanSo : (parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
         if (t !== tTarget) return;
@@ -363,7 +363,7 @@ async function xuLyChonFileGiaoAn1Cham(event) {
     const file = event.target.files && event.target.files[0];
     if (!file || !_nguCanhTaiLenGA) return;
 
-    const maxBytes = 10 * 1024 * 1024; // Giới hạn an toàn 10MB cho Google Apps Script
+    const maxBytes = 10 * 1024 * 1024;
     if (file.size > maxBytes) {
         alert(`⚠️ Tệp "${file.name}" có dung lượng ${(file.size / 1024 / 1024).toFixed(1)} MB vượt quá giới hạn 10 MB.\nVui lòng xuất sang PDF hoặc nén nhẹ lại trước khi tải lên.`);
         event.target.value = '';
@@ -573,6 +573,7 @@ window.chuyenDoiToanManHinhModalGA = function() {
     let box = document.getElementById('khungNoiDungModalGA');
     let btn = document.getElementById('btnToanManHinhGA');
     if (!modal || !box) return;
+    box.style.transform = '';
     let dangFull = box.getAttribute('data-fullscreen') === 'true';
     if (dangFull) {
         box.setAttribute('data-fullscreen', 'false');
@@ -604,7 +605,6 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
     let laNguoiTai = !!(maUserNorm && maGaNorm && maUserNorm === maGaNorm);
     _dangMoModalCheDoDuyet = (choPhepDuyet === true);
     let coQuyenDuyet = _dangMoModalCheDoDuyet && window.coQuyenDuyetGiaoAn();
-    let coAdmin = (typeof quyenSuaChua !== 'undefined' && quyenSuaChua) || (typeof coToanQuyenSDB !== 'undefined' && coToanQuyenSDB);
 
     let dsMon = window.layDanhSachMonPhanCongCuaGvTheoTuan(ga.maGV, ga.tuan);
     let urlPreview = `https://drive.google.com/file/d/${ga.fileId}/preview`;
@@ -680,7 +680,7 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
 
     modal.innerHTML = `
         <div id="khungNoiDungModalGA" data-fullscreen="false" class="bg-white w-full max-w-6xl h-[92vh] rounded-xl shadow-2xl border border-slate-300 flex flex-col overflow-hidden" onclick="event.stopPropagation()">
-            <div class="bg-blue-900 text-white px-4 py-2.5 flex items-center justify-between flex-none">
+            <div id="tieuDeKeoModalGA" title="Giữ chuột trái để kéo di chuyển cửa sổ" class="bg-blue-900 text-white px-4 py-2.5 flex items-center justify-between flex-none cursor-move select-none">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="font-extrabold text-sm truncate">${ga.tenFile}</span>
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${uiChung.mauBadge} flex-none">${uiChung.nhan}</span>
@@ -719,6 +719,42 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false) 
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
     });
+
+    // Kích hoạt kéo di chuyển Modal bằng thanh tiêu đề
+    const boxGA = document.getElementById('khungNoiDungModalGA');
+    const headerGA = document.getElementById('tieuDeKeoModalGA');
+    const iframeGA = modal.querySelector('iframe');
+    if (boxGA && headerGA) {
+        let dangKeo = false, startX = 0, startY = 0, offsetX = 0, offsetY = 0;
+
+        headerGA.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || e.target.closest('button, a')) return;
+            if (boxGA.getAttribute('data-fullscreen') === 'true') return;
+            dangKeo = true;
+            const match = boxGA.style.transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+            offsetX = match ? parseFloat(match[1]) : 0;
+            offsetY = match ? parseFloat(match[2]) : 0;
+            startX = e.clientX - offsetX;
+            startY = e.clientY - offsetY;
+            if (iframeGA) iframeGA.style.pointerEvents = 'none';
+        });
+
+        const onMouseMove = (e) => {
+            if (!dangKeo) return;
+            offsetX = e.clientX - startX;
+            offsetY = e.clientY - startY;
+            boxGA.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        };
+
+        const onMouseUp = () => {
+            if (!dangKeo) return;
+            dangKeo = false;
+            if (iframeGA) iframeGA.style.pointerEvents = '';
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
 };
 
 window.chonNhanhTrangThaiTatCaMonGA = function(trangThai) {
