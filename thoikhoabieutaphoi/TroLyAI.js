@@ -209,7 +209,6 @@
 
         const tenLower = file.name.toLowerCase();
 
-        // 1. Tệp Excel (.xlsx, .xls) -> Đọc bằng SheetJS có sẵn thành bảng CSV
         if (tenLower.endsWith('.xlsx') || tenLower.endsWith('.xls')) {
             if (typeof XLSX === 'undefined') {
                 throw new Error('Thư viện đọc Excel chưa sẵn sàng.');
@@ -223,13 +222,11 @@
             return { tenFile: file.name, noiDungText: ketQuaSheet.slice(0, 25000) };
         }
 
-        // 2. Tệp văn bản thuần (.txt, .csv, .json)
         if (tenLower.endsWith('.txt') || tenLower.endsWith('.csv') || tenLower.endsWith('.json')) {
             const text = await file.text();
             return { tenFile: file.name, noiDungText: text.slice(0, 25000) };
         }
 
-        // 3. Tệp PDF hoặc Ảnh (.pdf, .png, .jpg, .jpeg, .webp) -> Chuyển Base64 gửi thẳng Gemini
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -344,12 +341,46 @@
             }
         });
 
+        function dinhDangTraLoiDep(vanBan) {
+            let safe = String(vanBan || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            const dong = safe.split('\n').map(line => {
+                let s = line.trim();
+                if (!s) return '<div class="h-1.5"></div>';
+
+                if (/^#{1,6}\s+/.test(s)) {
+                    s = s.replace(/^#{1,6}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1');
+                    return `<div class="font-bold text-[#0b5394] text-[13px] mt-1.5 mb-0.5">${s}</div>`;
+                }
+
+                const formatInline = (txt) => txt
+                    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+                    .replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em class="italic text-slate-500">$2</em>');
+
+                if (/^[\*\-]\s+/.test(s)) {
+                    const noiDungDong = formatInline(s.replace(/^[\*\-]\s+/, ''));
+                    return `<div class="flex items-start gap-1.5 pl-1"><span class="text-[#0b5394] font-bold leading-tight">•</span><span class="flex-1">${noiDungDong}</span></div>`;
+                }
+
+                return `<div>${formatInline(s)}</div>`;
+            });
+
+            return dong.join('');
+        }
+
         function themTinNhan(vaiTro, noiDung) {
             const div = document.createElement('div');
             div.className = vaiTro === 'user'
                 ? 'ml-8 bg-[#0b5394] text-white p-2.5 rounded-xl text-xs whitespace-pre-wrap'
-                : 'mr-4 bg-white border border-slate-200 text-slate-800 p-2.5 rounded-xl text-xs whitespace-pre-wrap shadow-sm';
-            div.textContent = noiDung;
+                : 'mr-4 bg-white border border-slate-200 text-slate-800 p-2.5 rounded-xl text-xs leading-relaxed space-y-0.5 shadow-sm';
+            if (vaiTro === 'user') {
+                div.textContent = noiDung;
+            } else {
+                div.innerHTML = dinhDangTraLoiDep(noiDung);
+            }
             khungTin.appendChild(div);
             khungTin.scrollTop = khungTin.scrollHeight;
             return div;
@@ -394,7 +425,7 @@
 
                 const ketQua = await phanHoi.json();
                 if (ketQua.trangThai === 'thanh_cong') {
-                    oTraLoi.textContent = ketQua.traLoi;
+                    oTraLoi.innerHTML = dinhDangTraLoiDep(ketQua.traLoi);
                 } else {
                     oTraLoi.textContent = 'Lỗi: ' + (ketQua.thongBao || 'Không nhận được phản hồi.');
                 }
