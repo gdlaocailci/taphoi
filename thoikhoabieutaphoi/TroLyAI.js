@@ -247,7 +247,7 @@
 
         const wrapper = document.createElement('div');
         wrapper.id = 'cumTroLyAINoiBo';
-        wrapper.className = 'fixed bottom-10 right-4 z-[9990] font-sans';
+        wrapper.className = 'fixed bottom-10 right-4 z-[10060] font-sans';
         wrapper.innerHTML = `
             <button id="btnMoTroLyAI" type="button"
                 class="flex items-center gap-2 bg-[#0b5394] hover:bg-[#1e70b8] text-white font-bold px-4 py-2.5 rounded-full shadow-xl border border-blue-300 transition-all cursor-pointer">
