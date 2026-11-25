@@ -557,7 +557,7 @@ window.ketXuatBangDuyetGiaoAn = function() {
             <td class="p-2 text-left text-xs font-semibold text-slate-700 break-all">${g.tenFile}</td>
             <td class="p-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-extrabold ${uiChung.mauBadge} ${uiChung.nhapNhay ? 'animate-pulse' : ''}"><span class="w-2 h-2 rounded-full ${uiChung.mauCham}"></span>${uiChung.nhan}</span></td>
             <td class="p-2">
-                <button type="button" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition">Xem &amp; Duyệt</button>
+                <button type="button" onmouseenter="taiTruocNoiDungGiaoAnGA('${String(g.fileId || '').replace(/'/g, "\\'")}')" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition">Xem &amp; Duyệt</button>
             </td>
         </tr>`;
     });
@@ -1126,7 +1126,25 @@ window.luuCacheNoiDungGA_IDB = async function(fileId, data) {
     if (!db) return;
     try {
         const tx = db.transaction('files', 'readwrite');
-        tx.objectStore('files').put(data, String(fileId));
+        const store = tx.objectStore('files');
+        store.put({ ...data, _cachedAt: Date.now() }, String(fileId));
+
+        // Giữ tối đa 10 giáo án gần nhất để tránh đầy bộ nhớ khi sang nhiều tuần mới
+        const keysReq = store.getAllKeys();
+        keysReq.onsuccess = () => {
+            const keys = keysReq.result || [];
+            if (keys.length <= 10) return;
+            const allReq = store.getAll();
+            allReq.onsuccess = () => {
+                const items = (allReq.result || []).map((val, idx) => ({
+                    key: keys[idx],
+                    ts: (val && val._cachedAt) ? val._cachedAt : 0
+                })).sort((a, b) => b.ts - a.ts);
+                items.slice(10).forEach(old => {
+                    try { store.delete(old.key); } catch (eDel) {}
+                });
+            };
+        };
     } catch (e) {}
 };
 
