@@ -2566,7 +2566,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                 let tenNgan = gaItem.tenGV || gaItem.maGV;
                 let gaIdSafe = String(gaItem.id || '').replace(/'/g, "\\'");
                 let fidSafe = String(gaItem.fileId || '').replace(/'/g, "\\'");
-                return `<button type="button" onmouseenter="if(typeof taiTruocNoiDungGiaoAnGA==='function') taiTruocNoiDungGiaoAnGA('${fidSafe}')" onclick="moModalXemGiaoAnSDB('${gaIdSafe}', '', true)" class="hide-on-print px-2 py-0.5 rounded border text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shadow-xs ${uiGa.mauBadge}" title="Bấm để xem & duyệt giáo án của ${tenNgan}"><span class="w-2 h-2 rounded-full ${uiGa.mauCham}"></span><span>${tenNgan}: ${uiGa.nhan}</span></button>`;
+                return `<button type="button" onmouseenter="if(typeof taiTruocNoiDungGiaoAnGA==='function') taiTruocNoiDungGiaoAnGA('${fidSafe}')" onclick="moModalXemGiaoAnSDB('${gaIdSafe}', '', false)" class="hide-on-print px-2 py-0.5 rounded border text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shadow-xs ${uiGa.mauBadge}" title="Bấm để xem giáo án của ${tenNgan}"><span class="w-2 h-2 rounded-full ${uiGa.mauCham}"></span><span>${tenNgan}: ${uiGa.nhan}</span></button>`;
             }).join('');
             htmlNutGiaoAnTuan = `<div class="hide-on-print flex flex-wrap items-center gap-1.5"><span class="text-xs font-bold text-blue-800">Giáo án lớp ${lopChon}:</span>${dsBtnGa}</div>`;
         }
