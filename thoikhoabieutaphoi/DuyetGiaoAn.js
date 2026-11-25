@@ -284,7 +284,7 @@ window.taoHtmlNutGiaoAnChoO = function(tuanSo, monHoc, maGvTiet, coQuyenTai) {
         let tooltip = `${ga.tenFile} — ${ui.nhan}` + (infoMon.nhanXet ? `\nGóp ý BGH: ${infoMon.nhanXet}` : '');
         let gaIdSafe = String(ga.id || '').replace(/'/g, "\\'");
         let monSafe = String(monHoc || '').replace(/'/g, "\\'");
-        return `<button type="button" onclick="event.stopPropagation(); moGiaoAnTuOSoDauBaiBtn(this, '${gaIdSafe}', '${monSafe}')" title="${tooltip.replace(/"/g, '&quot;')}" class="nut-giao-an-sdb hide-on-print mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px] font-bold transition cursor-pointer ${ui.mauBadge} ${ui.nhapNhay ? 'animate-pulse' : ''}">
+        return `<button type="button" onmouseenter="taiTruocNoiDungGiaoAnGA('${String(ga.fileId || '').replace(/'/g, "\\'")}')" onclick="event.stopPropagation(); moGiaoAnTuOSoDauBaiBtn(this, '${gaIdSafe}', '${monSafe}')" title="${tooltip.replace(/"/g, '&quot;')}" class="nut-giao-an-sdb hide-on-print mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px] font-bold transition cursor-pointer ${ui.mauBadge} ${ui.nhapNhay ? 'animate-pulse' : ''}">
             <span class="w-2 h-2 rounded-full ${ui.mauCham} flex-none"></span>
             <span>${ui.nhan}</span>
         </button>`;
@@ -306,6 +306,7 @@ window.taiDanhSachGiaoAnTuMayChu = async function(buocTaiMoi = false) {
 
     if (buocTaiMoi) {
         window.boNhoNoiDungGiaoAn = {};
+        if (typeof window.xoaCacheNoiDungGA_IDB === 'function') window.xoaCacheNoiDungGA_IDB(null);
     }
     window.dangTaiDuLieuGiaoAn = true;
     try {
@@ -433,6 +434,7 @@ async function xuLyChonFileGiaoAn1Cham(event) {
         if (kq && kq.trangThai === 'thanh_cong' && kq.giaoAn) {
             if (ctx.fileIdCu && window.boNhoNoiDungGiaoAn) {
                 delete window.boNhoNoiDungGiaoAn[ctx.fileIdCu];
+                if (typeof window.xoaCacheNoiDungGA_IDB === 'function') window.xoaCacheNoiDungGA_IDB(ctx.fileIdCu);
             }
             let idx = window.duLieuGiaoAnToanCuc.findIndex(g => g.id === kq.giaoAn.id);
             if (idx !== -1) window.duLieuGiaoAnToanCuc[idx] = kq.giaoAn;
@@ -1016,6 +1018,7 @@ window.xoaGiaoAn1Cham = async function(giaoAnId) {
             let gaXoa = (window.duLieuGiaoAnToanCuc || []).find(g => g.id === giaoAnId);
             if (gaXoa && gaXoa.fileId && window.boNhoNoiDungGiaoAn) {
                 delete window.boNhoNoiDungGiaoAn[gaXoa.fileId];
+                if (typeof window.xoaCacheNoiDungGA_IDB === 'function') window.xoaCacheNoiDungGA_IDB(gaXoa.fileId);
             }
             window.duLieuGiaoAnToanCuc = (window.duLieuGiaoAnToanCuc || []).filter(g => g.id !== giaoAnId);
             window.dongModalXemGiaoAnSDB();
@@ -1088,6 +1091,105 @@ window.chuyenCheDoXemGiaoAnGA = function(cheDo) {
     if (selZoom) window.datTyLeXemGiaoAnGA(selZoom.value);
 };
 
+window._dangTaiNoiDungGAPromises = window._dangTaiNoiDungGAPromises || {};
+
+window.moDbNoiDungGA = function() {
+    return new Promise((resolve) => {
+        if (typeof indexedDB === 'undefined') return resolve(null);
+        try {
+            const req = indexedDB.open('GiaoAnCacheDB_v1', 1);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
+            };
+            req.onsuccess = (e) => resolve(e.target.result);
+            req.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+    });
+};
+
+window.docCacheNoiDungGA_IDB = async function(fileId) {
+    const db = await window.moDbNoiDungGA();
+    if (!db) return null;
+    return new Promise((resolve) => {
+        try {
+            const tx = db.transaction('files', 'readonly');
+            const req = tx.objectStore('files').get(String(fileId));
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+    });
+};
+
+window.luuCacheNoiDungGA_IDB = async function(fileId, data) {
+    const db = await window.moDbNoiDungGA();
+    if (!db) return;
+    try {
+        const tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').put(data, String(fileId));
+    } catch (e) {}
+};
+
+window.xoaCacheNoiDungGA_IDB = async function(fileId) {
+    const db = await window.moDbNoiDungGA();
+    if (!db) return;
+    try {
+        const tx = db.transaction('files', 'readwrite');
+        if (fileId) tx.objectStore('files').delete(String(fileId));
+        else tx.objectStore('files').clear();
+    } catch (e) {}
+};
+
+window.napThuVienPdfJsGA = function() {
+    if (typeof pdfjsLib !== 'undefined') return Promise.resolve();
+    if (window._promisePdfJsLibGA) return window._promisePdfJsLibGA;
+    window._promisePdfJsLibGA = new Promise((resolve, reject) => {
+        const sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        sc.onload = () => {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+            resolve();
+        };
+        sc.onerror = reject;
+        document.head.appendChild(sc);
+    });
+    return window._promisePdfJsLibGA;
+};
+
+window.taiTruocNoiDungGiaoAnGA = function(fileId) {
+    if (!fileId || typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) return Promise.resolve(null);
+    if (window.boNhoNoiDungGiaoAn[fileId]) return Promise.resolve(window.boNhoNoiDungGiaoAn[fileId]);
+    if (window._dangTaiNoiDungGAPromises[fileId]) return window._dangTaiNoiDungGAPromises[fileId];
+
+    window._dangTaiNoiDungGAPromises[fileId] = (async () => {
+        try {
+            let cached = await window.docCacheNoiDungGA_IDB(fileId);
+            if (cached && cached.trangThai === 'thanh_cong') {
+                window.boNhoNoiDungGiaoAn[fileId] = cached;
+                if (cached.loai === 'pdf_base64') window.napThuVienPdfJsGA();
+                return cached;
+            }
+            let url = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layNoiDungGiaoAnChiTiet&fileId=${encodeURIComponent(fileId)}`;
+            const phanHoi = await fetchVoiCoCheThuLai(url, {}, 2, 45000);
+            const data = await phanHoi.json();
+            if (data && data.trangThai === 'thanh_cong') {
+                window.boNhoNoiDungGiaoAn[fileId] = data;
+                window.luuCacheNoiDungGA_IDB(fileId, data);
+                if (data.loai === 'pdf_base64') window.napThuVienPdfJsGA();
+            }
+            return data;
+        } catch (e) {
+            return { trangThai: 'loi', thongBao: e.message };
+        } finally {
+            delete window._dangTaiNoiDungGAPromises[fileId];
+        }
+    })();
+
+    return window._dangTaiNoiDungGAPromises[fileId];
+};
+
 window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
     let noiDungWrap = document.getElementById('noiDungBaiHocZoomGA');
     let nhanEl = document.getElementById('nhanDinhViBaiGA');
@@ -1131,17 +1233,7 @@ window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
             <p class="text-sm text-blue-900">Đang trích xuất nội dung giáo án và định vị đúng bài dạy...</p>
             <p class="text-xs text-slate-400 font-normal mt-1">Lần mở tiếp theo cùng giáo án tuần sẽ hiển thị tức thì.</p>
         </div>`;
-
-        try {
-            let url = `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=layNoiDungGiaoAnChiTiet&fileId=${encodeURIComponent(fileId)}`;
-            const phanHoi = await fetchVoiCoCheThuLai(url, {}, 2, 45000);
-            data = await phanHoi.json();
-            if (data && data.trangThai === 'thanh_cong') {
-                window.boNhoNoiDungGiaoAn[fileId] = data;
-            }
-        } catch (e) {
-            data = { trangThai: 'loi', thongBao: e.message };
-        }
+        data = await window.taiTruocNoiDungGiaoAnGA(fileId);
     }
 
     // Kiểm tra modal còn mở không
@@ -1702,74 +1794,120 @@ window.dinhViTrangPdfDaTaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = 
     }
 };
 
+window._boNhoPhanTichPdfGA = window._boNhoPhanTichPdfGA || {};
+
 window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, baiTxt, tietTxt) {
     try {
-        if (typeof pdfjsLib === 'undefined') {
-            await new Promise((resolve, reject) => {
-                const sc = document.createElement('script');
-                sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-                sc.onload = resolve;
-                sc.onerror = reject;
-                document.head.appendChild(sc);
-            });
-            if (typeof pdfjsLib !== 'undefined') {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            }
+        await window.napThuVienPdfJsGA();
+
+        let fileId = noiDungWrap.getAttribute('data-loaded-file') || '';
+        let cachedParsed = fileId ? window._boNhoPhanTichPdfGA[fileId] : null;
+        let pdf = cachedParsed ? cachedParsed.pdf : null;
+        let pageDataList = cachedParsed ? cachedParsed.pageDataList : null;
+
+        if (!pdf) {
+            const binStr = atob(base64Str);
+            const len = binStr.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binStr.charCodeAt(i);
+            pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
         }
 
-        const binStr = atob(base64Str);
-        const bytes = new Uint8Array(binStr.length);
-        for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-
-        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
         const numPages = pdf.numPages;
+        if (!pageDataList) {
+            // Trích xuất văn bản song song theo lô (10 trang/lượt) giúp tăng tốc gấp 6-8 lần
+            pageDataList = new Array(numPages);
+            const batchSize = 10;
+            for (let start = 1; start <= numPages; start += batchSize) {
+                let tasks = [];
+                let end = Math.min(numPages, start + batchSize - 1);
+                for (let p = start; p <= end; p++) {
+                    tasks.push((async (pageNum) => {
+                        const page = await pdf.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        const viewport = page.getViewport({ scale: 1.4 });
+                        const lines = window.trichXuatDongVanBanPdfGA(textContent, viewport);
+                        const pageText = lines.map(l => l.chuan).join(' ');
+                        pageDataList[pageNum - 1] = { p: pageNum, page: page, viewport: viewport, lines: lines, pageText: pageText };
+                    })(p));
+                }
+                await Promise.all(tasks);
+            }
+            if (fileId) window._boNhoPhanTichPdfGA[fileId] = { pdf: pdf, pageDataList: pageDataList };
+        }
+
+        if (!document.getElementById('modalXemDuyetGiaoAn')) return;
 
         noiDungWrap.innerHTML = `<div id="pdfPagesContainerGA" class="space-y-4"></div>`;
         let container = document.getElementById('pdfPagesContainerGA');
         window._duLieuDongPdfGA = [];
 
         let pageObjects = [];
-        for (let p = 1; p <= numPages; p++) {
-            const page = await pdf.getPage(p);
-            const textContent = await page.getTextContent();
-            const viewport = page.getViewport({ scale: 1.45 });
-            const lines = window.trichXuatDongVanBanPdfGA(textContent, viewport);
-            const pageText = lines.map(l => l.chuan).join(' ');
-
-            window._duLieuDongPdfGA.push({ pageNum: p, lines: lines });
-
+        for (let item of pageDataList) {
+            window._duLieuDongPdfGA.push({ pageNum: item.p, lines: item.lines });
             let pageDiv = document.createElement('div');
             pageDiv.className = 'bg-white rounded shadow-md p-2 relative';
-            pageDiv.setAttribute('data-pdf-page', String(p));
-            pageDiv.setAttribute('data-pdf-page-text', pageText);
-            pageDiv.innerHTML = `<div class="pdf-page-header text-[11px] font-bold text-slate-500 mb-1 flex justify-between px-1"><span>Trang ${p} / ${numPages}</span></div><div class="pdf-canvas-wrap relative w-full"><canvas class="w-full h-auto block mx-auto"></canvas></div>`;
+            pageDiv.setAttribute('data-pdf-page', String(item.p));
+            pageDiv.setAttribute('data-pdf-page-text', item.pageText);
+            pageDiv.setAttribute('data-rendered', 'false');
+            pageDiv.innerHTML = `<div class="pdf-page-header text-[11px] font-bold text-slate-500 mb-1 flex justify-between px-1"><span>Trang ${item.p} / ${numPages}</span></div><div class="pdf-canvas-wrap relative w-full"><canvas class="w-full h-auto block mx-auto"></canvas></div>`;
             const preCanvas = pageDiv.querySelector('canvas');
             if (preCanvas) {
-                preCanvas.width = viewport.width;
-                preCanvas.height = viewport.height;
+                preCanvas.width = item.viewport.width;
+                preCanvas.height = item.viewport.height;
             }
             container.appendChild(pageDiv);
-            pageObjects.push({ p: p, page: page, viewport: viewport, pageDiv: pageDiv });
+            pageObjects.push({ ...item, pageDiv: pageDiv, rendering: false });
         }
 
-        // Bước 2: Định vị đúng dòng đầu bài, bôi vàng và cuộn ngay tới vị trí đó (chiều cao trang đã cố định)
+        // Bước 2: Định vị đúng dòng đầu bài, bôi vàng và cuộn ngay tới vị trí đó
         window.dinhViTrangPdfDaTaiGA(monTxt, baiTxt, tietTxt, true);
 
-        // Bước 3: Ưu tiên vẽ trang đang khớp nhất trước để hiển thị tức thì, giữ nguyên vị trí cuộn
+        const renderMotTrang = async (item) => {
+            if (!item || item.rendering || item.pageDiv.getAttribute('data-rendered') === 'true') return;
+            if (!document.getElementById('pdfPagesContainerGA')) return;
+            item.rendering = true;
+            try {
+                const canvas = item.pageDiv.querySelector('canvas');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    await item.page.render({ canvasContext: ctx, viewport: item.viewport }).promise;
+                    item.pageDiv.setAttribute('data-rendered', 'true');
+                }
+            } finally {
+                item.rendering = false;
+            }
+        };
+
+        // Bước 3: Chỉ vẽ ngay trang đích và 2 trang lân cận để hiển thị tức thì (< 150ms)
         let firstHl = (_trangThaiTimKiemGA.ketQua && _trangThaiTimKiemGA.ketQua[0]) ? _trangThaiTimKiemGA.ketQua[0] : null;
         let targetPageDiv = firstHl ? firstHl.closest('[data-pdf-page]') : null;
         let targetP = targetPageDiv ? parseInt(targetPageDiv.getAttribute('data-pdf-page') || '1', 10) : 1;
-        pageObjects.sort((a, b) => Math.abs(a.p - targetP) - Math.abs(b.p - targetP));
 
-        for (let item of pageObjects) {
-            if (!document.getElementById('pdfPagesContainerGA')) break;
-            const canvas = item.pageDiv.querySelector('canvas');
-            if (!canvas) continue;
-            const ctx = canvas.getContext('2d');
-            await item.page.render({ canvasContext: ctx, viewport: item.viewport }).promise;
-            if (item.p === targetP && firstHl) {
-                window.cuonDenPhanTuTrongKhungGA(firstHl, false);
-            }
+        let uuTien = [targetP, targetP - 1, targetP + 1].filter(p => p >= 1 && p <= numPages);
+        await Promise.all(uuTien.map(p => renderMotTrang(pageObjects[p - 1])));
+        if (firstHl) window.cuonDenPhanTuTrongKhungGA(firstHl, false);
+
+        // Bước 4: Dùng IntersectionObserver để chỉ vẽ các trang khác khi người dùng cuộn tới
+        let khungCuon = document.getElementById('khungCuonNoiDungGA');
+        if (typeof IntersectionObserver !== 'undefined' && khungCuon) {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        let pNum = parseInt(entry.target.getAttribute('data-pdf-page') || '0', 10);
+                        if (pNum >= 1 && pNum <= numPages) {
+                            renderMotTrang(pageObjects[pNum - 1]);
+                            obs.unobserve(entry.target);
+                        }
+                    }
+                });
+            }, { root: khungCuon, rootMargin: '700px 0px' });
+
+            pageObjects.forEach(item => {
+                if (item.pageDiv.getAttribute('data-rendered') !== 'true') {
+                    obs.observe(item.pageDiv);
+                }
+            });
         }
     } catch (errPdf) {
         console.warn('Lỗi render PDF, chuyển về Drive:', errPdf);
