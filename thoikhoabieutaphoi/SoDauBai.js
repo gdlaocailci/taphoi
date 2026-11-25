@@ -2540,8 +2540,37 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
     });
 
     let chuoiMonDay = tapHopMonDay.size > 0 ? Array.from(tapHopMonDay).join(', ') : '<span class="text-red-500 font-normal">Không có tiết dạy tại lớp này</span>';
+    let laAdminHoacBghSDB = !!(
+        quyenQuanTri ||
+        quyenKhoaSdbServer ||
+        (theChotQuyen && theChotQuyen.getAttribute('data-quyenkhoasdb') === 'true') ||
+        (typeof window.coQuyenDuyetGiaoAn === 'function' && window.coQuyenDuyetGiaoAn())
+    );
     let htmlNutGiaoAnTuan = '';
-    if (madinhdanhGV && !String(madinhdanhGV).includes('@') && typeof window.timGiaoAnTheoGvVaTuan === 'function') {
+    if (laAdminHoacBghSDB && typeof window.timGiaoAnTheoGvVaTuan === 'function') {
+        let tapGaCuaLop = new Map();
+        tkbTuanNay.forEach(d => {
+            if (!String(d['Môn Học'] || '').trim()) return;
+            let gvNguon = String(d['Mã GV'] || d['ChuKy_Thuc'] || '').trim();
+            if (!gvNguon) return;
+            gvNguon.split(/[,;&-]/).map(g => g.trim()).filter(Boolean).forEach(gvItem => {
+                let gaItem = window.timGiaoAnTheoGvVaTuan(gvItem, maxTuanChon);
+                if (gaItem && !tapGaCuaLop.has(gaItem.id)) {
+                    tapGaCuaLop.set(gaItem.id, gaItem);
+                }
+            });
+        });
+        if (tapGaCuaLop.size > 0) {
+            let dsBtnGa = Array.from(tapGaCuaLop.values()).map(gaItem => {
+                let uiGa = window.layThongTinHienThiTrangThaiGA(gaItem.trangThaiChung);
+                let tenNgan = gaItem.tenGV || gaItem.maGV;
+                let gaIdSafe = String(gaItem.id || '').replace(/'/g, "\\'");
+                let fidSafe = String(gaItem.fileId || '').replace(/'/g, "\\'");
+                return `<button type="button" onmouseenter="if(typeof taiTruocNoiDungGiaoAnGA==='function') taiTruocNoiDungGiaoAnGA('${fidSafe}')" onclick="moModalXemGiaoAnSDB('${gaIdSafe}', '', true)" class="hide-on-print px-2 py-0.5 rounded border text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shadow-xs ${uiGa.mauBadge}" title="Bấm để xem & duyệt giáo án của ${tenNgan}"><span class="w-2 h-2 rounded-full ${uiGa.mauCham}"></span><span>${tenNgan}: ${uiGa.nhan}</span></button>`;
+            }).join('');
+            htmlNutGiaoAnTuan = `<div class="hide-on-print flex flex-wrap items-center gap-1.5"><span class="text-xs font-bold text-blue-800">Giáo án lớp ${lopChon}:</span>${dsBtnGa}</div>`;
+        }
+    } else if (madinhdanhGV && !String(madinhdanhGV).includes('@') && typeof window.timGiaoAnTheoGvVaTuan === 'function') {
         let gaCuaToi = window.timGiaoAnTheoGvVaTuan(madinhdanhGV, maxTuanChon);
         if (gaCuaToi) {
             let uiGa = window.layThongTinHienThiTrangThaiGA(gaCuaToi.trangThaiChung);
@@ -2725,7 +2754,7 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                     daInCotThu = true;
                 }
 
-                let maGvCuaTiet = dongDuLieu ? (dongDuLieu['Mã GV'] || '') : '';
+                let maGvCuaTiet = dongDuLieu ? (dongDuLieu['Mã GV'] || dongDuLieu['ChuKy_Thuc'] || '') : '';
                 let htmlNutGiaoAnO = (monHoc && typeof window.taoHtmlNutGiaoAnChoO === 'function')
                     ? window.taoHtmlNutGiaoAnChoO(maxTuanChon, monHoc, maGvCuaTiet, quyenNhapThuCong && !quyenQuanTri && !soBiKhoa)
                     : '';
@@ -4760,13 +4789,13 @@ window.capNhatSoDauBaiNgamLenLuoi = function(tuanChon, lopChon) {
                         for (let nd of tdMon.childNodes) { if (nd.nodeType === 3) monHienTai += nd.textContent; }
                         if (monHienTai.trim() !== monHocMoi) {
                             let nutGA = (monHocMoi && typeof window.taoHtmlNutGiaoAnChoO === 'function')
-                                ? window.taoHtmlNutGiaoAnChoO(tuanChon, monHocMoi, dongDuLieuMoi['Mã GV'] || '', quyenNhapThuCong && !quyenQuanTri && !isLockedMoi)
+                                ? window.taoHtmlNutGiaoAnChoO(tuanChon, monHocMoi, dongDuLieuMoi['Mã GV'] || dongDuLieuMoi['ChuKy_Thuc'] || '', quyenNhapThuCong && !quyenQuanTri && !isLockedMoi)
                                 : '';
                             tdMon.innerHTML = monHocMoi + (nutGA ? `<div class="hide-on-print leading-none">${nutGA}</div>` : '');
                         }
                         if (monHocMoi) {
                             let tNumNgam = parseInt(String(tuanChon || '').replace(/\D/g, ''), 10) || 0;
-                            let gvNgam = String(dongDuLieuMoi['Mã GV'] || '');
+                            let gvNgam = String(dongDuLieuMoi['Mã GV'] || dongDuLieuMoi['ChuKy_Thuc'] || '');
                             let coGaNgam = !!(typeof window.timGiaoAnTheoGvVaTuan === 'function' && gvNgam && window.timGiaoAnTheoGvVaTuan(gvNgam.split(/[,;&-]/)[0].trim(), tNumNgam));
                             tdMon.onclick = function() {
                                 if (typeof window.moGiaoAnTuOMonHocSDB === 'function') {
