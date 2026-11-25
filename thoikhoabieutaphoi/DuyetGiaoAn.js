@@ -304,6 +304,9 @@ window.taiDanhSachGiaoAnTuMayChu = async function(buocTaiMoi = false) {
     if (!buocTaiMoi && window.daTaiDuLieuGiaoAn) return window.duLieuGiaoAnToanCuc;
     if (typeof CAU_HINH_FRONTEND === 'undefined' || !CAU_HINH_FRONTEND.URL_API_MAY_CHU) return [];
 
+    if (buocTaiMoi) {
+        window.boNhoNoiDungGiaoAn = {};
+    }
     window.dangTaiDuLieuGiaoAn = true;
     try {
         let namHoc = window.layNamHocHienTaiGA();
@@ -428,12 +431,17 @@ async function xuLyChonFileGiaoAn1Cham(event) {
         const kq = await phanHoi.json();
 
         if (kq && kq.trangThai === 'thanh_cong' && kq.giaoAn) {
+            if (ctx.fileIdCu && window.boNhoNoiDungGiaoAn) {
+                delete window.boNhoNoiDungGiaoAn[ctx.fileIdCu];
+            }
             let idx = window.duLieuGiaoAnToanCuc.findIndex(g => g.id === kq.giaoAn.id);
             if (idx !== -1) window.duLieuGiaoAnToanCuc[idx] = kq.giaoAn;
             else window.duLieuGiaoAnToanCuc.push(kq.giaoAn);
 
             if (document.getElementById('modalXemDuyetGiaoAn')) {
-                window.moModalXemGiaoAnSDB(kq.giaoAn.id, '', _dangMoModalCheDoDuyet);
+                let ttCu = _trangThaiTimKiemGA ? _trangThaiTimKiemGA.thongTinBai : null;
+                let monCu = ttCu ? ttCu.mon : '';
+                window.moModalXemGiaoAnSDB(kq.giaoAn.id, monCu, _dangMoModalCheDoDuyet, ttCu);
             }
             if (typeof thucThiKetXuatSoDauBaiLenLuoi === 'function' && !document.getElementById('khungSoDauBai')?.classList.contains('hidden')) {
                 thucThiKetXuatSoDauBaiLenLuoi();
@@ -589,7 +597,7 @@ window.chuyenDoiToanManHinhModalGA = function() {
 };
 
 window.boNhoNoiDungGiaoAn = window.boNhoNoiDungGiaoAn || {};
-let _trangThaiTimKiemGA = { ketQua: [], viTriHienTai: -1, cheDoHienTai: 'drive', thongTinBai: null, fileId: '' };
+let _trangThaiTimKiemGA = { ketQua: [], viTriHienTai: -1, cheDoHienTai: 'drive', thongTinBai: null, fileId: '', tuKhoaCu: '' };
 
 window.layThongTinBaiTuDongSDB = function(el) {
     let tr = el ? el.closest('tr') : null;
@@ -668,7 +676,13 @@ window.chuyenDoiAnHienCotDuyetGA = function() {
     }
 };
 
+let _cleanupDragModalGA = null;
+
 window.dongModalXemGiaoAnSDB = function() {
+    if (typeof _cleanupDragModalGA === 'function') {
+        _cleanupDragModalGA();
+        _cleanupDragModalGA = null;
+    }
     let m = document.getElementById('modalXemDuyetGiaoAn');
     if (m) m.remove();
 };
@@ -793,14 +807,15 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false, 
                     <div id="vungXemBaiHocGA" class="hidden w-full h-full flex flex-col bg-slate-200/80">
                         <div id="thanhDinhViBaiGA" class="bg-white border-b border-slate-300 px-3 py-2 flex flex-wrap items-center justify-between gap-2 flex-none shadow-xs">
                             <div id="nhanDinhViBaiGA" class="text-xs font-bold text-slate-700 flex items-center gap-1.5 flex-wrap"></div>
-                            <div class="flex items-center gap-1.5 flex-none">
+                            <div class="flex items-center gap-1.5 flex-none flex-wrap">
                                 <div id="cumDieuHuongKetQuaGA" class="hidden items-center gap-1 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 text-[11px] font-bold text-amber-900">
-                                    <button type="button" onclick="nhayDenKetQuaTimKiemGA(-1)" class="px-1 hover:bg-amber-200 rounded cursor-pointer" title="Vị trí trước">↑</button>
+                                    <button type="button" onclick="nhayDenKetQuaTimKiemGA(-1)" class="px-1 hover:bg-amber-200 rounded cursor-pointer" title="Kết quả trước">↑</button>
                                     <span id="chiSoKetQuaGA">1/1</span>
-                                    <button type="button" onclick="nhayDenKetQuaTimKiemGA(1)" class="px-1 hover:bg-amber-200 rounded cursor-pointer" title="Vị trí tiếp">↓</button>
+                                    <button type="button" onclick="nhayDenKetQuaTimKiemGA(1)" class="px-1 hover:bg-amber-200 rounded cursor-pointer" title="Kết quả tiếp theo">↓</button>
                                 </div>
-                                <input type="text" id="inpTimTrongGiaoAnGA" placeholder="Tìm tên bài trong giáo án..." onkeydown="if(event.key==='Enter'){event.preventDefault(); timKiemThuCongTrongGiaoAnGA();}" class="border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:border-blue-500 w-44 md:w-52">
-                                <button type="button" onclick="timKiemThuCongTrongGiaoAnGA()" class="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded cursor-pointer">Tìm</button>
+                                <input type="text" id="inpTimTrongGiaoAnGA" placeholder="Tìm tên bài trong giáo án..." onkeydown="if(event.key==='Enter'){event.preventDefault(); timKiemThuCongTrongGiaoAnGA(true);}" class="border border-slate-300 rounded px-2 py-1 text-xs outline-none focus:border-blue-500 w-40 md:w-52">
+                                <button type="button" onclick="timKiemThuCongTrongGiaoAnGA(false)" class="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded cursor-pointer">Tìm</button>
+                                <button type="button" id="btnTimTiepGA" onclick="timTiepTrongGiaoAnGA()" class="hidden px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded cursor-pointer shadow-xs" title="Chuyển tới vị trí phù hợp tiếp theo">Tìm tiếp ↓</button>
                             </div>
                         </div>
                         <div id="khungCuonNoiDungGA" class="flex-1 overflow-y-auto p-3 md:p-5 scroll-smooth">
@@ -879,6 +894,10 @@ window.moModalXemGiaoAnSDB = function(giaoAnId, monFocus, choPhepDuyet = false, 
 
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
+        _cleanupDragModalGA = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
     }
 };
 
@@ -962,7 +981,8 @@ window.baoDaDieuChinhGiaoAn = async function(giaoAnId, monFocus = '') {
             let idx = window.duLieuGiaoAnToanCuc.findIndex(g => g.id === kq.giaoAn.id);
             if (idx !== -1) window.duLieuGiaoAnToanCuc[idx] = kq.giaoAn;
             if (document.getElementById('modalXemDuyetGiaoAn')) {
-                window.moModalXemGiaoAnSDB(kq.giaoAn.id, monFocus, _dangMoModalCheDoDuyet);
+                let ttCu = _trangThaiTimKiemGA ? _trangThaiTimKiemGA.thongTinBai : null;
+                window.moModalXemGiaoAnSDB(kq.giaoAn.id, monFocus, _dangMoModalCheDoDuyet, ttCu);
             }
             if (!document.getElementById('khungDuyetGiaoAn')?.classList.contains('hidden')) {
                 window.ketXuatBangDuyetGiaoAn();
@@ -993,6 +1013,10 @@ window.xoaGiaoAn1Cham = async function(giaoAnId) {
         }, 2, 30000);
         const kq = await phanHoi.json();
         if (kq && kq.trangThai === 'thanh_cong') {
+            let gaXoa = (window.duLieuGiaoAnToanCuc || []).find(g => g.id === giaoAnId);
+            if (gaXoa && gaXoa.fileId && window.boNhoNoiDungGiaoAn) {
+                delete window.boNhoNoiDungGiaoAn[gaXoa.fileId];
+            }
             window.duLieuGiaoAnToanCuc = (window.duLieuGiaoAnToanCuc || []).filter(g => g.id !== giaoAnId);
             window.dongModalXemGiaoAnSDB();
             if (!document.getElementById('khungDuyetGiaoAn')?.classList.contains('hidden')) {
@@ -1060,6 +1084,8 @@ window.chuyenCheDoXemGiaoAnGA = function(cheDo) {
         if (btnDrive) btnDrive.className = 'px-2.5 py-1 text-xs font-bold transition cursor-pointer bg-white text-blue-900';
         if (btnBai) btnBai.className = 'px-2.5 py-1 text-xs font-bold transition cursor-pointer text-white hover:bg-white/15';
     }
+    let selZoom = document.getElementById('chonTyLeXemGA');
+    if (selZoom) window.datTyLeXemGiaoAnGA(selZoom.value);
 };
 
 window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
@@ -1118,6 +1144,10 @@ window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
     if (!document.getElementById('modalXemDuyetGiaoAn')) return;
 
     if (!data || data.trangThai !== 'thanh_cong') {
+        if (data && data.loai === 'drive_preview') {
+            window.chuyenCheDoXemGiaoAnGA('drive');
+            return;
+        }
         noiDungWrap.innerHTML = `<div class="bg-white rounded-lg shadow p-6 text-center space-y-3">
             <p class="text-sm font-bold text-amber-800">⚠️ ${(data && data.thongBao) ? data.thongBao : 'Không thể trích xuất trực tiếp định dạng tệp này.'}</p>
             <button type="button" onclick="chuyenCheDoXemGiaoAnGA('drive')" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer">Mở trình xem Google Drive</button>
@@ -1224,13 +1254,21 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt) {
         }
     }
 
-    // Lọc lấy các kết quả tốt (hoặc top theo điểm)
+    // Lọc lấy tất cả các vị trí phù hợp và loại bỏ phần tử cha chứa phần tử con đã khớp
     ungVien.sort((a, b) => b.diem - a.diem || a.idx - b.idx);
     let diemMax = ungVien.length > 0 ? ungVien[0].diem : 0;
-    let ketQuaChon = ungVien.filter(u => u.diem >= Math.max(40, diemMax * 0.65)).slice(0, 12);
+    let ketQuaChon = ungVien.filter(u => u.diem >= Math.max(30, diemMax * 0.45)).slice(0, 25);
+    let tapElChon = new Set(ketQuaChon.map(u => u.el));
+    ketQuaChon = ketQuaChon.filter(u => {
+        for (let other of tapElChon) {
+            if (other !== u.el && u.el.contains(other)) return false;
+        }
+        return true;
+    });
     ketQuaChon.sort((a, b) => a.idx - b.idx);
 
     _trangThaiTimKiemGA.ketQua = ketQuaChon.map(u => u.el);
+    _trangThaiTimKiemGA.tuKhoaCu = baiTxt || monTxt || '';
     window.capNhatDieuHuongKetQuaGA();
     if (_trangThaiTimKiemGA.ketQua.length > 0) {
         window.nhayDenViTriCuTheGA(0);
@@ -1240,6 +1278,7 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt) {
 window.capNhatDieuHuongKetQuaGA = function() {
     let cum = document.getElementById('cumDieuHuongKetQuaGA');
     let chiSo = document.getElementById('chiSoKetQuaGA');
+    let btnTimTiep = document.getElementById('btnTimTiepGA');
     let ds = _trangThaiTimKiemGA.ketQua || [];
     if (!cum || !chiSo) return;
 
@@ -1250,9 +1289,14 @@ window.capNhatDieuHuongKetQuaGA = function() {
             if (el && el.classList) el.classList.add(i === 0 ? 'ga-match-active' : 'ga-match-other');
         });
         chiSo.innerText = `1/${ds.length}`;
+        if (btnTimTiep) {
+            if (ds.length > 1) btnTimTiep.classList.remove('hidden');
+            else btnTimTiep.classList.add('hidden');
+        }
     } else {
         cum.classList.add('hidden');
         cum.classList.remove('inline-flex');
+        if (btnTimTiep) btnTimTiep.classList.add('hidden');
     }
 };
 
@@ -1283,11 +1327,18 @@ window.nhayDenKetQuaTimKiemGA = function(buoc) {
     window.nhayDenViTriCuTheGA((_trangThaiTimKiemGA.viTriHienTai || 0) + buoc);
 };
 
-window.timKiemThuCongTrongGiaoAnGA = function() {
+window.timKiemThuCongTrongGiaoAnGA = function(nhayTiepNeuTrung = false) {
     let tuKhoa = document.getElementById('inpTimTrongGiaoAnGA')?.value.trim() || '';
     if (!tuKhoa) return;
     let noiDungWrap = document.getElementById('noiDungBaiHocZoomGA');
     if (!noiDungWrap) return;
+
+    if (nhayTiepNeuTrung && _trangThaiTimKiemGA.tuKhoaCu === tuKhoa && (_trangThaiTimKiemGA.ketQua || []).length > 1) {
+        window.nhayDenKetQuaTimKiemGA(1);
+        return;
+    }
+
+    _trangThaiTimKiemGA.tuKhoaCu = tuKhoa;
 
     if (noiDungWrap.getAttribute('data-loai') === 'pdf') {
         let pages = Array.from(noiDungWrap.querySelectorAll('[data-pdf-page-text]'));
@@ -1304,6 +1355,16 @@ window.timKiemThuCongTrongGiaoAnGA = function() {
     }
 
     window.dinhViVaCuonDenBaiGA('', tuKhoa, '');
+};
+
+window.timTiepTrongGiaoAnGA = function() {
+    let tuKhoa = document.getElementById('inpTimTrongGiaoAnGA')?.value.trim() || '';
+    let ds = _trangThaiTimKiemGA.ketQua || [];
+    if (ds.length > 1 && (!tuKhoa || _trangThaiTimKiemGA.tuKhoaCu === tuKhoa)) {
+        window.nhayDenKetQuaTimKiemGA(1);
+    } else {
+        window.timKiemThuCongTrongGiaoAnGA(true);
+    }
 };
 
 window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, baiTxt, tietTxt) {
