@@ -1412,9 +1412,21 @@ window.nhayDenViTriCuTheGA = function(idx) {
     if (chiSo) chiSo.innerText = `${targetIdx + 1}/${ds.length}`;
 
     let targetEl = ds[targetIdx];
-    if (targetEl && typeof targetEl.scrollIntoView === 'function') {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (targetEl) {
+        window.cuonDenPhanTuTrongKhungGA(targetEl, true);
     }
+};
+
+window.cuonDenPhanTuTrongKhungGA = function(targetEl, smooth = true) {
+    let khung = document.getElementById('khungCuonNoiDungGA');
+    if (!khung || !targetEl) return;
+    requestAnimationFrame(() => {
+        let khungRect = khung.getBoundingClientRect();
+        let elRect = targetEl.getBoundingClientRect();
+        let offsetTrongKhung = (elRect.top - khungRect.top) + khung.scrollTop;
+        let topDich = Math.max(0, offsetTrongKhung - Math.min(80, khung.clientHeight * 0.18));
+        khung.scrollTo({ top: topDich, behavior: smooth ? 'smooth' : 'auto' });
+    });
 };
 
 window.nhayDenKetQuaTimKiemGA = function(buoc) {
@@ -1731,14 +1743,19 @@ window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, bai
             pageDiv.setAttribute('data-pdf-page', String(p));
             pageDiv.setAttribute('data-pdf-page-text', pageText);
             pageDiv.innerHTML = `<div class="pdf-page-header text-[11px] font-bold text-slate-500 mb-1 flex justify-between px-1"><span>Trang ${p} / ${numPages}</span></div><div class="pdf-canvas-wrap relative w-full"><canvas class="w-full h-auto block mx-auto"></canvas></div>`;
+            const preCanvas = pageDiv.querySelector('canvas');
+            if (preCanvas) {
+                preCanvas.width = viewport.width;
+                preCanvas.height = viewport.height;
+            }
             container.appendChild(pageDiv);
             pageObjects.push({ p: p, page: page, viewport: viewport, pageDiv: pageDiv });
         }
 
-        // Bước 2: Định vị đúng dòng đầu bài, bôi vàng và cuộn ngay tới vị trí đó
+        // Bước 2: Định vị đúng dòng đầu bài, bôi vàng và cuộn ngay tới vị trí đó (chiều cao trang đã cố định)
         window.dinhViTrangPdfDaTaiGA(monTxt, baiTxt, tietTxt, true);
 
-        // Bước 3: Ưu tiên vẽ trang đang khớp nhất trước để hiển thị tức thì
+        // Bước 3: Ưu tiên vẽ trang đang khớp nhất trước để hiển thị tức thì, giữ nguyên vị trí cuộn
         let firstHl = (_trangThaiTimKiemGA.ketQua && _trangThaiTimKiemGA.ketQua[0]) ? _trangThaiTimKiemGA.ketQua[0] : null;
         let targetPageDiv = firstHl ? firstHl.closest('[data-pdf-page]') : null;
         let targetP = targetPageDiv ? parseInt(targetPageDiv.getAttribute('data-pdf-page') || '1', 10) : 1;
@@ -1749,11 +1766,9 @@ window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, bai
             const canvas = item.pageDiv.querySelector('canvas');
             if (!canvas) continue;
             const ctx = canvas.getContext('2d');
-            canvas.width = item.viewport.width;
-            canvas.height = item.viewport.height;
             await item.page.render({ canvasContext: ctx, viewport: item.viewport }).promise;
             if (item.p === targetP && firstHl) {
-                firstHl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                window.cuonDenPhanTuTrongKhungGA(firstHl, false);
             }
         }
     } catch (errPdf) {
