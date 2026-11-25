@@ -47,7 +47,7 @@ window.khoiTaoDOMDuyetGiaoAn = function() {
 
     if (vungChinh && !document.getElementById('khungDuyetGiaoAn')) {
         const khungHtml = `
-            <div id="khungDuyetGiaoAn" class="hidden p-4 w-full h-full flex-col font-sans">
+            <div id="khungDuyetGiaoAn" class="hidden p-3 md:p-4 w-full max-w-full min-w-0 h-full flex-col font-sans overflow-hidden">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3 flex-none">
                     <div>
                         <h2 class="text-xl font-extrabold text-blue-900 uppercase">KIỂM TRA &amp; PHÊ DUYỆT GIÁO ÁN (BGH)</h2>
@@ -88,18 +88,18 @@ window.khoiTaoDOMDuyetGiaoAn = function() {
                 </div>
 
                 <!-- Bảng danh sách giáo án -->
-                <div class="flex-1 overflow-auto border border-gray-400 shadow-sm bg-white relative">
-                    <table class="bang-excel w-full text-center min-w-[950px]">
-                        <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm">
+                <div class="flex-1 min-w-0 w-full overflow-auto border border-gray-400 shadow-sm bg-white relative">
+                    <table class="bang-excel w-full text-center">
+                        <thead class="sticky top-0 z-20 bg-slate-200 text-slate-900 shadow-sm text-xs md:text-sm">
                             <tr>
-                                <th class="py-2 w-12">STT</th>
-                                <th class="py-2 w-28">ID GV</th>
-                                <th class="py-2 w-44">Tên Giáo viên</th>
-                                <th class="py-2 w-20">Tuần</th>
-                                <th class="py-2">Môn phân công &amp; Trạng thái từng môn</th>
-                                <th class="py-2 w-56">Tên giáo án</th>
-                                <th class="py-2 w-36">Trạng thái chung</th>
-                                <th class="py-2 w-32">Thao tác</th>
+                                <th class="py-2 px-1.5 w-10">STT</th>
+                                <th class="py-2 px-1.5 w-20">ID GV</th>
+                                <th class="py-2 px-2 w-36">Tên Giáo viên</th>
+                                <th class="py-2 px-1.5 w-16">Tuần</th>
+                                <th class="py-2 px-2">Môn phân công &amp; Trạng thái từng môn</th>
+                                <th class="py-2 px-2 w-44">Tên giáo án</th>
+                                <th class="py-2 px-1.5 w-28">Trạng thái chung</th>
+                                <th class="py-2 px-1.5 w-28">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="vungDuLieuDuyetGiaoAn">
@@ -210,7 +210,8 @@ window.timGiaoAnTheoGvVaTuan = function(maGV, tuanSo) {
         let tGa = parseInt(String(ga.tuan || '').replace(/\D/g, ''), 10) || 0;
         if (tGa !== tTarget) return false;
         let gaMaNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(ga.maGV) : String(ga.maGV || '').trim().toLowerCase();
-        return gaMaNorm === maNorm || (gaMaNorm.length > 2 && maNorm.includes(gaMaNorm));
+        let gaTenNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(ga.tenGV) : String(ga.tenGV || '').trim().toLowerCase();
+        return gaMaNorm === maNorm || (gaTenNorm !== '' && gaTenNorm === maNorm) || (gaMaNorm.length > 2 && maNorm.includes(gaMaNorm)) || (gaTenNorm.length > 2 && maNorm.includes(gaTenNorm));
     }) || null;
 };
 
@@ -554,10 +555,10 @@ window.ketXuatBangDuyetGiaoAn = function() {
             <td class="p-2 text-left font-bold text-blue-900">${g.tenGV || g.maGV}</td>
             <td class="p-2 font-extrabold text-slate-800">Tuần ${g.tuan}</td>
             <td class="p-2 text-left"><div class="flex flex-wrap gap-1.5">${pillsMon}</div></td>
-            <td class="p-2 text-left text-xs font-semibold text-slate-700 break-all">${g.tenFile}</td>
-            <td class="p-2"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-extrabold ${uiChung.mauBadge} ${uiChung.nhapNhay ? 'animate-pulse' : ''}"><span class="w-2 h-2 rounded-full ${uiChung.mauCham}"></span>${uiChung.nhan}</span></td>
-            <td class="p-2">
-                <button type="button" onmouseenter="taiTruocNoiDungGiaoAnGA('${String(g.fileId || '').replace(/'/g, "\\'")}')" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition">Xem &amp; Duyệt</button>
+            <td class="p-2 text-left text-xs font-semibold text-slate-700 break-words max-w-[180px]">${g.tenFile}</td>
+            <td class="p-1.5 whitespace-nowrap"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-extrabold ${uiChung.mauBadge} ${uiChung.nhapNhay ? 'animate-pulse' : ''}"><span class="w-2 h-2 rounded-full ${uiChung.mauCham}"></span>${uiChung.nhan}</span></td>
+            <td class="p-1.5 whitespace-nowrap">
+                <button type="button" onmouseenter="taiTruocNoiDungGiaoAnGA('${String(g.fileId || '').replace(/'/g, "\\'")}')" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-2.5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition whitespace-nowrap">Xem &amp; Duyệt</button>
             </td>
         </tr>`;
     });
@@ -622,7 +623,8 @@ window.layThongTinBaiTuDongSDB = function(el) {
 
 window.moGiaoAnTuOSoDauBaiBtn = function(btnEl, giaoAnId, monHoc) {
     let info = window.layThongTinBaiTuDongSDB(btnEl);
-    window.moModalXemGiaoAnSDB(giaoAnId, monHoc, false, info);
+    let laBghHoacAdmin = typeof window.coQuyenDuyetGiaoAn === 'function' ? window.coQuyenDuyetGiaoAn() : false;
+    window.moModalXemGiaoAnSDB(giaoAnId, monHoc, laBghHoacAdmin, info);
 };
 
 window.moGiaoAnTuOMonHocSDB = function(tdEl, tuanSo, monHoc, maGvTiet, lopChon) {
@@ -635,7 +637,8 @@ window.moGiaoAnTuOMonHocSDB = function(tdEl, tuanSo, monHoc, maGvTiet, lopChon) 
     if (ga) {
         let info = window.layThongTinBaiTuDongSDB(tdEl);
         if (!info.lop && lopChon) info.lop = lopChon;
-        window.moModalXemGiaoAnSDB(ga.id, monHoc, false, info);
+        let laBghHoacAdmin = typeof window.coQuyenDuyetGiaoAn === 'function' ? window.coQuyenDuyetGiaoAn() : false;
+        window.moModalXemGiaoAnSDB(ga.id, monHoc, laBghHoacAdmin, info);
     }
 };
 
