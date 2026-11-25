@@ -555,7 +555,7 @@ window.ketXuatBangDuyetGiaoAn = function() {
             <td class="p-2 text-left font-bold text-blue-900">${g.tenGV || g.maGV}</td>
             <td class="p-2 font-extrabold text-slate-800">Tuần ${g.tuan}</td>
             <td class="p-2 text-left"><div class="flex flex-wrap gap-1.5">${pillsMon}</div></td>
-            <td class="p-2 text-left text-xs font-semibold text-slate-700 break-words max-w-[180px]">${g.tenFile}</td>
+            <td class="p-2 text-left text-xs font-semibold text-slate-700 max-w-[190px] align-middle" style="white-space: normal !important;"><div class="whitespace-normal leading-snug" style="white-space: normal !important; overflow-wrap: anywhere; word-break: break-word;">${g.tenFile}</div></td>
             <td class="p-1.5 whitespace-nowrap"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-extrabold ${uiChung.mauBadge} ${uiChung.nhapNhay ? 'animate-pulse' : ''}"><span class="w-2 h-2 rounded-full ${uiChung.mauCham}"></span>${uiChung.nhan}</span></td>
             <td class="p-1.5 whitespace-nowrap">
                 <button type="button" onmouseenter="taiTruocNoiDungGiaoAnGA('${String(g.fileId || '').replace(/'/g, "\\'")}')" onclick="moModalXemGiaoAnSDB('${idSafe}', '', true)" class="px-2.5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded shadow cursor-pointer transition whitespace-nowrap">Xem &amp; Duyệt</button>
