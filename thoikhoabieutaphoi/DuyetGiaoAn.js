@@ -623,8 +623,7 @@ window.layThongTinBaiTuDongSDB = function(el) {
 
 window.moGiaoAnTuOSoDauBaiBtn = function(btnEl, giaoAnId, monHoc) {
     let info = window.layThongTinBaiTuDongSDB(btnEl);
-    let laBghHoacAdmin = typeof window.coQuyenDuyetGiaoAn === 'function' ? window.coQuyenDuyetGiaoAn() : false;
-    window.moModalXemGiaoAnSDB(giaoAnId, monHoc, laBghHoacAdmin, info);
+    window.moModalXemGiaoAnSDB(giaoAnId, monHoc, false, info);
 };
 
 window.moGiaoAnTuOMonHocSDB = function(tdEl, tuanSo, monHoc, maGvTiet, lopChon) {
@@ -637,8 +636,7 @@ window.moGiaoAnTuOMonHocSDB = function(tdEl, tuanSo, monHoc, maGvTiet, lopChon) 
     if (ga) {
         let info = window.layThongTinBaiTuDongSDB(tdEl);
         if (!info.lop && lopChon) info.lop = lopChon;
-        let laBghHoacAdmin = typeof window.coQuyenDuyetGiaoAn === 'function' ? window.coQuyenDuyetGiaoAn() : false;
-        window.moModalXemGiaoAnSDB(ga.id, monHoc, laBghHoacAdmin, info);
+        window.moModalXemGiaoAnSDB(ga.id, monHoc, false, info);
     }
 };
 
@@ -914,6 +912,10 @@ window.chonNhanhTrangThaiTatCaMonGA = function(trangThai) {
 };
 
 window.luuPheDuyetGiaoAn = async function(giaoAnId) {
+    if (typeof window.coQuyenDuyetGiaoAn !== 'function' || !window.coQuyenDuyetGiaoAn()) {
+        alert('Bạn không có quyền phê duyệt giáo án!');
+        return;
+    }
     let chiTietMon = {};
     document.querySelectorAll('#modalXemDuyetGiaoAn [data-ga-mon-row]').forEach(row => {
         let mon = row.getAttribute('data-ga-mon-row');
