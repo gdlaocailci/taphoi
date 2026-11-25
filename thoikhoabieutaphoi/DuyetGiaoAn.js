@@ -1251,17 +1251,39 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = t
             if (!b.chuan || b.chuan.length < 2) continue;
             if (batBuocTieuDe && !b.laTieuDe) continue;
 
+            // Ghép thêm 1-2 dòng tiêu đề kế tiếp phòng trường hợp tên bài bị xuống dòng (VD: TIẾT 56: BÀI 24: ... / CỦA PHÉP CỘNG (TIẾT 1))
+            let gopChuan = b.chuan;
+            let gopKD = b.kd;
+            if (i + 1 < normBlocks.length && normBlocks[i + 1].laTieuDe && normBlocks[i + 1].raw.length <= 160) {
+                gopChuan += ' ' + normBlocks[i + 1].chuan;
+                gopKD += ' ' + normBlocks[i + 1].kd;
+                if (i + 2 < normBlocks.length && normBlocks[i + 2].laTieuDe && normBlocks[i + 2].raw.length <= 120) {
+                    gopChuan += ' ' + normBlocks[i + 2].chuan;
+                    gopKD += ' ' + normBlocks[i + 2].kd;
+                }
+            }
+
             let diem = 0;
             if (baiChuan && b.chuan.includes(baiChuan)) {
                 diem += 140;
+            } else if (baiChuan && gopChuan.includes(baiChuan)) {
+                diem += 130;
             } else if (baiCotLoi && baiCotLoi.length >= 5 && b.chuan.includes(baiCotLoi)) {
                 diem += 100;
-            } else if (baiCotLoiKD && baiCotLoiKD.length >= 5 && b.kd.includes(baiCotLoiKD)) {
+            } else if (baiCotLoi && baiCotLoi.length >= 5 && gopChuan.includes(baiCotLoi)) {
+                diem += 95;
+            } else if (baiCotLoiKD && baiCotLoiKD.length >= 5 && gopKD.includes(baiCotLoiKD)) {
                 diem += 85;
             } else if (tuBai.length >= 2) {
-                let soTuKhop = tuBai.filter(w => b.chuan.includes(w)).length;
+                let soTuKhop = tuBai.filter(w => gopChuan.includes(w)).length;
                 let tyLe = soTuKhop / tuBai.length;
-                if (tyLe >= 0.8) diem += Math.round(tyLe * 70);
+                if (tyLe >= 0.75) diem += Math.round(tyLe * 70);
+            }
+
+            // Nếu khớp trực tiếp Tiết PPCT (VD: "Tiết 56: Bài 24: ...") ở ngay dòng đầu bài
+            let khopTietPPCT = !!(tietSo && new RegExp('\\btiet\\s*' + tietSo + '\\b').test(b.kd));
+            if (khopTietPPCT) {
+                diem += (diem > 0 ? 90 : 75);
             }
 
             // Kiểm tra ngữ cảnh Môn học tại chính block hoặc 15 block liền trước
@@ -1287,17 +1309,18 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = t
                 if (b.laTieuDe) diem += 30;
                 if (tag === 'H2' || tag === 'H3' || tag === 'H4') diem += 25;
                 if (b.el.querySelector('strong, b')) diem += 15;
+                if (/^(tiet\s*\d+|bai\s*\d+)/i.test(b.kd)) diem += 20;
 
-                // Phân biệt chính xác Tiết 1 / Tiết 2 / Tiết 3 hoặc Tiết PPCT trong phần đầu bài
+                // Phân biệt chính xác Tiết 1 / Tiết 2 / Tiết 3 (hoặc Tiết PPCT) trong vùng đầu bài
                 let vungDau = normBlocks.slice(Math.max(0, i - 2), Math.min(normBlocks.length, i + 3)).map(x => x.kd).join(' ');
                 if (tietTrongTenBai) {
-                    if (new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(vungDau)) {
+                    if (new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(gopKD) || new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(vungDau)) {
                         diem += 60;
-                    } else if (/\btiet\s*\d+\b/.test(b.kd)) {
+                    } else if (/\btiet\s*\d+\b/.test(gopKD) && !khopTietPPCT) {
                         diem -= 50;
                     }
                 }
-                if (tietSo && new RegExp('\\btiet\\s*' + tietSo + '\\b').test(vungDau)) {
+                if (tietSo && !khopTietPPCT && new RegExp('\\btiet\\s*' + tietSo + '\\b').test(vungDau)) {
                     diem += 25;
                 }
                 ds.push({ el: b.el, diem: diem, idx: i });
