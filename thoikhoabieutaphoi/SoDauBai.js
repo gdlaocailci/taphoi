@@ -2885,15 +2885,38 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
         </div>
     </div>`;
 
-    if (vungHienThi && vungHienThi.classList) {
-        vungHienThi.classList.remove('p-6', 'p-5', 'p-4', 'md:p-6', 'sm:p-6', 'md:p-5', 'sm:p-5');
-        vungHienThi.classList.add('p-2');
+    if (vungHienThi) {
+        vungHienThi.style.padding = '8px';
+        vungHienThi.style.marginTop = '0px';
+        let khungTabSdb = vungHienThi.parentElement;
+        if (khungTabSdb && khungTabSdb !== document.body && khungTabSdb !== document.documentElement) {
+            khungTabSdb.style.padding = '10px 12px';
+            let tieuDeSdb = khungTabSdb.querySelector('h1, h2, h3');
+            if (tieuDeSdb && String(tieuDeSdb.textContent || '').toUpperCase().includes('SỔ ĐẦU BÀI')) {
+                tieuDeSdb.style.marginTop = '0px';
+                tieuDeSdb.style.marginBottom = '6px';
+                tieuDeSdb.style.lineHeight = '1.2';
+            }
+        }
     }
     let btnLuuThuHep = document.getElementById('btnLuuSoDauBai');
-    let thanhCongCuSdb = btnLuuThuHep ? btnLuuThuHep.closest('.bg-white, .rounded-lg, .rounded-xl, .border') : null;
-    if (thanhCongCuSdb && thanhCongCuSdb.classList) {
-        thanhCongCuSdb.classList.remove('p-6', 'p-5', 'p-4', 'md:p-6', 'sm:p-6', 'mb-6', 'mb-5', 'mb-4');
-        thanhCongCuSdb.classList.add('p-2.5', 'mb-2');
+    let thanhCongCuSdb = btnLuuThuHep ? btnLuuThuHep.closest('.border, .rounded-lg, .rounded-xl, .bg-white, .bg-slate-50') : null;
+    if (thanhCongCuSdb && thanhCongCuSdb !== document.body && thanhCongCuSdb !== document.documentElement) {
+        thanhCongCuSdb.style.padding = '8px 10px';
+        thanhCongCuSdb.style.marginBottom = '8px';
+        thanhCongCuSdb.style.rowGap = '6px';
+        thanhCongCuSdb.style.gap = '6px';
+        Array.from(thanhCongCuSdb.children).forEach(child => {
+            child.style.marginTop = '0px';
+            child.style.marginBottom = '0px';
+            child.style.paddingTop = '0px';
+            child.style.paddingBottom = '0px';
+            child.style.rowGap = '6px';
+        });
+        thanhCongCuSdb.querySelectorAll('select, input, button').forEach(el => {
+            el.style.paddingTop = '4px';
+            el.style.paddingBottom = '4px';
+        });
     }
     vungHienThi.innerHTML = theTrangThaiHtml + thanhCanhBaoRender + theHienThiQuyen + htmlBang + htmlChuKy;
     vungHienThi.querySelectorAll('.bang-so-dau-bai-container table tbody tr').forEach(tr => {
