@@ -1116,7 +1116,11 @@ window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
     }
 
     if (noiDungWrap.getAttribute('data-loaded-file') === fileId) {
-        window.dinhViVaCuonDenBaiGA(monTxt, baiTxt, tietTxt);
+        if (noiDungWrap.getAttribute('data-loai') === 'pdf') {
+            window.dinhViTrangPdfDaTaiGA(monTxt, baiTxt, tietTxt);
+        } else {
+            window.dinhViVaCuonDenBaiGA(monTxt, baiTxt, tietTxt);
+        }
         return;
     }
 
@@ -1234,8 +1238,8 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = t
     let baiCotLoiKD = window.boDauTiengVietGA(baiCotLoi);
     let tuBai = baiCotLoi.split(' ').filter(w => w.length >= 2);
     let tietSo = String(tietTxt || '').replace(/\D/g, '');
-    let mTietBai = String(baiTxt || '').match(/\(?\s*tiết\s*(\d+)\s*\)?/i);
-    let tietTrongTenBai = mTietBai ? mTietBai[1] : '';
+    let mTietBai = String(baiTxt || '').match(/(?:\(\s*(?:tiết|t)\s*(\d+)(?:\s*[,\-&]\s*\d+)*\s*\)|(?:tiết|t)\s*(\d+)\s*$)/i);
+    let tietTrongTenBai = mTietBai ? (mTietBai[1] || mTietBai[2] || '') : '';
 
     let normBlocks = blocks.map(el => {
         let raw = (el.innerText || el.textContent || '').trim();
@@ -1311,17 +1315,24 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = t
                 if (b.el.querySelector('strong, b')) diem += 15;
                 if (/^(tiet\s*\d+|bai\s*\d+)/i.test(b.kd)) diem += 20;
 
-                // Phân biệt chính xác Tiết 1 / Tiết 2 / Tiết 3 (hoặc Tiết PPCT) trong vùng đầu bài
+                // Phân biệt chính xác Tiết 1 / Tiết 2 / T1 / T2 / Tiết 1,2 (hoặc Tiết PPCT) trong vùng đầu bài
                 let vungDau = normBlocks.slice(Math.max(0, i - 2), Math.min(normBlocks.length, i + 3)).map(x => x.kd).join(' ');
                 if (tietTrongTenBai) {
-                    if (new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(gopKD) || new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(vungDau)) {
-                        diem += 60;
-                    } else if (/\btiet\s*\d+\b/.test(gopKD) && !khopTietPPCT) {
-                        diem -= 50;
+                    let reTietBai = new RegExp('\\b(?:tiet|t)\\s*' + tietTrongTenBai + '\\b');
+                    let reTietGop = new RegExp('\\b(?:tiet|t)\\s*\\d+(?:\\s+\\d+)*\\s+' + tietTrongTenBai + '\\b');
+                    if (reTietBai.test(gopKD) || reTietGop.test(gopKD) || reTietBai.test(vungDau) || reTietGop.test(vungDau)) {
+                        diem += 75;
+                    } else if (/\b(?:tiet|t)\s*\d+\b/.test(gopKD) && !khopTietPPCT) {
+                        diem -= 60;
                     }
                 }
-                if (tietSo && !khopTietPPCT && new RegExp('\\btiet\\s*' + tietSo + '\\b').test(vungDau)) {
-                    diem += 25;
+                if (tietSo) {
+                    let rePPCT = new RegExp('\\b(?:tiet|ppct)\\s*' + tietSo + '\\b');
+                    if (!khopTietPPCT && rePPCT.test(vungDau)) {
+                        diem += 55;
+                    } else if (!khopTietPPCT && /\btiet\s*\d{2,3}\b/.test(b.kd)) {
+                        diem -= 45;
+                    }
                 }
                 ds.push({ el: b.el, diem: diem, idx: i });
             }
@@ -1447,6 +1458,94 @@ window.timTiepTrongGiaoAnGA = function() {
     }
 };
 
+window.tinhDiemTrangPdfGA = function(pageText, monTxt, baiTxt, tietTxt) {
+    let pageKD = window.boDauTiengVietGA(pageText);
+    let monChuan = window.chuanHoaChuoiTimBaiGA(monTxt);
+    let monKD = window.boDauTiengVietGA(monChuan);
+    let baiChuan = window.chuanHoaChuoiTimBaiGA(baiTxt);
+    let baiCotLoi = window.tachTenBaiCotLoiGA(baiTxt);
+    let baiCotLoiKD = window.boDauTiengVietGA(baiCotLoi);
+    let tietSo = String(tietTxt || '').replace(/\D/g, '');
+    let mTietBai = String(baiTxt || '').match(/(?:\(\s*(?:tiết|t)\s*(\d+)(?:\s*[,\-&]\s*\d+)*\s*\)|(?:tiết|t)\s*(\d+)\s*$)/i);
+    let tietTrongTenBai = mTietBai ? (mTietBai[1] || mTietBai[2] || '') : '';
+
+    let score = 0;
+    let khopTenBai = false;
+    if (baiChuan && pageText.includes(baiChuan)) {
+        score += 120;
+        khopTenBai = true;
+    } else if (baiCotLoi && baiCotLoi.length >= 5 && (pageText.includes(baiCotLoi) || pageKD.includes(baiCotLoiKD))) {
+        score += 85;
+        khopTenBai = true;
+    }
+
+    if (monChuan && (pageText.includes(monChuan) || pageKD.includes(monKD))) {
+        score += 40;
+    }
+
+    // Ưu tiên cực cao cho Tiết PPCT (VD: TIẾT 82: BÀI 22...)
+    let khopPPCT = false;
+    if (tietSo) {
+        let rePPCT = new RegExp('\\b(?:tiet|ppct)\\s*' + tietSo + '\\b');
+        if (rePPCT.test(pageKD)) {
+            score += 130;
+            khopPPCT = true;
+        }
+    }
+
+    // Phân biệt Tiết 1 / Tiết 2 / (T1) / (T2) / Tiết 1,2
+    if (tietTrongTenBai && (khopTenBai || khopPPCT)) {
+        let reTietBai = new RegExp('\\b(?:tiet|t)\\s*' + tietTrongTenBai + '\\b');
+        let reTietGop = new RegExp('\\b(?:tiet|t)\\s*\\d+(?:\\s+\\d+)*\\s+' + tietTrongTenBai + '\\b');
+        if (reTietBai.test(pageKD) || reTietGop.test(pageKD)) {
+            score += 80;
+        } else if (/\b(?:tiet|t)\s*\d+\b/.test(pageKD) && !khopPPCT) {
+            score -= 50;
+        }
+    }
+
+    return score;
+};
+
+window.dinhViTrangPdfDaTaiGA = function(monTxt, baiTxt, tietTxt) {
+    let container = document.getElementById('pdfPagesContainerGA');
+    if (!container) return;
+    let pages = Array.from(container.querySelectorAll('[data-pdf-page-text]'));
+    let matchedPages = [];
+
+    pages.forEach(pageDiv => {
+        let pageText = pageDiv.getAttribute('data-pdf-page-text') || '';
+        let pNum = parseInt(pageDiv.getAttribute('data-pdf-page') || '0', 10);
+        let score = window.tinhDiemTrangPdfGA(pageText, monTxt, baiTxt, tietTxt);
+        let badge = pageDiv.querySelector('.pdf-match-badge');
+        if (badge) badge.remove();
+        if (score >= 80) {
+            matchedPages.push({ el: pageDiv, score: score, pageNum: pNum });
+        }
+    });
+
+    matchedPages.sort((a, b) => b.score - a.score || a.pageNum - b.pageNum);
+    let maxScore = matchedPages.length > 0 ? matchedPages[0].score : 0;
+    let topMatches = matchedPages.filter(m => m.score >= Math.max(80, maxScore * 0.65));
+
+    topMatches.forEach((m, idx) => {
+        let headerRow = m.el.querySelector('.pdf-page-header');
+        if (headerRow) {
+            let span = document.createElement('span');
+            span.className = 'pdf-match-badge text-amber-800 bg-amber-100 border border-amber-300 px-2 rounded';
+            span.innerText = idx === 0 ? '🎯 Đúng bài cần xem' : '🎯 Khớp bài dạy';
+            headerRow.appendChild(span);
+        }
+    });
+
+    _trangThaiTimKiemGA.ketQua = topMatches.map(m => m.el);
+    _trangThaiTimKiemGA.tuKhoaCu = baiTxt || monTxt || '';
+    window.capNhatDieuHuongKetQuaGA();
+    if (_trangThaiTimKiemGA.ketQua.length > 0) {
+        window.nhayDenViTriCuTheGA(0);
+    }
+};
+
 window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, baiTxt, tietTxt) {
     try {
         if (typeof pdfjsLib === 'undefined') {
@@ -1472,44 +1571,42 @@ window.hienThiVaDinhViPdfGA = async function(noiDungWrap, base64Str, monTxt, bai
         noiDungWrap.innerHTML = `<div id="pdfPagesContainerGA" class="space-y-4"></div>`;
         let container = document.getElementById('pdfPagesContainerGA');
 
-        let monChuan = window.chuanHoaChuoiTimBaiGA(monTxt);
-        let baiCotLoi = window.tachTenBaiCotLoiGA(baiTxt);
-        let baiChuan = window.chuanHoaChuoiTimBaiGA(baiTxt);
-        let matchedPages = [];
-
+        // Bước 1: Quét nhanh văn bản toàn bộ các trang để định vị chính xác trang cần mở trước khi vẽ canvas
+        let pageObjects = [];
         for (let p = 1; p <= numPages; p++) {
             const page = await pdf.getPage(p);
             const textContent = await page.getTextContent();
             const pageText = window.chuanHoaChuoiTimBaiGA(textContent.items.map(it => it.str).join(' '));
-            const pageKD = window.boDauTiengVietGA(pageText);
-
-            let score = 0;
-            if (baiChuan && pageText.includes(baiChuan)) score += 100;
-            else if (baiCotLoi && baiCotLoi.length >= 5 && (pageText.includes(baiCotLoi) || pageKD.includes(window.boDauTiengVietGA(baiCotLoi)))) score += 75;
-            if (monChuan && (pageText.includes(monChuan) || pageKD.includes(window.boDauTiengVietGA(monChuan)))) score += 40;
 
             let pageDiv = document.createElement('div');
             pageDiv.className = 'bg-white rounded shadow-md p-2 relative';
             pageDiv.setAttribute('data-pdf-page', String(p));
             pageDiv.setAttribute('data-pdf-page-text', pageText);
-            pageDiv.innerHTML = `<div class="text-[11px] font-bold text-slate-500 mb-1 flex justify-between px-1"><span>Trang ${p} / ${numPages}</span>${score >= 60 ? '<span class="text-amber-700 bg-amber-100 px-2 rounded">🎯 Khớp bài dạy</span>' : ''}</div><canvas class="w-full h-auto block mx-auto"></canvas>`;
+            pageDiv.innerHTML = `<div class="pdf-page-header text-[11px] font-bold text-slate-500 mb-1 flex justify-between px-1"><span>Trang ${p} / ${numPages}</span></div><canvas class="w-full h-auto block mx-auto"></canvas>`;
             container.appendChild(pageDiv);
+            pageObjects.push({ p: p, page: page, pageDiv: pageDiv });
+        }
 
-            if (score >= 60) matchedPages.push({ el: pageDiv, score: score, pageNum: p });
+        // Bước 2: Định vị & cuộn ngay đến trang khớp nhất (đúng PPCT + T1/T2 + tên bài)
+        window.dinhViTrangPdfDaTaiGA(monTxt, baiTxt, tietTxt);
 
-            const viewport = page.getViewport({ scale: 1.45 });
-            const canvas = pageDiv.querySelector('canvas');
+        // Bước 3: Ưu tiên vẽ trang đang đứng đầu kết quả (và các trang lân cận) trước, sau đó vẽ các trang còn lại
+        let targetEl = (_trangThaiTimKiemGA.ketQua && _trangThaiTimKiemGA.ketQua[0]) ? _trangThaiTimKiemGA.ketQua[0] : null;
+        let targetP = targetEl ? (parseInt(targetEl.getAttribute('data-pdf-page') || '1', 10)) : 1;
+        pageObjects.sort((a, b) => Math.abs(a.p - targetP) - Math.abs(b.p - targetP));
+
+        for (let item of pageObjects) {
+            if (!document.getElementById('pdfPagesContainerGA')) break;
+            const viewport = item.page.getViewport({ scale: 1.45 });
+            const canvas = item.pageDiv.querySelector('canvas');
+            if (!canvas) continue;
             const ctx = canvas.getContext('2d');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-        }
-
-        matchedPages.sort((a, b) => b.score - a.score || a.pageNum - b.pageNum);
-        _trangThaiTimKiemGA.ketQua = matchedPages.map(m => m.el);
-        window.capNhatDieuHuongKetQuaGA();
-        if (_trangThaiTimKiemGA.ketQua.length > 0) {
-            window.nhayDenViTriCuTheGA(0);
+            await item.page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            if (item.p === targetP && targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     } catch (errPdf) {
         console.warn('Lỗi render PDF, chuyển về Drive:', errPdf);
