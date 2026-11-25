@@ -2550,6 +2550,9 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
             let nhanHienThiGA = monCanSuaStr
                 ? `Giáo án Tuần ${maxTuanChon}: ${uiGa.nhan} — ${monCanSuaStr}`
                 : `Giáo án Tuần ${maxTuanChon}: ${uiGa.nhan}`;
+            if (gaCuaToi.fileId && typeof window.taiTruocNoiDungGiaoAnGA === 'function') {
+                setTimeout(() => window.taiTruocNoiDungGiaoAnGA(gaCuaToi.fileId), 300);
+            }
             htmlNutGiaoAnTuan = `<button type="button" onclick="moModalXemGiaoAnSDB('${String(gaCuaToi.id).replace(/'/g, "\\'")}', '')" class="hide-on-print px-2.5 py-1 rounded border text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs ${uiGa.mauBadge}"><span class="w-2 h-2 rounded-full ${uiGa.mauCham}"></span><span>${nhanHienThiGA}</span></button>`;
         } else if (tapHopMonDay.size > 0) {
             htmlNutGiaoAnTuan = `<button type="button" onclick="kichHoatTaiGiaoAn1Cham(${maxTuanChon}, '${String(madinhdanhGV).replace(/'/g, "\\'")}', '')" class="hide-on-print px-2.5 py-1 rounded bg-blue-700 hover:bg-blue-800 text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shadow-xs">+ Tải giáo án Tuần ${maxTuanChon}</button>`;
