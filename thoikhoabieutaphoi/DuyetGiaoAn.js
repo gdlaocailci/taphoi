@@ -1182,7 +1182,40 @@ window.taiVaHienThiNoiDungBaiHocGA = async function(fileId, thongTinBai) {
     }
 };
 
-window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt) {
+window.laDongTieuDeBaiDayGA = function(el, rawText) {
+    if (!el || !rawText) return false;
+    let raw = String(rawText).trim();
+    if (raw.length < 2 || raw.length > 180) return false;
+
+    let low = raw.normalize('NFC').toLowerCase();
+    // Loại trừ các dòng nội dung thân bài (hoạt động, lời thoại GV/HS, gạch đầu dòng...)
+    if (/^(hoạt động|khởi động|khám phá|luyện tập|thực hành|vận dụng|củng cố|dặn dò|mục tiêu|yêu cầu cần đạt|đồ dùng|chuẩn bị|gv\s*:|hs\s*:|giáo viên\s*:|học sinh\s*:|[-+*•]\s)/i.test(low)) {
+        if (!/^(bài|tên bài|chủ đề)\b/i.test(low)) return false;
+    }
+
+    let tag = el.tagName;
+    if (tag === 'H2' || tag === 'H3' || tag === 'H4') return true;
+
+    // Dòng có tiền tố đầu bài chuẩn (Bài X:, Tên bài:, Chủ đề:, Tiết X:, Môn:)
+    if (/^(bài\s*\d*|tên bài|bài học|chủ đề|tiết\s*\d+|môn(\s+học)?\s*:)/i.test(low)) return true;
+
+    // Dòng viết HOA toàn bộ (thường là tên bài hoặc tên môn trong giáo án)
+    let lettersOnly = raw.replace(/[^\p{L}]/gu, '');
+    if (lettersOnly.length >= 4 && raw === raw.toUpperCase() && raw !== raw.toLowerCase()) return true;
+
+    // Thẻ <p> hoặc <th>/<td> in đậm phần lớn nội dung (tên đầu bài in đậm)
+    let boldEls = el.querySelectorAll('strong, b');
+    if (boldEls.length > 0) {
+        let boldLen = 0;
+        boldEls.forEach(b => { boldLen += (b.innerText || b.textContent || '').trim().length; });
+        if (boldLen >= raw.length * 0.55) return true;
+    }
+
+    if (tag === 'TH') return true;
+    return false;
+};
+
+window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt, chiTimTieuDe = true) {
     let bodyEl = document.getElementById('gaHtmlDocumentBody');
     if (!bodyEl) return;
 
@@ -1201,63 +1234,88 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt) {
     let baiCotLoiKD = window.boDauTiengVietGA(baiCotLoi);
     let tuBai = baiCotLoi.split(' ').filter(w => w.length >= 2);
     let tietSo = String(tietTxt || '').replace(/\D/g, '');
+    let mTietBai = String(baiTxt || '').match(/\(?\s*tiết\s*(\d+)\s*\)?/i);
+    let tietTrongTenBai = mTietBai ? mTietBai[1] : '';
 
-    let ungVien = [];
     let normBlocks = blocks.map(el => {
         let raw = (el.innerText || el.textContent || '').trim();
         let chuan = window.chuanHoaChuoiTimBaiGA(raw);
-        return { el: el, raw: raw, chuan: chuan, kd: window.boDauTiengVietGA(chuan) };
+        let laTieuDe = window.laDongTieuDeBaiDayGA(el, raw);
+        return { el: el, raw: raw, chuan: chuan, kd: window.boDauTiengVietGA(chuan), laTieuDe: laTieuDe };
     });
 
-    for (let i = 0; i < normBlocks.length; i++) {
-        let b = normBlocks[i];
-        if (!b.chuan || b.chuan.length < 2) continue;
+    const chamDiem = (batBuocTieuDe) => {
+        let ds = [];
+        for (let i = 0; i < normBlocks.length; i++) {
+            let b = normBlocks[i];
+            if (!b.chuan || b.chuan.length < 2) continue;
+            if (batBuocTieuDe && !b.laTieuDe) continue;
 
-        let diem = 0;
-        if (baiChuan && b.chuan.includes(baiChuan)) {
-            diem += 120;
-        } else if (baiCotLoi && baiCotLoi.length >= 5 && b.chuan.includes(baiCotLoi)) {
-            diem += 90;
-        } else if (baiCotLoiKD && baiCotLoiKD.length >= 5 && b.kd.includes(baiCotLoiKD)) {
-            diem += 75;
-        } else if (tuBai.length >= 2) {
-            let soTuKhop = tuBai.filter(w => b.chuan.includes(w)).length;
-            let tyLe = soTuKhop / tuBai.length;
-            if (tyLe >= 0.75) diem += Math.round(tyLe * 65);
-        }
+            let diem = 0;
+            if (baiChuan && b.chuan.includes(baiChuan)) {
+                diem += 140;
+            } else if (baiCotLoi && baiCotLoi.length >= 5 && b.chuan.includes(baiCotLoi)) {
+                diem += 100;
+            } else if (baiCotLoiKD && baiCotLoiKD.length >= 5 && b.kd.includes(baiCotLoiKD)) {
+                diem += 85;
+            } else if (tuBai.length >= 2) {
+                let soTuKhop = tuBai.filter(w => b.chuan.includes(w)).length;
+                let tyLe = soTuKhop / tuBai.length;
+                if (tyLe >= 0.8) diem += Math.round(tyLe * 70);
+            }
 
-        // Kiểm tra ngữ cảnh Môn học tại chính block hoặc 18 block liền trước
-        let khopMonGan = false;
-        if (monChuan) {
-            let startCtx = Math.max(0, i - 18);
-            for (let j = i; j >= startCtx; j--) {
-                let ctx = normBlocks[j];
-                if (ctx.chuan.includes(monChuan) || (monRutGon && ctx.chuan.includes(monRutGon)) || (monKhongDau && ctx.kd.includes(monKhongDau))) {
-                    khopMonGan = true;
-                    break;
+            // Kiểm tra ngữ cảnh Môn học tại chính block hoặc 15 block liền trước
+            let khopMonGan = false;
+            if (monChuan) {
+                let startCtx = Math.max(0, i - 15);
+                for (let j = i; j >= startCtx; j--) {
+                    let ctx = normBlocks[j];
+                    if (ctx.chuan.includes(monChuan) || (monRutGon && ctx.chuan.includes(monRutGon)) || (monKhongDau && ctx.kd.includes(monKhongDau))) {
+                        khopMonGan = true;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (diem > 0 && khopMonGan) diem += 55;
-        if (diem === 0 && !baiCotLoi && monChuan && (b.chuan.includes(monChuan) || (monRutGon && b.chuan.includes(monRutGon)))) {
-            diem += 40;
-        }
+            if (diem > 0 && khopMonGan) diem += 55;
+            if (diem === 0 && !baiCotLoi && monChuan && (b.chuan.includes(monChuan) || (monRutGon && b.chuan.includes(monRutGon)))) {
+                diem += 45;
+            }
 
-        if (diem > 0) {
-            let tag = b.el.tagName;
-            if (tag === 'H2' || tag === 'H3' || tag === 'H4') diem += 25;
-            if (b.el.querySelector('strong, b')) diem += 15;
-            if (tietSo && (b.chuan.includes('tiet ' + tietSo) || b.kd.includes('tiet ' + tietSo))) diem += 15;
-            if (b.chuan.length > 260) diem -= 15; // Tránh ưu tiên đoạn văn dài mô tả
-            ungVien.push({ el: b.el, diem: diem, idx: i });
+            if (diem > 0) {
+                let tag = b.el.tagName;
+                if (b.laTieuDe) diem += 30;
+                if (tag === 'H2' || tag === 'H3' || tag === 'H4') diem += 25;
+                if (b.el.querySelector('strong, b')) diem += 15;
+
+                // Phân biệt chính xác Tiết 1 / Tiết 2 / Tiết 3 hoặc Tiết PPCT trong phần đầu bài
+                let vungDau = normBlocks.slice(Math.max(0, i - 2), Math.min(normBlocks.length, i + 3)).map(x => x.kd).join(' ');
+                if (tietTrongTenBai) {
+                    if (new RegExp('\\btiet\\s*' + tietTrongTenBai + '\\b').test(vungDau)) {
+                        diem += 60;
+                    } else if (/\btiet\s*\d+\b/.test(b.kd)) {
+                        diem -= 50;
+                    }
+                }
+                if (tietSo && new RegExp('\\btiet\\s*' + tietSo + '\\b').test(vungDau)) {
+                    diem += 25;
+                }
+                ds.push({ el: b.el, diem: diem, idx: i });
+            }
         }
+        return ds;
+    };
+
+    let ungVien = chamDiem(chiTimTieuDe);
+    if (chiTimTieuDe && ungVien.length === 0) {
+        // Dự phòng nhẹ nếu giáo án không in đậm/heading nhưng vẫn giới hạn chỉ xét dòng ngắn
+        ungVien = chamDiem(false).filter(u => (u.el.innerText || '').trim().length <= 160);
     }
 
-    // Lọc lấy tất cả các vị trí phù hợp và loại bỏ phần tử cha chứa phần tử con đã khớp
+    // Sắp xếp ưu tiên điểm cao nhất (đúng môn + đúng tên đầu bài + đúng tiết) lên đầu để vị trí 1/N là chính xác nhất
     ungVien.sort((a, b) => b.diem - a.diem || a.idx - b.idx);
     let diemMax = ungVien.length > 0 ? ungVien[0].diem : 0;
-    let ketQuaChon = ungVien.filter(u => u.diem >= Math.max(30, diemMax * 0.45)).slice(0, 25);
+    let ketQuaChon = ungVien.filter(u => u.diem >= Math.max(40, diemMax * 0.5)).slice(0, 20);
     let tapElChon = new Set(ketQuaChon.map(u => u.el));
     ketQuaChon = ketQuaChon.filter(u => {
         for (let other of tapElChon) {
@@ -1265,7 +1323,6 @@ window.dinhViVaCuonDenBaiGA = function(monTxt, baiTxt, tietTxt) {
         }
         return true;
     });
-    ketQuaChon.sort((a, b) => a.idx - b.idx);
 
     _trangThaiTimKiemGA.ketQua = ketQuaChon.map(u => u.el);
     _trangThaiTimKiemGA.tuKhoaCu = baiTxt || monTxt || '';
@@ -1354,7 +1411,7 @@ window.timKiemThuCongTrongGiaoAnGA = function(nhayTiepNeuTrung = false) {
         return;
     }
 
-    window.dinhViVaCuonDenBaiGA('', tuKhoa, '');
+    window.dinhViVaCuonDenBaiGA('', tuKhoa, '', false);
 };
 
 window.timTiepTrongGiaoAnGA = function() {
