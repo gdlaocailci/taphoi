@@ -2727,11 +2727,18 @@ function thucThiKetXuatSoDauBaiLenLuoi() {
                     ? window.taoHtmlNutGiaoAnChoO(maxTuanChon, monHoc, maGvCuaTiet, quyenNhapThuCong && !quyenQuanTri && !soBiKhoa)
                     : '';
                 let khoiNutGA = htmlNutGiaoAnO ? `<div class="hide-on-print leading-none">${htmlNutGiaoAnO}</div>` : '';
+                let monSafeAttr = String(monHoc || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                let gvSafeAttr = String(maGvCuaTiet || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                let lopSafeAttr = String(lopChon || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                let coGaTuanNay = !!(monHoc && typeof window.timGiaoAnTheoGvVaTuan === 'function' && maGvCuaTiet && window.timGiaoAnTheoGvVaTuan(String(maGvCuaTiet).split(/[,;&-]/)[0].trim(), maxTuanChon));
+                let attrClickMon = monHoc ? `onclick="if(typeof window.moGiaoAnTuOMonHocSDB==='function') window.moGiaoAnTuOMonHocSDB(this, ${maxTuanChon}, '${monSafeAttr}', '${gvSafeAttr}', '${lopSafeAttr}')"` : '';
+                let cssClickMon = coGaTuanNay ? 'cursor-pointer hover:bg-blue-50/70 transition-colors' : '';
+                let titleClickMon = coGaTuanNay ? `title="Bấm vào ô môn học để mở giáo án và tự động cuộn tới bài dạy"` : '';
 
                 htmlBang += `
                     <td class="text-center p-1 bg-white group-hover:bg-slate-50" style="${styleVien}" title="Buổi ${buoiObj.dataBuoi}" data-loai="tietSDB">${tiet}</td>
                     <td class="text-center p-1 bg-white group-hover:bg-slate-50 align-middle" style="${styleVien}" data-loai="chuyenCan" data-chitiet-cc="${encodeURIComponent(JSON.stringify(chiTietCC || null))}" title="${(typeof tomTatCC !== 'undefined' && tomTatCC.tooltip) ? tomTatCC.tooltip.replace(/"/g, '&quot;') : ''}">${theChuyenCan}</td>
-                    <td class="p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50" style="${styleVien}" data-loai="mon">${monHoc}${iconSuaChua}${khoiNutGA}</td>
+                    <td class="p-1 font-bold text-center text-slate-900 bg-white group-hover:bg-slate-50 ${cssClickMon}" style="${styleVien}" data-loai="mon" ${attrClickMon} ${titleClickMon}>${monHoc}${iconSuaChua}${khoiNutGA}</td>
                     
                     <td class="p-1 bg-white group-hover:bg-slate-50 align-middle" style="${styleVien}" data-loai="tiet">${theTietPPCT}</td>
                     <td class="p-1 ${cssTenBai} bg-white group-hover:bg-slate-50 align-middle" style="white-space: normal; word-wrap: break-word; ${styleVien}" data-loai="tenBai" data-islocked="${isLocked}" data-coquyensua="${quyenNhapThuCong}">${theTenBai}</td>
@@ -4753,6 +4760,23 @@ window.capNhatSoDauBaiNgamLenLuoi = function(tuanChon, lopChon) {
                                 ? window.taoHtmlNutGiaoAnChoO(tuanChon, monHocMoi, dongDuLieuMoi['Mã GV'] || '', quyenNhapThuCong && !quyenQuanTri && !isLockedMoi)
                                 : '';
                             tdMon.innerHTML = monHocMoi + (nutGA ? `<div class="hide-on-print leading-none">${nutGA}</div>` : '');
+                        }
+                        if (monHocMoi) {
+                            let tNumNgam = parseInt(String(tuanChon || '').replace(/\D/g, ''), 10) || 0;
+                            let gvNgam = String(dongDuLieuMoi['Mã GV'] || '');
+                            let coGaNgam = !!(typeof window.timGiaoAnTheoGvVaTuan === 'function' && gvNgam && window.timGiaoAnTheoGvVaTuan(gvNgam.split(/[,;&-]/)[0].trim(), tNumNgam));
+                            tdMon.onclick = function() {
+                                if (typeof window.moGiaoAnTuOMonHocSDB === 'function') {
+                                    window.moGiaoAnTuOMonHocSDB(this, tNumNgam, monHocMoi, gvNgam, lopChon);
+                                }
+                            };
+                            if (coGaNgam) {
+                                tdMon.classList.add('cursor-pointer', 'hover:bg-blue-50/70', 'transition-colors');
+                                tdMon.title = 'Bấm vào ô môn học để mở giáo án và tự động cuộn tới bài dạy';
+                            } else {
+                                tdMon.classList.remove('cursor-pointer', 'hover:bg-blue-50/70');
+                                tdMon.removeAttribute('title');
+                            }
                         }
                     }
 
