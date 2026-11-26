@@ -158,26 +158,65 @@ window.layDanhSachMonPhanCongCuaGvTheoTuan = function(maGV, tuanSo) {
     let nguon = [];
     if (typeof duLieuTKBGopDaMap !== 'undefined' && Array.isArray(duLieuTKBGopDaMap) && duLieuTKBGopDaMap.length > 0) {
         nguon = duLieuTKBGopDaMap;
-    } else if (typeof mapTkbToanTapToanCuc !== 'undefined' && mapTkbToanTapToanCuc) {
+    } else if (typeof mapTkbToanTapToanCuc !== 'undefined' && mapTkbToanTapToanCuc && Object.keys(mapTkbToanTapToanCuc).length > 0) {
         nguon = Object.values(mapTkbToanTapToanCuc);
+    } else if (typeof window.mapTkbToanTap !== 'undefined' && window.mapTkbToanTap && Object.keys(window.mapTkbToanTap).length > 0) {
+        nguon = Object.values(window.mapTkbToanTap);
+    }
+
+    // Bổ sung nguồn từ TKB hiện tại / bộ nhớ đệm đa tuần của app.js nếu nguồn Sổ đầu bài chưa nạp xong hoặc thiếu tuần
+    let nguonBoSung = [];
+    if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0) {
+        nguonBoSung = nguonBoSung.concat(duLieuTkbHienTai);
+    }
+    if (typeof thongSoHocVu !== 'undefined' && Array.isArray(thongSoHocVu.TKB_TUAN) && thongSoHocVu.TKB_TUAN.length > 0) {
+        nguonBoSung = nguonBoSung.concat(thongSoHocVu.TKB_TUAN);
+    }
+    if (typeof window.boNhoTkbTheoTuan === 'object' && window.boNhoTkbTheoTuan) {
+        Object.values(window.boNhoTkbTheoTuan).forEach(arr => {
+            if (Array.isArray(arr) && arr.length > 0) nguonBoSung = nguonBoSung.concat(arr);
+        });
     }
 
     let mapMonLop = {};
-    nguon.forEach(d => {
-        let t = d._tuanSo !== undefined ? d._tuanSo : (parseInt(String(d['Tuần'] || '').replace(/\D/g, ''), 10) || 0);
-        if (t !== tTarget) return;
-        let mon = String(d['Môn Học'] || '').trim();
-        let lop = String(d['Mã Lớp'] || '').trim().toUpperCase();
-        let gvStr = String(d['Mã GV'] || '').trim();
-        if (!mon || mon === '--' || mon === '---' || !gvStr) return;
+    const xuLyDanhSach = (ds) => {
+        ds.forEach(d => {
+            if (!d) return;
+            let t = d._tuanSo !== undefined ? d._tuanSo : (parseInt(String(d['Tuần'] || d.tuan || '').replace(/\D/g, ''), 10) || 0);
+            if (t !== tTarget) return;
+            let mon = String(d['Môn Học'] || d.monHoc || d.mon || '').trim();
+            let lop = String(d['Mã Lớp'] || d.maLop || '').trim().toUpperCase();
+            let gvStr = String(d['Mã GV'] || d.maGv || '').trim();
+            if (!mon || mon === '--' || mon === '---' || !gvStr) return;
 
-        let tapGv = gvStr.split(/[,;&-]/).map(g => (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(g) : g.trim().toLowerCase()).filter(Boolean);
-        let khop = tapGv.includes(maNorm) || tapGv.some(g => maNorm.includes(g) && g.length > 2);
-        if (khop) {
-            if (!mapMonLop[mon]) mapMonLop[mon] = new Set();
-            if (lop) mapMonLop[mon].add(lop);
+            let tapGv = gvStr.split(/[,;&-]/).map(g => (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(g) : g.trim().toLowerCase()).filter(Boolean);
+            let khop = tapGv.includes(maNorm) || tapGv.some(g => (maNorm.includes(g) || g.includes(maNorm)) && Math.min(g.length, maNorm.length) > 2);
+            if (khop) {
+                if (!mapMonLop[mon]) mapMonLop[mon] = new Set();
+                if (lop) mapMonLop[mon].add(lop);
+            }
+        });
+    };
+
+    xuLyDanhSach(nguon);
+    if (Object.keys(mapMonLop).length === 0 && nguonBoSung.length > 0) {
+        xuLyDanhSach(nguonBoSung);
+    }
+
+    // Dự phòng cuối: lấy từ chiTietMon đã lưu trong bản ghi Giáo án nếu chưa có dữ liệu TKB tuần đó trên RAM
+    if (Object.keys(mapMonLop).length === 0 && Array.isArray(window.duLieuGiaoAnToanCuc)) {
+        let ga = window.duLieuGiaoAnToanCuc.find(item => {
+            let tGa = parseInt(String(item.tuan || '').replace(/\D/g, ''), 10) || 0;
+            if (tGa !== tTarget) return false;
+            let gaMaNorm = (typeof window.chuanHoaDinhDanhGiaoVien === 'function') ? window.chuanHoaDinhDanhGiaoVien(item.maGV) : String(item.maGV || '').trim().toLowerCase();
+            return gaMaNorm === maNorm;
+        });
+        if (ga && ga.chiTietMon) {
+            Object.keys(ga.chiTietMon).forEach(m => {
+                if (m && m.trim()) mapMonLop[m.trim()] = new Set();
+            });
         }
-    });
+    }
 
     return Object.keys(mapMonLop).sort((a, b) => a.localeCompare(b, 'vi')).map(mon => ({
         mon: mon,
@@ -478,6 +517,15 @@ window.moTabDuyetGiaoAn = function() {
     window.khoiTaoDOMDuyetGiaoAn();
     if (typeof kichHoatTab === 'function') {
         kichHoatTab('menuDuyetGiaoAn', 'khungDuyetGiaoAn', false);
+    }
+    const chuaCoTkb = (typeof duLieuTKBGopDaMap === 'undefined' || !Array.isArray(duLieuTKBGopDaMap) || duLieuTKBGopDaMap.length === 0);
+    if (chuaCoTkb && typeof taiDuLieuSoDauBaiTuMayChu === 'function') {
+        Promise.resolve(taiDuLieuSoDauBaiTuMayChu()).then(() => {
+            let khungDuyet = document.getElementById('khungDuyetGiaoAn');
+            if (khungDuyet && !khungDuyet.classList.contains('hidden')) {
+                window.ketXuatBangDuyetGiaoAn();
+            }
+        }).catch(() => {});
     }
     window.taiDanhSachGiaoAnTuMayChu(false).then(() => {
         window.napBoLocTuanDuyetGA();
