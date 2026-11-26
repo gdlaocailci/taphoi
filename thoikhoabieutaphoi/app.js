@@ -1808,8 +1808,8 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
         modal.id = 'modalCanhBaoTrungGV';
         modal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-900/60 backdrop-blur-[1px] p-4';
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl border border-amber-300 w-full max-w-lg overflow-hidden animate-fade-in" style="font-family:'Times New Roman',Times,serif;">
-                <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3.5 flex items-center justify-between text-white">
+            <div id="hopModalCanhBaoTrungGV" class="bg-white rounded-2xl shadow-2xl border border-amber-300 w-full max-w-lg overflow-hidden animate-fade-in" style="font-family:'Times New Roman',Times,serif;">
+                <div id="headerModalCanhBaoTrungGV" class="bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-3.5 flex items-center justify-between text-white cursor-move select-none" title="Kéo giữ thanh tiêu đề để di chuyển cửa sổ">
                     <div class="flex items-center gap-2.5">
                         <svg class="w-6 h-6 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -1832,6 +1832,65 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
             </div>
         `;
         document.body.appendChild(modal);
+
+        // Kích hoạt kéo thả di chuyển cửa sổ cảnh báo bằng thanh tiêu đề
+        let hopModal = document.getElementById('hopModalCanhBaoTrungGV');
+        let headerModal = document.getElementById('headerModalCanhBaoTrungGV');
+        if (hopModal && headerModal) {
+            let dangKeo = false;
+            let startX = 0, startY = 0;
+            let offsetX = 0, offsetY = 0;
+
+            const batDauKeo = (clientX, clientY, targetEl) => {
+                if (targetEl && targetEl.closest('button')) return;
+                dangKeo = true;
+                startX = clientX - offsetX;
+                startY = clientY - offsetY;
+            };
+
+            const dangDiChuyen = (clientX, clientY) => {
+                if (!dangKeo) return;
+                offsetX = clientX - startX;
+                offsetY = clientY - startY;
+                hopModal.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+            };
+
+            const ketThucKeo = () => {
+                dangKeo = false;
+            };
+
+            headerModal.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                batDauKeo(e.clientX, e.clientY, e.target);
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!dangKeo) return;
+                e.preventDefault();
+                dangDiChuyen(e.clientX, e.clientY);
+            });
+            document.addEventListener('mouseup', ketThucKeo);
+
+            headerModal.addEventListener('touchstart', (e) => {
+                if (!e.touches || !e.touches[0]) return;
+                batDauKeo(e.touches[0].clientX, e.touches[0].clientY, e.target);
+            }, { passive: true });
+            document.addEventListener('touchmove', (e) => {
+                if (!dangKeo || !e.touches || !e.touches[0]) return;
+                dangDiChuyen(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            document.addEventListener('touchend', ketThucKeo);
+
+            hopModal._resetViTri = () => {
+                offsetX = 0;
+                offsetY = 0;
+                hopModal.style.transform = '';
+            };
+        }
+    }
+
+    let hopModalEl = document.getElementById('hopModalCanhBaoTrungGV');
+    if (hopModalEl && typeof hopModalEl._resetViTri === 'function') {
+        hopModalEl._resetViTri();
     }
 
     const escapeHtml = (str) => String(str || '')
