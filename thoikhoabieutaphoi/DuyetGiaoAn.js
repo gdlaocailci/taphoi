@@ -1,8 +1,3 @@
-// =========================================================================
-// PHÂN HỆ: QUẢN LÝ & PHÊ DUYỆT GIÁO ÁN 1 CHẠM (DuyetGiaoAn.js)
-// Đồng bộ 2 chiều: Tab Duyệt Giáo Án (BGH) <-> Sổ Đầu Bài Điện Tử
-// =========================================================================
-
 window.duLieuGiaoAnToanCuc = window.duLieuGiaoAnToanCuc || [];
 window.daTaiDuLieuGiaoAn = window.daTaiDuLieuGiaoAn || false;
 window.dangTaiDuLieuGiaoAn = false;
