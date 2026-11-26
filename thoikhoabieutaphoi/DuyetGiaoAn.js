@@ -115,7 +115,7 @@ window.khoiTaoDOMDuyetGiaoAn = function() {
         const inp = document.createElement('input');
         inp.type = 'file';
         inp.id = 'inputFileGiaoAn1Cham';
-        inp.accept = '.pdf,.doc,.docx,.ppt,.pptx';
+        inp.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
         inp.className = 'hidden';
         inp.addEventListener('change', xuLyChonFileGiaoAn1Cham);
         document.body.appendChild(inp);
@@ -419,7 +419,17 @@ async function xuLyChonFileGiaoAn1Cham(event) {
             maGV: ctx.maGV,
             tenGV: ctx.tenGV,
             tenFile: tenFileChuan,
-            mimeType: file.type || 'application/octet-stream',
+            mimeType: (function() {
+                if (file.type && file.type !== 'application/octet-stream') return file.type;
+                if (ext === '.doc') return 'application/msword';
+                if (ext === '.docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                if (ext === '.pdf') return 'application/pdf';
+                if (ext === '.xls') return 'application/vnd.ms-excel';
+                if (ext === '.xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                if (ext === '.ppt') return 'application/vnd.ms-powerpoint';
+                if (ext === '.pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+                return 'application/octet-stream';
+            })(),
             duLieuBase64: base64Data,
             fileIdCu: ctx.fileIdCu,
             dsMonPhanCong: dsMon,
