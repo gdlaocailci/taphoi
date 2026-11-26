@@ -1593,6 +1593,18 @@ window.kiemTraVaXuLyTrungGiaoVienKhiXep = function(inputEl, tenGvMoi) {
     }
     
     if (dsLopTrung.length > 0) {
+        // Tìm các vị trí gợi ý khác trong cùng ngày hôm đó (cùng Thứ) không gây trùng cho ai
+        let dsGoiY = [];
+        if (typeof window.timViTriGoiYTrongNgayKhongTrung === 'function') {
+            dsGoiY = window.timViTriGoiYTrongNgayKhongTrung({
+                thu: thu,
+                buoiHienTai: buoi,
+                tietHienTai: tiet,
+                lopHienTai: lopHienTai,
+                tenGvMoiNorm: tenGvMoiNorm,
+                setLopUI: setLopUI
+            });
+        }
         if (typeof window.hienThiModalCanhBaoTrungGiaoVien === 'function') {
             window.hienThiModalCanhBaoTrungGiaoVien({
                 inputEl: inputEl,
@@ -1604,7 +1616,8 @@ window.kiemTraVaXuLyTrungGiaoVienKhiXep = function(inputEl, tenGvMoi) {
                 thu: thu,
                 buoi: buoi,
                 tiet: tiet,
-                dsLopTrung: dsLopTrung
+                dsLopTrung: dsLopTrung,
+                dsGoiY: dsGoiY
             });
             return 'pending';
         }
@@ -1612,6 +1625,166 @@ window.kiemTraVaXuLyTrungGiaoVienKhiXep = function(inputEl, tenGvMoi) {
     }
     
     return true;
+};
+
+
+// =========================================================================
+// TÌM VỊ TRÍ GỢI Ý KHÁC TRONG CÙNG NGÀY KHÔNG LÀM TRÙNG GIÁO VIÊN NÀO
+// =========================================================================
+window.kiemTraGvCoBanTaiTietKhac = function(tenGvNorm, thu, buoi, tiet, lopBoQua, setLopUI) {
+    if (!tenGvNorm || tenGvNorm === '--' || tenGvNorm === '---') return false;
+
+    let cacOGv = document.querySelectorAll(`input[id^="gv_${thu}_${buoi}_${tiet}_"]`);
+    for (let i = 0; i < cacOGv.length; i++) {
+        let oGv = cacOGv[i];
+        let partsKhac = oGv.id.split('_');
+        let lopKhac = partsKhac.slice(4).join('_');
+        if (lopKhac === lopBoQua) continue;
+
+        let gvVal = oGv.value.trim();
+        if (!gvVal || gvVal === '--' || gvVal === '---') continue;
+        let tapGv = gvVal.toLowerCase().normalize('NFC').split(/[,;&-]/).map(s => s.trim());
+        if (tapGv.includes(tenGvNorm) || gvVal.toLowerCase().normalize('NFC') === tenGvNorm) {
+            return true;
+        }
+    }
+
+    if (typeof duLieuTkbHienTai !== 'undefined' && Array.isArray(duLieuTkbHienTai) && duLieuTkbHienTai.length > 0) {
+        for (let i = 0; i < duLieuTkbHienTai.length; i++) {
+            let tietGoc = duLieuTkbHienTai[i];
+            if (!tietGoc || !tietGoc.maGv) continue;
+            if (tietGoc.maLop === lopBoQua) continue;
+            if (setLopUI && setLopUI.has(tietGoc.maLop)) continue;
+
+            let thuGoc = String(tietGoc.thu || '').trim();
+            let buoiGoc = String(tietGoc.buoi || '').trim();
+            let tietSoGoc = String(tietGoc.tiet || '').trim();
+            if (thuGoc === thu && buoiGoc === buoi && tietSoGoc === String(tiet)) {
+                let gvAnNorm = String(tietGoc.maGv).toLowerCase().normalize('NFC');
+                let tapGvAn = gvAnNorm.split(/[,;&-]/).map(s => s.trim());
+                if (tapGvAn.includes(tenGvNorm) || gvAnNorm === tenGvNorm) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+};
+
+window.laTietItUuTienGoiY = function(buoi, tiet) {
+    let tSo = parseInt(tiet, 10) || 0;
+    if (buoi === 'Sáng' && tSo >= 5) return true;
+    if (buoi === 'Chiều' && tSo >= 4) return true;
+    return false;
+};
+
+window.quetViTriGoiYTheoThu = function(thuXet, opts, chiLayTietUuTien = true) {
+    let ketQua = [];
+    let buoiHT = opts.buoiHienTai;
+    let tietHT = String(opts.tietHienTai);
+    let thuGoc = opts.thu;
+    let lopHT = opts.lopHienTai;
+    let tenGvMoiNorm = opts.tenGvMoiNorm;
+    let setLopUI = opts.setLopUI || new Set();
+
+    const buoiList = ['Sáng', 'Chiều'];
+    for (let bIdx = 0; bIdx < buoiList.length; bIdx++) {
+        let b = buoiList[bIdx];
+        for (let t = 1; t <= 5; t++) {
+            let tStr = String(t);
+            if (thuXet === thuGoc && b === buoiHT && tStr === tietHT) continue;
+
+            let itUuTien = window.laTietItUuTienGoiY(b, t);
+            if (chiLayTietUuTien && itUuTien) continue;
+            if (!chiLayTietUuTien && !itUuTien) continue;
+
+            let oGvDich = document.getElementById(`gv_${thuXet}_${b}_${tStr}_${lopHT}`);
+            let oMonDich = document.getElementById(`mon_${thuXet}_${b}_${tStr}_${lopHT}`);
+            if (!oGvDich || oGvDich.disabled) continue;
+
+            // 1. Giáo viên mới phải rảnh tại vị trí đích (thuXet, b, t)
+            if (window.kiemTraGvCoBanTaiTietKhac(tenGvMoiNorm, thuXet, b, tStr, lopHT, setLopUI)) {
+                continue;
+            }
+
+            let monDich = oMonDich ? oMonDich.value.trim() : '';
+            let gvDich = oGvDich.value.trim();
+            if (monDich === '--' || monDich === '---') monDich = '';
+            if (gvDich === '--' || gvDich === '---') gvDich = '';
+
+            if (!monDich && !gvDich) {
+                ketQua.push({
+                    loai: 'trong',
+                    thu: thuXet,
+                    buoi: b,
+                    tiet: tStr,
+                    monDich: '',
+                    gvDich: '',
+                    itUuTien: itUuTien
+                });
+            } else {
+                // 2. Nếu đổi tiết với ô đích, giáo viên ở ô đích (nếu có) cũng phải rảnh tại tiết hiện tại (thuGoc, buoiHT, tietHT)
+                let gvDichNorm = gvDich.toLowerCase().normalize('NFC');
+                if (gvDichNorm && window.kiemTraGvCoBanTaiTietKhac(gvDichNorm, thuGoc, buoiHT, tietHT, lopHT, setLopUI)) {
+                    continue;
+                }
+                ketQua.push({
+                    loai: 'doi',
+                    thu: thuXet,
+                    buoi: b,
+                    tiet: tStr,
+                    monDich: monDich,
+                    gvDich: gvDich,
+                    itUuTien: itUuTien
+                });
+            }
+        }
+    }
+    return ketQua;
+};
+
+window.timViTriGoiYTrongNgayKhongTrung = function(opts) {
+    if (!opts || !opts.thu || !opts.lopHienTai || !opts.tenGvMoiNorm) return [];
+
+    // 1. Ưu tiên tìm các tiết chính (Sáng 1-4, Chiều 1-3) trong cùng ngày
+    let dsCungNgayUuTien = window.quetViTriGoiYTheoThu(opts.thu, opts, true);
+    if (dsCungNgayUuTien.length > 0) return dsCungNgayUuTien;
+
+    // 2. Nếu cùng ngày không còn tiết chính, tìm tiết chính ở ngày khác gần nhất
+    let dsThu = (typeof window.layDanhSachThuDong === 'function')
+        ? window.layDanhSachThuDong(typeof ngayDauTuanUI !== 'undefined' ? ngayDauTuanUI : '')
+        : ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+    let idxHienTai = dsThu.indexOf(opts.thu);
+    if (idxHienTai === -1) idxHienTai = 0;
+
+    let dsThuKhac = dsThu
+        .map((t, idx) => ({ thu: t, dist: Math.abs(idx - idxHienTai), sau: idx > idxHienTai }))
+        .filter(item => item.thu !== opts.thu)
+        .sort((a, b) => {
+            if (a.dist !== b.dist) return a.dist - b.dist;
+            return (a.sau === b.sau) ? 0 : (a.sau ? -1 : 1);
+        });
+
+    for (let i = 0; i < dsThuKhac.length; i++) {
+        let dsNgayKhacUuTien = window.quetViTriGoiYTheoThu(dsThuKhac[i].thu, opts, true);
+        if (dsNgayKhacUuTien.length > 0) {
+            return dsNgayKhacUuTien;
+        }
+    }
+
+    // 3. Phương án dự phòng cuối: nếu cả tuần hết tiết chính mới xét tiết 5 sáng / tiết 4 chiều (cùng ngày trước, rồi ngày gần nhất)
+    let dsCungNgayPhu = window.quetViTriGoiYTheoThu(opts.thu, opts, false);
+    if (dsCungNgayPhu.length > 0) return dsCungNgayPhu;
+
+    for (let i = 0; i < dsThuKhac.length; i++) {
+        let dsNgayKhacPhu = window.quetViTriGoiYTheoThu(dsThuKhac[i].thu, opts, false);
+        if (dsNgayKhacPhu.length > 0) {
+            return dsNgayKhacPhu;
+        }
+    }
+
+    return [];
 };
 
 // =========================================================================
@@ -1675,6 +1848,54 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
         </tr>
     `).join('');
 
+    let dsGoiY = Array.isArray(opts.dsGoiY) ? opts.dsGoiY : [];
+    let htmlGoiY = '';
+    if (dsGoiY.length > 0) {
+        let thuGoiY = dsGoiY[0].thu || opts.thu;
+        let laNgayKhac = thuGoiY !== opts.thu;
+        let tieuDeGoiY = laNgayKhac
+            ? `Không còn vị trí trong ${escapeHtml(opts.thu)} — Gợi ý sang ngày gần nhất (${escapeHtml(thuGoiY)}) cho Lớp ${escapeHtml(opts.lopHienTai)} (không trùng lịch):`
+            : `Gợi ý vị trí khác trong ${escapeHtml(opts.thu)} cho Lớp ${escapeHtml(opts.lopHienTai)} (không trùng lịch):`;
+
+        let itemsHtml = dsGoiY.map((gy, idx) => {
+            let moTa = gy.loai === 'trong'
+                ? '<span class="text-emerald-700 font-bold">Ô trống</span>'
+                : `<span class="text-indigo-700 font-semibold">Đổi với ${gy.monDich ? escapeHtml(gy.monDich) : 'Chưa có môn'}${gy.gvDich ? ' - ' + escapeHtml(gy.gvDich) : ''}</span>`;
+            let nhanNut = gy.loai === 'trong' ? 'Chuyển vào đây' : 'Đổi tiết';
+            let nhanThoiDiem = laNgayKhac
+                ? `${escapeHtml(gy.thu)}, ${escapeHtml(gy.buoi)} - Tiết ${escapeHtml(gy.tiet)}`
+                : `${escapeHtml(gy.buoi)} - Tiết ${escapeHtml(gy.tiet)}`;
+            return `
+                <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-emerald-200 last:border-b-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-emerald-50/40'}">
+                    <div class="text-xs md:text-sm leading-snug">
+                        <span class="font-extrabold text-slate-900">${nhanThoiDiem}</span>
+                        <span class="mx-1 text-slate-400">|</span>
+                        ${moTa}
+                    </div>
+                    <button type="button" data-goiy-idx="${idx}" class="btn-chon-goiy-trung px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs whitespace-nowrap cursor-pointer transition-colors shadow-xs">
+                        ${nhanNut}
+                    </button>
+                </div>
+            `;
+        }).join('');
+        htmlGoiY = `
+            <div class="mt-2">
+                <p class="text-xs md:text-sm font-extrabold text-emerald-800 mb-1.5">
+                    ${tieuDeGoiY}
+                </p>
+                <div class="border border-emerald-300 rounded-xl overflow-hidden shadow-xs max-h-40 overflow-y-auto">
+                    ${itemsHtml}
+                </div>
+            </div>
+        `;
+    } else {
+        htmlGoiY = `
+            <div class="mt-2 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 italic">
+                Không có vị trí nào khác trong tuần cho Lớp ${escapeHtml(opts.lopHienTai)} mà không gây trùng lịch giáo viên.
+            </div>
+        `;
+    }
+
     let noiDungEl = document.getElementById('noiDungModalTrungGV');
     if (noiDungEl) {
         noiDungEl.innerHTML = `
@@ -1696,6 +1917,7 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
                     <tbody>${dongBangTrung}</tbody>
                 </table>
             </div>
+            ${htmlGoiY}
         `;
     }
 
@@ -1735,6 +1957,90 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
         }
         dongModal();
     };
+
+    const xuLyChonGoiY = (idx) => {
+        let gy = dsGoiY[idx];
+        if (!gy) return;
+
+        let oMonHT = document.getElementById(`mon_${opts.thu}_${opts.buoi}_${opts.tiet}_${opts.lopHienTai}`);
+        let oMonDich = document.getElementById(`mon_${gy.thu}_${gy.buoi}_${gy.tiet}_${opts.lopHienTai}`);
+        let oGvDich = document.getElementById(`gv_${gy.thu}_${gy.buoi}_${gy.tiet}_${opts.lopHienTai}`);
+        if (!oGvDich) return;
+
+        let monHT = oMonHT ? oMonHT.value.trim() : '';
+        if (monHT === '--' || monHT === '---') monHT = '';
+
+        delete inputEl.dataset.dangChoXacNhanTrung;
+
+        if (gy.loai === 'trong') {
+            if (oMonDich && monHT) {
+                oMonDich.value = monHT;
+                oMonDich.dataset.val = monHT;
+                if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oMonDich);
+            }
+            oGvDich.value = tenGvMoi;
+            oGvDich.dataset.val = tenGvMoi;
+            if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oGvDich);
+
+            if (oMonHT && monHT) {
+                oMonHT.value = '';
+                oMonHT.dataset.val = '';
+                oMonHT.placeholder = '--';
+                if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oMonHT);
+            }
+            inputEl.value = monHT ? '' : giaTriCu;
+            inputEl.dataset.val = inputEl.value;
+            if (!inputEl.value) inputEl.placeholder = '--';
+            if (monHT) {
+                if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(inputEl);
+            } else {
+                let td = inputEl.closest('td');
+                if (td && daSuaTruocDo !== '1') {
+                    td.removeAttribute('data-thaydoi');
+                    let icon = td.querySelector('.icon-sua-chua');
+                    if (icon) icon.remove();
+                }
+            }
+        } else {
+            let monDich = gy.monDich || '';
+            let gvDich = gy.gvDich || '';
+
+            if (oMonDich) {
+                oMonDich.value = monHT;
+                oMonDich.dataset.val = monHT;
+                if (!oMonDich.value) oMonDich.placeholder = '--';
+                if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oMonDich);
+            }
+            oGvDich.value = tenGvMoi;
+            oGvDich.dataset.val = tenGvMoi;
+            if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oGvDich);
+
+            if (oMonHT) {
+                oMonHT.value = monDich;
+                oMonHT.dataset.val = monDich;
+                if (!oMonHT.value) oMonHT.placeholder = '--';
+                if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(oMonHT);
+            }
+            inputEl.value = gvDich;
+            inputEl.dataset.val = gvDich;
+            if (!inputEl.value) inputEl.placeholder = '--';
+            if (typeof window.danhDauDongThayDoiTKB === 'function') window.danhDauDongThayDoiTKB(inputEl);
+        }
+
+        if (typeof kiemTraTrungGiaoVienToanBang === 'function') {
+            kiemTraTrungGiaoVienToanBang(true);
+        }
+        dongModal();
+    };
+
+    if (noiDungEl) {
+        noiDungEl.querySelectorAll('.btn-chon-goiy-trung').forEach(btnGoiY => {
+            btnGoiY.onclick = () => {
+                let idx = parseInt(btnGoiY.getAttribute('data-goiy-idx'), 10);
+                if (!isNaN(idx)) xuLyChonGoiY(idx);
+            };
+        });
+    }
 
     let btnChoXep = document.getElementById('btnChoXepTrungGV');
     let btnKhongXep = document.getElementById('btnKhongXepTrungGV');
