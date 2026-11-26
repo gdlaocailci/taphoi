@@ -1551,9 +1551,6 @@ window.kiemTraVaXuLyTrungGiaoVienKhiXep = function(inputEl, tenGvMoi) {
         let utKhac = parseInt(uuTienMon[monKhac]) || 99;
         let lopKhacLaHDTN = window.laTietHoatDongTapTheDuocPhepTrung(monKhac, utKhac);
         
-        // Ngoại trừ tiết HĐTN / hoạt động tập thể thì được phép trùng tiết (1 giáo viên có thể tổ chức cho cả trường)
-        if (hienTaiLaHDTN && lopKhacLaHDTN) return;
-        
         let tapGv = gvVal.toLowerCase().normalize('NFC').split(/[,;&-]/).map(s => s.trim());
         if (tapGv.includes(tenGvMoiNorm) || gvVal.toLowerCase().normalize('NFC') === tenGvMoiNorm) {
             dsLopTrung.push({
@@ -1580,9 +1577,6 @@ window.kiemTraVaXuLyTrungGiaoVienKhiXep = function(inputEl, tenGvMoi) {
                 let monAn = tietGoc.monHoc || '';
                 let utAn = parseInt(uuTienMon[monAn]) || 99;
                 let lopAnLaHDTN = window.laTietHoatDongTapTheDuocPhepTrung(monAn, utAn);
-                
-                // Ngoại trừ tiết HĐTN / hoạt động tập thể thì được phép trùng tiết
-                if (hienTaiLaHDTN && lopAnLaHDTN) return;
                 
                 let tapGvAn = String(tietGoc.maGv).toLowerCase().normalize('NFC').split(/[,;&-]/).map(s => s.trim());
                 if (tapGvAn.includes(tenGvMoiNorm) || String(tietGoc.maGv).toLowerCase().normalize('NFC') === tenGvMoiNorm) {
@@ -1702,9 +1696,6 @@ window.hienThiModalCanhBaoTrungGiaoVien = function(opts) {
                     <tbody>${dongBangTrung}</tbody>
                 </table>
             </div>
-            <p class="text-xs text-slate-500 italic">
-                (Lưu ý: Chỉ các tiết HĐTN / hoạt động tập thể mới được hệ thống tự động cho phép trùng mà không cảnh báo.)
-            </p>
         `;
     }
 
