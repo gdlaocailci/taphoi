@@ -949,6 +949,7 @@ async function khoiTaoGiaoDien() {
                     if (dateInput) dateInput.value = ngayDauTuanUI;
                 }
                 
+                if (typeof window.khoiPhucPhienDangNhap === 'function') window.khoiPhucPhienDangNhap();
                 kiemSoatGiaoDien(); 
                 napDuLieuBoLocGiaoVien();
                 if(thongSoHocVu.NAM_HOC) { 
@@ -978,8 +979,13 @@ async function khoiTaoGiaoDien() {
         const thongSoMoi = await phanHoi.json();
         if (thongSoMoi.trangThai === 'loi_he_thong') throw new Error(thongSoMoi.thongBao);
         
+        const _quyenTruocKhiCapNhat = JSON.stringify({ quyenSuaChua, quyenChiTiet });
         thongSoHocVu = thongSoMoi; window.thongSoHocVu = thongSoHocVu;
         localStorage.setItem(KEY_CH, JSON.stringify(thongSoHocVu)); 
+        if (typeof window.khoiPhucPhienDangNhap === 'function') window.khoiPhucPhienDangNhap();
+        if (JSON.stringify({ quyenSuaChua, quyenChiTiet }) !== _quyenTruocKhiCapNhat) {
+            daVeLuoiRam = false;
+        }
         if (typeof window.capNhatDatalistTKB === 'function') {
             window.capNhatDatalistTKB();
         } 
@@ -3242,8 +3248,91 @@ window.kichHoatTab = function(idMenu, idKhung, hienThanhCongCuTKB) {
 let clientDangNhapG;
 let dangXuLyDangNhap = false; 
 
+window.luuPhienDangNhap = function(thongTin) {
+    if (!thongTin || !thongTin.email) return;
+    try {
+        const keyPhien = layKhoaCachLy('SmartTKB_PhienDangNhap');
+        localStorage.setItem(keyPhien, JSON.stringify({
+            email: thongTin.email,
+            name: thongTin.name || thongTin.email,
+            picture: thongTin.picture || '',
+            savedAt: Date.now()
+        }));
+    } catch (e) {}
+};
+
+window.xoaPhienDangNhap = function() {
+    try {
+        localStorage.removeItem(layKhoaCachLy('SmartTKB_PhienDangNhap'));
+    } catch (e) {}
+};
+
+window.apDungPhienDangNhap = function(thongTin) {
+    if (!thongTin || !thongTin.email) return false;
+    const dinhDanhHeThong = thongTin.email;
+    const tenHienThi = thongTin.name || dinhDanhHeThong;
+    const anhDaiDien = thongTin.picture || '';
+
+    window.dinhDanhGiaoVienToanCuc = dinhDanhHeThong;
+
+    let nutDangNhap = document.getElementById('nutDangNhapG');
+    if (nutDangNhap) {
+        const avatarHtml = anhDaiDien
+            ? `<img src="${anhDaiDien}" class="w-6 h-6 rounded-full border border-white" title="Tài khoản: ${tenHienThi}">`
+            : `<span class="w-6 h-6 rounded-full border border-white bg-blue-600 text-white text-xs font-bold flex items-center justify-center" title="Tài khoản: ${tenHienThi}">${String(tenHienThi).charAt(0).toUpperCase()}</span>`;
+        nutDangNhap.innerHTML = `${avatarHtml}<span class="truncate text-sm font-semibold group-hover:text-red-300 transition-colors">Đăng xuất</span>`;
+        nutDangNhap.classList.replace('bg-slate-700', 'bg-slate-800');
+        nutDangNhap.classList.replace('hover:bg-slate-600', 'hover:bg-red-700');
+        nutDangNhap.classList.replace('border-slate-500', 'border-red-500');
+        nutDangNhap.onclick = function() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
+                window.xoaPhienDangNhap();
+                try { sessionStorage.setItem('SDB_BO_QUA_SSO', '1'); } catch (e) {}
+                window.location.reload();
+            }
+        };
+    }
+
+    const dsQuanTri = (thongSoHocVu && thongSoHocVu.DANH_SACH_QUAN_TRI) || [];
+    const dinhDanhGoc = 'tulieuhopthanh@gmail.com';
+    const emailDinhDanhChuan = String(dinhDanhHeThong || '').trim().toLowerCase();
+
+    let laQuanTriVien = (emailDinhDanhChuan === dinhDanhGoc.toLowerCase()) ||
+                        dsQuanTri.some(q => String(q).trim().toLowerCase() === emailDinhDanhChuan);
+
+    quyenSuaChua = !!laQuanTriVien;
+
+    quyenChiTiet = { menu: [], nut: [], lop: [] };
+    if (thongSoHocVu && thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
+        for (let k in thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
+            let kChuan = String(k).trim().toLowerCase();
+            if (kChuan === emailDinhDanhChuan || kChuan === String(dinhDanhHeThong).trim()) {
+                let objPQ = thongSoHocVu.MA_TRAN_PHAN_QUYEN[k] || {};
+                quyenChiTiet.menu = objPQ.menu || [];
+                quyenChiTiet.nut = objPQ.nut || [];
+                quyenChiTiet.lop = objPQ.lop || [];
+                break;
+            }
+        }
+    }
+    return true;
+};
+
+window.khoiPhucPhienDangNhap = function() {
+    try {
+        const raw = localStorage.getItem(layKhoaCachLy('SmartTKB_PhienDangNhap'));
+        if (!raw) return false;
+        const phien = JSON.parse(raw);
+        if (!phien || !phien.email) return false;
+        return window.apDungPhienDangNhap(phien);
+    } catch (e) {
+        return false;
+    }
+};
+
 function khoiDongDangNhap() {
     if (dangXuLyDangNhap) return;
+    try { sessionStorage.removeItem('SDB_BO_QUA_SSO'); } catch (e) {}
 
     let nutDangNhap = document.getElementById('nutDangNhapG');
     let htmlGoc = nutDangNhap ? nutDangNhap.innerHTML : '';
@@ -3293,42 +3382,10 @@ async function xuLyLayThongTin(maTokenTruyCap) {
         const dinhDanhHeThong = duLieuXacThuc[tuKhoaDinhDanh]; 
         const tenHienThi = duLieuXacThuc.name; 
         const anhDaiDien = duLieuXacThuc.picture;
-        
-        window.dinhDanhGiaoVienToanCuc = dinhDanhHeThong;
 
-        if (nutDangNhap) {
-            nutDangNhap.innerHTML = `<img src="${anhDaiDien}" class="w-6 h-6 rounded-full border border-white" title="Tài khoản: ${tenHienThi}"><span class="truncate text-sm font-semibold group-hover:text-red-300 transition-colors">Đăng xuất</span>`;
-            nutDangNhap.classList.replace('bg-slate-700', 'bg-slate-800'); 
-            nutDangNhap.classList.replace('hover:bg-slate-600', 'hover:bg-red-700');
-            nutDangNhap.classList.replace('border-slate-500', 'border-red-500'); 
-            nutDangNhap.onclick = function() {
-                if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) window.location.reload();
-            }; 
-        }
-
-        const dsQuanTri = thongSoHocVu.DANH_SACH_QUAN_TRI || [];
-        const dinhDanhGoc = 'tulieuhopthanh@gmail.com'; 
-        const emailDinhDanhChuan = String(dinhDanhHeThong || '').trim().toLowerCase();
-
-        let laQuanTriVien = (emailDinhDanhChuan === dinhDanhGoc.toLowerCase()) ||
-                            dsQuanTri.some(q => String(q).trim().toLowerCase() === emailDinhDanhChuan);
-
-        if (laQuanTriVien) quyenSuaChua = true; 
-        else quyenSuaChua = false; 
-        
-        quyenChiTiet = { menu: [], nut: [], lop: [] }; 
-        if (thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
-            for (let k in thongSoHocVu.MA_TRAN_PHAN_QUYEN) {
-                let kChuan = String(k).trim().toLowerCase();
-                if (kChuan === emailDinhDanhChuan || kChuan === String(dinhDanhHeThong).trim()) {
-                    let objPQ = thongSoHocVu.MA_TRAN_PHAN_QUYEN[k] || {};
-                    quyenChiTiet.menu = objPQ.menu || [];
-                    quyenChiTiet.nut = objPQ.nut || [];
-                    quyenChiTiet.lop = objPQ.lop || [];
-                    break;
-                }
-            }
-        }
+        const thongTinPhien = { email: dinhDanhHeThong, name: tenHienThi, picture: anhDaiDien };
+        window.luuPhienDangNhap(thongTinPhien);
+        window.apDungPhienDangNhap(thongTinPhien);
         
         kiemSoatGiaoDien(); 
 
