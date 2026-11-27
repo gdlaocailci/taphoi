@@ -2451,7 +2451,7 @@ function veBangGvbmPPCT(monDangChon) {
             <td class="border-r border-gray-300 align-middle text-left p-3 leading-relaxed vung-badge-sua" style="white-space: normal !important; min-width: 220px; max-width: 360px; word-wrap: break-word; word-break: break-word;">
                 <div class="flex items-start justify-between gap-2">
                     <span class="font-semibold text-slate-900 flex-1 whitespace-normal break-words" style="word-break: break-word;" data-ppct-id="${idKhoa}" data-loai="tenBai">${row.valTenBai}</span>
-                    <button onclick="kichHoatXemTruocSGK('${row.khoi}', '${tenMonEsc}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText, '${tuan}')"
+                    <button onclick="kichHoatXemTruocSGK('${row.khoi}', '${tenMonEsc}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText)"
                             class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200 mt-0.5"
                             title="Xem và tải trang SGK bài học này">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2706,7 +2706,7 @@ function veBangKhungLichPPCT(monDangChon) {
                                 <div class="flex items-start justify-between gap-2">
                                     <span class="font-semibold text-slate-900 flex-1 whitespace-normal break-words" style="word-break: break-word;" data-ppct-id="${idKhoa}" data-loai="tenBai">${valTenBai}</span>
                                     
-                                    <button onclick="kichHoatXemTruocSGK(document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so'), '${tenMonTkb.replace(/'/g, "\\'")}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText, '${tuan}')" 
+                                    <button onclick="kichHoatXemTruocSGK(document.getElementById('locKhoiPPCT').getAttribute('data-khoi-so'), '${tenMonTkb}', document.querySelector('[data-ppct-id=\\'${idKhoa}\\'][data-loai=\\'tenBai\\']').innerText)" 
                                             class="p-1.5 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 transition flex-none shadow-sm border border-blue-200 mt-0.5" 
                                             title="Xem và tải trang SGK bài học này">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
