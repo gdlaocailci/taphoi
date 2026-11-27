@@ -5,11 +5,12 @@ let heSoThuPhong = 1.2;
 let idTepHienTai = '';
 
 let boNhoTrangPdfGiaiMa = {}; // RAM đệm giúp lật trang đã xem siêu mượt
+let boNhoChiMucPdf = {}; // RAM đệm chỉ mục văn bản theo idPdf giúp tìm bài học < 5ms từ lần thứ 2
 let thongTinBaiHocHienTai = { khoi: '', mon: '', bai: '', idKy1: '', idKy2: '', kyDangXem: 1 };
 
 document.addEventListener('DOMContentLoaded', () => {
     xayDungKhungGiaoDienXemTruoc();
- khoiTaoBoNhoHocLieu().catch(loi => console.warn("Chưa tải được danh mục SGK:", loi));   
+    khoiTaoBoNhoHocLieu().catch(loi => console.warn("Chưa tải được danh mục SGK:", loi));   
 });
 
 // =========================================================================
@@ -79,8 +80,9 @@ async function lamMoiBoNhoDemPdf() {
     }
     
     boNhoTrangPdfGiaiMa = {}; // Dọn RAM
+    delete boNhoChiMucPdf[idTepHienTai]; // Dọn chỉ mục tìm kiếm
     hienThiKhoiChoTai(`Đang tải lại bản gốc sách mới nhất...`);
-    xuLyDocPDF(idTepHienTai);
+    xuLyDocPDF(idTepHienTai, thongTinBaiHocHienTai.bai);
 }
 
 // =========================================================================
@@ -124,7 +126,7 @@ async function khoiTaoBoNhoHocLieu() {
 }
 
 function trichXuatIdTuLink(url) {
-    let ketQua = url.match(/[-\w]{25,}/);
+    let ketQua = String(url || '').match(/[-\w]{25,}/);
     return ketQua ? ketQua[0] : null;
 }
 
@@ -193,7 +195,26 @@ window.kichHoatXemTruocSGK = async function(tenKhoiGoc, tenMonGoc, tenBaiHoc, th
         return;
     }
 
-    window.open(linkTepHienTai, '_blank', 'noopener,noreferrer');
+    let idPdf = trichXuatIdTuLink(linkTepHienTai);
+    if (!idPdf) {
+        window.open(linkTepHienTai, '_blank', 'noopener,noreferrer');
+        return;
+    }
+
+    let tenBaiSach = String(tenBaiHoc || '').replace(/\s+/g, ' ').trim();
+    thongTinBaiHocHienTai = {
+        khoi: tenKhoiChuan,
+        mon: tenMonGoc,
+        bai: tenBaiSach,
+        idKy1: trichXuatIdTuLink(duLieuMonHoc.linkKy1 || '') || '',
+        idKy2: trichXuatIdTuLink(duLieuMonHoc.linkKy2 || '') || '',
+        kyDangXem: kyHocPhanDong
+    };
+    idTepHienTai = idPdf;
+
+    await xoaBoNhoDemCu(idTepHienTai);
+    hienThiModalXemTruoc(tenKhoiChuan, tenMonGoc, tenBaiSach || 'Xem trước SGK', kyHocPhanDong);
+    await xuLyDocPDF(idTepHienTai, tenBaiSach);
 };
 
 window.chuyenKyHocThuCong = async function(kyMoi) {
@@ -216,7 +237,7 @@ window.chuyenKyHocThuCong = async function(kyMoi) {
 
     await xoaBoNhoDemCu(idTepHienTai);
     hienThiKhoiChoTai(`Đang truy xuất dữ liệu sách Tập ${kyMoi}...`);
-    await xuLyDocPDF(idTepHienTai);
+    await xuLyDocPDF(idTepHienTai, thongTinBaiHocHienTai.bai);
 };
 
 // =========================================================================
@@ -341,7 +362,7 @@ function dongModalXemTruoc() {
 }
 
 // =========================================================================
-// KHỐI 5: ĐỘNG CƠ TẢI SIÊU TỐC (MẠNG + CACHE + RENDER LÕI)
+// KHỐI 5: ĐỘNG CƠ TẢI SIÊU TỐC (MẠNG + CACHE + RENDER LÕI + TÌM BÀI HỌC)
 // =========================================================================
 // Thuật toán: Bấm giờ mạng. Nếu proxy quá 20s không trả file, ngắt lập tức để khỏi treo máy.
 async function fetchVoiTimeout(url, thoiGianMax = 20000) {
@@ -400,7 +421,7 @@ async function taiDuLieuPdfAnToan(idPdf) {
     throw new Error("Vượt quá giới hạn Proxy, tự động nhảy Iframe.");
 }
 
-async function xuLyDocPDF(idPdf) {
+async function xuLyDocPDF(idPdf, tenBaiCanTim = '') {
     if (typeof pdfjsLib === 'undefined') {
         await new Promise((resolve) => {
             const script = document.createElement('script');
@@ -428,10 +449,19 @@ async function xuLyDocPDF(idPdf) {
         theHienPdfHienTai = await loadingTask.promise;
         
         document.getElementById('tongSoTrang').innerText = theHienPdfHienTai.numPages;
-        trangHienTaiPDF = 1;
-        
         document.getElementById('nhapSoTrangNhanh').max = theHienPdfHienTai.numPages;
         document.getElementById('thanhTruotTrang').max = theHienPdfHienTai.numPages;
+
+        let trangDich = 1;
+        if (tenBaiCanTim && String(tenBaiCanTim).trim() !== '') {
+            document.getElementById('vanBanTrangThaiSgk').innerText = `Đang tìm đúng trang bài: "${tenBaiCanTim}"...`;
+            const ketQuaTim = await timTrangBaiHocThongMinh(theHienPdfHienTai, idPdf, tenBaiCanTim);
+            trangDich = ketQuaTim.trang;
+            if (ketQuaTim.laBanScan) {
+                document.getElementById('tieuDeBaiSgk').innerText = `${tenBaiCanTim} (Sách ảnh scan - vui lòng chọn trang thủ công)`;
+            }
+        }
+        trangHienTaiPDF = trangDich;
 
         document.getElementById('khoiTrangThaiSgk').classList.add('hidden');
         document.getElementById('canvasHienThiPdf').classList.remove('hidden');
@@ -450,6 +480,197 @@ async function xuLyDocPDF(idPdf) {
         console.warn("Chuyển Lưới an toàn Iframe:", loi);
         kichHoatLuoiAnToanIframe(idPdf);
     }
+}
+
+function chuanHoaChuoiTimKiemSGK(str) {
+    return String(str || '')
+        .normalize('NFC')
+        .toLowerCase()
+        .replace(/[\:\-\–\—\.\,\;\!\?\(\)\[\]\"\'\/]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function phanTichTenBaiSGK(tenBaiGoc) {
+    // Loại bỏ hậu tố "(Tiết 1)", "(Tiết 2)", "- Tiết 3"... trên UI PPCT
+    let sachTiet = String(tenBaiGoc || '')
+        .normalize('NFC')
+        .replace(/(?:\s*[-–]\s*)?\(?\s*tiết\s*\d+\s*\)?\s*$/i, '')
+        .trim();
+
+    let maBai = '';
+    let tenPhu = '';
+    let tenCotLoi = sachTiet;
+
+    // Dạng 1: "Tuần 12 - Sinh hoạt dưới cờ: Trưng bày Góc tri ân"
+    let matchTuan = sachTiet.match(/^((?:tuần|chủ\s*đề|chương)\s*\d+)\s*[-–:]\s*([^:]+)\s*:\s*(.+)$/i);
+    if (matchTuan) {
+        maBai = chuanHoaChuoiTimKiemSGK(matchTuan[1]);
+        tenPhu = chuanHoaChuoiTimKiemSGK(matchTuan[2]);
+        tenCotLoi = chuanHoaChuoiTimKiemSGK(matchTuan[3]);
+    } else {
+        // Dạng 2: "Bài 51: et êt it", "Bài 10: Đi học đúng giờ", "Bài 11: Phép trừ trong phạm vi 10"
+        let matchBai = sachTiet.match(/^((?:bài|tuần|chủ\s*đề|chương|tiết)\s*\d+)\s*[:\-–.]?\s*(.*)$/i);
+        if (matchBai) {
+            maBai = chuanHoaChuoiTimKiemSGK(matchBai[1]);
+            tenCotLoi = chuanHoaChuoiTimKiemSGK(matchBai[2]);
+        } else {
+            tenCotLoi = chuanHoaChuoiTimKiemSGK(sachTiet);
+        }
+    }
+
+    let cumDayDu = chuanHoaChuoiTimKiemSGK(`${maBai} ${tenCotLoi}`);
+    let tuKhoa = tenCotLoi.split(' ').filter(w => w.length >= 2);
+    return { maBai, tenPhu, tenCotLoi, cumDayDu, tuKhoa };
+}
+
+function chamDiemTrangPDF(textTrang, soTrang, mucTieu) {
+    if (!textTrang) return 0;
+    let diem = 0;
+
+    if (mucTieu.cumDayDu && textTrang.includes(mucTieu.cumDayDu)) {
+        diem += 100;
+    } else {
+        if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && textTrang.includes(mucTieu.tenCotLoi)) {
+            diem += 65;
+        }
+        if (mucTieu.tenPhu && mucTieu.tenPhu.length >= 4 && textTrang.includes(mucTieu.tenPhu)) {
+            diem += 20;
+        }
+        if (mucTieu.maBai && new RegExp(`\\b${mucTieu.maBai}\\b`).test(textTrang)) {
+            diem += 30;
+        }
+    }
+
+    if (diem < 50 && mucTieu.tuKhoa.length >= 2) {
+        let soTuKhop = mucTieu.tuKhoa.filter(tu => textTrang.includes(tu)).length;
+        let tyLe = soTuKhop / mucTieu.tuKhoa.length;
+        if (tyLe >= 0.75) {
+            diem += Math.round(tyLe * 45);
+        }
+    }
+
+    // Phạt điểm trang Mục lục ở đầu sách để tránh dừng nhầm
+    if (soTrang <= 10) {
+        let soLanChuBai = (textTrang.match(/\bbài\s+\d+\b/g) || []).length;
+        if (textTrang.includes('mục lục') || soLanChuBai >= 4) {
+            diem -= 80;
+        }
+    }
+    return diem;
+}
+
+async function layTextTrangPDF(pdfDoc, idPdf, soTrang) {
+    if (!boNhoChiMucPdf[idPdf]) boNhoChiMucPdf[idPdf] = [];
+    if (boNhoChiMucPdf[idPdf][soTrang] !== undefined) {
+        return boNhoChiMucPdf[idPdf][soTrang];
+    }
+    const page = await pdfDoc.getPage(soTrang);
+    const content = await page.getTextContent();
+    const rawText = content.items.map(it => it.str).join(' ');
+    const cleanText = chuanHoaChuoiTimKiemSGK(rawText);
+    boNhoChiMucPdf[idPdf][soTrang] = cleanText;
+    return cleanText;
+}
+
+async function quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThuocLo = 12, nguongDungSom = 90) {
+    let trangTotNhat = tuTrang;
+    let diemMax = 0;
+
+    for (let batDau = tuTrang; batDau <= denTrang; batDau += kichThuocLo) {
+        let ketThuc = Math.min(denTrang, batDau + kichThuocLo - 1);
+        let dsSoTrang = [];
+        for (let p = batDau; p <= ketThuc; p++) dsSoTrang.push(p);
+
+        let dsText = await Promise.all(dsSoTrang.map(p => layTextTrangPDF(pdfDoc, idPdf, p)));
+        for (let i = 0; i < dsSoTrang.length; i++) {
+            let diem = chamDiemTrangPDF(dsText[i], dsSoTrang[i], mucTieu);
+            if (diem > diemMax) {
+                diemMax = diem;
+                trangTotNhat = dsSoTrang[i];
+            }
+        }
+        if (diemMax >= nguongDungSom) break;
+    }
+    return { trangTotNhat, diemMax };
+}
+
+async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
+    const tongTrang = pdfDoc.numPages;
+    const mucTieu = phanTichTenBaiSGK(tenBaiGoc);
+    if (!mucTieu.cumDayDu && !mucTieu.tenCotLoi) {
+        return { trang: 1, laBanScan: false };
+    }
+
+    // TẦNG 1A: Tra cứu Bookmark / Outline có sẵn của PDF
+    try {
+        const outline = await pdfDoc.getOutline();
+        if (Array.isArray(outline) && outline.length > 0) {
+            const duyetOutline = async (items) => {
+                for (let item of items) {
+                    let tieuDe = chuanHoaChuoiTimKiemSGK(item.title);
+                    if ((mucTieu.tenCotLoi && tieuDe.includes(mucTieu.tenCotLoi)) ||
+                        (mucTieu.cumDayDu && tieuDe.includes(mucTieu.cumDayDu))) {
+                        if (item.dest) {
+                            let destArr = typeof item.dest === 'string' ? await pdfDoc.getDestination(item.dest) : item.dest;
+                            if (Array.isArray(destArr) && destArr[0]) {
+                                let pageIdx = await pdfDoc.getPageIndex(destArr[0]);
+                                return pageIdx + 1;
+                            }
+                        }
+                    }
+                    if (item.items && item.items.length > 0) {
+                        let kqCon = await duyetOutline(item.items);
+                        if (kqCon) return kqCon;
+                    }
+                }
+                return null;
+            };
+            let trangOutline = await duyetOutline(outline);
+            if (trangOutline && trangOutline >= 1 && trangOutline <= tongTrang) {
+                return { trang: trangOutline, laBanScan: false };
+            }
+        }
+    } catch (e) {}
+
+    // TẦNG 1B: Quét 10 trang đầu (kiểm tra PDF scan + định vị số trang qua Mục lục)
+    const soTrangDau = Math.min(10, tongTrang);
+    const textTrangDau = await Promise.all(
+        Array.from({ length: soTrangDau }, (_, i) => layTextTrangPDF(pdfDoc, idPdf, i + 1))
+    );
+
+    const tongKyTuDau = textTrangDau.slice(0, 5).reduce((s, t) => s + t.length, 0);
+    if (tongKyTuDau < 20) {
+        return { trang: 1, laBanScan: true };
+    }
+
+    const cumTimMucLuc = mucTieu.tenCotLoi || mucTieu.maBai;
+    if (cumTimMucLuc && cumTimMucLuc.length >= 4) {
+        for (let i = 0; i < textTrangDau.length; i++) {
+            let txt = textTrangDau[i];
+            let idx = txt.indexOf(cumTimMucLuc);
+            if (idx !== -1) {
+                let doanSau = txt.slice(idx + cumTimMucLuc.length, idx + cumTimMucLuc.length + 25);
+                let matchSoTrang = doanSau.match(/\b(\d{1,3})\b/);
+                if (matchSoTrang) {
+                    let trangIn = parseInt(matchSoTrang[1], 10);
+                    let tuTrang = Math.max(1, trangIn);
+                    let denTrang = Math.min(tongTrang, trangIn + 8);
+                    let kqVungHep = await quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, 9, 90);
+                    if (kqVungHep.diemMax >= 60) {
+                        return { trang: kqVungHep.trangTotNhat, laBanScan: false };
+                    }
+                }
+            }
+        }
+    }
+
+    // TẦNG 2: Quét song song theo lô 12 trang từ đầu đến cuối sách (dừng sớm khi điểm >= 90)
+    const kqToanSach = await quetLoTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 12, 90);
+    return {
+        trang: kqToanSach.diemMax >= 30 ? kqToanSach.trangTotNhat : 1,
+        laBanScan: false
+    };
 }
 
 async function veTrangCanVasPdf(soTrang) {
