@@ -13,9 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     khoiTaoBoNhoHocLieu().catch(loi => console.warn("Chưa tải được danh mục SGK:", loi));   
 });
 
-// =========================================================================
-// KHỐI 1: CƠ SỞ DỮ LIỆU INDEXEDDB (THUẬT TOÁN ĐỒNG BỘ PROMISE CHỐNG VƯỢT MẶT)
-// =========================================================================
 // Nâng version lên 13 để bổ sung bảng BangMucLucScan (lưu chỉ mục OCR cho sách ảnh scan) mà không làm mất PDF đã lưu
 const dbHocLieuPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open("KhoHocLieuSoDB", 13);
