@@ -890,8 +890,15 @@ function trichXuatSoTrangTuDongMucLuc(vanBanMucLuc, mucTieu) {
 
 function tachSoBaiTuHeaderOCR(rawText) {
     let txt = boDauTiengVietSGK(chuanHoaChuoiTimKiemSGK(rawText));
-    let m = txt.match(/\bbai\s+(\d+)\b/) || txt.match(/^(\d{1,3})\b/);
-    return m ? parseInt(m[1], 10) : null;
+    let m = txt.match(/\bbai\s*(\d{1,3})\b/);
+    if (m) return parseInt(m[1], 10);
+    // Nếu chữ "BÀI" bị ngôi sao/nền màu che, bắt số đứng độc lập (1..150) ở dải đầu trang
+    let mSo = txt.match(/\b(\d{1,3})\b/);
+    if (mSo) {
+        let val = parseInt(mSo[1], 10);
+        if (val >= 1 && val <= 150) return val;
+    }
+    return null;
 }
 
 async function timNhiPhanDauTrangBangOCR(pdfDoc, worker, mucTieu) {
@@ -901,17 +908,20 @@ async function timNhiPhanDauTrangBangOCR(pdfDoc, worker, mucTieu) {
 
     let left = 2;
     let right = tongTrang;
+    let trangKiemTra = Math.floor((left + right) / 2);
     let bestTrang = 1;
     let minDiff = Infinity;
+    const daKiemTra = new Set();
 
-    while (left <= right) {
-        let mid = Math.floor((left + right) / 2);
+    for (let buoc = 0; buoc < 12 && left <= right; buoc++) {
         let timDuocSo = null;
-        let trangKiemTra = mid;
+        let trangDocDuoc = trangKiemTra;
 
-        for (let offset of [0, -1, 1]) {
-            let p = mid + offset;
-            if (p < left || p > right) continue;
+        for (let offset of [0, -1, 1, -2, 2]) {
+            let p = trangKiemTra + offset;
+            if (p < left || p > right || daKiemTra.has(p)) continue;
+            daKiemTra.add(p);
+
             const canvasFull = await renderTrangPdfSangCanvas(pdfDoc, p, 1.6);
             const canvasDai = catVungCanvas(canvasFull, 0, 0, 1, 0.22);
             const { data } = await worker.recognize(canvasDai);
@@ -926,7 +936,7 @@ async function timNhiPhanDauTrangBangOCR(pdfDoc, worker, mucTieu) {
             let soDocDuoc = tachSoBaiTuHeaderOCR(raw);
             if (soDocDuoc !== null) {
                 timDuocSo = soDocDuoc;
-                trangKiemTra = p;
+                trangDocDuoc = p;
                 let diff = Math.abs(soDocDuoc - soBaiMucTieu);
                 if (diff < minDiff) {
                     minDiff = diff;
@@ -936,15 +946,27 @@ async function timNhiPhanDauTrangBangOCR(pdfDoc, worker, mucTieu) {
             }
         }
 
-        if (timDuocSo === null) {
-            break;
-        }
         if (timDuocSo === soBaiMucTieu) {
-            return trangKiemTra;
-        } else if (timDuocSo < soBaiMucTieu) {
-            left = Math.max(mid + 1, trangKiemTra + 1);
+            return trangDocDuoc;
+        }
+
+        if (timDuocSo !== null) {
+            if (timDuocSo < soBaiMucTieu) {
+                left = Math.max(left, trangDocDuoc + 1);
+            } else {
+                right = Math.min(right, trangDocDuoc - 1);
+            }
+            // Nhảy nội suy trực tiếp theo khoảng cách số bài (mỗi bài ~2 trang)
+            let duDoan = trangDocDuoc + (soBaiMucTieu - timDuocSo) * 2;
+            if (duDoan < left || duDoan > right) {
+                duDoan = Math.floor((left + right) / 2);
+            }
+            trangKiemTra = duDoan;
         } else {
-            right = Math.min(mid - 1, trangKiemTra - 1);
+            // Nếu vùng này không đọc được số bài, thử chia đôi khoảng còn lại
+            let mid = Math.floor((left + right) / 2);
+            if (mid === trangKiemTra) break;
+            trangKiemTra = mid;
         }
     }
     return bestTrang;
