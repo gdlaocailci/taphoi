@@ -18,16 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // KHỐI 1: CƠ SỞ DỮ LIỆU INDEXEDDB (THUẬT TOÁN ĐỒNG BỘ PROMISE CHỐNG VƯỢT MẶT)
 // =========================================================================
 const dbHocLieuPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("KhoHocLieuSoDB", 14);
+    const request = indexedDB.open("KhoHocLieuSoDB", 15);
     request.onupgradeneeded = function(event) {
         const db = event.target.result;
         if (db.objectStoreNames.contains("BangTepPDF")) {
             db.deleteObjectStore("BangTepPDF");
         }
         db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
-        if (!db.objectStoreNames.contains("BangMucLucScan")) {
-            db.createObjectStore("BangMucLucScan", { keyPath: "idPdf" });
+        if (db.objectStoreNames.contains("BangMucLucScan")) {
+            db.deleteObjectStore("BangMucLucScan");
         }
+        db.createObjectStore("BangMucLucScan", { keyPath: "idPdf" });
     };
     request.onsuccess = function(event) { resolve(event.target.result); };
     request.onerror = function(event) { console.warn("Lỗi IndexedDB"); resolve(null); };
@@ -823,41 +824,68 @@ function trichXuatSoTrangTuDongMucLuc(vanBanMucLuc, mucTieu) {
     const dongList = String(vanBanMucLuc || '').split(/\r?\n/);
     let ungVienTotNhat = null;
     let diemMax = 0;
+    let danhSachMocBai = [];
 
     for (let i = 0; i < dongList.length; i++) {
         let dongGoc = dongList[i].trim();
         if (!dongGoc) continue;
         let dongChuan = chuanHoaChuoiTimKiemSGK(dongGoc);
         let dongKD = boDauTiengVietSGK(dongChuan);
-        let diem = 0;
 
+        let matchSo = dongGoc.match(/(\d{1,3})[^\d\w]{0,4}$/);
+        if (!matchSo && i + 1 < dongList.length) {
+            matchSo = dongList[i + 1].trim().match(/^(\d{1,3})[^\d\w]{0,4}$/);
+        }
+        let soTrangIn = matchSo ? parseInt(matchSo[1], 10) : null;
+        if (soTrangIn !== null && (soTrangIn < 1 || soTrangIn > 300)) soTrangIn = null;
+
+        if (soTrangIn !== null) {
+            let mMoc = dongKD.match(/^(?:bai|b)\s*(\d{1,3})\b/);
+            if (mMoc) {
+                let bSo = parseInt(mMoc[1], 10);
+                if (bSo >= 1 && bSo <= 200) danhSachMocBai.push({ bai: bSo, trang: soTrangIn });
+            }
+        }
+
+        let diem = 0;
         if (mucTieu.cumDayDu && (khopTuNguyenVenSGK(dongChuan, mucTieu.cumDayDu) || khopTuNguyenVenSGK(dongKD, mucTieu.cumDayDuKD))) {
             diem = 120;
         } else if (mucTieu.maBaiKD && khopTuNguyenVenSGK(dongKD, mucTieu.maBaiKD) && mucTieu.tenCotLoiKD && khopTuNguyenVenSGK(dongKD, mucTieu.tenCotLoiKD)) {
             diem = 110;
+        } else if (mucTieu.soBai && new RegExp(`(?:^|\\s)(?:bai|b)\\s*${escapeRegexSGK(mucTieu.soBai)}(?:$|\\s)`).test(dongKD)) {
+            diem = 90;
         } else if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && (khopTuNguyenVenSGK(dongChuan, mucTieu.tenCotLoi) || khopTuNguyenVenSGK(dongKD, mucTieu.tenCotLoiKD))) {
             diem = 80;
         } else if (mucTieu.maBaiKD && khopTuNguyenVenSGK(dongKD, mucTieu.maBaiKD)) {
             diem = 70;
-        } else if (mucTieu.soBai && new RegExp(`(?:^|\\s)(?:bai|bài|b)\s*${escapeRegexSGK(mucTieu.soBai)}(?:$|\\s)`).test(dongKD)) {
-            diem = 65;
         }
 
-        if (diem > 0) {
-            let matchSo = dongGoc.match(/(\d{1,3})\s*$/);
-            if (!matchSo && i + 1 < dongList.length) {
-                matchSo = dongList[i + 1].trim().match(/^(\d{1,3})\s*$/);
-            }
-            if (matchSo) {
-                let soTrangIn = parseInt(matchSo[1], 10);
-                if (soTrangIn >= 1 && soTrangIn <= 300 && diem > diemMax) {
-                    diemMax = diem;
-                    ungVienTotNhat = soTrangIn;
-                }
-            }
+        if (diem > 0 && soTrangIn !== null && diem > diemMax) {
+            diemMax = diem;
+            ungVienTotNhat = soTrangIn;
         }
     }
-    return ungVienTotNhat;
+
+    if (ungVienTotNhat !== null) return ungVienTotNhat;
+
+    let soBaiTarget = mucTieu.soBai ? parseInt(mucTieu.soBai, 10) : NaN;
+    if (!isNaN(soBaiTarget) && danhSachMocBai.length >= 2) {
+        danhSachMocBai.sort((a, b) => a.bai - b.bai);
+        let truoc = null, sau = null;
+        for (let m of danhSachMocBai) {
+            if (m.bai <= soBaiTarget) truoc = m;
+            if (m.bai >= soBaiTarget && !sau) sau = m;
+        }
+        if (truoc && sau && truoc.bai !== sau.bai) {
+            let tyLe = (soBaiTarget - truoc.bai) / (sau.bai - truoc.bai);
+            return Math.round(truoc.trang + tyLe * (sau.trang - truoc.trang));
+        } else if (truoc) {
+            return truoc.trang + (soBaiTarget - truoc.bai) * 2;
+        } else if (sau) {
+            return Math.max(1, sau.trang - (sau.bai - soBaiTarget) * 2);
+        }
+    }
+    return null;
 }
 
 function tachSoBaiTuHeaderOCR(rawText) {
@@ -909,8 +937,7 @@ async function timNhiPhanDauTrangBangOCR(pdfDoc, worker, mucTieu) {
         }
 
         if (timDuocSo === null) {
-            left = mid + 3;
-            continue;
+            break;
         }
         if (timDuocSo === soBaiMucTieu) {
             return trangKiemTra;
@@ -929,11 +956,10 @@ async function timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu) {
     // 1. Kiểm tra Mục lục đã lưu trong IndexedDB chưa (0ms)
     let dsMucLuc = await docMucLucScanTuDB(idPdf);
     if (Array.isArray(dsMucLuc) && dsMucLuc.length > 0) {
-        for (let m of dsMucLuc) {
-            let trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
-            if (trangIn) {
-                return Math.min(tongTrang, trangIn + 2);
-            }
+        let gopMucLuc = dsMucLuc.map(m => m.text).join('\n');
+        let trangIn = trichXuatSoTrangTuDongMucLuc(gopMucLuc, mucTieu);
+        if (trangIn) {
+            return Math.min(tongTrang, trangIn + 2);
         }
     }
 
@@ -976,12 +1002,11 @@ async function timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu) {
                 await luuMucLucScanVaoDB(idPdf, dsMucLuc);
             }
 
-            for (let m of dsMucLuc) {
-                let trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
-                if (trangIn) {
-                    await worker.terminate();
-                    return Math.min(tongTrang, trangIn + 2);
-                }
+            let gopMucLucMoi = dsMucLuc.map(m => m.text).join('\n');
+            let trangIn = trichXuatSoTrangTuDongMucLuc(gopMucLucMoi, mucTieu);
+            if (trangIn) {
+                await worker.terminate();
+                return Math.min(tongTrang, trangIn + 2);
             }
         }
 
