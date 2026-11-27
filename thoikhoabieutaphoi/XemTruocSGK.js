@@ -18,12 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // KHỐI 1: CƠ SỞ DỮ LIỆU INDEXEDDB (THUẬT TOÁN ĐỒNG BỘ PROMISE CHỐNG VƯỢT MẶT)
 // =========================================================================
 const dbHocLieuPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("KhoHocLieuSoDB", 13);
+    const request = indexedDB.open("KhoHocLieuSoDB", 14);
     request.onupgradeneeded = function(event) {
         const db = event.target.result;
-        if (!db.objectStoreNames.contains("BangTepPDF")) {
-            db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
+        if (db.objectStoreNames.contains("BangTepPDF")) {
+            db.deleteObjectStore("BangTepPDF");
         }
+        db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
         if (!db.objectStoreNames.contains("BangMucLucScan")) {
             db.createObjectStore("BangMucLucScan", { keyPath: "idPdf" });
         }
@@ -431,10 +432,7 @@ function kiemTraLaTepPdf(boDem) {
 
 async function taiDuLieuPdfAnToan(idPdf) {
     let banGhiCache = await docTepTuBoNhoCucBo(idPdf);
-    if (banGhiCache) {
-        if (banGhiCache.loi) {
-            throw new Error("Tệp đã đánh dấu lỗi trước đó, chuyển thẳng Iframe.");
-        }
+    if (banGhiCache && !banGhiCache.loi && banGhiCache.duLieu) {
         document.getElementById('vanBanTrangThaiSgk').innerText = "Truy xuất tức thì từ ổ cứng (0ms)...";
         return banGhiCache.duLieu;
     }
@@ -444,7 +442,7 @@ async function taiDuLieuPdfAnToan(idPdf) {
             document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải SGK siêu tốc từ máy chủ nhà trường...";
             const phanHoiGas = await fetchVoiTimeout(
                 `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=taiPdfSGK&idPdf=${encodeURIComponent(idPdf)}`,
-                20000
+                45000
             );
             if (phanHoiGas.ok) {
                 const duLieuGas = await phanHoiGas.json();
@@ -485,7 +483,7 @@ async function taiDuLieuPdfAnToan(idPdf) {
         console.warn("Tất cả Proxy đều thất bại / quá hạn:", loiProxy);
     }
 
-    await luuTepVaoBoNhoCucBo(idPdf, null, true);
+    // Không lưu cờ lỗi vĩnh viễn để lần sau vẫn thử tải lại PDF
     throw new Error("Không tải được luồng byte PDF, tự động nhảy Iframe.");
 }
 
