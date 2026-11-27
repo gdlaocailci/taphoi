@@ -16,14 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================================
 // KHỐI 1: CƠ SỞ DỮ LIỆU INDEXEDDB (THUẬT TOÁN ĐỒNG BỘ PROMISE CHỐNG VƯỢT MẶT)
 // =========================================================================
-// Ép hệ thống khởi tạo DB xong mới được làm việc khác
+// Nâng version lên 12 để tự động xóa cache lỗi cũ (loi: true) khi nâng cấp thuật toán tải nhanh
 const dbHocLieuPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("KhoHocLieuSoDB", 11);
+    const request = indexedDB.open("KhoHocLieuSoDB", 12);
     request.onupgradeneeded = function(event) {
         const db = event.target.result;
-        if (!db.objectStoreNames.contains("BangTepPDF")) {
-            db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
+        if (db.objectStoreNames.contains("BangTepPDF")) {
+            db.deleteObjectStore("BangTepPDF");
         }
+        db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
     };
     request.onsuccess = function(event) { resolve(event.target.result); };
     request.onerror = function(event) { console.warn("Lỗi IndexedDB"); resolve(null); };
@@ -35,7 +36,6 @@ async function luuTepVaoBoNhoCucBo(idPdf, mangByte, laLoi = false) {
     try {
         const transaction = db.transaction(["BangTepPDF"], "readwrite");
         const store = transaction.objectStore("BangTepPDF");
-        // Lưu kèm cờ 'loi' để biết file này có bị quá tải mạng hay không
         store.put({ idPdf: idPdf, duLieu: mangByte, loi: laLoi, thoiGian: new Date().getTime() });
     } catch (e) { console.warn("Đầy bộ nhớ cục bộ:", e); }
 }
@@ -105,7 +105,6 @@ async function khoiTaoBoNhoHocLieu() {
         for (let i = dongBatDau; i < mangDuLieu.length; i++) {
             let dong = mangDuLieu[i];
             let tenKhoi = dong[0] ? String(dong[0]).trim().toUpperCase() : '';
-            // [NÂNG CẤP]: Xóa toàn bộ khoảng trắng thừa của môn trong CSDL Học liệu
             let tenMon = dong[1] ? String(dong[1]).trim().replace(/\s+/g, '').toLowerCase() : '';
             
             let linkKy1 = (dong.length > 2 && dong[2]) ? String(dong[2]).trim() : ''; 
@@ -135,11 +134,8 @@ function trichXuatIdTuLink(url) {
 // =========================================================================
 window.kichHoatXemTruocSGK = async function(tenKhoiGoc, tenMonGoc, tenBaiHoc, thamSoTuan) {
     const tenKhoiChuan = String(tenKhoiGoc).trim().toUpperCase();
-    
-    // [NÂNG CẤP 1]: Xóa khoảng trắng khi tìm kiếm
     const tenMonChuan = String(tenMonGoc).trim().replace(/\s+/g, '').toLowerCase();
     
-    // [NÂNG CẤP 2]: Bóc tách môn gốc (Ví dụ: hdtn2 -> hdtn)
     let tenMonGocChuan = tenMonChuan;
     const match = tenMonChuan.match(/^(.*?)(\d+)$/);
     if (match) {
@@ -179,7 +175,6 @@ window.kichHoatXemTruocSGK = async function(tenKhoiGoc, tenMonGoc, tenBaiHoc, th
         }
     }
 
-    // [NÂNG CẤP 3]: Tìm link cho môn chia nhỏ trước, nếu không có thì lấy link của cuốn sách môn gốc
     let duLieuMonHoc = boNhoHocLieuSGK[khoaTimKiem] || boNhoHocLieuSGK[khoaTimKiemGoc];
 
     if (!duLieuMonHoc || (!duLieuMonHoc.linkKy1 && !duLieuMonHoc.linkKy2)) {
@@ -241,7 +236,7 @@ window.chuyenKyHocThuCong = async function(kyMoi) {
 };
 
 // =========================================================================
-// KHỐI 4: GIAO DIỆN HTML (GIỮ NGUYÊN BẢN CHUẨN)
+// KHỐI 4: GIAO DIỆN HTML (BỔ SUNG NÚT IN TRANG PDF ĐANG HIỂN THỊ)
 // =========================================================================
 function xayDungKhungGiaoDienXemTruoc() {
     const modalHTML = `
@@ -276,8 +271,12 @@ function xayDungKhungGiaoDienXemTruoc() {
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
 
-                    <div id="nhomCongCuCanvas" class="hidden items-center">
+                    <div id="nhomCongCuCanvas" class="hidden items-center gap-1">
                         <div class="h-6 w-px bg-white/30 mx-1"></div>
+                        <button onclick="inTrangPdfHienTai()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-1 px-2.5 rounded shadow transition text-sm flex items-center gap-1.5 mr-1" title="In hoặc lưu PDF trang đang hiển thị">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            <span class="hidden sm:inline">In trang</span>
+                        </button>
                         <button onclick="dieuChinhThuPhong(0.2)" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-md text-white transition" title="Phóng to"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg></button>
                         <button onclick="dieuChinhThuPhong(-0.2)" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-md text-white transition mr-2" title="Thu nhỏ"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg></button>
                     </div>
@@ -362,10 +361,9 @@ function dongModalXemTruoc() {
 }
 
 // =========================================================================
-// KHỐI 5: ĐỘNG CƠ TẢI SIÊU TỐC (MẠNG + CACHE + RENDER LÕI + TÌM BÀI HỌC)
+// KHỐI 5: ĐỘNG CƠ TẢI SIÊU TỐC (INDEXEDDB -> APPS SCRIPT -> ĐUA PROXY SONG SONG)
 // =========================================================================
-// Thuật toán: Bấm giờ mạng. Nếu proxy quá 20s không trả file, ngắt lập tức để khỏi treo máy.
-async function fetchVoiTimeout(url, thoiGianMax = 20000) {
+async function fetchVoiTimeout(url, thoiGianMax = 8000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), thoiGianMax);
     try {
@@ -378,55 +376,92 @@ async function fetchVoiTimeout(url, thoiGianMax = 20000) {
     }
 }
 
+function giaiMaBase64SangArrayBuffer(base64) {
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+function kiemTraLaTepPdf(boDem) {
+    if (!boDem || boDem.byteLength < 5) return false;
+    const kiemTra = new Uint8Array(boDem.slice(0, 5));
+    return kiemTra[0] === 37 && kiemTra[1] === 80 && kiemTra[2] === 68 && kiemTra[3] === 70 && kiemTra[4] === 45;
+}
+
 async function taiDuLieuPdfAnToan(idPdf) {
-    // Bước 1: Đọc DB an toàn nhờ luồng Promise (Không bao giờ bị lỗi vượt mặt)
+    // Bước 1: Đọc IndexedDB (0ms)
     let banGhiCache = await docTepTuBoNhoCucBo(idPdf);
     if (banGhiCache) {
-        // [CƠ CHẾ DANH SÁCH ĐEN]: Nếu lần trước file này đã thất bại (mạng yếu/file quá to)
-        // Hệ thống sẽ NHỚ LỖI và đẩy ngay sang Iframe trong 0.1s, không bắt chờ 20s nữa.
         if (banGhiCache.loi) {
-            throw new Error("Tệp lớn, chuyển thẳng lưới an toàn Iframe.");
+            throw new Error("Tệp đã đánh dấu lỗi trước đó, chuyển thẳng Iframe.");
         }
-        document.getElementById('vanBanTrangThaiSgk').innerText = "Truy xuất tức thì từ ổ cứng (Không cần mạng)...";
+        document.getElementById('vanBanTrangThaiSgk').innerText = "Truy xuất tức thì từ ổ cứng (0ms)...";
         return banGhiCache.duLieu;
     }
 
-    document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải Sách nguyên bản từ máy chủ (Chỉ đợi 1 lần duy nhất)...";
+    // Bước 2: Ưu tiên tải trực tiếp qua máy chủ Google Apps Script của trường (1-2s, không bị CORS hay trang cảnh báo Drive)
+    if (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.URL_API_MAY_CHU) {
+        try {
+            document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải SGK siêu tốc từ máy chủ nhà trường...";
+            const phanHoiGas = await fetchVoiTimeout(
+                `${CAU_HINH_FRONTEND.URL_API_MAY_CHU}?thaoTac=taiPdfSGK&idPdf=${encodeURIComponent(idPdf)}`,
+                18000
+            );
+            if (phanHoiGas.ok) {
+                const duLieuGas = await phanHoiGas.json();
+                if (duLieuGas && duLieuGas.trangThai === 'thanh_cong' && duLieuGas.base64) {
+                    const boDemGas = giaiMaBase64SangArrayBuffer(duLieuGas.base64);
+                    if (kiemTraLaTepPdf(boDemGas)) {
+                        await luuTepVaoBoNhoCucBo(idPdf, boDemGas, false);
+                        return boDemGas;
+                    }
+                }
+            }
+        } catch (loiGas) {
+            console.warn("Apps Script chưa có endpoint taiPdfSGK hoặc quá tải, chuyển sang đua Proxy song song:", loiGas);
+        }
+    }
+
+    // Bước 3: Đua SONG SONG các Proxy (Promise.any) với timeout 8s thay vì chờ tuần tự 20s x 3 = 60s
+    document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải Sách nguyên bản qua luồng tăng tốc song song...";
     const dsProxy = [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url=',
         'https://api.codetabs.com/v1/proxy?quest='
     ];
     const linkGoc = encodeURIComponent(`https://drive.google.com/uc?export=download&confirm=t&id=${idPdf}`);
-    
-    for (let proxy of dsProxy) {
-        try {
-            let phanHoi = await fetchVoiTimeout(proxy + linkGoc, 20000); 
-            if (!phanHoi.ok) continue;
-            
-            let boDem = await phanHoi.arrayBuffer();
-            let kiemTra = new Uint8Array(boDem.slice(0, 5));
-            if (kiemTra[0]===37 && kiemTra[1]===80 && kiemTra[2]===68 && kiemTra[3]===70 && kiemTra[4]===45) {
-                // Tải thành công -> Lưu vào ổ cứng với cờ loi = false
-                await luuTepVaoBoNhoCucBo(idPdf, boDem, false);
+
+    try {
+        const boDemNhanhNhat = await Promise.any(
+            dsProxy.map(async (proxy) => {
+                const phanHoi = await fetchVoiTimeout(proxy + linkGoc, 8000);
+                if (!phanHoi.ok) throw new Error("Proxy HTTP error");
+                const boDem = await phanHoi.arrayBuffer();
+                if (!kiemTraLaTepPdf(boDem)) throw new Error("Không phải dữ liệu PDF hợp lệ");
                 return boDem;
-            }
-        } catch (loi) {
-            console.warn("Proxy quá tải / Timeout:", proxy);
-        }
+            })
+        );
+        await luuTepVaoBoNhoCucBo(idPdf, boDemNhanhNhat, false);
+        return boDemNhanhNhat;
+    } catch (loiProxy) {
+        console.warn("Tất cả Proxy đều thất bại / quá hạn:", loiProxy);
     }
-    
-    // Nếu cả 3 proxy đều treo -> Lưu trạng thái LỖI vào ổ cứng để lần sau bypass thẳng proxy
+
     await luuTepVaoBoNhoCucBo(idPdf, null, true);
-    throw new Error("Vượt quá giới hạn Proxy, tự động nhảy Iframe.");
+    throw new Error("Không tải được luồng byte PDF, tự động nhảy Iframe.");
 }
 
 async function xuLyDocPDF(idPdf, tenBaiCanTim = '') {
     if (typeof pdfjsLib === 'undefined') {
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
             script.onload = resolve;
+            script.onerror = reject;
             document.head.appendChild(script);
         });
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -441,7 +476,7 @@ async function xuLyDocPDF(idPdf, tenBaiCanTim = '') {
             data: duLieuPdf,
             cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/',
             cMapPacked: true,
-            disableStream: true,    // Tắt luồng ảo (Tăng tốc vì file đã trong máy)
+            disableStream: true,
             disableAutoFetch: true,
             disableRange: true
         });
@@ -492,7 +527,6 @@ function chuanHoaChuoiTimKiemSGK(str) {
 }
 
 function phanTichTenBaiSGK(tenBaiGoc) {
-    // Loại bỏ hậu tố "(Tiết 1)", "(Tiết 2)", "- Tiết 3"... trên UI PPCT
     let sachTiet = String(tenBaiGoc || '')
         .normalize('NFC')
         .replace(/(?:\s*[-–]\s*)?\(?\s*tiết\s*\d+\s*\)?\s*$/i, '')
@@ -502,14 +536,12 @@ function phanTichTenBaiSGK(tenBaiGoc) {
     let tenPhu = '';
     let tenCotLoi = sachTiet;
 
-    // Dạng 1: "Tuần 12 - Sinh hoạt dưới cờ: Trưng bày Góc tri ân"
     let matchTuan = sachTiet.match(/^((?:tuần|chủ\s*đề|chương)\s*\d+)\s*[-–:]\s*([^:]+)\s*:\s*(.+)$/i);
     if (matchTuan) {
         maBai = chuanHoaChuoiTimKiemSGK(matchTuan[1]);
         tenPhu = chuanHoaChuoiTimKiemSGK(matchTuan[2]);
         tenCotLoi = chuanHoaChuoiTimKiemSGK(matchTuan[3]);
     } else {
-        // Dạng 2: "Bài 51: et êt it", "Bài 10: Đi học đúng giờ", "Bài 11: Phép trừ trong phạm vi 10"
         let matchBai = sachTiet.match(/^((?:bài|tuần|chủ\s*đề|chương|tiết)\s*\d+)\s*[:\-–.]?\s*(.*)$/i);
         if (matchBai) {
             maBai = chuanHoaChuoiTimKiemSGK(matchBai[1]);
@@ -550,7 +582,6 @@ function chamDiemTrangPDF(textTrang, soTrang, mucTieu) {
         }
     }
 
-    // Phạt điểm trang Mục lục ở đầu sách để tránh dừng nhầm
     if (soTrang <= 10) {
         let soLanChuBai = (textTrang.match(/\bbài\s+\d+\b/g) || []).length;
         if (textTrang.includes('mục lục') || soLanChuBai >= 4) {
@@ -602,7 +633,6 @@ async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
         return { trang: 1, laBanScan: false };
     }
 
-    // TẦNG 1A: Tra cứu Bookmark / Outline có sẵn của PDF
     try {
         const outline = await pdfDoc.getOutline();
         if (Array.isArray(outline) && outline.length > 0) {
@@ -633,7 +663,6 @@ async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
         }
     } catch (e) {}
 
-    // TẦNG 1B: Quét 10 trang đầu (kiểm tra PDF scan + định vị số trang qua Mục lục)
     const soTrangDau = Math.min(10, tongTrang);
     const textTrangDau = await Promise.all(
         Array.from({ length: soTrangDau }, (_, i) => layTextTrangPDF(pdfDoc, idPdf, i + 1))
@@ -665,7 +694,6 @@ async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
         }
     }
 
-    // TẦNG 2: Quét song song theo lô 12 trang từ đầu đến cuối sách (dừng sớm khi điểm >= 90)
     const kqToanSach = await quetLoTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 12, 90);
     return {
         trang: kqToanSach.diemMax >= 30 ? kqToanSach.trangTotNhat : 1,
@@ -679,7 +707,6 @@ async function veTrangCanVasPdf(soTrang) {
     document.getElementById('nhapSoTrangNhanh').value = soTrang;
     document.getElementById('thanhTruotTrang').value = soTrang;
     
-    // THUẬT TOÁN ĐỆM LÕI (Không giải mã lại trang đã xem)
     let trang = boNhoTrangPdfGiaiMa[soTrang];
     if (!trang) {
         trang = await theHienPdfHienTai.getPage(soTrang);
@@ -695,6 +722,64 @@ async function veTrangCanVasPdf(soTrang) {
 
     const renderContext = { canvasContext: ctx, viewport: viewport };
     await trang.render(renderContext).promise;
+}
+
+async function inTrangPdfHienTai() {
+    if (!theHienPdfHienTai) return;
+
+    try {
+        let trang = boNhoTrangPdfGiaiMa[trangHienTaiPDF];
+        if (!trang) {
+            trang = await theHienPdfHienTai.getPage(trangHienTaiPDF);
+            boNhoTrangPdfGiaiMa[trangHienTaiPDF] = trang;
+        }
+
+        // Kết xuất độ nét cao (scale 2.0) ra canvas tạm để in/lưu PDF sắc nét
+        const viewportIn = trang.getViewport({ scale: 2.0 });
+        const canvasTam = document.createElement('canvas');
+        canvasTam.width = viewportIn.width;
+        canvasTam.height = viewportIn.height;
+        const ctxTam = canvasTam.getContext('2d');
+
+        await trang.render({ canvasContext: ctxTam, viewport: viewportIn }).promise;
+        const imgDataUrl = canvasTam.toDataURL('image/png');
+
+        // Dùng iframe ẩn để tránh bị trình duyệt chặn popup
+        let iframeIn = document.getElementById('iframeInTrangSGK');
+        if (!iframeIn) {
+            iframeIn = document.createElement('iframe');
+            iframeIn.id = 'iframeInTrangSGK';
+            iframeIn.style.position = 'fixed';
+            iframeIn.style.right = '0';
+            iframeIn.style.bottom = '0';
+            iframeIn.style.width = '0';
+            iframeIn.style.height = '0';
+            iframeIn.style.border = '0';
+            document.body.appendChild(iframeIn);
+        }
+
+        const tieuDeIn = `${thongTinBaiHocHienTai.mon || 'SGK'} - Trang ${trangHienTaiPDF}`;
+        const docIn = iframeIn.contentWindow.document;
+        docIn.open();
+        docIn.write(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${tieuDeIn}</title>
+    <style>
+        @page { size: auto; margin: 0; }
+        html, body { margin: 0; padding: 0; background: #fff; display: flex; justify-content: center; align-items: center; height: 100%; }
+        img { max-width: 100%; max-height: 100vh; object-fit: contain; display: block; }
+    </style>
+</head>
+<body>
+    <img src="${imgDataUrl}" onload="window.focus(); window.print();" />
+</body>
+</html>`);
+        docIn.close();
+    } catch (loi) {
+        alert("Không thể tạo bản in trang PDF: " + loi.message);
+    }
 }
 
 function chuyenTrangPdf(buocNhay) {
