@@ -795,7 +795,7 @@ async function napThuVienOCR() {
     }
 }
 
-async function catDaiDauTrangCanvas(pdfDoc, soTrang, tyLeChieuCao = 0.22, scale = 1.5) {
+async function catDaiDauTrangCanvas(pdfDoc, soTrang, tyLeChieuCao = 0.22, scale = 2.0) {
     const page = await pdfDoc.getPage(soTrang);
     const viewport = page.getViewport({ scale: scale });
     const canvas = document.createElement('canvas');
@@ -803,6 +803,19 @@ async function catDaiDauTrangCanvas(pdfDoc, soTrang, tyLeChieuCao = 0.22, scale 
     canvas.height = Math.floor(viewport.height * tyLeChieuCao);
     const ctx = canvas.getContext('2d');
     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+    // Chuyển sang ảnh xám tăng tương phản để OCR đọc rõ chữ trắng trên nền màu xanh/đỏ
+    try {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+            let lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            // Đẩy sáng/tối tương phản cao
+            let v = lum > 175 ? 0 : 255;
+            d[i] = d[i + 1] = d[i + 2] = v;
+        }
+        ctx.putImageData(imgData, 0, 0);
+    } catch (e) {}
     return canvas;
 }
 
@@ -862,7 +875,11 @@ async function timNhiPhanDauTrangBangOCR(pdfDoc, idPdf, mucTieu) {
                 }
             }
 
-            if (timDuocSo === null) break;
+            if (timDuocSo === null) {
+                // Không đọc được số bài quanh điểm giữa -> thu hẹp nhẹ về phía trước để thử tiếp
+                left = mid + 3;
+                continue;
+            }
             if (timDuocSo === soBaiMucTieu) {
                 await worker.terminate();
                 return trangKiemTra;
@@ -888,25 +905,33 @@ async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
         return { trang: 1, laBanScan: false, highlight: null };
     }
 
-    // Kiểm tra nhanh 10 trang đầu xem sách có lớp text không
-    const soTrangKT = Math.min(10, tongTrang);
-    const linesDau = await Promise.all(
-        Array.from({ length: soTrangKT }, (_, i) => layDongTrangPDF(pdfDoc, idPdf, i + 1))
-    );
-    const tongKyTuDau = linesDau.reduce((s, arr) => s + arr.reduce((a, l) => a + l.chuan.length, 0), 0);
+    // Lấy mẫu 6 trang rải đều toàn sách (tránh kết luận nhầm chỉ vì 10 trang đầu là ảnh bìa)
+    const trangMau = Array.from(new Set([
+        1,
+        Math.max(1, Math.floor(tongTrang * 0.15)),
+        Math.max(1, Math.floor(tongTrang * 0.35)),
+        Math.max(1, Math.floor(tongTrang * 0.55)),
+        Math.max(1, Math.floor(tongTrang * 0.75)),
+        Math.max(1, tongTrang - 2)
+    ]));
+    const linesMau = await Promise.all(trangMau.map(p => layDongTrangPDF(pdfDoc, idPdf, p)));
+    const tongKyTuMau = linesMau.reduce((s, arr) => s + arr.reduce((a, l) => a + l.chuan.length, 0), 0);
 
-    if (tongKyTuDau < 30) {
-        const trangOcr = await timNhiPhanDauTrangBangOCR(pdfDoc, idPdf, mucTieu);
-        return { trang: trangOcr, laBanScan: true, highlight: null };
+    if (tongKyTuMau >= 30) {
+        // Sách có lớp chữ -> CHỈ QUÉT 28% ĐẦU MỖI TRANG
+        const kq = await quetLoDauTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 16, 180);
+        if (kq.diemMax >= 60) {
+            return {
+                trang: kq.trangTotNhat,
+                laBanScan: false,
+                highlight: kq.highlightTotNhat
+            };
+        }
     }
 
-    // Bỏ qua Mục lục & thân bài: CHỈ QUÉT 28% ĐẦU MỖI TRANG
-    const kq = await quetLoDauTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 16, 180);
-    return {
-        trang: kq.diemMax >= 60 ? kq.trangTotNhat : 1,
-        laBanScan: false,
-        highlight: kq.diemMax >= 60 ? kq.highlightTotNhat : null
-    };
+    // Nếu sách scan hoàn toàn HOẶC tiêu đề đầu trang được vẽ bằng ảnh đồ họa -> dùng OCR dải đầu trang
+    const trangOcr = await timNhiPhanDauTrangBangOCR(pdfDoc, idPdf, mucTieu);
+    return { trang: trangOcr, laBanScan: tongKyTuMau < 30, highlight: null };
 }
 
 async function veTrangCanVasPdf(soTrang) {
