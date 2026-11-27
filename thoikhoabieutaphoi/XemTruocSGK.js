@@ -679,96 +679,80 @@ async function layDongTrangPDF(pdfDoc, idPdf, soTrang) {
     return lines;
 }
 
-function chamDiemCacDongTrongTrangSGK(lines, soTrang, mucTieu) {
+function escapeRegexSGK(str) {
+    return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function khopTuNguyenVenSGK(textChuan, cumTu) {
+    if (!textChuan || !cumTu) return false;
+    let re = new RegExp('(?:^|\\s)' + escapeRegexSGK(cumTu.trim()) + '(?:$|\\s)');
+    return re.test(textChuan);
+}
+
+// CHỈ ĐỌC PHẦN ĐẦU TRANG (28% phía trên cùng của trang PDF - nơi chứa dải tên Bài học)
+function chamDiemDauTrangSGK(lines, soTrang, mucTieu) {
     if (!Array.isArray(lines) || lines.length === 0) return { diem: 0, highlight: null };
 
-    // Kiểm tra xem đây có phải trang Mục lục ở đầu sách không
+    // Lọc lấy duy nhất các dòng nằm ở 28% đầu trang
+    const dongDauTrang = lines.filter(l => l.topPct <= 28);
+    if (dongDauTrang.length === 0) return { diem: 0, highlight: null };
+
+    // Bỏ qua trang Mục lục ở đầu sách
     let textCaTrang = lines.map(l => l.chuan).join(' ');
     let soDongBai = lines.filter(l => /^(bài|bai)\s+\d+/i.test(l.chuan)).length;
-    let laTrangMucLuc = (soTrang <= 12) && (textCaTrang.includes('mục lục') || soDongBai >= 4);
+    if (soTrang <= 12 && (textCaTrang.includes('mục lục') || soDongBai >= 4)) {
+        return { diem: 0, highlight: null };
+    }
 
-    let bestDiem = 0;
-    let bestBox = null;
+    let headerChuan = dongDauTrang.map(l => l.chuan).join(' ');
+    let headerKD = dongDauTrang.map(l => l.kd).join(' ');
 
-    for (let i = 0; i < lines.length; i++) {
-        let b = lines[i];
-        // Ghép tối đa 2 dòng liền kề phòng tên bài xuống dòng (hoặc "51" ở trên, "et êt it" ở dưới)
-        let gopChuan = b.chuan;
-        let gopKD = b.kd;
-        let gopSoDong = 1;
-        if (i + 1 < lines.length && lines[i + 1].raw.length <= 120) {
-            gopChuan += ' ' + lines[i + 1].chuan;
-            gopKD += ' ' + lines[i + 1].kd;
-            gopSoDong = 2;
-        }
+    let diem = 0;
+    let khopMaBai = !!(mucTieu.maBaiKD && khopTuNguyenVenSGK(headerKD, mucTieu.maBaiKD));
+    let khopTenBai = !!(
+        (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 3 && khopTuNguyenVenSGK(headerChuan, mucTieu.tenCotLoi)) ||
+        (mucTieu.tenCotLoiKD && mucTieu.tenCotLoiKD.length >= 3 && khopTuNguyenVenSGK(headerKD, mucTieu.tenCotLoiKD))
+    );
+    let khopSoBai = !!(mucTieu.soBai && khopTuNguyenVenSGK(headerKD, mucTieu.soBai));
 
-        let diem = 0;
-        if (mucTieu.cumDayDu && b.chuan.includes(mucTieu.cumDayDu)) {
-            diem += 140;
-        } else if (mucTieu.cumDayDu && gopChuan.includes(mucTieu.cumDayDu)) {
-            diem += 130;
-        } else if (mucTieu.cumDayDuKD && gopKD.includes(mucTieu.cumDayDuKD)) {
-            diem += 115;
-        } else {
-            if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && b.chuan.includes(mucTieu.tenCotLoi)) {
-                diem += 85;
-            } else if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && gopChuan.includes(mucTieu.tenCotLoi)) {
-                diem += 75;
-            } else if (mucTieu.tenCotLoiKD && mucTieu.tenCotLoiKD.length >= 4 && gopKD.includes(mucTieu.tenCotLoiKD)) {
-                diem += 65;
-            }
-
-            if (mucTieu.tenPhu && mucTieu.tenPhu.length >= 4 && gopChuan.includes(mucTieu.tenPhu)) {
-                diem += 20;
-            }
-            if (mucTieu.maBaiKD && new RegExp(`\\b${mucTieu.maBaiKD}\\b`).test(gopKD)) {
-                diem += 35;
-            } else if (mucTieu.soBai && new RegExp(`\\b${mucTieu.soBai}\\b`).test(gopKD) && diem >= 60) {
-                // Khớp số bài (VD: vòng tròn số "51" ngay cạnh "et êt it" trong Tiếng Việt 1)
-                diem += 35;
-            }
-        }
-
-        if (diem < 50 && mucTieu.tuKhoaKD.length >= 2) {
-            let soTuKhop = mucTieu.tuKhoaKD.filter(tu => gopKD.includes(tu)).length;
-            let tyLe = soTuKhop / mucTieu.tuKhoaKD.length;
-            if (tyLe >= 0.75) {
-                diem += Math.round(tyLe * 50);
-            }
-        }
-
-        if (diem > 0) {
-            // Ưu tiên nếu dòng nằm ở nửa trên của trang (tiêu đề bài mới thường nằm đầu trang)
-            if (b.topPct <= 45) diem += 15;
-            if (laTrangMucLuc) diem -= 90;
-
-            if (diem > bestDiem) {
-                bestDiem = diem;
-                let boxBottom = b.topPct + b.heightPct;
-                let boxLeft = b.leftPct;
-                let boxRight = b.leftPct + b.widthPct;
-                if (gopSoDong >= 2 && !b.chuan.includes(mucTieu.tenCotLoi)) {
-                    let nx = lines[i + 1];
-                    boxBottom = Math.max(boxBottom, nx.topPct + nx.heightPct);
-                    boxLeft = Math.min(boxLeft, nx.leftPct);
-                    boxRight = Math.max(boxRight, nx.leftPct + nx.widthPct);
-                }
-                bestBox = {
-                    trang: soTrang,
-                    topPct: b.topPct,
-                    leftPct: boxLeft,
-                    widthPct: Math.min(100 - boxLeft, boxRight - boxLeft),
-                    heightPct: Math.max(2, boxBottom - b.topPct)
-                };
-            }
+    if (khopMaBai && khopTenBai) {
+        diem = 200; // Khớp tuyệt đối cả "Bài XX" và "Tên bài" ở đầu trang
+    } else if (khopSoBai && khopTenBai) {
+        diem = 180; // Khớp số bài (trong ngôi sao/vòng tròn) + Tên bài ở đầu trang
+    } else if (khopTenBai) {
+        diem = 120; // Khớp chính xác nguyên tên bài ở đầu trang
+    } else if (khopMaBai) {
+        diem = 100; // Khớp đúng "Bài XX" ở đầu trang (phòng trường hợp tên vần được vẽ bằng ảnh vector)
+    } else if (mucTieu.tuKhoaKD.length >= 2) {
+        let soTuKhop = mucTieu.tuKhoaKD.filter(tu => khopTuNguyenVenSGK(headerKD, tu)).length;
+        let tyLe = soTuKhop / mucTieu.tuKhoaKD.length;
+        if (tyLe >= 0.75) {
+            diem = Math.round(tyLe * 80);
         }
     }
 
-    return { diem: bestDiem, highlight: bestBox };
+    if (diem <= 0) return { diem: 0, highlight: null };
+
+    // Tính khung bôi vàng bao trọn vùng tiêu đề ở đầu trang
+    let boxTop = Math.min(...dongDauTrang.map(l => l.topPct));
+    let boxBottom = Math.max(...dongDauTrang.map(l => l.topPct + l.heightPct));
+    let boxLeft = Math.min(...dongDauTrang.map(l => l.leftPct));
+    let boxRight = Math.max(...dongDauTrang.map(l => l.leftPct + l.widthPct));
+
+    return {
+        diem: diem,
+        highlight: {
+            trang: soTrang,
+            topPct: boxTop,
+            leftPct: boxLeft,
+            widthPct: Math.min(100 - boxLeft, boxRight - boxLeft),
+            heightPct: Math.max(2, boxBottom - boxTop)
+        }
+    };
 }
 
-async function quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThuocLo = 12, nguongDungSom = 100) {
-    let trangTotNhat = tuTrang;
+async function quetLoDauTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThuocLo = 16, nguongDungSom = 180) {
+    let trangTotNhat = 1;
     let diemMax = 0;
     let highlightTotNhat = null;
 
@@ -779,7 +763,7 @@ async function quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThu
 
         let dsLines = await Promise.all(dsSoTrang.map(p => layDongTrangPDF(pdfDoc, idPdf, p)));
         for (let i = 0; i < dsSoTrang.length; i++) {
-            let kq = chamDiemCacDongTrongTrangSGK(dsLines[i], dsSoTrang[i], mucTieu);
+            let kq = chamDiemDauTrangSGK(dsLines[i], dsSoTrang[i], mucTieu);
             if (kq.diem > diemMax) {
                 diemMax = kq.diem;
                 trangTotNhat = dsSoTrang[i];
@@ -792,7 +776,7 @@ async function quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThu
 }
 
 // =========================================================================
-// BỘ MÁY OCR TESSERACT.JS CHO SÁCH ẢNH SCAN (ĐỌC MỤC LỤC 1 LẦN + CACHE DB)
+// BỘ MÁY OCR CHỈ ĐỌC DẢI ĐẦU TRANG (22% TRÊN CÙNG) + TÌM KIẾM NHỊ PHÂN CHO SÁCH SCAN
 // =========================================================================
 async function napThuVienOCR() {
     if (typeof Tesseract !== 'undefined') return true;
@@ -811,212 +795,117 @@ async function napThuVienOCR() {
     }
 }
 
-async function docAnhTrangPdfSangCanvas(pdfDoc, soTrang, scale = 1.5, chiPhanDau = false) {
+async function catDaiDauTrangCanvas(pdfDoc, soTrang, tyLeChieuCao = 0.22, scale = 1.5) {
     const page = await pdfDoc.getPage(soTrang);
     const viewport = page.getViewport({ scale: scale });
     const canvas = document.createElement('canvas');
     canvas.width = viewport.width;
-    canvas.height = chiPhanDau ? Math.floor(viewport.height * 0.35) : viewport.height;
+    canvas.height = Math.floor(viewport.height * tyLeChieuCao);
     const ctx = canvas.getContext('2d');
     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
     return canvas;
 }
 
-function trichXuatSoTrangTuDongMucLuc(vanBanMucLuc, mucTieu) {
-    const dongList = String(vanBanMucLuc || '').split(/\r?\n/);
-    let ungVienTotNhat = null;
-    let diemMax = 0;
-
-    for (let i = 0; i < dongList.length; i++) {
-        let dongGoc = dongList[i].trim();
-        if (!dongGoc) continue;
-        let dongChuan = chuanHoaChuoiTimKiemSGK(dongGoc);
-        let dongKD = boDauTiengVietSGK(dongChuan);
-        let diem = 0;
-
-        if (mucTieu.cumDayDu && (dongChuan.includes(mucTieu.cumDayDu) || dongKD.includes(mucTieu.cumDayDuKD))) {
-            diem = 100;
-        } else if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && (dongChuan.includes(mucTieu.tenCotLoi) || dongKD.includes(mucTieu.tenCotLoiKD))) {
-            diem = 75;
-        } else if (mucTieu.maBaiKD && new RegExp(`\\b${mucTieu.maBaiKD}\\b`).test(dongKD)) {
-            diem = 45;
-        } else if (mucTieu.tuKhoaKD.length >= 2) {
-            let soTuKhop = mucTieu.tuKhoaKD.filter(t => dongKD.includes(t)).length;
-            if (soTuKhop / mucTieu.tuKhoaKD.length >= 0.7) diem = 55;
-        }
-
-        if (diem > 0) {
-            let matchSo = dongGoc.match(/(\d{1,3})\s*$/);
-            if (!matchSo && i + 1 < dongList.length) {
-                matchSo = dongList[i + 1].trim().match(/(\d{1,3})\s*$/);
-            }
-            if (matchSo) {
-                let soTrangIn = parseInt(matchSo[1], 10);
-                if (soTrangIn >= 1 && soTrangIn <= 300 && diem > diemMax) {
-                    diemMax = diem;
-                    ungVienTotNhat = soTrangIn;
-                }
-            }
-        }
-    }
-    return ungVienTotNhat;
+function tachSoBaiTuHeaderOCR(rawText) {
+    let txt = boDauTiengVietSGK(chuanHoaChuoiTimKiemSGK(rawText));
+    let m = txt.match(/\bbai\s+(\d+)\b/) || txt.match(/^(\d{1,3})\b/);
+    return m ? parseInt(m[1], 10) : null;
 }
 
-async function timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu) {
+async function timNhiPhanDauTrangBangOCR(pdfDoc, idPdf, mucTieu) {
     const tongTrang = pdfDoc.numPages;
-    let dsMucLuc = await docMucLucScanTuDB(idPdf);
+    const daNapOcr = await napThuVienOCR();
+    if (!daNapOcr) return 1;
 
-    if (!dsMucLuc) {
-        const daNapOcr = await napThuVienOCR();
-        if (!daNapOcr) return 1;
+    let soBaiMucTieu = mucTieu.soBai ? parseInt(mucTieu.soBai, 10) : NaN;
+    if (isNaN(soBaiMucTieu)) return 1;
 
-        document.getElementById('vanBanTrangThaiSgk').innerText = "Sách ảnh scan: Đang đọc Mục lục bằng OCR (chỉ làm 1 lần)...";
-        const worker = await Tesseract.createWorker('vie');
-        dsMucLuc = [];
-        const maxTrangMucLuc = Math.min(7, tongTrang);
+    document.getElementById('vanBanTrangThaiSgk').innerText = `Sách ảnh scan: Đang dò nhanh đầu trang tìm Bài ${soBaiMucTieu}...`;
+    const worker = await Tesseract.createWorker('vie');
 
-        try {
-            for (let p = 2; p <= maxTrangMucLuc; p++) {
-                const canvas = await docAnhTrangPdfSangCanvas(pdfDoc, p, 1.5, false);
-                const { data } = await worker.recognize(canvas);
-                const rawText = (data && data.text) ? data.text : '';
-                dsMucLuc.push({ page: p, text: rawText });
+    try {
+        let left = 2;
+        let right = tongTrang;
+        let bestTrang = 1;
+        let minDiff = Infinity;
 
-                let low = rawText.toLowerCase();
-                if (low.includes('mục lục') || (low.match(/\bbài\s*\d+/g) || []).length >= 3) {
-                    if (p + 1 <= maxTrangMucLuc) {
-                        const canvasKe = await docAnhTrangPdfSangCanvas(pdfDoc, p + 1, 1.5, false);
-                        const resKe = await worker.recognize(canvasKe);
-                        dsMucLuc.push({ page: p + 1, text: (resKe.data && resKe.data.text) ? resKe.data.text : '' });
+        while (left <= right) {
+            let mid = Math.floor((left + right) / 2);
+            let timDuocSo = null;
+            let trangKiemTra = mid;
+
+            // Nếu trang mid là trang giữa bài (Tiết 2) không có tiêu đề "Bài X", dịch lùi tối đa 2 trang để đọc tiêu đề
+            for (let offset of [0, -1, 1, -2, 2]) {
+                let p = mid + offset;
+                if (p < left || p > right) continue;
+                const canvasDai = await catDaiDauTrangCanvas(pdfDoc, p, 0.22, 1.5);
+                const { data } = await worker.recognize(canvasDai);
+                let raw = (data && data.text) ? data.text : '';
+                let cleanKD = boDauTiengVietSGK(chuanHoaChuoiTimKiemSGK(raw));
+
+                if ((mucTieu.tenCotLoiKD && mucTieu.tenCotLoiKD.length >= 4 && khopTuNguyenVenSGK(cleanKD, mucTieu.tenCotLoiKD)) ||
+                    (mucTieu.maBaiKD && khopTuNguyenVenSGK(cleanKD, mucTieu.maBaiKD))) {
+                    await worker.terminate();
+                    return p;
+                }
+
+                let soDocDuoc = tachSoBaiTuHeaderOCR(raw);
+                if (soDocDuoc !== null) {
+                    timDuocSo = soDocDuoc;
+                    trangKiemTra = p;
+                    let diff = Math.abs(soDocDuoc - soBaiMucTieu);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestTrang = p;
                     }
                     break;
                 }
             }
-            if (dsMucLuc.length > 0) {
-                await luuMucLucScanVaoDB(idPdf, dsMucLuc);
-            }
 
-            let trangIn = null;
-            for (let m of dsMucLuc) {
-                trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
-                if (trangIn) break;
-            }
-
-            if (trangIn) {
-                document.getElementById('vanBanTrangThaiSgk').innerText = `Đã thấy ở trang sách ${trangIn}, đang chốt đúng trang PDF...`;
-                let uocLuong = Math.min(tongTrang, trangIn + 2);
-                const dsThu = [uocLuong, Math.min(tongTrang, trangIn + 3), Math.min(tongTrang, trangIn + 1), Math.min(tongTrang, trangIn + 4), trangIn];
-                for (let pThu of dsThu) {
-                    if (pThu < 1 || pThu > tongTrang) continue;
-                    const canvasDau = await docAnhTrangPdfSangCanvas(pdfDoc, pThu, 1.3, true);
-                    const { data } = await worker.recognize(canvasDau);
-                    let txtDau = boDauTiengVietSGK(chuanHoaChuoiTimKiemSGK(data && data.text ? data.text : ''));
-                    if ((mucTieu.tenCotLoiKD && txtDau.includes(mucTieu.tenCotLoiKD)) ||
-                        (mucTieu.maBaiKD && new RegExp(`\\b${mucTieu.maBaiKD}\\b`).test(txtDau))) {
-                        await worker.terminate();
-                        return pThu;
-                    }
-                }
+            if (timDuocSo === null) break;
+            if (timDuocSo === soBaiMucTieu) {
                 await worker.terminate();
-                return uocLuong;
+                return trangKiemTra;
+            } else if (timDuocSo < soBaiMucTieu) {
+                left = Math.max(mid + 1, trangKiemTra + 1);
+            } else {
+                right = Math.min(mid - 1, trangKiemTra - 1);
             }
-        } catch (eOcr) {
-            console.warn("Lỗi OCR:", eOcr);
         }
+        await worker.terminate();
+        return bestTrang;
+    } catch (eOcr) {
+        console.warn("Lỗi OCR tìm đầu trang:", eOcr);
         try { await worker.terminate(); } catch (eTerm) {}
         return 1;
     }
-
-    for (let m of dsMucLuc) {
-        let trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
-        if (trangIn) {
-            return Math.min(tongTrang, trangIn + 2);
-        }
-    }
-
-    return 1;
 }
 
 async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
     const tongTrang = pdfDoc.numPages;
     const mucTieu = phanTichTenBaiSGK(tenBaiGoc);
-    if (!mucTieu.cumDayDu && !mucTieu.tenCotLoi) {
+    if (!mucTieu.cumDayDu && !mucTieu.tenCotLoi && !mucTieu.maBai) {
         return { trang: 1, laBanScan: false, highlight: null };
     }
 
-    // TẦNG 1A: Tra cứu Bookmark / Outline có sẵn trong PDF
-    try {
-        const outline = await pdfDoc.getOutline();
-        if (Array.isArray(outline) && outline.length > 0) {
-            const duyetOutline = async (items) => {
-                for (let item of items) {
-                    let tieuDe = chuanHoaChuoiTimKiemSGK(item.title);
-                    let tieuDeKD = boDauTiengVietSGK(tieuDe);
-                    if ((mucTieu.tenCotLoi && (tieuDe.includes(mucTieu.tenCotLoi) || tieuDeKD.includes(mucTieu.tenCotLoiKD))) ||
-                        (mucTieu.cumDayDu && (tieuDe.includes(mucTieu.cumDayDu) || tieuDeKD.includes(mucTieu.cumDayDuKD)))) {
-                        if (item.dest) {
-                            let destArr = typeof item.dest === 'string' ? await pdfDoc.getDestination(item.dest) : item.dest;
-                            if (Array.isArray(destArr) && destArr[0]) {
-                                let pageIdx = await pdfDoc.getPageIndex(destArr[0]);
-                                return pageIdx + 1;
-                            }
-                        }
-                    }
-                    if (item.items && item.items.length > 0) {
-                        let kqCon = await duyetOutline(item.items);
-                        if (kqCon) return kqCon;
-                    }
-                }
-                return null;
-            };
-            let trangOutline = await duyetOutline(outline);
-            if (trangOutline && trangOutline >= 1 && trangOutline <= tongTrang) {
-                let linesTrang = await layDongTrangPDF(pdfDoc, idPdf, trangOutline);
-                let kqCham = chamDiemCacDongTrongTrangSGK(linesTrang, trangOutline, mucTieu);
-                return { trang: trangOutline, laBanScan: false, highlight: kqCham.highlight };
-            }
-        }
-    } catch (e) {}
-
-    // TẦNG 1B: Kiểm tra 12 trang đầu bằng thuật toán gom dòng theo tọa độ (y, x)
-    const soTrangDau = Math.min(12, tongTrang);
-    const linesTrangDau = await Promise.all(
-        Array.from({ length: soTrangDau }, (_, i) => layDongTrangPDF(pdfDoc, idPdf, i + 1))
+    // Kiểm tra nhanh 10 trang đầu xem sách có lớp text không
+    const soTrangKT = Math.min(10, tongTrang);
+    const linesDau = await Promise.all(
+        Array.from({ length: soTrangKT }, (_, i) => layDongTrangPDF(pdfDoc, idPdf, i + 1))
     );
+    const tongKyTuDau = linesDau.reduce((s, arr) => s + arr.reduce((a, l) => a + l.chuan.length, 0), 0);
 
-    const tongKyTuDau = linesTrangDau.reduce((s, arr) => s + arr.reduce((a, l) => a + l.chuan.length, 0), 0);
     if (tongKyTuDau < 30) {
-        const trangOcr = await timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu);
+        const trangOcr = await timNhiPhanDauTrangBangOCR(pdfDoc, idPdf, mucTieu);
         return { trang: trangOcr, laBanScan: true, highlight: null };
     }
 
-    // Dò số trang in từ Mục lục ở 12 trang đầu để nhảy cóc vùng hẹp [P, P + 8]
-    const cumTimMucLuc = mucTieu.tenCotLoiKD || mucTieu.maBaiKD;
-    if (cumTimMucLuc && cumTimMucLuc.length >= 4) {
-        for (let i = 0; i < linesTrangDau.length; i++) {
-            for (let ln of linesTrangDau[i]) {
-                if (ln.kd.includes(cumTimMucLuc)) {
-                    let matchSoTrang = ln.raw.match(/\b(\d{1,3})\s*$/);
-                    if (matchSoTrang) {
-                        let trangIn = parseInt(matchSoTrang[1], 10);
-                        let tuTrang = Math.max(1, trangIn);
-                        let denTrang = Math.min(tongTrang, trangIn + 8);
-                        let kqVungHep = await quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, 9, 100);
-                        if (kqVungHep.diemMax >= 60) {
-                            return { trang: kqVungHep.trangTotNhat, laBanScan: false, highlight: kqVungHep.highlightTotNhat };
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // TẦNG 2: Quét song song theo lô 12 trang từ đầu đến cuối sách (dừng sớm khi điểm >= 100)
-    const kqToanSach = await quetLoTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 12, 100);
+    // Bỏ qua Mục lục & thân bài: CHỈ QUÉT 28% ĐẦU MỖI TRANG
+    const kq = await quetLoDauTrangPDF(pdfDoc, idPdf, 1, tongTrang, mucTieu, 16, 180);
     return {
-        trang: kqToanSach.diemMax >= 35 ? kqToanSach.trangTotNhat : 1,
+        trang: kq.diemMax >= 60 ? kq.trangTotNhat : 1,
         laBanScan: false,
-        highlight: kqToanSach.diemMax >= 35 ? kqToanSach.highlightTotNhat : null
+        highlight: kq.diemMax >= 60 ? kq.highlightTotNhat : null
     };
 }
 
