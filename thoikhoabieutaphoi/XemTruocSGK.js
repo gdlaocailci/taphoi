@@ -16,15 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================================
 // KHỐI 1: CƠ SỞ DỮ LIỆU INDEXEDDB (THUẬT TOÁN ĐỒNG BỘ PROMISE CHỐNG VƯỢT MẶT)
 // =========================================================================
-// Nâng version lên 12 để tự động xóa cache lỗi cũ (loi: true) khi nâng cấp thuật toán tải nhanh
+// Nâng version lên 13 để bổ sung bảng BangMucLucScan (lưu chỉ mục OCR cho sách ảnh scan) mà không làm mất PDF đã lưu
 const dbHocLieuPromise = new Promise((resolve, reject) => {
-    const request = indexedDB.open("KhoHocLieuSoDB", 12);
+    const request = indexedDB.open("KhoHocLieuSoDB", 13);
     request.onupgradeneeded = function(event) {
         const db = event.target.result;
-        if (db.objectStoreNames.contains("BangTepPDF")) {
-            db.deleteObjectStore("BangTepPDF");
+        if (!db.objectStoreNames.contains("BangTepPDF")) {
+            db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
         }
-        db.createObjectStore("BangTepPDF", { keyPath: "idPdf" });
+        if (!db.objectStoreNames.contains("BangMucLucScan")) {
+            db.createObjectStore("BangMucLucScan", { keyPath: "idPdf" });
+        }
     };
     request.onsuccess = function(event) { resolve(event.target.result); };
     request.onerror = function(event) { console.warn("Lỗi IndexedDB"); resolve(null); };
@@ -52,6 +54,30 @@ async function docTepTuBoNhoCucBo(idPdf) {
     });
 }
 
+async function luuMucLucScanVaoDB(idPdf, dsMucLuc) {
+    const db = await dbHocLieuPromise;
+    if (!db || !db.objectStoreNames.contains("BangMucLucScan")) return;
+    try {
+        const transaction = db.transaction(["BangMucLucScan"], "readwrite");
+        transaction.objectStore("BangMucLucScan").put({
+            idPdf: idPdf,
+            dsMucLuc: dsMucLuc,
+            thoiGian: new Date().getTime()
+        });
+    } catch (e) { console.warn("Không thể lưu chỉ mục scan:", e); }
+}
+
+async function docMucLucScanTuDB(idPdf) {
+    const db = await dbHocLieuPromise;
+    if (!db || !db.objectStoreNames.contains("BangMucLucScan")) return null;
+    return new Promise((resolve) => {
+        const transaction = db.transaction(["BangMucLucScan"], "readonly");
+        const request = transaction.objectStore("BangMucLucScan").get(idPdf);
+        request.onsuccess = (event) => resolve(event.target.result ? event.target.result.dsMucLuc : null);
+        request.onerror = () => resolve(null);
+    });
+}
+
 async function xoaBoNhoDemCu(idPdfMoi) {
     const db = await dbHocLieuPromise;
     if (!db) return;
@@ -75,8 +101,13 @@ async function lamMoiBoNhoDemPdf() {
     if (!idTepHienTai) return;
     const db = await dbHocLieuPromise;
     if (db) {
-        const transaction = db.transaction(["BangTepPDF"], "readwrite");
+        const stores = ["BangTepPDF"];
+        if (db.objectStoreNames.contains("BangMucLucScan")) stores.push("BangMucLucScan");
+        const transaction = db.transaction(stores, "readwrite");
         transaction.objectStore("BangTepPDF").delete(idTepHienTai);
+        if (db.objectStoreNames.contains("BangMucLucScan")) {
+            transaction.objectStore("BangMucLucScan").delete(idTepHienTai);
+        }
     }
     
     boNhoTrangPdfGiaiMa = {}; // Dọn RAM
@@ -393,7 +424,6 @@ function kiemTraLaTepPdf(boDem) {
 }
 
 async function taiDuLieuPdfAnToan(idPdf) {
-    // Bước 1: Đọc IndexedDB (0ms)
     let banGhiCache = await docTepTuBoNhoCucBo(idPdf);
     if (banGhiCache) {
         if (banGhiCache.loi) {
@@ -403,7 +433,6 @@ async function taiDuLieuPdfAnToan(idPdf) {
         return banGhiCache.duLieu;
     }
 
-    // Bước 2: Ưu tiên tải trực tiếp qua máy chủ Google Apps Script của trường (1-2s, không bị CORS hay trang cảnh báo Drive)
     if (typeof CAU_HINH_FRONTEND !== 'undefined' && CAU_HINH_FRONTEND.URL_API_MAY_CHU) {
         try {
             document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải SGK siêu tốc từ máy chủ nhà trường...";
@@ -426,7 +455,6 @@ async function taiDuLieuPdfAnToan(idPdf) {
         }
     }
 
-    // Bước 3: Đua SONG SONG các Proxy (Promise.any) với timeout 8s thay vì chờ tuần tự 20s x 3 = 60s
     document.getElementById('vanBanTrangThaiSgk').innerText = "Đang tải Sách nguyên bản qua luồng tăng tốc song song...";
     const dsProxy = [
         'https://corsproxy.io/?',
@@ -469,8 +497,7 @@ async function xuLyDocPDF(idPdf, tenBaiCanTim = '') {
 
     try {
         const duLieuPdf = await taiDuLieuPdfAnToan(idPdf);
-        
-        boNhoTrangPdfGiaiMa = {}; // Dọn RAM trước khi nạp
+        boNhoTrangPdfGiaiMa = {};
         
         const loadingTask = pdfjsLib.getDocument({ 
             data: duLieuPdf,
@@ -492,8 +519,8 @@ async function xuLyDocPDF(idPdf, tenBaiCanTim = '') {
             document.getElementById('vanBanTrangThaiSgk').innerText = `Đang tìm đúng trang bài: "${tenBaiCanTim}"...`;
             const ketQuaTim = await timTrangBaiHocThongMinh(theHienPdfHienTai, idPdf, tenBaiCanTim);
             trangDich = ketQuaTim.trang;
-            if (ketQuaTim.laBanScan) {
-                document.getElementById('tieuDeBaiSgk').innerText = `${tenBaiCanTim} (Sách ảnh scan - vui lòng chọn trang thủ công)`;
+            if (ketQuaTim.laBanScan && ketQuaTim.trang === 1) {
+                document.getElementById('tieuDeBaiSgk').innerText = `${tenBaiCanTim} (Sách ảnh scan - chưa tìm thấy mục lục tự động)`;
             }
         }
         trangHienTaiPDF = trangDich;
@@ -626,6 +653,179 @@ async function quetLoTrangPDF(pdfDoc, idPdf, tuTrang, denTrang, mucTieu, kichThu
     return { trangTotNhat, diemMax };
 }
 
+// =========================================================================
+// BỘ MÁY OCR TESSERACT.JS CHO SÁCH ẢNH SCAN (ĐỌC MỤC LỤC 1 LẦN + CACHE DB)
+// =========================================================================
+async function napThuVienOCR() {
+    if (typeof Tesseract !== 'undefined') return true;
+    try {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+        return typeof Tesseract !== 'undefined';
+    } catch (e) {
+        console.warn("Không nạp được thư viện OCR:", e);
+        return false;
+    }
+}
+
+async function docAnhTrangPdfSangCanvas(pdfDoc, soTrang, scale = 1.5, chiPhanDau = false) {
+    const page = await pdfDoc.getPage(soTrang);
+    const viewport = page.getViewport({ scale: scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = chiPhanDau ? Math.floor(viewport.height * 0.32) : viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    return canvas;
+}
+
+function trichXuatSoTrangTuDongMucLuc(vanBanMucLuc, mucTieu) {
+    const dongList = String(vanBanMucLuc || '').split(/\r?\n/);
+    let ungVienTotNhat = null;
+    let diemMax = 0;
+
+    for (let i = 0; i < dongList.length; i++) {
+        let dongGoc = dongList[i].trim();
+        if (!dongGoc) continue;
+        let dongChuan = chuanHoaChuoiTimKiemSGK(dongGoc);
+        let diem = 0;
+
+        if (mucTieu.cumDayDu && dongChuan.includes(mucTieu.cumDayDu)) {
+            diem = 100;
+        } else if (mucTieu.tenCotLoi && mucTieu.tenCotLoi.length >= 4 && dongChuan.includes(mucTieu.tenCotLoi)) {
+            diem = 75;
+        } else if (mucTieu.maBai && new RegExp(`\\b${mucTieu.maBai}\\b`).test(dongChuan)) {
+            diem = 45;
+        } else if (mucTieu.tuKhoa.length >= 2) {
+            let soTuKhop = mucTieu.tuKhoa.filter(t => dongChuan.includes(t)).length;
+            if (soTuKhop / mucTieu.tuKhoa.length >= 0.7) diem = 55;
+        }
+
+        if (diem > 0) {
+            // Tìm số trang ở cuối dòng hiện tại hoặc cuối dòng kế tiếp (trường hợp tên bài xuống dòng)
+            let matchSo = dongGoc.match(/(\d{1,3})\s*$/);
+            if (!matchSo && i + 1 < dongList.length) {
+                matchSo = dongList[i + 1].trim().match(/(\d{1,3})\s*$/);
+            }
+            if (matchSo) {
+                let soTrangIn = parseInt(matchSo[1], 10);
+                if (soTrangIn >= 1 && soTrangIn <= 300 && diem > diemMax) {
+                    diemMax = diem;
+                    ungVienTotNhat = soTrangIn;
+                }
+            }
+        }
+    }
+    return ungVienTotNhat;
+}
+
+async function timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu) {
+    const tongTrang = pdfDoc.numPages;
+
+    // 1. Kiểm tra xem Mục lục của cuốn sách này đã được OCR và lưu vào IndexedDB chưa
+    let dsMucLuc = await docMucLucScanTuDB(idPdf);
+
+    // 2. Nếu chưa có -> OCR các trang đầu (trang 2..6) để lấy Mục lục, lưu vào IndexedDB dùng cho mọi bài sau
+    if (!dsMucLuc) {
+        const daNapOcr = await napThuVienOCR();
+        if (!daNapOcr) return 1;
+
+        document.getElementById('vanBanTrangThaiSgk').innerText = "Sách ảnh scan: Đang đọc Mục lục bằng OCR (chỉ làm 1 lần)...";
+        const worker = await Tesseract.createWorker('vie');
+        dsMucLuc = [];
+        const maxTrangMucLuc = Math.min(7, tongTrang);
+
+        try {
+            for (let p = 2; p <= maxTrangMucLuc; p++) {
+                const canvas = await docAnhTrangPdfSangCanvas(pdfDoc, p, 1.5, false);
+                const { data } = await worker.recognize(canvas);
+                const rawText = (data && data.text) ? data.text : '';
+                dsMucLuc.push({ page: p, text: rawText });
+
+                // Nếu trang này chứa "Mục lục" hoặc nhiều dòng "Bài ...", kiểm tra trang kế tiếp (nếu mục lục 2 trang) rồi dừng sớm
+                let low = rawText.toLowerCase();
+                if (low.includes('mục lục') || (low.match(/\bbài\s*\d+/g) || []).length >= 3) {
+                    if (p + 1 <= maxTrangMucLuc) {
+                        const canvasKe = await docAnhTrangPdfSangCanvas(pdfDoc, p + 1, 1.5, false);
+                        const resKe = await worker.recognize(canvasKe);
+                        dsMucLuc.push({ page: p + 1, text: (resKe.data && resKe.data.text) ? resKe.data.text : '' });
+                    }
+                    break;
+                }
+            }
+            if (dsMucLuc.length > 0) {
+                await luuMucLucScanVaoDB(idPdf, dsMucLuc);
+            }
+
+            // Sau khi có mục lục, tìm số trang in của bài học
+            let trangIn = null;
+            for (let m of dsMucLuc) {
+                trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
+                if (trangIn) break;
+            }
+
+            if (trangIn) {
+                // Bù độ lệch trang bìa/mục lục (thường +1 đến +4 trang) và xác nhận lại bằng OCR phần đầu trang
+                document.getElementById('vanBanTrangThaiSgk').innerText = `Đã thấy ở trang sách ${trangIn}, đang chốt đúng trang PDF...`;
+                let uocLuong = Math.min(tongTrang, trangIn + 2);
+                const dsThu = [uocLuong, Math.min(tongTrang, trangIn + 3), Math.min(tongTrang, trangIn + 1), Math.min(tongTrang, trangIn + 4), trangIn];
+                for (let pThu of dsThu) {
+                    if (pThu < 1 || pThu > tongTrang) continue;
+                    const canvasDau = await docAnhTrangPdfSangCanvas(pdfDoc, pThu, 1.3, true);
+                    const { data } = await worker.recognize(canvasDau);
+                    let txtDau = chuanHoaChuoiTimKiemSGK(data && data.text ? data.text : '');
+                    if (chamDiemTrangPDF(txtDau, pThu, mucTieu) >= 30) {
+                        await worker.terminate();
+                        return pThu;
+                    }
+                }
+                await worker.terminate();
+                return uocLuong;
+            }
+        } catch (eOcr) {
+            console.warn("Lỗi OCR:", eOcr);
+        }
+        try { await worker.terminate(); } catch (eTerm) {}
+        return 1;
+    }
+
+    // 3. Trường hợp Mục lục đã có sẵn trong IndexedDB (< 5ms!)
+    for (let m of dsMucLuc) {
+        let trangIn = trichXuatSoTrangTuDongMucLuc(m.text, mucTieu);
+        if (trangIn) {
+            let uocLuong = Math.min(tongTrang, trangIn + 2);
+            // Nếu muốn chính xác tuyệt đối, xác nhận nhanh phần đầu trang bằng OCR
+            const daNapOcr = await napThuVienOCR();
+            if (daNapOcr) {
+                try {
+                    document.getElementById('vanBanTrangThaiSgk').innerText = `Đang mở đúng trang bài học (trang ~${uocLuong})...`;
+                    const worker = await Tesseract.createWorker('vie');
+                    const dsThu = [uocLuong, Math.min(tongTrang, trangIn + 3), Math.min(tongTrang, trangIn + 1), Math.min(tongTrang, trangIn + 4), trangIn];
+                    for (let pThu of dsThu) {
+                        if (pThu < 1 || pThu > tongTrang) continue;
+                        const canvasDau = await docAnhTrangPdfSangCanvas(pdfDoc, pThu, 1.3, true);
+                        const { data } = await worker.recognize(canvasDau);
+                        let txtDau = chuanHoaChuoiTimKiemSGK(data && data.text ? data.text : '');
+                        if (chamDiemTrangPDF(txtDau, pThu, mucTieu) >= 30) {
+                            await worker.terminate();
+                            return pThu;
+                        }
+                    }
+                    await worker.terminate();
+                } catch (e2) {}
+            }
+            return uocLuong;
+        }
+    }
+
+    return 1;
+}
+
 async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
     const tongTrang = pdfDoc.numPages;
     const mucTieu = phanTichTenBaiSGK(tenBaiGoc);
@@ -663,14 +863,16 @@ async function timTrangBaiHocThongMinh(pdfDoc, idPdf, tenBaiGoc) {
         }
     } catch (e) {}
 
+    // Kiểm tra 10 trang đầu xem sách có lớp văn bản hay là sách ảnh scan
     const soTrangDau = Math.min(10, tongTrang);
     const textTrangDau = await Promise.all(
         Array.from({ length: soTrangDau }, (_, i) => layTextTrangPDF(pdfDoc, idPdf, i + 1))
     );
 
-    const tongKyTuDau = textTrangDau.slice(0, 5).reduce((s, t) => s + t.length, 0);
-    if (tongKyTuDau < 20) {
-        return { trang: 1, laBanScan: true };
+    const tongKyTuDau = textTrangDau.reduce((s, t) => s + t.length, 0);
+    if (tongKyTuDau < 30) {
+        const trangOcr = await timTrangTrongSachScanBangOCR(pdfDoc, idPdf, mucTieu);
+        return { trang: trangOcr, laBanScan: true };
     }
 
     const cumTimMucLuc = mucTieu.tenCotLoi || mucTieu.maBai;
@@ -734,7 +936,6 @@ async function inTrangPdfHienTai() {
             boNhoTrangPdfGiaiMa[trangHienTaiPDF] = trang;
         }
 
-        // Kết xuất độ nét cao (scale 2.0) ra canvas tạm để in/lưu PDF sắc nét
         const viewportIn = trang.getViewport({ scale: 2.0 });
         const canvasTam = document.createElement('canvas');
         canvasTam.width = viewportIn.width;
@@ -744,7 +945,6 @@ async function inTrangPdfHienTai() {
         await trang.render({ canvasContext: ctxTam, viewport: viewportIn }).promise;
         const imgDataUrl = canvasTam.toDataURL('image/png');
 
-        // Dùng iframe ẩn để tránh bị trình duyệt chặn popup
         let iframeIn = document.getElementById('iframeInTrangSGK');
         if (!iframeIn) {
             iframeIn = document.createElement('iframe');
