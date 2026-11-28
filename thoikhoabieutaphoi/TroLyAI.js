@@ -695,15 +695,99 @@
             return dong.join('');
         }
 
+        async function saoChepVanBan(vanBan) {
+            const text = String(vanBan || '');
+            if (navigator.clipboard && window.isSecureContext) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (_) {}
+            }
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try {
+                ok = document.execCommand('copy');
+            } catch (_) {
+                ok = false;
+            }
+            document.body.removeChild(ta);
+            return ok;
+        }
+
+        function capNhatTraLoiAssistant(oTraLoi, noiDung, choPhepCopy, laDangDinhDang) {
+            const noiDungEl = oTraLoi._noiDungEl;
+            const footerEl = oTraLoi._footerCopyEl;
+            if (!noiDungEl) {
+                oTraLoi.textContent = String(noiDung || '');
+                return;
+            }
+            if (laDangDinhDang) {
+                noiDungEl.innerHTML = dinhDangTraLoiDep(noiDung);
+            } else {
+                noiDungEl.textContent = String(noiDung || '');
+            }
+            oTraLoi._rawText = String(noiDung || '');
+            if (footerEl) {
+                if (choPhepCopy && oTraLoi._rawText.trim()) {
+                    footerEl.classList.remove('hidden');
+                } else {
+                    footerEl.classList.add('hidden');
+                }
+            }
+        }
+
         function themTinNhan(vaiTro, noiDung) {
             const div = document.createElement('div');
             div.className = vaiTro === 'user'
                 ? 'ml-8 bg-[#0b5394] text-white p-2.5 rounded-xl text-xs whitespace-pre-wrap'
-                : 'mr-4 bg-white border border-slate-200 text-slate-800 p-2.5 rounded-xl text-xs leading-relaxed space-y-0.5 shadow-sm';
+                : 'mr-4 bg-white border border-slate-200 text-slate-800 p-2.5 rounded-xl text-xs leading-relaxed shadow-sm';
             if (vaiTro === 'user') {
                 div.textContent = noiDung;
             } else {
-                div.innerHTML = dinhDangTraLoiDep(noiDung);
+                const noiDungEl = document.createElement('div');
+                noiDungEl.className = 'space-y-0.5';
+                noiDungEl.innerHTML = dinhDangTraLoiDep(noiDung);
+
+                const footerEl = document.createElement('div');
+                footerEl.className = 'hidden mt-2 pt-1.5 border-t border-slate-100 flex justify-end';
+
+                const btnCopy = document.createElement('button');
+                btnCopy.type = 'button';
+                btnCopy.title = 'Sao chép câu trả lời';
+                btnCopy.className = 'inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-[#0b5394] hover:bg-slate-100 px-2 py-0.5 rounded-md cursor-pointer transition-colors';
+                const iconCopyHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg><span>Sao chép</span>';
+                const iconDaCopyHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg><span>Đã sao chép</span>';
+                btnCopy.innerHTML = iconCopyHTML;
+
+                let timerResetCopy = null;
+                btnCopy.addEventListener('click', async () => {
+                    const textCanCopy = div._rawText || noiDungEl.innerText || '';
+                    const thanhCong = await saoChepVanBan(textCanCopy);
+                    if (!thanhCong) return;
+                    if (timerResetCopy) clearTimeout(timerResetCopy);
+                    btnCopy.innerHTML = iconDaCopyHTML;
+                    btnCopy.classList.remove('text-slate-500', 'hover:text-[#0b5394]', 'hover:bg-slate-100');
+                    btnCopy.classList.add('text-emerald-600', 'bg-emerald-50');
+                    timerResetCopy = setTimeout(() => {
+                        btnCopy.innerHTML = iconCopyHTML;
+                        btnCopy.classList.remove('text-emerald-600', 'bg-emerald-50');
+                        btnCopy.classList.add('text-slate-500', 'hover:text-[#0b5394]', 'hover:bg-slate-100');
+                    }, 1800);
+                });
+
+                footerEl.appendChild(btnCopy);
+                div.appendChild(noiDungEl);
+                div.appendChild(footerEl);
+                div._noiDungEl = noiDungEl;
+                div._footerCopyEl = footerEl;
+                div._rawText = String(noiDung || '');
             }
             khungTin.appendChild(div);
             khungTin.scrollTop = khungTin.scrollHeight;
@@ -763,17 +847,17 @@
 
                 const ketQua = await phanHoi.json();
                 if (ketQua.trangThai === 'thanh_cong') {
-                    oTraLoi.innerHTML = dinhDangTraLoiDep(ketQua.traLoi);
+                    capNhatTraLoiAssistant(oTraLoi, ketQua.traLoi, true, true);
                     lichSuHoiThoai.push({ vaiTro: 'user', noiDung: nhanUser });
                     lichSuHoiThoai.push({ vaiTro: 'assistant', noiDung: String(ketQua.traLoi || '') });
                     if (lichSuHoiThoai.length > 20) {
                         lichSuHoiThoai = lichSuHoiThoai.slice(-20);
                     }
                 } else {
-                    oTraLoi.textContent = 'Lỗi: ' + (ketQua.thongBao || 'Không nhận được phản hồi.');
+                    capNhatTraLoiAssistant(oTraLoi, 'Lỗi: ' + (ketQua.thongBao || 'Không nhận được phản hồi.'), false, false);
                 }
             } catch (err) {
-                oTraLoi.textContent = 'Lỗi kết nối: ' + (err.message || 'Vui lòng thử lại.');
+                capNhatTraLoiAssistant(oTraLoi, 'Lỗi kết nối: ' + (err.message || 'Vui lòng thử lại.'), false, false);
             } finally {
                 dangTraLoi = false;
                 document.getElementById('btnGuiAI').disabled = false;
